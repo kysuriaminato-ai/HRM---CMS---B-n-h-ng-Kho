@@ -1,0 +1,89 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.StockTransactionCreateDto
+@{
+    Layout = "_WarehouseLayout";
+    ViewData["Title"] = "Lập Phiếu Nhập Kho";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-box-arrow-in-down me-1"></i> Lập Phiếu Nhập Kho Hàng Hóa</span>
+                <a href="/Kho/Index?branchId=@Model.BranchId" class="btn btn-sm btn-erp-outline">Quay lại tồn kho</a>
+            </div>
+            <form asp-action="NhapKho" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="BranchId" class="form-label small fw-semibold">Chi Nhánh Tiếp Nhận (*)</label>
+                        <select asp-for="BranchId" id="selBranch" class="form-select form-select-sm" asp-items="ViewBag.Branches" onchange="capNhatThongTinTonKho()"></select>
+                        <span asp-validation-for="BranchId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Mã Chứng Từ Dự Kiến</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="Hệ thống tự động sinh (PNK-YYYYMMDD...)" readonly />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ProductId" class="form-label small fw-semibold">Chọn Hàng Hóa Cần Nhập (*)</label>
+                    <select asp-for="ProductId" id="selProduct" class="form-select form-select-sm" asp-items="ViewBag.Products" onchange="capNhatThongTinTonKho()"></select>
+                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                </div>
+
+                <!-- Thẻ thông tin tồn hiện tại -->
+                <div class="alert alert-secondary p-3 mb-3 small d-flex justify-content-between align-items-center" id="boxCurrentStock">
+                    <div>
+                        <i class="bi bi-info-circle me-1"></i> Tồn kho hiện tại: <strong id="lblCurrentStock">0</strong> <span id="lblUnit">Cái</span>
+                    </div>
+                    <div>
+                        Giá vốn hiện hành: <strong id="lblCostPrice">0</strong> đ
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Quantity" class="form-label small fw-semibold">Số Lượng Nhập (*)</label>
+                        <input asp-for="Quantity" type="number" min="1" class="form-control form-control-sm" required />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="UnitPrice" class="form-label small fw-semibold">Đơn Giá Nhập (để 0 sẽ lấy theo giá vốn cũ)</label>
+                        <input asp-for="UnitPrice" type="number" step="1000" class="form-control form-control-sm" />
+                        <span asp-validation-for="UnitPrice" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Note" class="form-label small fw-semibold">Diễn Giải / Nhà Cung Cấp / Số HĐ</label>
+                    <textarea asp-for="Note" rows="2" class="form-control form-control-sm" placeholder="Nhập từ NCC ABC theo hóa đơn VAT số..."></textarea>
+                </div>
+
+                <div class="text-end border-top pt-3">
+                    <button type="submit" class="btn btn-erp-black px-4"><i class="bi bi-check2-circle me-1"></i> Hoàn Tất Nhập Kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function capNhatThongTinTonKho() {
+            const pId = document.getElementById('selProduct').value;
+            const bId = document.getElementById('selBranch').value;
+            if (!pId) return;
+
+            fetch(`/Kho/LayThongTinTonKho?productId=${pId}&branchId=${bId}`)
+                .then(r => r.json())
+                .then(d => {
+                    document.getElementById('lblCurrentStock').innerText = d.stock;
+                    document.getElementById('lblUnit').innerText = d.unit;
+                    document.getElementById('lblCostPrice').innerText = d.costPrice.toLocaleString();
+                });
+        }
+        capNhatThongTinTonKho();
+    </script>
+}

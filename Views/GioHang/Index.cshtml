@@ -1,0 +1,179 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
+@{
+    Layout = "_SalesLayout";
+    ViewData["Title"] = "Giỏ Hàng & Tồn Kho Thực Tế";
+    int branchId = ViewBag.CurrentBranchId ?? 1;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Giỏ Hàng Bán Hàng</h4>
+        <p class="text-secondary small mb-0">Kiểm soát danh mục chọn, số lượng và đối chiếu tồn kho khả dụng tức thời</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/BanHang/POS" class="btn btn-erp-black btn-sm">
+            <i class="bi bi-cash-coin me-1"></i> Đến Màn Hình Thu Ngân POS
+        </a>
+    </div>
+</div>
+
+@if (Model.Warnings.Any())
+{
+    <div class="alert alert-warning border-warning erp-card p-3 mb-4">
+        <div class="d-flex align-items-center gap-2 mb-1 fw-bold text-dark">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+            <span>CẢNH BÁO BIẾN ĐỘNG TỒN KHO:</span>
+        </div>
+        <ul class="mb-0 small text-danger ps-3">
+            @foreach (var w in Model.Warnings)
+            {
+                <li>@w</li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Danh Sách Sản Phẩm Trong Giỏ (<span id="cartCount">@Model.TotalItemsCount</span>)</span>
+                @if (Model.Items.Any())
+                {
+                    <form asp-action="ClearCart" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc muốn xóa sạch giỏ hàng?');">
+                        <input type="hidden" name="branchId" value="@branchId" />
+                        <button type="submit" class="btn btn-sm btn-erp-outline text-danger py-1 px-2 border-0">
+                            <i class="bi bi-trash me-1"></i> Xóa sạch
+                        </button>
+                    </form>
+                }
+            </div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th class="text-end">Đơn Giá</th>
+                            <th class="text-center" style="width: 140px;">Số Lượng</th>
+                            <th class="text-end">Thành Tiền</th>
+                            <th class="text-end" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartTableBody">
+                        @if (Model.Items.Any())
+                        {
+                            foreach (var item in Model.Items)
+                            {
+                                <tr id="row-@item.ProductId">
+                                    <td>
+                                        <div class="fw-bold text-dark">@item.ProductName</div>
+                                        <div class="small text-muted">SKU: <code>@item.SKU</code> | Kho còn: <strong>@item.AvailableStock @item.Unit</strong></div>
+                                        @if (!string.IsNullOrEmpty(item.StockWarning))
+                                        {
+                                            <div class="text-danger small mt-1"><i class="bi bi-info-circle me-1"></i>@item.StockWarning</div>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold">@item.UnitPrice.ToString("N0") đ</td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm justify-content-center">
+                                            <button class="btn btn-outline-dark" type="button" onclick="thayDoiSoLuong(@item.ProductId, @item.Quantity - 1)">-</button>
+                                            <input type="number" class="form-control text-center quantity-input"
+                                                   value="@item.Quantity" min="1" max="@item.AvailableStock"
+                                                   style="max-width: 55px;"
+                                                   onchange="thayDoiSoLuong(@item.ProductId, this.value)" />
+                                            <button class="btn btn-outline-dark" type="button" onclick="thayDoiSoLuong(@item.ProductId, @item.Quantity + 1)">+</button>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-bold text-dark" id="total-@item.ProductId">@item.TotalPrice.ToString("N0") đ</td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-erp-outline text-danger border-0" onclick="xoaKhoiGio(@item.ProductId)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
+                                    Giỏ hàng của bạn đang trống.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="erp-card p-4">
+            <h6 class="fw-bold text-uppercase pb-2 border-bottom text-dark mb-3">Tóm Tắt Thanh Toán</h6>
+            <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-secondary">Tạm tính hàng hóa:</span>
+                <span class="fw-bold text-dark" id="lblSubTotal">@Model.SubTotal.ToString("N0") đ</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 small">
+                <span class="text-secondary">Chiết khấu:</span>
+                <span class="text-dark fw-bold">-0 đ</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3 pb-3 border-bottom small">
+                <span class="text-secondary">Thuế VAT (0%):</span>
+                <span class="text-dark fw-bold">0 đ</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <span class="fw-bold fs-6">TỔNG CỘNG:</span>
+                <span class="fw-bold fs-5 text-dark" id="lblFinalTotal">@Model.FinalTotal.ToString("N0") đ</span>
+            </div>
+
+            <a href="/BanHang/POS" class="btn btn-erp-black w-100 py-2 @(Model.Items.Any() ? "" : "disabled")">
+                <i class="bi bi-check2-circle me-1"></i> Tiến Hành Thu Ngân
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const branchId = @branchId;
+
+        function thayDoiSoLuong(productId, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty < 1) newQty = 1;
+
+            fetch('/GioHang/UpdateQuantityApi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, newQuantity: newQty, branchId: branchId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.hasStockAlert) {
+                        alert(data.message);
+                    }
+                    location.reload(); // Làm mới để đối chiếu lại UI và warning
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function xoaKhoiGio(productId) {
+            if (!confirm('Bạn có chắc muốn xóa mặt hàng này khỏi giỏ?')) return;
+
+            fetch('/GioHang/RemoveItemApi?productId=' + productId, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+}

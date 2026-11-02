@@ -1,0 +1,163 @@
+@model ERP_HRM_CMS.Models.ViewModels.WarehouseDashboardViewModel
+@{
+    Layout = "_WarehouseLayout";
+    ViewData["Title"] = "Quản Trị Tồn Kho Thực Tế & Cảnh Báo";
+    int branchId = Model.SelectedBranchId;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Bảng Điều Khiển Kho Vận</h4>
+        <p class="text-secondary small mb-0">Giám sát số lượng tồn khả dụng, định mức cảnh báo và biến động tài sản kho</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Kho/ExportXuatNhapTonExcel?branchId=@branchId" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel (.xlsx)
+        </a>
+        <a href="/Kho/KiemKe?branchId=@branchId" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-clipboard2-check me-1"></i> Kiểm Kê Kho
+        </a>
+        <a href="/Kho/NhapKho?branchId=@branchId" class="btn btn-primary btn-sm">
+            <i class="bi bi-box-arrow-in-down me-1"></i> Lập Phiếu Nhập Kho
+        </a>
+        <a href="/Kho/XuatKho?branchId=@branchId" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Lập Phiếu Xuất Kho
+        </a>
+    </div>
+</div>
+
+<!-- 4 Thẻ KPI Chỉ Số Kho -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Tổng Mặt Hàng (SKU)</span>
+            <h3 class="fw-bold m-0 text-dark">@Model.TotalProducts</h3>
+            <span class="small text-muted">Đang quản lý trong kho</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3 @(Model.TotalLowStockItems > 0 ? "border-danger" : "")">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-danger small fw-bold">Cảnh Báo Chạm Ngưỡng Tồn</span>
+                    <h3 class="fw-bold m-0 text-danger">@Model.TotalLowStockItems</h3>
+                    <span class="small text-muted">Sản phẩm sắp hết hàng</span>
+                </div>
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Giá Trị Tồn Kho Ước Tính</span>
+            <h3 class="fw-bold m-0 text-dark">@Model.TotalInventoryAssetValue.ToString("N0") đ</h3>
+            <span class="small text-muted">Tính theo giá vốn danh mục</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Giao Dịch Phát Sinh Hôm Nay</span>
+            <h3 class="fw-bold m-0 text-dark">@Model.TodayTransactionCount</h3>
+            <span class="small text-muted">Lượt nhập & xuất kho</span>
+        </div>
+    </div>
+</div>
+
+<!-- Bộ Lọc Tìm Kiếm & Chi Nhánh -->
+<div class="erp-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Chi nhánh kho:</label>
+            <select name="branchId" class="form-select form-select-sm" asp-items="ViewBag.Branches" onchange="this.form.submit()"></select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">Từ khóa tìm kiếm:</label>
+            <input type="text" name="keyword" value="@Model.Keyword" class="form-control form-control-sm" placeholder="Tìm theo SKU, mã vạch hoặc tên hàng..." />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check form-switch pb-1">
+                <input class="form-check-input" type="checkbox" name="lowStockOnly" value="true" id="chkLowStock" @(Model.LowStockOnly == true ? "checked" : "") onchange="this.form.submit()" />
+                <label class="form-check-label small fw-bold text-danger" for="chkLowStock">Chỉ hiện hàng chạm ngưỡng báo động</label>
+            </div>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-sm btn-erp-black w-100">Lọc Dữ Liệu</button>
+        </div>
+    </form>
+</div>
+
+<!-- Bảng Tồn Kho Thực Tế -->
+<div class="erp-card">
+    <div class="erp-card-header d-flex justify-content-between align-items-center">
+        <span>Bảng Đối Chiếu Số Lượng Tồn Kho Thực Tế</span>
+        <a href="/Kho/LichSuGiaoDich?branchId=@branchId" class="btn btn-sm btn-erp-outline py-1 px-2">
+            <i class="bi bi-clock-history me-1"></i> Xem Sổ Thẻ Kho
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 120px;">Mã SKU</th>
+                    <th>Tên Hàng Hóa</th>
+                    <th>Danh Mục</th>
+                    <th class="text-end">Giá Vốn</th>
+                    <th class="text-center" style="width: 130px;">Tồn Kho</th>
+                    <th class="text-center" style="width: 100px;">Ngưỡng Tối Thiểu</th>
+                    <th class="text-center">Trạng Thái Kho</th>
+                    <th class="text-end">Tổng Giá Trị Tồn</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.StockList.Any())
+                {
+                    foreach (var it in Model.StockList)
+                    {
+                        <tr class="@(it.IsLowStock ? "table-danger" : "")">
+                            <td><code>@it.SKU</code></td>
+                            <td>
+                                <div class="fw-bold text-dark">@it.ProductName</div>
+                                <div class="small text-muted">ĐVT: @it.Unit @(!string.IsNullOrEmpty(it.Barcode) ? $" | Barcode: {it.Barcode}" : "")</div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@it.CategoryName</span></td>
+                            <td class="text-end">@it.CostPrice.ToString("N0") đ</td>
+                            <td class="text-center">
+                                <span class="fw-bold fs-6 @(it.IsLowStock ? "text-danger" : "text-dark")">@it.StockQuantity</span>
+                                <span class="small text-muted">@it.Unit</span>
+                            </td>
+                            <td class="text-center text-muted small">@it.MinStockAlert @it.Unit</td>
+                            <td class="text-center">
+                                @if (it.StockQuantity <= 0)
+                                {
+                                    <span class="badge bg-danger text-white border">ĐÃ HẾT HÀNG</span>
+                                }
+                                else if (it.IsLowStock)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger">SẮP HẾT HÀNG</span>
+                                }
+                                else if (it.IsOverStock)
+                                {
+                                    <span class="badge bg-warning-subtle text-dark border border-warning">VƯỢT ĐỊNH MỨC</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">AN TOÀN</span>
+                                }
+                            </td>
+                            <td class="text-end fw-bold text-dark">@it.TotalStockAsset.ToString("N0") đ</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+                            Không có bản ghi tồn kho nào phù hợp với bộ lọc tìm kiếm.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,131 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.EmployeeCreateEditViewModel
+@{
+    Layout = "_HRMLayout";
+    ViewData["Title"] = "Tiếp Nhận Nhân Sự Mới";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Hồ Sơ Tiếp Nhận Nhân Viên Mới</span>
+                <a href="/NhanSu/Index" class="btn btn-sm btn-erp-outline">Quay lại danh sách</a>
+            </div>
+            <form asp-action="Create" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">I. Thông Tin Cơ Bản</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label asp-for="EmployeeCode" class="form-label small fw-semibold">Mã Nhân Viên (*)</label>
+                        <input asp-for="EmployeeCode" class="form-control form-control-sm" required />
+                        <span asp-validation-for="EmployeeCode" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="FullName" class="form-label small fw-semibold">Họ Và Tên (*)</label>
+                        <input asp-for="FullName" class="form-control form-control-sm" required />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="Gender" class="form-label small fw-semibold">Giới Tính</label>
+                        <select asp-for="Gender" class="form-select form-select-sm">
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="DateOfBirth" class="form-label small fw-semibold">Ngày Sinh</label>
+                        <input asp-for="DateOfBirth" type="date" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="DepartmentId" class="form-label small fw-semibold">Phòng Ban Trực Thuộc (*)</label>
+                        <select asp-for="DepartmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments" required>
+                            <option value="">-- Chọn phòng ban --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="PositionId" class="form-label small fw-semibold">Chức Vụ Bổ Nhiệm (*)</label>
+                        <select asp-for="PositionId" class="form-select form-select-sm" asp-items="ViewBag.Positions" required>
+                            <option value="">-- Chọn chức vụ --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="HireDate" class="form-label small fw-semibold">Ngày Bắt Đầu Làm Việc</label>
+                        <input asp-for="HireDate" type="date" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Email" class="form-label small fw-semibold">Email Doanh Nghiệp (*)</label>
+                        <input asp-for="Email" type="email" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Phone" class="form-label small fw-semibold">Số Điện Thoại</label>
+                        <input asp-for="Phone" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="IdentityCard" class="form-label small fw-semibold">Số CCCD / CMND</label>
+                        <input asp-for="IdentityCard" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">II. Chi Tiết Lý Lịch & Ngân Hàng</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label asp-for="CurrentAddress" class="form-label small fw-semibold">Địa Chỉ Hiện Tại</label>
+                        <input asp-for="CurrentAddress" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PermanentAddress" class="form-label small fw-semibold">Địa Chỉ Thường Trú</label>
+                        <input asp-for="PermanentAddress" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BankAccountNumber" class="form-label small fw-semibold">Số Tài Khoản</label>
+                        <input asp-for="BankAccountNumber" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="BankName" class="form-label small fw-semibold">Ngân Hàng Thụ Hưởng</label>
+                        <input asp-for="BankName" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="EducationLevel" class="form-label small fw-semibold">Trình Độ Học Vấn</label>
+                        <input asp-for="EducationLevel" class="form-control form-control-sm" placeholder="Đại học, Cao đẳng..." />
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">III. Cấp Quyền Đăng Nhập Hệ Thống</h6>
+                <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input asp-for="CreateUserAccount" class="form-check-input" type="checkbox" id="chkCreateAccount" onchange="toggleAccountFields(this.checked)" />
+                            <label asp-for="CreateUserAccount" class="form-check-label fw-bold small text-dark">Khởi tạo ngay tài khoản truy cập phần mềm</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 acc-field" style="display:none;">
+                        <label asp-for="Username" class="form-label small fw-semibold">Tên Đăng Nhập</label>
+                        <input asp-for="Username" class="form-control form-control-sm" placeholder="Mặc định sẽ lấy theo Mã NV" />
+                    </div>
+                    <div class="col-md-6 acc-field" style="display:none;">
+                        <label asp-for="DefaultPassword" class="form-label small fw-semibold">Mật Khẩu Mặc Định</label>
+                        <input asp-for="DefaultPassword" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-erp-black px-4"><i class="bi bi-check-lg me-1"></i> Lưu Hồ Sơ Nhân Viên</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleAccountFields(isChecked) {
+            document.querySelectorAll('.acc-field').forEach(el => el.style.display = isChecked ? 'block' : 'none');
+        }
+    </script>
+}

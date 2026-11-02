@@ -1,0 +1,187 @@
+@model IEnumerable<ERP_HRM_CMS.Models.Entities.PurchaseOrder>
+@{
+    ViewData["Title"] = "Đơn Mua Hàng & Nhập Kho (PO)";
+    Layout = "~/Views/Shared/_WarehouseLayout.cshtml";
+    decimal totalAmount = ViewBag.TotalAmount ?? 0;
+    var suppliers = ViewBag.Suppliers as IEnumerable<ERP_HRM_CMS.Models.Entities.Supplier> ?? new List<ERP_HRM_CMS.Models.Entities.Supplier>();
+    var branches = ViewBag.Branches as IEnumerable<ERP_HRM_CMS.Models.Entities.Branch> ?? new List<ERP_HRM_CMS.Models.Entities.Branch>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-journal-text text-primary me-2"></i>Đơn Đặt Mua Hàng (Purchase Orders - PO)</h4>
+        <p class="text-muted small mb-0">Quản lý quy trình đặt hàng từ nhà phân phối, phê duyệt và nhập kho tự động</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Supplier/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-truck me-1"></i> Nhà Cung Cấp
+        </a>
+        <a href="/PurchaseOrder/Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Lập Đơn Mua Hàng (PO)
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="text-muted small fw-semibold">Tổng Giá Trị Đơn PO</div>
+            <div class="fs-4 fw-bold text-primary mt-1">@totalAmount.ToString("N0") đ</div>
+            <div class="small text-muted mt-1">@Model.Count() đơn hàng</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="text-muted small fw-semibold">Chờ Phê Duyệt</div>
+            <div class="fs-4 fw-bold text-warning mt-1">@ViewBag.PendingCount đơn</div>
+            <div class="small text-muted mt-1">Cần quản lý xác nhận</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="text-muted small fw-semibold">Đã Duyệt (Chờ Hàng Về)</div>
+            <div class="fs-4 fw-bold text-info mt-1">@ViewBag.ApprovedCount đơn</div>
+            <div class="small text-muted mt-1">Sẵn sàng nhận hàng vào kho</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="text-muted small fw-semibold">Đã Nhập Kho Hoàn Tất</div>
+            <div class="fs-4 fw-bold text-success mt-1">@ViewBag.ReceivedCount đơn</div>
+            <div class="small text-muted mt-1">Đã tăng tồn kho thực tế</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bộ Lọc -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" 
+                       placeholder="Tìm theo mã PO, tên NCC, ghi chú..." />
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="PendingApproval" selected="@(ViewBag.Status == "PendingApproval")">Chờ Duyệt</option>
+                    <option value="Approved" selected="@(ViewBag.Status == "Approved")">Đã Duyệt</option>
+                    <option value="Received" selected="@(ViewBag.Status == "Received")">Đã Nhập Kho</option>
+                    <option value="Cancelled" selected="@(ViewBag.Status == "Cancelled")">Đã Hủy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="supplierId" class="form-select">
+                    <option value="">-- Tất cả nhà cung cấp --</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.Id" selected="@(ViewBag.SupplierId == s.Id)">@s.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="branchId" class="form-select">
+                    <option value="">-- Tất cả chi nhánh --</option>
+                    @foreach (var b in branches)
+                    {
+                        <option value="@b.Id" selected="@(ViewBag.BranchId == b.Id)">@b.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-filter"></i> Lọc</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng Danh Sách Đơn PO -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Mã Đơn PO</th>
+                    <th>Nhà Cung Cấp</th>
+                    <th>Chi Nhánh Nhập</th>
+                    <th>Ngày Đặt</th>
+                    <th>Tổng Tiền</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end">Chi Tiết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/PurchaseOrder/ChiTiet/@item.Id" class="fw-bold font-monospace text-primary text-decoration-none">
+                                    @item.POCode
+                                </a>
+                                <div class="text-muted" style="font-size: 11px;">Tạo bởi: @item.Creator.Username</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@item.Supplier.Name</div>
+                                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">@item.Supplier.Code</span>
+                            </td>
+                            <td>
+                                <div><i class="bi bi-geo-alt me-1 text-muted"></i>@item.Branch.Name</div>
+                            </td>
+                            <td>
+                                <div class="small">@item.OrderDate.ToString("dd/MM/yyyy")</div>
+                                @if (item.ExpectedDeliveryDate.HasValue)
+                                {
+                                    <div class="text-muted" style="font-size: 11px;">Giao: @item.ExpectedDeliveryDate.Value.ToString("dd/MM/yyyy")</div>
+                                }
+                            </td>
+                            <td>
+                                <div class="fw-bold text-main">@item.FinalAmount.ToString("N0") đ</div>
+                                @if (item.PaidAmount > 0)
+                                {
+                                    <div class="text-muted" style="font-size: 11px;">Đã trả: @item.PaidAmount.ToString("N0") đ</div>
+                                }
+                            </td>
+                            <td>
+                                @switch (item.Status)
+                                {
+                                    case "PendingApproval":
+                                        <span class="badge bg-warning-subtle text-warning border"><i class="bi bi-clock me-1"></i>Chờ duyệt</span>
+                                        break;
+                                    case "Approved":
+                                        <span class="badge bg-info-subtle text-info border"><i class="bi bi-check2 me-1"></i>Đã duyệt (Chờ hàng)</span>
+                                        break;
+                                    case "Received":
+                                        <span class="badge bg-success-subtle text-success border"><i class="bi bi-box-seam me-1"></i>Đã nhập kho</span>
+                                        break;
+                                    case "Cancelled":
+                                        <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">@item.Status</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a href="/PurchaseOrder/ChiTiet/@item.Id" class="btn btn-sm btn-outline-primary py-1 px-3">
+                                    Xem chi tiết &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Không tìm thấy đơn mua hàng nào phù hợp
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

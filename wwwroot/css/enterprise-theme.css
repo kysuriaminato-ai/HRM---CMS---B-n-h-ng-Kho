@@ -1,0 +1,518 @@
+/* ==========================================================================
+   TITAN COBALT & NORDIC CLEAN - ENTERPRISE THEME SYSTEM 2026
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    /* Fonts */
+    --erp-font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --erp-font-mono: 'JetBrains Mono', monospace;
+
+    /* Light Mode Tokens */
+    --erp-bg-body: #F8FAFC;
+    --erp-bg-surface: #FFFFFF;
+    --erp-bg-card: #FFFFFF;
+    --erp-bg-subtle: #F1F5F9;
+    --erp-bg-sidebar: #0F172A;
+    --erp-sidebar-text: #E2E8F0;
+    --erp-sidebar-muted: #94A3B8;
+    --erp-sidebar-active: rgba(37, 99, 235, 0.2);
+    --erp-sidebar-border: rgba(255, 255, 255, 0.08);
+
+    --erp-border-color: #E2E8F0;
+    --erp-border-subtle: rgba(226, 232, 240, 0.8);
+    --erp-text-main: #0F172A;
+    --erp-text-secondary: #334155;
+    --erp-text-muted: #64748B;
+
+    /* Brand Accent Colors */
+    --erp-primary: #2563EB;
+    --erp-primary-rgb: 37, 99, 235;
+    --erp-primary-hover: #1D4ED8;
+    --erp-primary-subtle: #EFF6FF;
+
+    --erp-success: #10B981;
+    --erp-success-subtle: #ECFDF5;
+    --erp-warning: #F59E0B;
+    --erp-warning-subtle: #FFFBEB;
+    --erp-danger: #EF4444;
+    --erp-danger-subtle: #FEF2F2;
+    --erp-info: #06B6D4;
+    --erp-purple: #6366F1;
+
+    /* Shadows */
+    --erp-card-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+    --erp-elevated-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    --erp-modal-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+
+    /* Form & UI */
+    --erp-radius-sm: 6px;
+    --erp-radius-md: 10px;
+    --erp-radius-lg: 14px;
+    --erp-radius-xl: 18px;
+    --erp-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* ==========================================================================
+   DARK MODE TOKENS
+   ========================================================================== */
+[data-bs-theme="dark"], body.dark-mode {
+    --erp-bg-body: #0B0F19;
+    --erp-bg-surface: #111827;
+    --erp-bg-card: #1E293B;
+    --erp-bg-subtle: #172033;
+    --erp-bg-sidebar: #070B14;
+    --erp-sidebar-text: #F1F5F9;
+    --erp-sidebar-muted: #64748B;
+    --erp-sidebar-active: rgba(59, 130, 246, 0.25);
+    --erp-sidebar-border: rgba(255, 255, 255, 0.06);
+
+    --erp-border-color: #334155;
+    --erp-border-subtle: rgba(51, 65, 85, 0.6);
+    --erp-text-main: #F8FAFC;
+    --erp-text-secondary: #CBD5E1;
+    --erp-text-muted: #94A3B8;
+
+    --erp-primary: #3B82F6;
+    --erp-primary-rgb: 59, 130, 246;
+    --erp-primary-hover: #60A5FA;
+    --erp-primary-subtle: rgba(59, 130, 246, 0.15);
+
+    --erp-success: #34D399;
+    --erp-success-subtle: rgba(16, 185, 129, 0.15);
+    --erp-warning: #FBBF24;
+    --erp-warning-subtle: rgba(245, 158, 11, 0.15);
+    --erp-danger: #F87171;
+    --erp-danger-subtle: rgba(239, 68, 68, 0.15);
+    --erp-info: #38BDF8;
+
+    --erp-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --erp-elevated-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    --erp-modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    --erp-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* ==========================================================================
+   GLOBAL BASE STYLES
+   ========================================================================== */
+body {
+    background-color: var(--erp-bg-body) !important;
+    color: var(--erp-text-main) !important;
+    font-family: var(--erp-font-main) !important;
+    letter-spacing: -0.01em;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Thẻ Card & Containers */
+.card, .erp-card {
+    background-color: var(--erp-bg-card) !important;
+    border: 1px solid var(--erp-border-color) !important;
+    border-radius: var(--erp-radius-lg) !important;
+    box-shadow: var(--erp-card-shadow) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-header, .erp-card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--erp-border-color) !important;
+}
+
+.card-footer {
+    background-color: transparent !important;
+    border-top: 1px solid var(--erp-border-color) !important;
+}
+
+/* Hiệu ứng nổi nhẹ khi di chuột */
+.hover-elevate {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.hover-elevate:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--erp-elevated-shadow) !important;
+}
+
+/* Bảng dữ liệu hiện đại */
+.table {
+    --bs-table-bg: transparent !important;
+    color: var(--erp-text-main) !important;
+    border-color: var(--erp-border-color) !important;
+}
+
+.table thead th {
+    background-color: var(--erp-bg-subtle) !important;
+    color: var(--erp-text-secondary) !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.6px !important;
+    border-bottom: 1px solid var(--erp-border-color) !important;
+    padding: 12px 16px !important;
+}
+
+.table tbody td {
+    border-bottom: 1px solid var(--erp-border-color) !important;
+    padding: 14px 16px !important;
+    vertical-align: middle;
+    font-size: 13.5px;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: var(--erp-primary-subtle) !important;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    background-color: var(--erp-bg-surface) !important;
+    border: 1px solid var(--erp-border-color) !important;
+    color: var(--erp-text-main) !important;
+    border-radius: var(--erp-radius-md) !important;
+    font-size: 13.5px !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--erp-primary) !important;
+    box-shadow: var(--erp-focus-ring) !important;
+}
+
+.input-group-text {
+    background-color: var(--erp-bg-subtle) !important;
+    border-color: var(--erp-border-color) !important;
+    color: var(--erp-text-muted) !important;
+}
+
+/* Sidebar Enterprise */
+.erp-sidebar {
+    background-color: var(--erp-bg-sidebar) !important;
+    border-right: 1px solid var(--erp-sidebar-border) !important;
+    width: 260px;
+    z-index: 1040;
+}
+
+.erp-sidebar-brand {
+    border-bottom: 1px solid var(--erp-sidebar-border) !important;
+    color: #FFFFFF !important;
+}
+
+.erp-nav-item {
+    color: var(--erp-sidebar-text) !important;
+    border-radius: var(--erp-radius-md);
+    margin: 2px 10px;
+    padding: 10px 14px;
+    transition: all 0.15s ease;
+}
+
+.erp-nav-item:hover {
+    background-color: var(--erp-sidebar-active) !important;
+    color: #FFFFFF !important;
+    transform: translateX(3px);
+}
+
+.erp-nav-item.active {
+    background-color: var(--erp-primary) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+/* Topbar Header */
+.erp-topbar {
+    background-color: var(--erp-bg-surface) !important;
+    border-bottom: 1px solid var(--erp-border-color) !important;
+    backdrop-filter: blur(8px);
+}
+
+/* Quick Search Trigger Pill */
+.command-palette-trigger {
+    background-color: var(--erp-bg-subtle);
+    border: 1px solid var(--erp-border-color);
+    color: var(--erp-text-muted);
+    border-radius: var(--erp-radius-md);
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.command-palette-trigger:hover {
+    border-color: var(--erp-primary);
+    color: var(--erp-text-main);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+kbd {
+    background-color: var(--erp-bg-surface);
+    color: var(--erp-text-secondary);
+    border: 1px solid var(--erp-border-color);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 2px 6px;
+    font-family: var(--erp-font-mono);
+}
+
+/* Modal Command Palette */
+.command-palette-modal .modal-content {
+    background-color: var(--erp-bg-surface) !important;
+    border: 1px solid var(--erp-border-color) !important;
+    border-radius: var(--erp-radius-xl) !important;
+    box-shadow: var(--erp-modal-shadow) !important;
+    overflow: hidden;
+}
+
+.command-palette-input {
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 16px !important;
+    background: transparent !important;
+    color: var(--erp-text-main) !important;
+    padding: 16px 20px !important;
+}
+
+.command-palette-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.command-palette-results {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.command-palette-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--erp-text-muted);
+    padding: 10px 20px 4px 20px;
+}
+
+.command-palette-item {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--erp-text-main);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+}
+
+.command-palette-item:hover, .command-palette-item.active {
+    background-color: var(--erp-primary-subtle);
+    color: var(--erp-primary);
+}
+
+/* Skeleton Loading Animation */
+.skeleton-box {
+    display: inline-block;
+    height: 1em;
+    position: relative;
+    overflow: hidden;
+    background-color: var(--erp-border-color);
+    border-radius: var(--erp-radius-sm);
+}
+
+.skeleton-box::after {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0.5) 60%,
+        rgba(255, 255, 255, 0)
+    );
+    animation: skeleton-shimmer 2s infinite;
+    content: '';
+}
+
+@keyframes skeleton-shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.skeleton-table td .skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    background-color: var(--erp-border-color);
+    width: 80%;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   BUTTONS & BADGES ENTERPRISE POLISH
+   ========================================================================== */
+.btn {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 13.5px !important;
+    padding: 7px 14px !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: var(--erp-primary) !important;
+    border-color: var(--erp-primary) !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25) !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--erp-primary-hover) !important;
+    border-color: var(--erp-primary-hover) !important;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35) !important;
+}
+
+.badge {
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    padding: 5px 9px !important;
+    letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   UNIVERSAL DARK MODE OVERRIDES FOR BOOTSTRAP UTILITIES
+   ========================================================================== */
+[data-bs-theme="dark"] .bg-white,
+body.dark-mode .bg-white {
+    background-color: var(--erp-bg-card) !important;
+}
+
+[data-bs-theme="dark"] .bg-light,
+body.dark-mode .bg-light {
+    background-color: var(--erp-bg-subtle) !important;
+}
+
+[data-bs-theme="dark"] .text-dark,
+body.dark-mode .text-dark {
+    color: var(--erp-text-main) !important;
+}
+
+[data-bs-theme="dark"] .text-secondary,
+body.dark-mode .text-secondary {
+    color: var(--erp-text-secondary) !important;
+}
+
+[data-bs-theme="dark"] .text-muted,
+body.dark-mode .text-muted {
+    color: var(--erp-text-muted) !important;
+}
+
+[data-bs-theme="dark"] .table-light,
+body.dark-mode .table-light {
+    background-color: var(--erp-bg-subtle) !important;
+    color: var(--erp-text-secondary) !important;
+}
+
+[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > *,
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    color: var(--erp-text-main) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-menu,
+body.dark-mode .dropdown-menu {
+    background-color: var(--erp-bg-card) !important;
+    border-color: var(--erp-border-color) !important;
+    box-shadow: var(--erp-elevated-shadow) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item,
+body.dark-mode .dropdown-item {
+    color: var(--erp-text-main) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+body.dark-mode .dropdown-item:hover {
+    background-color: var(--erp-primary-subtle) !important;
+    color: var(--erp-primary) !important;
+}
+
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .border-top,
+[data-bs-theme="dark"] .border-bottom,
+[data-bs-theme="dark"] .border-start,
+[data-bs-theme="dark"] .border-end,
+body.dark-mode .border,
+body.dark-mode .border-top,
+body.dark-mode .border-bottom,
+body.dark-mode .border-start,
+body.dark-mode .border-end {
+    border-color: var(--erp-border-color) !important;
+}
+
+[data-bs-theme="dark"] .modal-content,
+body.dark-mode .modal-content {
+    background-color: var(--erp-bg-surface) !important;
+    border-color: var(--erp-border-color) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item,
+body.dark-mode .list-group-item {
+    background-color: var(--erp-bg-card) !important;
+    border-color: var(--erp-border-color) !important;
+    color: var(--erp-text-main) !important;
+}
+
+[data-bs-theme="dark"] footer,
+body.dark-mode footer {
+    background-color: var(--erp-bg-surface) !important;
+    border-color: var(--erp-border-color) !important;
+    color: var(--erp-text-muted) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--erp-border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--erp-text-muted);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (DESKTOP 1920x1080, LAPTOP & TABLET)
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .erp-sidebar {
+        position: fixed;
+        top: 0;
+        left: -270px;
+        height: 100vh;
+        transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .erp-sidebar.show {
+        left: 0;
+    }
+
+    .erp-main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .command-palette-trigger {
+        padding: 6px 10px;
+    }
+}

@@ -1,0 +1,131 @@
+@{
+    var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Nhân sự - QTVP";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản Trị Nhân Sự & Chấm Công</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/css/enterprise-theme.css" rel="stylesheet" />
+    <script>
+        (function() {
+            const match = document.cookie.match(/(^| )erp_theme=([^;]+)/);
+            const savedTheme = localStorage.getItem('erp_theme') || (match ? match[2] : null) || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+</head>
+<body class="bg-body">
+    <div class="erp-sidebar">
+        <div class="erp-sidebar-brand">
+            <i class="bi bi-people-fill fs-5 text-primary"></i> TIEN PHONG HRM
+        </div>
+        <div class="py-3">
+            <div class="px-3 pb-2 text-uppercase text-muted small fw-bold" style="font-size: 11px;">Nhân sự & Tổ chức</div>
+            <a href="/NhanSu/Index" class="erp-nav-item"><i class="bi bi-person-badge"></i> Danh Sách Nhân Sự</a>
+            <a href="/PhongBan/Index" class="erp-nav-item"><i class="bi bi-diagram-3"></i> Phòng Ban & Chức Vụ</a>
+            <a href="/HopDong/Index" class="erp-nav-item"><i class="bi bi-file-earmark-text"></i> Hợp Đồng Lao Động</a>
+            <a href="/NhanSu/BaoCao" class="erp-nav-item"><i class="bi bi-pie-chart"></i> Phân Tích & Biến Động</a>
+
+            <div class="px-3 pt-3 pb-2 text-uppercase text-muted small fw-bold" style="font-size: 11px;">Ca Kíp, Chấm Công & Đơn Từ</div>
+            <a href="/ChamCong/Index" class="erp-nav-item"><i class="bi bi-calendar2-check"></i> Chấm Công Hàng Ngày</a>
+            <a href="/ChamCong/Heatmap" class="erp-nav-item"><i class="bi bi-grid-3x3-gap"></i> Heatmap Chấm Công</a>
+            <a href="/ChamCong/BangCongThang" class="erp-nav-item"><i class="bi bi-calendar-month"></i> Bảng Công Tổng Hợp</a>
+            <a href="/DonTu/Index" class="erp-nav-item"><i class="bi bi-file-earmark-check"></i> Đơn Từ & Phê Duyệt</a>
+            <a href="/ChamCong/CaLamViec" class="erp-nav-item"><i class="bi bi-clock-history"></i> Định Nghĩa Ca Làm Việc</a>
+
+            <div class="px-3 pt-3 pb-2 text-uppercase text-muted small fw-bold" style="font-size: 11px;">Tiền Lương & Phúc Lợi</div>
+            <a href="/BangLuong/Index" class="erp-nav-item"><i class="bi bi-cash-stack"></i> Bảng Lương & Chi Trả</a>
+
+            <div class="px-3 pt-3 pb-2 text-uppercase text-muted small fw-bold" style="font-size: 11px;">Phân hệ khác</div>
+            <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item"><i class="bi bi-shield-lock"></i> Phân Quyền Hệ Thống</a>
+            @if (User.IsInRole("SUPERADMIN") || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase))
+            {
+                <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item"><i class="bi bi-people"></i> Quản Lý Tài Khoản</a>
+                <a href="/VaiTro/Index" class="erp-nav-item"><i class="bi bi-diagram-3"></i> Quản Lý Nhóm Quyền</a>
+            }
+            <a href="/BanHang/POS" class="erp-nav-item"><i class="bi bi-cart3"></i> Bán Hàng & POS</a>
+            <a href="/Kho/Index" class="erp-nav-item"><i class="bi bi-box-seam"></i> Quản Trị Kho</a>
+        </div>
+    </div>
+
+    <div class="erp-main-content">
+        <header class="erp-topbar">
+            <span class="fw-semibold text-secondary small">Phân hệ: <span class="fw-bold">Hành chính - Nhân sự & Chấm công</span></span>
+            <div class="d-flex align-items-center gap-2">
+                <!-- Quick Command Palette Trigger (Ctrl + K) -->
+                <button type="button" class="command-palette-trigger border-0 me-1" onclick="window.openCommandPalette()" title="Tìm kiếm nhanh toàn hệ thống (Ctrl + K)">
+                    <i class="bi bi-search text-muted"></i>
+                    <span class="d-none d-lg-inline text-muted small">Tìm kiếm...</span>
+                    <kbd class="ms-1 d-none d-md-inline">Ctrl K</kbd>
+                </button>
+
+                <!-- Nút Chuyển đổi Dark / Light Mode -->
+                <button type="button" class="btn btn-sm btn-outline-secondary border-0 py-1 px-2" onclick="window.toggleTheme()" title="Chuyển đổi Chế độ Sáng / Tối">
+                    <i class="bi bi-moon-stars-fill theme-toggle-icon fs-5"></i>
+                </button>
+
+                <!-- Chuông thông báo Real-time -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm position-relative py-1 px-2 border-0" type="button" id="notifDropdownBtnHrm" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo hệ thống">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 10px;">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" aria-labelledby="notifDropdownBtnHrm" style="width: 340px; max-height: 460px;">
+                        <div class="p-3 bg-dark text-white rounded-top d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold fs-6"><i class="bi bi-bell-fill me-2 text-warning"></i>Thông Báo Real-time</h6>
+                            <a href="javascript:void(0)" class="text-white-50 small text-decoration-none" onclick="fetch('/Notification/MarkAllAsRead', {method:'POST'}).then(() => window.refreshNotificationDropdown())">Đã đọc hết</a>
+                        </div>
+                        <div id="notificationDropdownList" style="max-height: 320px; overflow-y: auto;">
+                            <div class="text-center py-4 text-muted small"><i class="bi bi-arrow-repeat spin d-block mb-1"></i>Đang tải...</div>
+                        </div>
+                        <div class="p-2 text-center bg-light rounded-bottom border-top">
+                            <a href="/Notification/Index" class="small fw-semibold text-decoration-none text-primary">Xem tất cả thông báo &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="small fw-semibold"><i class="bi bi-person-circle me-1"></i> @fullName</span>
+                <a href="/" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Xem trang chủ"><i class="bi bi-globe"></i> Trang Public</a>
+                <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-erp-outline py-1 px-2 text-danger">Đăng xuất</button>
+                </form>
+            </div>
+        </header>
+        <main class="p-4 flex-grow-1">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center py-2 px-3 mb-3" role="alert">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    <div class="small fw-semibold">@TempData["SuccessMessage"]</div>
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center py-2 px-3 mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div class="small fw-semibold">@TempData["ErrorMessage"]</div>
+                    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/js/security.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/js/enterprise-notifications.js"></script>
+    <script src="~/js/enterprise-theme.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

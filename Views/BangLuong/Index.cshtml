@@ -1,0 +1,282 @@
+@model ERP_HRM_CMS.Models.Entities.PayrollPeriod
+@{
+    ViewData["Title"] = $"Bảng Lương Doanh Nghiệp - Kỳ {Model?.Month:D2}/{Model?.Year}";
+    Layout = "_HRMLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-cash-stack text-success me-2"></i>@Model?.Name</h4>
+        <p class="text-muted small mb-0">Hệ thống tính toán lương tự động dựa trên hợp đồng, dữ liệu chấm công thực tế, đơn từ và thuế TNCN</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="/BangLuong/ExportExcel/@Model?.Id" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel Ngân Hàng</a>
+        
+        <form method="post" asp-action="GuiPhieuLuong" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn gửi thông báo phiếu lương Real-time tới TOÀN BỘ nhân sự?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="payrollPeriodId" value="@Model?.Id" />
+            <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-send-check me-1"></i>Gửi Phiếu Lương Hàng Loạt</button>
+        </form>
+
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTinhLuong">
+            <i class="bi bi-calculator me-1"></i>Tính Lại Lương Tự Động
+        </button>
+    </div>
+</div>
+
+<!-- 1. BẢNG ĐIỀU KHIỂN & BỘ LỌC KỲ LƯƠNG -->
+<div class="erp-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold">Tháng Lương</label>
+            <select name="month" class="form-select form-select-sm">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(m == ViewBag.SelectedMonth)">Tháng @m</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold">Năm</label>
+            <select name="year" class="form-select form-select-sm">
+                @for (int y = 2024; y <= 2027; y++)
+                {
+                    <option value="@y" selected="@(y == ViewBag.SelectedYear)">Năm @y</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Phòng Ban</label>
+            <select name="departmentId" class="form-select form-select-sm">
+                <option value="">-- Tất cả phòng ban --</option>
+                @if (ViewBag.Departments != null)
+                {
+                    @foreach (var d in (IEnumerable<ERP_HRM_CMS.Models.Entities.Department>)ViewBag.Departments)
+                    {
+                        <option value="@d.Id" selected="@(d.Id == ViewBag.DepartmentId)">@d.Name</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Tìm Kiếm Nhân Sự</label>
+            <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control form-control-sm" placeholder="Mã NV, Họ tên..." />
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-search me-1"></i>Xem Kỳ</button>
+            <a href="/BangLuong/Index" class="btn btn-outline-secondary btn-sm" title="Hiện tại"><i class="bi bi-calendar-event"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- 2. KPI CARDS TỔNG QUAN TÀI CHÍNH KỲ LƯƠNG -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-wallet2 fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tổng Quỹ Lương (Gross)</div>
+                <div class="fs-4 fw-bold text-primary">@(Model?.TotalGrossSalary.ToString("N0") ?? "0") đ</div>
+                <div class="small text-muted" style="font-size: 11px;">Chưa trừ BHXH & Thuế</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
+                <i class="bi bi-cash-coin fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tổng Thực Lĩnh (Net)</div>
+                <div class="fs-4 fw-bold text-success">@(Model?.TotalNetSalary.ToString("N0") ?? "0") đ</div>
+                <div class="small text-muted" style="font-size: 11px;">Chuyển khoản nhân viên</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
+                <i class="bi bi-shield-shaded fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Bảo Hiểm Trích Nộp (10.5%)</div>
+                <div class="fs-4 fw-bold text-info">@(Model?.TotalInsurance.ToString("N0") ?? "0") đ</div>
+                <div class="small text-muted" style="font-size: 11px;">BHXH, BHYT, BHTN</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-receipt-cutoff fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Thuế TNCN Tạm Tính</div>
+                <div class="fs-4 fw-bold text-warning">@(Model?.TotalPIT.ToString("N0") ?? "0") đ</div>
+                <div class="small text-muted" style="font-size: 11px;">Biểu lũy tiến từng phần</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. BẢNG CHI TIẾT LƯƠNG NHÂN SỰ -->
+<div class="erp-card shadow-sm overflow-hidden mb-4">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="fw-bold">
+            <i class="bi bi-table me-2 text-primary"></i>Danh Sách Bảng Lương Chi Tiết (@(Model?.SalarySlips?.Count ?? 0) nhân sự)
+        </div>
+        <div class="small text-muted">
+            Công chuẩn: <strong class="text-dark">@(Model?.StandardWorkDays ?? 22) ngày</strong> | Trạng thái: <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">@(Model?.Status ?? "DRAFT")</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th>Nhân Sự</th>
+                    <th>Chức Vụ & Phòng Ban</th>
+                    <th class="text-end">Lương HĐ</th>
+                    <th class="text-center">Công Thực</th>
+                    <th class="text-end">Lương Ngày Công</th>
+                    <th class="text-end">Phụ Cấp & Thưởng</th>
+                    <th class="text-end">Tổng Thu Nhập (Gross)</th>
+                    <th class="text-end">Giảm Trừ (BH+Thuế)</th>
+                    <th class="text-end text-success">THỰC LĨNH (NET)</th>
+                    <th class="text-center" style="width: 100px;">Trạng Thái</th>
+                    <th class="text-end" style="width: 130px;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.SalarySlips != null && Model.SalarySlips.Any())
+                {
+                    int stt = 1;
+                    @foreach (var slip in Model.SalarySlips.OrderBy(s => s.Employee.EmployeeCode))
+                    {
+                        decimal totalAllowances = slip.PositionAllowance + slip.LunchAllowance + slip.OtherAllowance + slip.Bonus;
+                        decimal totalDeductions = slip.TotalInsurance + slip.PersonalIncomeTax + slip.LatePenalty;
+                        <tr>
+                            <td class="text-center text-muted">@(stt++)</td>
+                            <td>
+                                <div class="fw-bold text-dark">@slip.Employee.FullName</div>
+                                <div class="font-monospace text-muted small">@slip.Employee.EmployeeCode</div>
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-primary">@(slip.Employee.Position?.Name ?? "-")</div>
+                                <div class="text-muted" style="font-size: 11px;">@(slip.Employee.Department?.Name ?? "-")</div>
+                            </td>
+                            <td class="text-end font-monospace">@slip.BasicSalary.ToString("N0") đ</td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border fw-bold">@slip.ActualWorkDays / @slip.StandardDays</span>
+                                @if (slip.PaidLeaveDays > 0)
+                                {
+                                    <div class="text-info" style="font-size: 10px;">+@slip.PaidLeaveDays phép</div>
+                                }
+                                @if (slip.OvertimeHours > 0)
+                                {
+                                    <div class="text-warning" style="font-size: 10px;">+@slip.OvertimeHours h OT</div>
+                                }
+                            </td>
+                            <td class="text-end font-monospace">@slip.StandardWorkSalary.ToString("N0") đ</td>
+                            <td class="text-end font-monospace small">
+                                +@totalAllowances.ToString("N0") đ
+                            </td>
+                            <td class="text-end font-monospace fw-bold text-primary">
+                                @slip.GrossSalary.ToString("N0") đ
+                            </td>
+                            <td class="text-end font-monospace text-danger small">
+                                -@totalDeductions.ToString("N0") đ
+                            </td>
+                            <td class="text-end font-monospace fw-bold text-success fs-6">
+                                @slip.NetSalary.ToString("N0") đ
+                            </td>
+                            <td class="text-center">
+                                @if (slip.Status == "SENT")
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check me-1"></i>Đã Gửi</span>
+                                }
+                                else if (slip.Status == "CONFIRMED")
+                                {
+                                    <span class="badge bg-primary text-white"><i class="bi bi-check2-all me-1"></i>Đã Ký</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Dự Thảo</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/BangLuong/PhieuLuong/@slip.Id" class="btn btn-outline-primary" title="Xem & In Phiếu Lương"><i class="bi bi-eye"></i> Phiếu</a>
+                                    <form method="post" asp-action="GuiPhieuLuong" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="payrollPeriodId" value="@Model.Id" />
+                                        <input type="hidden" name="employeeId" value="@slip.EmployeeId" />
+                                        <button type="submit" class="btn btn-outline-secondary" title="Gửi riêng nhân sự này"><i class="bi bi-send"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="12" class="text-center py-5 text-muted">
+                            <i class="bi bi-calculator fs-1 d-block mb-2"></i>
+                            Kỳ lương chưa được tính toán. Nhấn <strong>"Tính Lại Lương Tự Động"</strong> để bắt đầu tổng hợp.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL TÍNH LƯƠNG TỰ ĐỘNG -->
+<div class="modal fade" id="modalTinhLuong" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" asp-action="TinhLuong" class="modal-content">
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-calculator-fill text-primary me-2"></i>Tính Toán Bảng Lương Doanh Nghiệp</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    Thuật toán sẽ quét toàn bộ hợp đồng lao động, dữ liệu chấm công từ ngày 01 đến ngày cuối tháng, đơn xin nghỉ phép/công tác đã duyệt để chốt lương chính xác.
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">Tháng Cần Tính</label>
+                        <select name="month" class="form-select form-select-sm">
+                            @for (int m = 1; m <= 12; m++)
+                            {
+                                <option value="@m" selected="@(m == ViewBag.SelectedMonth)">Tháng @m</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">Năm</label>
+                        <select name="year" class="form-select form-select-sm">
+                            @for (int y = 2024; y <= 2027; y++)
+                            {
+                                <option value="@y" selected="@(y == ViewBag.SelectedYear)">Năm @y</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Số Ngày Công Chuẩn Của Tháng (Standard Work Days)</label>
+                        <input type="number" name="standardDays" class="form-control form-control-sm font-monospace fw-bold text-primary" value="22" min="1" max="31" required />
+                        <span class="text-muted" style="font-size: 11px;">(Doanh nghiệp thường áp dụng 22 ngày làm việc thứ 2 đến thứ 6)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-gear-wide-connected me-1"></i>Bắt Đầu Chạy Tính Lương</button>
+            </div>
+        </form>
+    </div>
+</div>

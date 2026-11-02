@@ -1,0 +1,316 @@
+@model IEnumerable<ERP_HRM_CMS.Models.Entities.LeaveRequest>
+@{
+    ViewData["Title"] = "Quản Lý Đơn Từ & Quy Trình Phê Duyệt";
+    Layout = "_HRMLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-check-fill text-primary me-2"></i>Quy Trình Phê Duyệt Đơn Từ Trực Tuyến</h4>
+        <p class="text-muted small mb-0">Tiếp nhận, xử lý đa cấp (Trưởng bộ phận &rarr; Ban Giám đốc) và tự động đồng bộ thẻ chấm công</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/ChamCong/Heatmap" class="btn btn-outline-secondary btn-sm"><i class="bi bi-grid-3x3-gap me-1"></i>Xem Heatmap Công</a>
+        <a href="/DonTu/Create" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Tạo Đơn Từ Mới</a>
+    </div>
+</div>
+
+<!-- 1. KPI CARDS THỐNG KÊ NHANH -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-files fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tổng Số Đơn Từ</div>
+                <div class="fs-4 fw-bold">@ViewBag.TotalCount</div>
+                <div class="small text-muted" style="font-size: 11px;">Toàn hệ thống</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-hourglass-split fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Chờ Cấp 1 Duyệt</div>
+                <div class="fs-4 fw-bold text-warning">@ViewBag.PendingCount</div>
+                <div class="small text-muted" style="font-size: 11px;">Trưởng phòng cần xử lý</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
+                <i class="bi bi-person-check fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Chờ Ban Giám Đốc</div>
+                <div class="fs-4 fw-bold text-info">@ViewBag.DeptApprovedCount</div>
+                <div class="small text-muted" style="font-size: 11px;">Đã qua duyệt cấp 1</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
+                <i class="bi bi-check-all fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Đã Hoàn Tất Duyệt</div>
+                <div class="fs-4 fw-bold text-success">@ViewBag.ApprovedCount</div>
+                <div class="small text-muted" style="font-size: 11px;">Đã đồng bộ chấm công</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. BỘ LỌC TÌM KIẾM ĐA CHIỀU -->
+<div class="erp-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Trạng Thái Xử Lý</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">-- Tất cả trạng thái --</option>
+                <option value="CHO_DUYET" selected="@(ViewBag.Status == "CHO_DUYET")">Chờ Trưởng phòng duyệt</option>
+                <option value="TRUONG_PHONG_DUYET" selected="@(ViewBag.Status == "TRUONG_PHONG_DUYET")">Trưởng phòng đã duyệt (Chờ GĐ)</option>
+                <option value="GIAM_DOC_DUYET" selected="@(ViewBag.Status == "GIAM_DOC_DUYET")">Giám đốc đã duyệt (Hoàn tất)</option>
+                <option value="TU_CHOI" selected="@(ViewBag.Status == "TU_CHOI")">Bị từ chối</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Loại Đơn Từ</label>
+            <select name="type" class="form-select form-select-sm">
+                <option value="">-- Tất cả loại đơn --</option>
+                <option value="ANNUAL_LEAVE" selected="@(ViewBag.Type == "ANNUAL_LEAVE")">Nghỉ phép năm</option>
+                <option value="SICK_LEAVE" selected="@(ViewBag.Type == "SICK_LEAVE")">Nghỉ ốm / Khám bệnh</option>
+                <option value="LATE_EARLY" selected="@(ViewBag.Type == "LATE_EARLY")">Đi muộn / Về sớm</option>
+                <option value="BUSINESS_TRIP" selected="@(ViewBag.Type == "BUSINESS_TRIP")">Công tác</option>
+                <option value="UNPAID_LEAVE" selected="@(ViewBag.Type == "UNPAID_LEAVE")">Nghỉ không lương</option>
+                <option value="OVERTIME" selected="@(ViewBag.Type == "OVERTIME")">Làm thêm giờ (OT)</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold">Phòng Ban</label>
+            <select name="departmentId" asp-items="ViewBag.Departments" class="form-select form-select-sm">
+                <option value="">-- Tất cả phòng ban --</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-filter me-1"></i>Lọc Dữ Liệu</button>
+            <a href="/DonTu/Index" class="btn btn-outline-secondary btn-sm" title="Đặt lại"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- 3. BẢNG DANH SÁCH ĐƠN TỪ -->
+<div class="erp-card shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table erp-table mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 130px;">Mã Đơn</th>
+                    <th>Nhân Sự Nộp Đơn</th>
+                    <th>Loại Đơn</th>
+                    <th>Thời Gian Nghỉ / Công Tác</th>
+                    <th>Số Ngày</th>
+                    <th>Lý Do & Ghi Chú</th>
+                    <th style="width: 170px;">Trạng Thái</th>
+                    <th class="text-end" style="width: 180px;">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fw-bold text-primary font-monospace">@item.RequestCode</span>
+                                <div class="text-muted" style="font-size: 11px;">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@item.Employee.FullName</div>
+                                <div class="text-muted small">
+                                    <span class="badge bg-light text-dark border">@item.Employee.EmployeeCode</span>
+                                    @(item.Employee.Department?.Name ?? "-")
+                                </div>
+                            </td>
+                            <td>
+                                @switch (item.RequestType)
+                                {
+                                    case "ANNUAL_LEAVE":
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-calendar-heart me-1"></i>Phép Năm</span>
+                                        break;
+                                    case "SICK_LEAVE":
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-heart-pulse me-1"></i>Nghỉ Ốm</span>
+                                        break;
+                                    case "LATE_EARLY":
+                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1"><i class="bi bi-clock-history me-1"></i>Đi Muộn/Về Sớm</span>
+                                        break;
+                                    case "BUSINESS_TRIP":
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1"><i class="bi bi-briefcase me-1"></i>Công Tác</span>
+                                        break;
+                                    case "OVERTIME":
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-lightning-charge me-1"></i>Làm Thêm (OT)</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">@item.RequestType</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                <div class="small fw-semibold">@item.FromDate.ToString("dd/MM/yyyy") &rarr; @item.ToDate.ToString("dd/MM/yyyy")</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark fw-bold border">@item.TotalDays ngày</span>
+                            </td>
+                            <td>
+                                <div class="small text-truncate" style="max-width: 260px;" title="@item.Reason">@item.Reason</div>
+                                @if (!string.IsNullOrEmpty(item.DepartmentHeadNote))
+                                {
+                                    <div class="text-info small" style="font-size: 11px;"><i class="bi bi-chat-left-dots me-1"></i>TP: @item.DepartmentHeadNote</div>
+                                }
+                                @if (!string.IsNullOrEmpty(item.DirectorNote))
+                                {
+                                    <div class="text-success small" style="font-size: 11px;"><i class="bi bi-check-circle me-1"></i>GĐ: @item.DirectorNote</div>
+                                }
+                            </td>
+                            <td>
+                                @switch (item.Status)
+                                {
+                                    case "CHO_DUYET":
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Chờ Trưởng Phòng</span>
+                                        break;
+                                    case "TRUONG_PHONG_DUYET":
+                                        <span class="badge bg-info text-white"><i class="bi bi-person-check me-1"></i>Chờ Giám Đốc</span>
+                                        break;
+                                    case "GIAM_DOC_DUYET":
+                                        <span class="badge bg-success"><i class="bi bi-check2-all me-1"></i>Đã Phê Duyệt</span>
+                                        break;
+                                    case "TU_CHOI":
+                                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Bị Từ Chối</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">@item.Status</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    @if (item.Status == "CHO_DUYET")
+                                    {
+                                        <button type="button" class="btn btn-outline-primary" onclick="openApprovalModal(@item.Id, '@item.RequestCode', 'TP')" title="Trưởng phòng duyệt"><i class="bi bi-check-lg"></i> Duyệt TP</button>
+                                        <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@item.Id, '@item.RequestCode')" title="Từ chối"><i class="bi bi-x-lg"></i></button>
+                                    }
+                                    else if (item.Status == "TRUONG_PHONG_DUYET")
+                                    {
+                                        <button type="button" class="btn btn-success text-white" onclick="openApprovalModal(@item.Id, '@item.RequestCode', 'GD')" title="Giám đốc duyệt hoàn tất"><i class="bi bi-check-all"></i> Duyệt GĐ</button>
+                                        <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@item.Id, '@item.RequestCode')" title="Từ chối"><i class="bi bi-x-lg"></i></button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small fst-italic">Đã hoàn tất</span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Không tìm thấy đơn từ nào phù hợp với bộ lọc hiện tại.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL DUYỆT ĐƠN -->
+<div class="modal fade" id="modalDuyetDon" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" asp-action="Duyet" class="modal-content">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="duyetDonId" />
+            <input type="hidden" name="level" id="duyetDonLevel" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="duyetDonTitle"><i class="bi bi-check-circle-fill text-success me-2"></i>Phê Duyệt Đơn Từ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    Đơn đang xử lý: <strong id="duyetDonCodeText"></strong>.
+                    <div id="duyetDonHelpText" class="mt-1"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Ý Kiến Phê Duyệt / Ghi Chú Phân Công</label>
+                    <textarea name="note" class="form-control" rows="3" placeholder="Nhập ý kiến chỉ đạo hoặc ghi chú..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Xác Nhận Phê Duyệt</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL TỪ CHỐI ĐƠN -->
+<div class="modal fade" id="modalTuChoiDon" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" asp-action="TuChoi" class="modal-content">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="tuChoiDonId" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-circle-fill me-2"></i>Từ Chối Đơn Từ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2 small mb-3">
+                    Đơn bị từ chối: <strong id="tuChoiDonCodeText"></strong>. Hệ thống sẽ gửi thông báo giải thích lý do tới nhân sự.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-danger">Lý Do Từ Chối <span class="text-danger">*</span></label>
+                    <textarea name="reason" class="form-control" rows="3" required placeholder="Nhập lý do từ chối cụ thể..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Xác Nhận Từ Chối</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openApprovalModal(id, code, level) {
+            document.getElementById('duyetDonId').value = id;
+            document.getElementById('duyetDonLevel').value = level;
+            document.getElementById('duyetDonCodeText').innerText = code;
+            
+            if (level === 'TP') {
+                document.getElementById('duyetDonTitle').innerHTML = '<i class="bi bi-person-check text-primary me-2"></i>Trưởng Bộ Phận Duyệt Đơn';
+                document.getElementById('duyetDonHelpText').innerText = 'Sau khi duyệt, đơn sẽ chuyển lên cấp Ban Giám Đốc phê duyệt cuối cùng.';
+            } else {
+                document.getElementById('duyetDonTitle').innerHTML = '<i class="bi bi-check2-all text-success me-2"></i>Ban Giám Đốc Phê Duyệt Cuối Cùng';
+                document.getElementById('duyetDonHelpText').innerText = 'Sau khi Giám đốc phê duyệt, hệ thống sẽ tự động cập nhật thẻ chấm công của nhân sự.';
+            }
+            
+            new bootstrap.Modal(document.getElementById('modalDuyetDon')).show();
+        }
+
+        function openRejectModal(id, code) {
+            document.getElementById('tuChoiDonId').value = id;
+            document.getElementById('tuChoiDonCodeText').innerText = code;
+            new bootstrap.Modal(document.getElementById('modalTuChoiDon')).show();
+        }
+    </script>
+}

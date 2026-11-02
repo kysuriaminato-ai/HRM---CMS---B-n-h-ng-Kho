@@ -1,0 +1,88 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.StockTransactionCreateDto
+@{
+    Layout = "_WarehouseLayout";
+    ViewData["Title"] = "Lập Phiếu Xuất Kho";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-box-arrow-up-right me-1"></i> Lập Phiếu Xuất Kho Hàng Hóa</span>
+                <a href="/Kho/Index?branchId=@Model.BranchId" class="btn btn-sm btn-erp-outline">Quay lại tồn kho</a>
+            </div>
+            <form asp-action="XuatKho" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="BranchId" class="form-label small fw-semibold">Xuất Từ Chi Nhánh (*)</label>
+                        <select asp-for="BranchId" id="selBranchOut" class="form-select form-select-sm" asp-items="ViewBag.Branches" onchange="capNhatThongTinTonKhoOut()"></select>
+                        <span asp-validation-for="BranchId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Mã Chứng Từ Xuất</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="Hệ thống tự động sinh (PXK-YYYYMMDD...)" readonly />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ProductId" class="form-label small fw-semibold">Chọn Sản Phẩm Cần Xuất (*)</label>
+                    <select asp-for="ProductId" id="selProductOut" class="form-select form-select-sm" asp-items="ViewBag.Products" onchange="capNhatThongTinTonKhoOut()"></select>
+                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                </div>
+
+                <div class="alert alert-warning border-warning p-3 mb-3 small d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-exclamation-circle me-1"></i> Tồn kho khả dụng: <strong id="lblStockAvailable" class="text-danger fs-6">0</strong> <span id="lblUnitOut">Cái</span>
+                    </div>
+                    <div>
+                        Định mức an toàn: <span id="lblMinStock">5</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Quantity" class="form-label small fw-semibold">Số Lượng Xuất (*)</label>
+                        <input asp-for="Quantity" id="txtQuantityOut" type="number" min="1" class="form-control form-control-sm" required />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="UnitPrice" class="form-label small fw-semibold">Đơn Giá Xuất Kho (đ)</label>
+                        <input asp-for="UnitPrice" type="number" step="1000" class="form-control form-control-sm" placeholder="Mặc định lấy giá vốn" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Note" class="form-label small fw-semibold">Lý Do Xuất Hàng (*)</label>
+                    <textarea asp-for="Note" rows="2" class="form-control form-control-sm" placeholder="Xuất điều chuyển chi nhánh / Xuất bù hàng lỗi / Xuất mẫu dự án..." required></textarea>
+                </div>
+
+                <div class="text-end border-top pt-3">
+                    <button type="submit" class="btn btn-erp-black px-4"><i class="bi bi-check2-circle me-1"></i> Xác Nhận Xuất Kho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function capNhatThongTinTonKhoOut() {
+            const pId = document.getElementById('selProductOut').value;
+            const bId = document.getElementById('selBranchOut').value;
+            if (!pId) return;
+
+            fetch(`/Kho/LayThongTinTonKho?productId=${pId}&branchId=${bId}`)
+                .then(r => r.json())
+                .then(d => {
+                    document.getElementById('lblStockAvailable').innerText = d.stock;
+                    document.getElementById('lblUnitOut').innerText = d.unit;
+                    document.getElementById('lblMinStock').innerText = d.minAlert;
+                    document.getElementById('txtQuantityOut').setAttribute('max', d.stock);
+                });
+        }
+        capNhatThongTinTonKhoOut();
+    </script>
+}

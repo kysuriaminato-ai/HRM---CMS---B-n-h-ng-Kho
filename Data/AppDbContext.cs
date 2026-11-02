@@ -1,0 +1,410 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Helpers;
+
+namespace ERP_HRM_CMS.Data
+{
+    public class AppDbContext : DbContext
+    {
+        private readonly IHttpContextAccessor? _httpContextAccessor;
+
+        public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor? httpContextAccessor = null) 
+            : base(options) 
+        { 
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        // Phân hệ Auth & Phân quyền
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<Module> Modules => Set<Module>();
+        public DbSet<Permission> Permissions => Set<Permission>();
+        public DbSet<UserRole> UserRoles => Set<UserRole>();
+        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+        public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
+
+        // Phân hệ HRM
+        public DbSet<Company> Companies => Set<Company>();
+        public DbSet<Branch> Branches => Set<Branch>();
+        public DbSet<Department> Departments => Set<Department>();
+        public DbSet<Position> Positions => Set<Position>();
+        public DbSet<Employee> Employees => Set<Employee>();
+        public DbSet<EmployeeDetail> EmployeeDetails => Set<EmployeeDetail>();
+        public DbSet<Contract> Contracts => Set<Contract>();
+        public DbSet<Shift> Shifts => Set<Shift>();
+        public DbSet<AttendanceDaily> AttendanceDailies => Set<AttendanceDaily>();
+
+        // Phân hệ CMS
+        public DbSet<SiteLayout> SiteLayouts => Set<SiteLayout>();
+        public DbSet<Menu> Menus => Set<Menu>();
+        public DbSet<Content> Contents => Set<Content>();
+        public DbSet<Banner> Banners => Set<Banner>();
+        public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
+
+        // Phân hệ Bán hàng & Kho
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<Inventory> Inventories => Set<Inventory>();
+        public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+        public DbSet<CartItem> CartItems => Set<CartItem>();
+
+        // Phân hệ Lõi Doanh Nghiệp (Enterprise Core)
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<NotificationRead> NotificationReads => Set<NotificationRead>();
+
+        // Phân hệ Chuỗi Cung Ứng & SCM (Phiên 3)
+        public DbSet<Supplier> Suppliers => Set<Supplier>();
+        public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+        public DbSet<PurchaseOrderDetail> PurchaseOrderDetails => Set<PurchaseOrderDetail>();
+        public DbSet<DebtRecord> DebtRecords => Set<DebtRecord>();
+        public DbSet<DebtPayment> DebtPayments => Set<DebtPayment>();
+        public DbSet<StocktakingSheet> StocktakingSheets => Set<StocktakingSheet>();
+        public DbSet<StocktakingDetail> StocktakingDetails => Set<StocktakingDetail>();
+
+        // Phân hệ HRM Nâng Cao & Tiền Lương (Phiên 4)
+        public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+        public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
+        public DbSet<SalarySlip> SalarySlips => Set<SalarySlip>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Composite Primary Keys
+            modelBuilder.Entity<UserRole>()
+                .HasKey(ur => new { ur.UserId, ur.RoleId });
+
+            modelBuilder.Entity<RolePermission>()
+                .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+            modelBuilder.Entity<UserPermission>()
+                .HasKey(up => new { up.UserId, up.PermissionId });
+
+            modelBuilder.Entity<AttendanceDaily>()
+                .HasIndex(a => new { a.EmployeeId, a.WorkDate })
+                .IsUnique();
+
+            modelBuilder.Entity<Inventory>()
+                .HasIndex(i => new { i.ProductId, i.BranchId })
+                .IsUnique();
+
+            // Indexes duy nhất (Unique Constraints) bảo vệ tính toàn vẹn dữ liệu
+            modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+
+            // Mỗi nhân viên tối đa một tài khoản; nhiều tài khoản chưa gắn nhân viên (EmployeeId NULL) vẫn được phép.
+            // Khớp với script SQL_fix_users_employeeid_unique.sql (cùng tên IX_Users_EmployeeId).
+            modelBuilder.Entity<User>().HasIndex(u => u.EmployeeId).IsUnique().HasFilter("[EmployeeId] IS NOT NULL");
+
+            modelBuilder.Entity<NotificationRead>().HasKey(r => new { r.NotificationId, r.UserId });
+            modelBuilder.Entity<NotificationRead>()
+                .HasOne(r => r.Notification)
+                .WithMany()
+                .HasForeignKey(r => r.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Role>().HasIndex(r => r.Code).IsUnique();
+            modelBuilder.Entity<Module>().HasIndex(m => m.Code).IsUnique();
+            modelBuilder.Entity<Permission>().HasIndex(p => p.Code).IsUnique();
+
+            modelBuilder.Entity<Company>().HasIndex(c => c.Code).IsUnique();
+            modelBuilder.Entity<Branch>().HasIndex(b => b.Code).IsUnique();
+            modelBuilder.Entity<Department>().HasIndex(d => d.Code).IsUnique();
+            modelBuilder.Entity<Position>().HasIndex(p => p.Code).IsUnique();
+            modelBuilder.Entity<Employee>().HasIndex(e => e.EmployeeCode).IsUnique();
+            modelBuilder.Entity<Employee>().HasIndex(e => e.Email).IsUnique();
+            modelBuilder.Entity<Contract>().HasIndex(c => c.ContractNumber).IsUnique();
+            modelBuilder.Entity<Shift>().HasIndex(s => s.Code).IsUnique();
+
+            modelBuilder.Entity<Category>().HasIndex(c => c.Code).IsUnique();
+            modelBuilder.Entity<Category>().HasIndex(c => c.Slug).IsUnique();
+            modelBuilder.Entity<Product>().HasIndex(p => p.SKU).IsUnique();
+            modelBuilder.Entity<Product>().HasIndex(p => p.Slug).IsUnique();
+            modelBuilder.Entity<InventoryTransaction>().HasIndex(t => t.TransactionCode).IsUnique();
+            modelBuilder.Entity<Order>().HasIndex(o => o.OrderCode).IsUnique();
+
+            modelBuilder.Entity<Supplier>().HasIndex(s => s.Code).IsUnique();
+            modelBuilder.Entity<PurchaseOrder>().HasIndex(p => p.POCode).IsUnique();
+            modelBuilder.Entity<DebtPayment>().HasIndex(p => p.PaymentCode).IsUnique();
+            modelBuilder.Entity<StocktakingSheet>().HasIndex(s => s.Code).IsUnique();
+
+            modelBuilder.Entity<LeaveRequest>().HasIndex(l => l.RequestCode).IsUnique();
+            modelBuilder.Entity<PayrollPeriod>().HasIndex(p => new { p.Month, p.Year }).IsUnique();
+
+            // 1:1 Quan hệ Employee - User
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Employee)
+                .WithOne()
+                .HasForeignKey<User>(u => u.EmployeeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // 1:1 Quan hệ Employee - EmployeeDetail
+            modelBuilder.Entity<Employee>()
+                .HasOne(e => e.EmployeeDetail)
+                .WithOne(ed => ed.Employee)
+                .HasForeignKey<EmployeeDetail>(ed => ed.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cấu hình Quan hệ Cascade Delete cho các bảng chi tiết
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(od => od.Order)
+                .WithMany(o => o.OrderDetails)
+                .HasForeignKey(od => od.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PurchaseOrderDetail>()
+                .HasOne(pd => pd.PurchaseOrder)
+                .WithMany(p => p.PurchaseOrderDetails)
+                .HasForeignKey(pd => pd.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<StocktakingDetail>()
+                .HasOne(sd => sd.StocktakingSheet)
+                .WithMany(s => s.StocktakingDetails)
+                .HasForeignKey(sd => sd.StocktakingSheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DebtPayment>()
+                .HasOne(dp => dp.DebtRecord)
+                .WithMany(d => d.DebtPayments)
+                .HasForeignKey(dp => dp.DebtRecordId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cấu hình Quan hệ SCM & Tránh xung đột khóa ngoại đa đường dẫn SQL Server
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasOne(p => p.Creator)
+                .WithMany()
+                .HasForeignKey(p => p.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .HasOne(p => p.Approver)
+                .WithMany()
+                .HasForeignKey(p => p.ApprovedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DebtRecord>()
+                .HasOne(d => d.Supplier)
+                .WithMany(s => s.DebtRecords)
+                .HasForeignKey(d => d.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DebtRecord>()
+                .HasOne(d => d.Order)
+                .WithMany()
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DebtRecord>()
+                .HasOne(d => d.PurchaseOrder)
+                .WithMany()
+                .HasForeignKey(d => d.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DebtPayment>()
+                .HasOne(p => p.Creator)
+                .WithMany()
+                .HasForeignKey(p => p.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StocktakingSheet>()
+                .HasOne(s => s.Creator)
+                .WithMany()
+                .HasForeignKey(s => s.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Cấu hình Quan hệ HRM Nâng Cao (Phiên 4)
+            modelBuilder.Entity<LeaveRequest>()
+                .HasOne(l => l.Employee)
+                .WithMany()
+                .HasForeignKey(l => l.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LeaveRequest>()
+                .HasOne(l => l.DepartmentHead)
+                .WithMany()
+                .HasForeignKey(l => l.DepartmentHeadId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LeaveRequest>()
+                .HasOne(l => l.Director)
+                .WithMany()
+                .HasForeignKey(l => l.DirectorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PayrollPeriod>()
+                .HasOne(p => p.Creator)
+                .WithMany()
+                .HasForeignKey(p => p.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SalarySlip>()
+                .HasOne(s => s.PayrollPeriod)
+                .WithMany(p => p.SalarySlips)
+                .HasForeignKey(s => s.PayrollPeriodId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SalarySlip>()
+                .HasOne(s => s.Employee)
+                .WithMany()
+                .HasForeignKey(s => s.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var auditEntries = OnBeforeSaveChanges();
+            // Dữ liệu nghiệp vụ và AuditLog được lưu trong cùng một transaction (nếu chưa có transaction ngoài)
+            await using var tx = Database.CurrentTransaction == null && auditEntries.Count > 0
+                ? await Database.BeginTransactionAsync(cancellationToken)
+                : null;
+            var result = await base.SaveChangesAsync(cancellationToken);
+            await OnAfterSaveChanges(auditEntries, cancellationToken);
+            if (tx != null) await tx.CommitAsync(cancellationToken);
+            return result;
+        }
+
+        public override int SaveChanges()
+        {
+            var auditEntries = OnBeforeSaveChanges();
+            using var tx = Database.CurrentTransaction == null && auditEntries.Count > 0
+                ? Database.BeginTransaction()
+                : null;
+            var result = base.SaveChanges();
+            OnAfterSaveChanges(auditEntries, default).GetAwaiter().GetResult();
+            tx?.Commit();
+            return result;
+        }
+
+        private List<AuditEntry> OnBeforeSaveChanges()
+        {
+            ChangeTracker.DetectChanges();
+            var auditEntries = new List<AuditEntry>();
+
+            var httpContext = _httpContextAccessor?.HttpContext;
+            int? currentUserId = null;
+            string? currentUsername = null;
+            string? ipAddress = null;
+
+            if (httpContext != null)
+            {
+                var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out int uid)) currentUserId = uid;
+                else currentUserId = httpContext.Session.GetInt32("UserId");
+
+                currentUsername = httpContext.User.Identity?.Name ?? httpContext.Session.GetString("Username") ?? "System";
+                ipAddress = httpContext.Connection?.RemoteIpAddress?.ToString();
+            }
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                // Bỏ qua AuditLog và Notification để tránh vòng lặp hoặc dư thừa
+                if (entry.Entity is AuditLog || entry.Entity is Notification || entry.Entity is NotificationRead || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                    continue;
+
+                var auditEntry = new AuditEntry(entry)
+                {
+                    EntityName = entry.Entity.GetType().Name,
+                    UserId = currentUserId,
+                    Username = currentUsername,
+                    IpAddress = ipAddress
+                };
+
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        auditEntry.Action = "CREATE";
+                        foreach (var prop in entry.Properties)
+                        {
+                            if (prop.Metadata.IsPrimaryKey())
+                            {
+                                auditEntry.RecordId = prop.CurrentValue?.ToString();
+                                continue;
+                            }
+                            string propName = prop.Metadata.Name;
+                            object? val = prop.CurrentValue;
+                            if (propName.Contains("Password", StringComparison.OrdinalIgnoreCase)) val = "***MASKED***";
+                            auditEntry.NewValues[propName] = val;
+                        }
+                        break;
+
+                    case EntityState.Deleted:
+                        auditEntry.Action = "DELETE";
+                        foreach (var prop in entry.Properties)
+                        {
+                            if (prop.Metadata.IsPrimaryKey())
+                            {
+                                auditEntry.RecordId = prop.OriginalValue?.ToString();
+                                continue;
+                            }
+                            string propName = prop.Metadata.Name;
+                            object? val = prop.OriginalValue;
+                            if (propName.Contains("Password", StringComparison.OrdinalIgnoreCase)) val = "***MASKED***";
+                            auditEntry.OldValues[propName] = val;
+                        }
+                        break;
+
+                    case EntityState.Modified:
+                        auditEntry.Action = "UPDATE";
+                        foreach (var prop in entry.Properties)
+                        {
+                            if (prop.Metadata.IsPrimaryKey())
+                            {
+                                auditEntry.RecordId = prop.CurrentValue?.ToString() ?? prop.OriginalValue?.ToString();
+                                continue;
+                            }
+                            if (prop.IsModified)
+                            {
+                                string propName = prop.Metadata.Name;
+                                object? oldVal = prop.OriginalValue;
+                                object? newVal = prop.CurrentValue;
+
+                                if (propName.Contains("Password", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    oldVal = "***MASKED***";
+                                    newVal = "***MASKED***";
+                                }
+
+                                auditEntry.ChangedColumns.Add(propName);
+                                auditEntry.OldValues[propName] = oldVal;
+                                auditEntry.NewValues[propName] = newVal;
+                            }
+                        }
+                        break;
+                }
+
+                auditEntries.Add(auditEntry);
+            }
+
+            return auditEntries;
+        }
+
+        private async Task OnAfterSaveChanges(List<AuditEntry> auditEntries, CancellationToken cancellationToken)
+        {
+            if (auditEntries == null || auditEntries.Count == 0) return;
+
+            foreach (var auditEntry in auditEntries)
+            {
+                // Cập nhật RecordId cho các bản ghi vừa được tạo (Added) nếu ban đầu chưa có hoặc đang bằng "0"
+                if (string.IsNullOrEmpty(auditEntry.RecordId) || auditEntry.RecordId == "0")
+                {
+                    foreach (var prop in auditEntry.Entry.Properties)
+                    {
+                        if (prop.Metadata.IsPrimaryKey())
+                        {
+                            auditEntry.RecordId = prop.CurrentValue?.ToString();
+                            break;
+                        }
+                    }
+                }
+
+                AuditLogs.Add(auditEntry.ToAuditLog());
+            }
+
+            await base.SaveChangesAsync(cancellationToken);
+        }
+    }
+}

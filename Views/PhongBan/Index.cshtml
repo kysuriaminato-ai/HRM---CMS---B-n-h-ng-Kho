@@ -1,0 +1,137 @@
+﻿@model List<ERP_HRM_CMS.Models.Entities.Department>
+@{
+    Layout = "_HRMLayout";
+    ViewData["Title"] = "Cơ Cấu Tổ Chức & Phòng Ban";
+    var branches = ViewBag.Branches as List<ERP_HRM_CMS.Models.Entities.Branch>;
+    var positions = ViewBag.Positions as List<ERP_HRM_CMS.Models.Entities.Position>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Cơ Cấu Tổ Chức & Chức Danh</h4>
+        <p class="text-secondary small mb-0">Quản trị sơ đồ chi nhánh, phòng ban và bảng chức vụ toàn doanh nghiệp</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Cột 1: Danh sách phòng ban -->
+    <div class="col-lg-7">
+        <div class="erp-card mb-4">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Danh Sách Phòng Ban</span>
+                <button class="btn btn-sm btn-erp-black" data-bs-toggle="collapse" data-bs-target="#formDept">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm Phòng Ban
+                </button>
+            </div>
+
+            <!-- Form thêm phòng ban ẩn -->
+            <div class="collapse p-3 bg-light border-bottom" id="formDept">
+                <form asp-action="TaoPhongBan" method="post" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-4">
+                        <input type="text" name="Code" class="form-control form-control-sm" placeholder="Mã PB (VD: HRM)" required />
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="Name" class="form-control form-control-sm" placeholder="Tên phòng ban (*)" required />
+                    </div>
+                    <div class="col-md-4">
+                        <select name="BranchId" class="form-select form-select-sm" required>
+                            @if (branches != null)
+                            {
+                                foreach (var b in branches)
+                                {
+                                    <option value="@b.Id">@b.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-sm btn-erp-black px-3">Lưu Phòng Ban</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã PB</th>
+                            <th>Tên Phòng Ban</th>
+                            <th>Chi Nhánh</th>
+                            <th class="text-center">Số Nhân Viên</th>
+                            <th class="text-end">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model)
+                        {
+                            <tr>
+                                <td><code>@d.Code</code></td>
+                                <td class="fw-bold">@d.Name</td>
+                                <td class="small text-secondary">@d.Branch?.Name</td>
+                                <td class="text-center"><span class="badge bg-light text-dark border">@d.Employees.Count</span></td>
+                                <td class="text-end">
+                                    <form asp-action="XoaPhongBan" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa phòng ban này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-erp-outline py-0 px-2 text-danger"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột 2: Bảng chức vụ / Vị trí -->
+    <div class="col-lg-5">
+        <div class="erp-card mb-4">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Chức Danh & Vị Trí</span>
+                <button class="btn btn-sm btn-erp-black" data-bs-toggle="collapse" data-bs-target="#formPos">
+                    <i class="bi bi-plus-lg me-1"></i> Thêm Vị Trí
+                </button>
+            </div>
+
+            <!-- Form thêm chức vụ ẩn -->
+            <div class="collapse p-3 bg-light border-bottom" id="formPos">
+                <form asp-action="TaoChucVu" method="post" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-5">
+                        <input type="text" name="Code" class="form-control form-control-sm" placeholder="Mã (VD: DEV_LEAD)" required />
+                    </div>
+                    <div class="col-md-7">
+                        <input type="text" name="Name" class="form-control form-control-sm" placeholder="Tên chức danh (*)" required />
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-sm btn-erp-black px-3">Lưu Chức Vụ</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Tên Vị Trí</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (positions != null)
+                        {
+                            foreach (var p in positions)
+                            {
+                                <tr>
+                                    <td><code>@p.Code</code></td>
+                                    <td class="fw-semibold">@p.Name</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

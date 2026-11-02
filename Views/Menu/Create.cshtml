@@ -1,0 +1,98 @@
+﻿@model ERP_HRM_CMS.Models.Entities.Menu
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thêm Mới Menu";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Thêm Mới Liên Kết Menu</span>
+                <a href="/Menu/Index" class="btn btn-sm btn-erp-outline">Quay lại</a>
+            </div>
+            <form asp-action="Create" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label asp-for="Title" class="form-label small fw-semibold">Tiêu Đề Menu (*)</label>
+                        <input asp-for="Title" class="form-control" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="ParentId" class="form-label small fw-semibold">Menu Cha</label>
+                        <select asp-for="ParentId" class="form-select" asp-items="ViewBag.Parents">
+                            <option value="">-- Là Menu Cấp Cao Nhất --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="LinkType" class="form-label small fw-semibold">Loại Liên Kết</label>
+                        <select asp-for="LinkType" id="selectLinkType" class="form-select" onchange="toggleLinkInputs()">
+                            <option value="FunctionPage">Trang chức năng</option>
+                            <option value="Content">Bài viết / Trang tĩnh</option>
+                            <option value="External">Đường dẫn ngoài</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-8" id="blockRefContent" style="display:none;">
+                        <label asp-for="ReferenceId" class="form-label small fw-semibold">Chọn Bài Viết Trỏ Đến</label>
+                        <select asp-for="ReferenceId" class="form-select" asp-items="ViewBag.Contents">
+                            <option value="">-- Chọn bài viết --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-8" id="blockCustomUrl">
+                        <label asp-for="CustomUrl" class="form-label small fw-semibold">Đường Dẫn URL</label>
+                        <input asp-for="CustomUrl" class="form-control" placeholder="/duong-dan" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Position" class="form-label small fw-semibold">Vị Trí Menu</label>
+                        <select asp-for="Position" class="form-select">
+                            <option value="MainNav">Thanh Menu Chính (MainNav)</option>
+                            <option value="FooterCol1">Chân Trang Cột 1</option>
+                            <option value="FooterCol2">Chân Trang Cột 2</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="OrderIndex" class="form-label small fw-semibold">Thứ Tự Sắp Xếp</label>
+                        <input asp-for="OrderIndex" type="number" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="IconClass" class="form-label small fw-semibold">Icon Class (Bootstrap Icons)</label>
+                        <input asp-for="IconClass" class="form-control" placeholder="bi bi-star" />
+                    </div>
+
+                    <div class="col-12 pt-2">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked />
+                            <label asp-for="IsActive" class="form-check-label fw-semibold small">Kích hoạt hiển thị</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4 text-end">
+                        <button type="submit" class="btn btn-erp-black px-4"><i class="bi bi-check-lg me-1"></i> Lưu Menu</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleLinkInputs() {
+            var type = document.getElementById('selectLinkType').value;
+            if (type === 'Content') {
+                document.getElementById('blockRefContent').style.display = 'block';
+                document.getElementById('blockCustomUrl').style.display = 'none';
+            } else {
+                document.getElementById('blockRefContent').style.display = 'none';
+                document.getElementById('blockCustomUrl').style.display = 'block';
+            }
+        }
+        toggleLinkInputs();
+    </script>
+}

@@ -1,0 +1,221 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
+@{
+    Layout = "_SalesLayout";
+    ViewData["Title"] = "Điểm Bán Hàng Nhanh (POS)";
+    int selectedBranchId = ViewBag.SelectedBranchId ?? 1;
+    var branches = ViewBag.Branches as List<ERP_HRM_CMS.Models.Entities.Branch>;
+}
+
+<div class="row g-3">
+    <!-- CỘT TRÁI: TÌM KIẾM & BẢNG GIÁ HÀNG HÓA -->
+    <div class="col-lg-7">
+        <div class="erp-card p-3 mb-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-upc-scan"></i></span>
+                        <input type="text" id="txtSearchPos" class="form-control" placeholder="Gõ tên, quét mã vạch hoặc SKU..." autofocus />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="selectBranchPos" class="form-select form-select-sm" onchange="doiChiNhanh(this.value)">
+                        @if (branches != null)
+                        {
+                            foreach (var b in branches)
+                            {
+                                <option value="@b.Id" selected="@(b.Id == selectedBranchId)">@b.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <span class="badge bg-light text-dark border p-2 w-100">POS ONLINE</span>
+                </div>
+            </div>
+
+            <!-- Kết quả tìm kiếm nhanh xuất hiện tại đây -->
+            <div id="posSearchResults" class="list-group mt-2" style="display:none; max-height: 280px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- Hướng dẫn phím tắt & thao tác -->
+        <div class="erp-card p-4 text-center">
+            <i class="bi bi-keyboard fs-2 text-muted mb-2"></i>
+            <h6 class="fw-bold mb-1">Gõ Barcode / SKU Để Thêm Hàng Tức Thời</h6>
+            <p class="text-secondary small mb-0">Hệ thống tự động tra cứu kho thực tế tại chi nhánh đang chọn và đưa thẳng vào đơn bán lẻ.</p>
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI: BIÊN LAI THU NGÂN & CHECKOUT -->
+    <div class="col-lg-5">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Biên Lai Bán Hàng Tại Quầy</span>
+                <span class="badge bg-dark">@Model.TotalItemsCount món</span>
+            </div>
+
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table erp-table mb-0 align-middle small">
+                    <thead>
+                        <tr>
+                            <th>Mặt Hàng</th>
+                            <th class="text-center" style="width: 90px;">SL</th>
+                            <th class="text-end">Tiền</th>
+                            <th style="width: 30px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            foreach (var it in Model.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@it.ProductName</div>
+                                        <span class="text-muted" style="font-size: 11px;">@it.UnitPrice.ToString("N0") đ</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="number" class="form-control form-control-sm text-center p-1"
+                                               value="@it.Quantity" min="1" max="@it.AvailableStock"
+                                               onchange="capNhatPosQty(@it.ProductId, this.value)" />
+                                    </td>
+                                    <td class="text-end fw-bold">@it.TotalPrice.ToString("N0") đ</td>
+                                    <td class="text-end">
+                                        <a href="javascript:void(0)" class="text-danger" onclick="xoaPosItem(@it.ProductId)"><i class="bi bi-x"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-4">Chưa có sản phẩm nào được chọn.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Form hoàn tất đơn POS -->
+            <form asp-action="XuatDonPOS" method="post" class="p-3 border-top bg-light">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="BranchId" value="@selectedBranchId" />
+
+                <div class="row g-2 mb-2 small">
+                    <div class="col-6">
+                        <label class="form-label mb-1 fw-semibold">Khách hàng:</label>
+                        <input type="text" name="CustomerName" value="Khách lẻ tại quầy" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label mb-1 fw-semibold">Số điện thoại:</label>
+                        <input type="text" name="CustomerPhone" value="0900000000" class="form-control form-control-sm" required />
+                    </div>
+                </div>
+
+                <div class="mb-2 small">
+                    <label class="form-label mb-1 fw-semibold">Hình thức thanh toán:</label>
+                    <select name="PaymentMethod" class="form-select form-select-sm">
+                        <option value="CASH">Tiền mặt (Cash)</option>
+                        <option value="BANK_TRANSFER">Chuyển khoản QR (Bank)</option>
+                        <option value="POS_CARD">Quẹt thẻ ngân hàng (POS Card)</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center py-2 border-top border-bottom my-2">
+                    <span class="fw-bold">TỔNG TIỀN PHẢI THU:</span>
+                    <span class="fw-bold fs-5 text-dark">@Model.FinalTotal.ToString("N0") đ</span>
+                </div>
+
+                <button type="submit" class="btn btn-erp-black w-100 py-2 @(Model.Items.Any() ? "" : "disabled")">
+                    <i class="bi bi-receipt me-1"></i> Thanh Toán & In Hóa Đơn
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const branchId = @selectedBranchId;
+        const txtSearch = document.getElementById('txtSearchPos');
+        const searchBox = document.getElementById('posSearchResults');
+
+        function doiChiNhanh(newBranchId) {
+            window.location.href = '/BanHang/POS?branchId=' + newBranchId;
+        }
+
+        txtSearch.addEventListener('input', function() {
+            const kw = this.value.trim();
+            if (kw.length < 1) {
+                searchBox.style.display = 'none';
+                return;
+            }
+
+            fetch(`/BanHang/TimKiemSanPhamPos?keyword=${encodeURIComponent(kw)}&branchId=${branchId}`)
+                .then(res => res.json())
+                .then(items => {
+                    if (items.length === 0) {
+                        searchBox.innerHTML = '<div class="list-group-item small text-muted">Không tìm thấy sản phẩm phù hợp.</div>';
+                        searchBox.style.display = 'block';
+                        return;
+                    }
+
+                    let html = '';
+                    items.forEach(p => {
+                        html += `
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="themNhanhPos(${p.id})">
+                                <div>
+                                    <div class="fw-bold text-dark small">${HRM.escapeHtml(p.name)}</div>
+                                    <div class="text-muted" style="font-size: 11px;">Mã: ${HRM.escapeHtml(p.sku)} | Tồn kho: <strong class="${p.stock > 0 ? 'text-success' : 'text-danger'}">${p.stock} ${HRM.escapeHtml(p.unit)}</strong></div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="fw-bold text-dark">${p.salePrice.toLocaleString()} đ</span>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    searchBox.innerHTML = html;
+                    searchBox.style.display = 'block';
+                });
+        });
+
+        function themNhanhPos(productId) {
+            fetch('/GioHang/AddToCartApi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, quantity: 1, branchId: branchId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.hasStockAlert) alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function capNhatPosQty(productId, qty) {
+            fetch('/GioHang/UpdateQuantityApi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId, newQuantity: parseInt(qty), branchId: branchId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.hasStockAlert) alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function xoaPosItem(productId) {
+            fetch('/GioHang/RemoveItemApi?productId=' + productId, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) location.reload();
+                });
+        }
+    </script>
+}

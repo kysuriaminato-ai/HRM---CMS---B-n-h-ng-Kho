@@ -1,0 +1,96 @@
+@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Trang Chủ";
+    var latestPosts = ViewBag.LatestPosts as List<ERP_HRM_CMS.Models.Entities.Content> ?? new List<ERP_HRM_CMS.Models.Entities.Content>();
+    var featuredProducts = ViewBag.FeaturedProducts as List<ERP_HRM_CMS.Models.Entities.Product> ?? new List<ERP_HRM_CMS.Models.Entities.Product>();
+}
+
+@foreach (var block in Model)
+{
+    switch (block.BlockKey)
+    {
+        case "HeroSlider":
+            @await Component.InvokeAsync("DynamicBanner", new { position = "HomeSlider" })
+            break;
+
+        case "FeatureSection":
+            <section class="py-5 bg-light border-bottom">
+                <div class="container text-center">
+                    <h3 class="fw-bold mb-3">Hệ Sinh Thái Doanh Nghiệp Tiên Phong</h3>
+                    <p class="text-secondary mx-auto mb-5" style="max-width: 600px;">Tối ưu hóa nguồn lực với hệ thống tự động hóa liên kết Nhân sự, Quản trị nội dung và Bán hàng đa kênh.</p>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="erp-card p-4 h-100 shadow-sm border-0">
+                                <i class="bi bi-people fs-1 text-primary mb-3"></i>
+                                <h5 class="fw-bold">Nhân Sự & Chấm Công</h5>
+                                <p class="small text-secondary mb-0">Tích hợp chấm công tự động, tính lương và phân quyền ca làm việc chuẩn mực.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="erp-card p-4 h-100 shadow-sm border-0">
+                                <i class="bi bi-cart3 fs-1 text-success mb-3"></i>
+                                <h5 class="fw-bold">Bán Hàng POS & Kho</h5>
+                                <p class="small text-secondary mb-0">Kiểm soát đơn hàng, tồn kho thực tế và quản lý phiếu xuất nhập tức thời.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="erp-card p-4 h-100 shadow-sm border-0">
+                                <i class="bi bi-layout-text-window-reverse fs-1 text-purple mb-3"></i>
+                                <h5 class="fw-bold">Dynamic CMS</h5>
+                                <p class="small text-secondary mb-0">Thay đổi menu, bài viết và bố cục trang web hoàn toàn bằng giao diện ma trận.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            break;
+
+        case "LatestNews":
+            <section class="py-5">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 class="fw-bold m-0">Tin Tức & Hoạt Động Mới Nhất</h4>
+                            <p class="text-muted small mb-0">Cập nhật tin tức và thông báo mới nhất từ Tập đoàn Tiên Phong</p>
+                        </div>
+                        <a href="/Public/TinTuc" class="btn btn-outline-dark btn-sm rounded-pill px-3">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
+                    </div>
+                    <div class="row g-4">
+                        @if (latestPosts.Any())
+                        {
+                            foreach (var post in latestPosts)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+                                        @if (!string.IsNullOrEmpty(post.ThumbnailUrl))
+                                        {
+                                            <img src="@post.ThumbnailUrl" class="card-img-top" alt="@post.Title" style="height: 200px; object-fit: cover;" />
+                                        }
+                                        <div class="card-body p-4">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <span class="badge bg-primary-subtle text-primary border">@post.Status</span>
+                                                <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>@post.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                            </div>
+                                            <h5 class="fw-bold card-title">
+                                                <a href="/bai-viet/@post.Slug" class="text-dark text-decoration-none hover-primary">@post.Title</a>
+                                            </h5>
+                                            <p class="card-text text-secondary small line-clamp-2">@post.Summary</p>
+                                        </div>
+                                        <div class="card-footer bg-transparent border-0 px-4 pb-4">
+                                            <a href="/bai-viet/@post.Slug" class="fw-semibold small text-primary text-decoration-none">Đọc chi tiết &rarr;</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="col-12 text-center py-4 text-muted">Chưa có bài viết nào được xuất bản.</div>
+                        }
+                    </div>
+                </div>
+            </section>
+            break;
+    }
+}

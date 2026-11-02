@@ -1,0 +1,238 @@
+@model ERP_HRM_CMS.Models.Entities.SalarySlip
+@{
+    ViewData["Title"] = $"Phiếu Lương - {Model.Employee.FullName} ({Model.PayrollPeriod.Name})";
+    Layout = "_HRMLayout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+            <a href="/BangLuong/Index?month=@Model.PayrollPeriod.Month&year=@Model.PayrollPeriod.Year" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Quay lại Bảng Lương
+            </a>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i>In Phiếu Lương (A5 / A4)
+                </button>
+            </div>
+        </div>
+
+        <div class="erp-card p-4 shadow-sm border" id="printablePayslip" style="background: #fff; color: #1e293b;">
+            <!-- 1. HEADER CÔNG TY -->
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-primary text-white p-2 text-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-building fs-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-uppercase text-primary">Tập Đoàn Công Nghệ Tiên Phong</h5>
+                        <div class="small text-muted">Hệ Thống Quản Trị Nguồn Nhân Lực Enterprise HRM</div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 fs-6">
+                        @Model.Status
+                    </span>
+                    <div class="small text-muted mt-1">Mã Phiếu: <strong class="font-monospace text-dark">PS-@Model.PayrollPeriod.Year@Model.PayrollPeriod.Month.ToString("D2")-@Model.Employee.EmployeeCode</strong></div>
+                </div>
+            </div>
+
+            <!-- TIÊU ĐỀ PHIẾU -->
+            <div class="text-center my-3">
+                <h4 class="fw-bold mb-1 text-uppercase text-dark">PHIẾU BÁO LƯƠNG NHÂN VIÊN</h4>
+                <div class="text-muted small fst-italic">Kỳ thanh toán: @Model.PayrollPeriod.Name (Công chuẩn: @Model.StandardDays ngày)</div>
+            </div>
+
+            <!-- 2. THÔNG TIN NHÂN SỰ -->
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+                <div class="row g-2 small">
+                    <div class="col-sm-6">
+                        <span class="text-muted">Họ và tên:</span> <strong class="text-dark fs-6">@Model.Employee.FullName</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Mã nhân viên:</span> <strong class="font-monospace text-primary">@Model.Employee.EmployeeCode</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Phòng ban:</span> <strong class="text-dark">@(Model.Employee.Department?.Name ?? "-")</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Chức vụ:</span> <strong class="text-dark">@(Model.Employee.Position?.Name ?? "-")</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Tài khoản thụ hưởng:</span> <strong class="font-monospace text-dark">@(Model.Employee.EmployeeDetail?.BankAccountNumber ?? "-")</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted">Ngân hàng:</span> <strong class="text-dark">@(Model.Employee.EmployeeDetail?.BankName ?? "-")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. BẢNG CHI TIẾT THU NHẬP VÀ KHẤU TRỪ 2 CỘT -->
+            <div class="row g-3 mb-4">
+                <!-- CỘT 1: CÁC KHOẢN THU NHẬP (EARNINGS) -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 h-100 overflow-hidden">
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary fw-bold small text-uppercase">
+                            <i class="bi bi-plus-circle me-1"></i> I. Các Khoản Thu Nhập
+                        </div>
+                        <table class="table table-sm table-borderless mb-0 small">
+                            <tbody>
+                                <tr class="border-bottom">
+                                    <td class="text-muted">Lương hợp đồng lao động:</td>
+                                    <td class="text-end font-monospace fw-semibold">@Model.BasicSalary.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Ngày công thực tế:</td>
+                                    <td class="text-end font-monospace">@Model.ActualWorkDays / @Model.StandardDays ngày</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Nghỉ phép hưởng lương:</td>
+                                    <td class="text-end font-monospace">@Model.PaidLeaveDays ngày</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <td class="fw-semibold text-dark">Lương ngày công:</td>
+                                    <td class="text-end font-monospace fw-bold">@Model.StandardWorkSalary.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Làm thêm giờ (OT: @Model.OvertimeHours h):</td>
+                                    <td class="text-end font-monospace">@Model.OvertimeSalary.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phụ cấp chức vụ:</td>
+                                    <td class="text-end font-monospace">@Model.PositionAllowance.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phụ cấp ăn trưa:</td>
+                                    <td class="text-end font-monospace">@Model.LunchAllowance.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phụ cấp xăng xe, điện thoại:</td>
+                                    <td class="text-end font-monospace">@Model.OtherAllowance.ToString("N0") đ</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <td class="text-muted">Thưởng hiệu suất / KPI:</td>
+                                    <td class="text-end font-monospace text-success">+@Model.Bonus.ToString("N0") đ</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <td class="fw-bold text-uppercase text-primary">TỔNG THU NHẬP (GROSS):</td>
+                                    <td class="text-end font-monospace fw-bold text-primary fs-6">@Model.GrossSalary.ToString("N0") đ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CỘT 2: CÁC KHOẢN KHẤU TRỪ (DEDUCTIONS) -->
+                <div class="col-md-6">
+                    <div class="border rounded-3 h-100 overflow-hidden">
+                        <div class="p-2 bg-danger bg-opacity-10 text-danger fw-bold small text-uppercase">
+                            <i class="bi bi-dash-circle me-1"></i> II. Các Khoản Giảm Trừ
+                        </div>
+                        <table class="table table-sm table-borderless mb-0 small">
+                            <tbody>
+                                <tr class="border-bottom">
+                                    <td class="text-muted">Lương đóng bảo hiểm:</td>
+                                    <td class="text-end font-monospace fw-semibold">@Model.InsuranceSalary.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Bảo hiểm xã hội (BHXH 8%):</td>
+                                    <td class="text-end font-monospace">@Model.SocialInsurance.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Bảo hiểm y tế (BHYT 1.5%):</td>
+                                    <td class="text-end font-monospace">@Model.HealthInsurance.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Bảo hiểm thất nghiệp (BHTN 1%):</td>
+                                    <td class="text-end font-monospace">@Model.UnemploymentInsurance.ToString("N0") đ</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <td class="fw-semibold text-dark">Tổng bảo hiểm (10.5%):</td>
+                                    <td class="text-end font-monospace fw-bold text-danger">-@Model.TotalInsurance.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Phạt vi phạm / đi muộn:</td>
+                                    <td class="text-end font-monospace text-danger">-@Model.LatePenalty.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Thu nhập chịu thuế TNCN:</td>
+                                    <td class="text-end font-monospace">@Model.TaxableIncome.ToString("N0") đ</td>
+                                </tr>
+                                <tr class="border-bottom">
+                                    <td class="text-muted">Thuế TNCN tạm tính:</td>
+                                    <td class="text-end font-monospace text-danger">-@Model.PersonalIncomeTax.ToString("N0") đ</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="text-muted fst-italic" style="font-size: 11px;">(Đã trừ giảm trừ bản thân 11.000.000 đ)</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <td class="fw-bold text-uppercase text-danger">TỔNG KHẤU TRỪ:</td>
+                                    <td class="text-end font-monospace fw-bold text-danger fs-6">-@((Model.TotalInsurance + Model.PersonalIncomeTax + Model.LatePenalty).ToString("N0")) đ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. THỰC LĨNH CHÍNH THỨC -->
+            <div class="p-3 bg-success bg-opacity-10 border border-success rounded-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <div class="text-success small fw-bold text-uppercase">THỰC LĨNH CHUYỂN KHOẢN (NET SALARY)</div>
+                    <div class="small text-muted">Số tiền thực nhận sau khi hoàn thành mọi nghĩa vụ thuế và bảo hiểm</div>
+                </div>
+                <div class="text-end">
+                    <span class="fs-3 fw-bold text-success font-monospace">@Model.NetSalary.ToString("N0") VNĐ</span>
+                </div>
+            </div>
+
+            <!-- 5. CHỮ KÝ VÀ MÃ XÁC NHẬN -->
+            <div class="row text-center mt-5 pt-3 small text-muted">
+                <div class="col-4">
+                    <div class="fw-bold text-dark">NGƯỜI LẬP PHIẾU</div>
+                    <div class="fst-italic" style="font-size: 11px;">(Ký và ghi rõ họ tên)</div>
+                    <div style="height: 65px;"></div>
+                    <div class="fw-semibold text-dark">Phòng Nhân Sự</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold text-dark">KẾ TOÁN TRƯỞNG</div>
+                    <div class="fst-italic" style="font-size: 11px;">(Ký và đóng dấu)</div>
+                    <div style="height: 65px;"></div>
+                    <div class="fw-semibold text-dark">Ban Tài Chính - Kế Toán</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold text-dark">NGƯỜI NHẬN TIỀN</div>
+                    <div class="fst-italic" style="font-size: 11px;">(Xác nhận tài khoản thụ hưởng)</div>
+                    <div style="height: 65px;"></div>
+                    <div class="fw-semibold text-dark">@Model.Employee.FullName</div>
+                </div>
+            </div>
+
+            <div class="text-center text-muted small mt-4 pt-3 border-top" style="font-size: 11px;">
+                Mọi thắc mắc về số liệu chấm công, thuế và bảo hiểm, vui lòng liên hệ phòng Nhân sự trong vòng 03 ngày làm việc kể từ ngày nhận thông báo.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        #printablePayslip, #printablePayslip * {
+            visibility: visible;
+        }
+        #printablePayslip {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .erp-sidebar, .erp-topbar, .d-print-none {
+            display: none !important;
+        }
+    }
+</style>

@@ -1,0 +1,85 @@
+@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanIndexViewModel
+@{
+    ViewData["Title"] = "Quản lý tài khoản";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h4 class="fw-bold mb-0">Quản lý tài khoản</h4>
+        <small class="text-muted">Duyệt đăng ký, tạo tài khoản, gán vai trò và khóa tài khoản.</small>
+    </div>
+    <a class="btn btn-dark" asp-action="Create"><i class="bi bi-person-plus me-1"></i> Tạo tài khoản</a>
+</div>
+
+@if (TempData["ThongBao"] is string tb)
+{
+    <div class="alert alert-success py-2">@tb</div>
+}
+@if (TempData["LoiDuyet"] is string loi)
+{
+    <div class="alert alert-danger py-2">@loi</div>
+}
+
+<div class="d-flex gap-2 mb-3">
+    <a class="btn btn-sm btn-outline-dark @(ViewBag.Loc == null ? "active" : "")" asp-action="Index">Tất cả</a>
+    <a class="btn btn-sm btn-outline-dark @(ViewBag.Loc == "khoa" ? "active" : "")" asp-action="Index" asp-route-loc="khoa">
+        Chờ duyệt / Đã khóa (@Model.SoChoDuyet)
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Tên đăng nhập</th>
+                <th>Họ tên</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Đăng nhập gần nhất</th>
+                <th class="text-end">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var u in Model.Items)
+        {
+            <tr>
+                <td class="fw-semibold">
+                    @u.Username
+                    @if (u.IsSuperAdmin)
+                    {
+                        <span class="badge bg-danger ms-1">Admin chính</span>
+                    }
+                </td>
+                <td>@(u.FullName ?? "—")</td>
+                <td>@(u.RoleNames.Count == 0 ? "Chưa có vai trò" : string.Join(", ", u.RoleNames))</td>
+                <td>
+                    @if (u.IsActive)
+                    {
+                        <span class="badge bg-success">Hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Chờ duyệt / Đã khóa</span>
+                    }
+                </td>
+                <td>@(u.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-dark" asp-action="Edit" asp-route-id="@u.Id">Sửa</a>
+                    @if (!u.IsActive)
+                    {
+                        <form asp-action="Approve" asp-route-id="@u.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Lock" asp-route-id="@u.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Khóa</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

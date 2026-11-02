@@ -1,0 +1,11 @@
+@model ERP_HRM_CMS.Models.ViewModels.VaiTroFormModel
+@{
+    ViewData["Title"] = "Tạo nhóm quyền";
+}
+
+<h4 class="fw-bold mb-3">Tạo nhóm quyền</h4>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4" style="max-width: 640px;">
+        @await Html.PartialAsync("_VaiTroForm", Model)
+    </div>
+</div>

@@ -1,0 +1,225 @@
+@model IEnumerable<ERP_HRM_CMS.Models.Entities.Inventory>
+@{
+    ViewData["Title"] = "Kiểm Kê Kho & Cân Bằng Kho";
+    Layout = "~/Views/Shared/_WarehouseLayout.cshtml";
+    var branches = ViewBag.Branches as IEnumerable<ERP_HRM_CMS.Models.Entities.Branch> ?? new List<ERP_HRM_CMS.Models.Entities.Branch>();
+    var recentSheets = ViewBag.RecentSheets as IEnumerable<ERP_HRM_CMS.Models.Entities.StocktakingSheet> ?? new List<ERP_HRM_CMS.Models.Entities.StocktakingSheet>();
+    int selectedBranchId = ViewBag.SelectedBranchId ?? 1;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-clipboard2-check text-primary me-2"></i>Kiểm Kê Kho & Cân Bằng Kho (Stocktaking)</h4>
+        <p class="text-muted small mb-0">Đối soát số lượng kiểm đếm thực tế với số liệu phần mềm, tự động cân bằng chênh lệch</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Kho/ExportXuatNhapTonExcel?branchId=@selectedBranchId" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Xuất Báo Cáo Excel (.xlsx)
+        </a>
+        <a href="/Kho/Index?branchId=@selectedBranchId" class="btn btn-outline-secondary">
+            <i class="bi bi-box-seam me-1"></i> Xem Tồn Kho
+        </a>
+    </div>
+</div>
+
+<!-- Lựa chọn chi nhánh kiểm kê -->
+<div class="card border-0 shadow-sm p-3 mb-4">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-5">
+            <label class="form-label small fw-semibold text-muted">Chi nhánh kho kiểm kê:</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="bi bi-building"></i></span>
+                <select id="branchSelect" class="form-select border-start-0" onchange="window.location.href='/Kho/KiemKe?branchId=' + this.value">
+                    @foreach (var b in branches)
+                    {
+                        <option value="@b.Id" selected="@(b.Id == selectedBranchId)">@b.Name - @b.Address</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-md-7 text-md-end pt-md-3">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-2">
+                <i class="bi bi-info-circle me-1"></i> Tổng số mặt hàng kiểm tra: <strong>@Model.Count()</strong> SKU
+            </span>
+        </div>
+    </div>
+</div>
+
+<form asp-action="CanBangKho" method="post" id="stocktakingForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="branchId" value="@selectedBranchId" />
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-card-checklist me-2"></i>Bảng Đối Soát Số Lượng Tồn Kho</h6>
+            <div class="d-flex gap-3 small">
+                <span class="text-success"><i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Khớp số liệu</span>
+                <span class="text-warning"><i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Thừa kho (+)</span>
+                <span class="text-danger"><i class="bi bi-circle-fill me-1" style="font-size: 8px;"></i>Thiếu kho (-)</span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="stockTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 30%;">Tên Hàng Hóa / Mã SKU</th>
+                        <th style="width: 10%;">ĐVT</th>
+                        <th style="width: 12%;" class="text-center">Tồn Hệ Thống</th>
+                        <th style="width: 15%;" class="text-center">Tồn Thực Tế Đếm Được</th>
+                        <th style="width: 10%;" class="text-center">Chênh Lệch</th>
+                        <th style="width: 18%;">Lý Do Chênh Lệch</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int idx = 1; }
+                    @foreach (var inv in Model)
+                    {
+                        <tr>
+                            <td class="text-muted">@(idx++)</td>
+                            <td>
+                                <input type="hidden" name="productIds" value="@inv.ProductId" />
+                                <div class="fw-bold text-main">@inv.Product.Name</div>
+                                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">@inv.Product.SKU</span>
+                                <span class="text-muted small ms-1">Giá vốn: @inv.Product.CostPrice.ToString("N0") đ</span>
+                            </td>
+                            <td>@inv.Product.Unit</td>
+                            <td class="text-center font-monospace fw-semibold sys-qty" data-cost="@inv.Product.CostPrice">
+                                @inv.StockQuantity
+                            </td>
+                            <td>
+                                <input type="number" name="actualQuantities" class="form-control text-center font-monospace fw-bold actual-qty-input" 
+                                       value="@inv.StockQuantity" min="0" required oninput="calcDifference(this)" />
+                            </td>
+                            <td class="text-center fw-bold font-monospace diff-cell text-success">
+                                0
+                            </td>
+                            <td>
+                                <input type="text" name="reasons" class="form-control form-control-sm" placeholder="Ghi chú nếu có chênh lệch..." />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thanh tổng kết & xác nhận cân bằng kho -->
+        <div class="card-footer bg-body-tertiary p-3">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <div class="d-flex gap-4 small">
+                        <div>Tổng tồn phần mềm: <strong id="totalSysDisplay">0</strong></div>
+                        <div>Tổng thực tế đếm: <strong id="totalActDisplay">0</strong></div>
+                        <div>Chênh lệch số lượng: <strong id="totalDiffDisplay" class="text-success">0</strong></div>
+                    </div>
+                    <div class="mt-2">
+                        <input type="text" name="note" class="form-control form-control-sm" placeholder="Ghi chú đợt kiểm kê (VD: Kiểm kê định kỳ quý 4/2026)..." />
+                    </div>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <button type="submit" class="btn btn-primary px-4 py-2" onclick="return confirm('Bạn có chắc chắn muốn thực hiện Cân Bằng Kho? Hệ thống sẽ cập nhật lại số lượng tồn kho thực tế.')">
+                        <i class="bi bi-check2-all me-1"></i> Thực Hiện Cân Bằng Kho
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Lịch sử các đợt kiểm kê gần đây -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent py-3">
+        <h6 class="fw-bold mb-0 text-secondary"><i class="bi bi-clock-history me-2"></i>Lịch Sử Các Đợt Kiểm Kê Gần Đây</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Mã Phiếu</th>
+                    <th>Ngày Kiểm Kê</th>
+                    <th>Người Thực Hiện</th>
+                    <th>Số Lượng Lệch</th>
+                    <th>Giá Trị Lệch (VNĐ)</th>
+                    <th>Ghi Chú</th>
+                    <th>Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (recentSheets.Any())
+                {
+                    @foreach (var s in recentSheets)
+                    {
+                        <tr>
+                            <td class="font-monospace fw-bold text-primary">@s.Code</td>
+                            <td>@s.CheckDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@s.Creator.Username</td>
+                            <td class="font-monospace fw-bold @(s.TotalDifferenceQty == 0 ? "text-success" : (s.TotalDifferenceQty > 0 ? "text-warning" : "text-danger"))">
+                                @(s.TotalDifferenceQty > 0 ? "+" : "")@s.TotalDifferenceQty
+                            </td>
+                            <td class="font-monospace fw-bold">
+                                @s.TotalDifferenceValue.ToString("N0") đ
+                            </td>
+                            <td class="small text-muted">@(s.Note ?? "Không có")</td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border">Đã Cân Bằng</span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted small">Chưa có đợt kiểm kê nào được ghi nhận tại chi nhánh này</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function calcDifference(input) {
+        const row = input.closest('tr');
+        const sysQty = parseInt(row.querySelector('.sys-qty').innerText) || 0;
+        const actQty = parseInt(input.value) || 0;
+        const diff = actQty - sysQty;
+        const diffCell = row.querySelector('.diff-cell');
+
+        if (diff === 0) {
+            diffCell.innerText = '0';
+            diffCell.className = 'text-center fw-bold font-monospace diff-cell text-success';
+        } else if (diff > 0) {
+            diffCell.innerText = '+' + diff;
+            diffCell.className = 'text-center fw-bold font-monospace diff-cell text-warning';
+        } else {
+            diffCell.innerText = diff;
+            diffCell.className = 'text-center fw-bold font-monospace diff-cell text-danger';
+        }
+
+        calcSummary();
+    }
+
+    function calcSummary() {
+        let totalSys = 0;
+        let totalAct = 0;
+        const rows = document.querySelectorAll('#stockTable tbody tr');
+        rows.forEach(r => {
+            const sys = parseInt(r.querySelector('.sys-qty').innerText) || 0;
+            const act = parseInt(r.querySelector('.actual-qty-input').value) || 0;
+            totalSys += sys;
+            totalAct += act;
+        });
+
+        const diff = totalAct - totalSys;
+        document.getElementById('totalSysDisplay').innerText = totalSys;
+        document.getElementById('totalActDisplay').innerText = totalAct;
+        const diffDisplay = document.getElementById('totalDiffDisplay');
+        diffDisplay.innerText = (diff > 0 ? '+' : '') + diff;
+        diffDisplay.className = diff === 0 ? 'text-success' : (diff > 0 ? 'text-warning' : 'text-danger');
+    }
+
+    document.addEventListener('DOMContentLoaded', calcSummary);
+</script>
+}

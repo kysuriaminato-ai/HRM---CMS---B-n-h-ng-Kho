@@ -1,0 +1,110 @@
+@model ERP_HRM_CMS.Models.Entities.LeaveRequest
+@{
+    ViewData["Title"] = "Tạo Đơn Từ Trực Tuyến";
+    Layout = "_HRMLayout";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-plus-fill text-primary me-2"></i>Nộp Đơn Từ Trực Tuyến</h4>
+                <p class="text-muted small mb-0">Hệ thống chuyển giao đơn tự động đến cấp quản lý và thông báo Real-time tức thì</p>
+            </div>
+            <a href="/DonTu/Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách</a>
+        </div>
+
+        <div class="erp-card p-4 shadow-sm">
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Nhân Sự Nộp Đơn <span class="text-danger">*</span></label>
+                        <select asp-for="EmployeeId" asp-items="ViewBag.Employees" class="form-select form-select-sm" required>
+                            <option value="">-- Chọn nhân sự --</option>
+                        </select>
+                        <span asp-validation-for="EmployeeId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Loại Đơn Từ <span class="text-danger">*</span></label>
+                        <select asp-for="RequestType" class="form-select form-select-sm" required id="requestTypeSelect">
+                            <option value="ANNUAL_LEAVE">Nghỉ phép năm (Hưởng nguyên lương)</option>
+                            <option value="SICK_LEAVE">Nghỉ ốm / Khám chữa bệnh</option>
+                            <option value="LATE_EARLY">Đi muộn / Về sớm có phép</option>
+                            <option value="BUSINESS_TRIP">Đi công tác ngoại tỉnh / hiện trường</option>
+                            <option value="UNPAID_LEAVE">Nghỉ không hưởng lương</option>
+                            <option value="OVERTIME">Đăng ký làm thêm giờ (OT)</option>
+                        </select>
+                        <span asp-validation-for="RequestType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Từ Ngày <span class="text-danger">*</span></label>
+                        <input type="date" asp-for="FromDate" class="form-control form-control-sm" required id="fromDateInput" />
+                        <span asp-validation-for="FromDate" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Đến Ngày <span class="text-danger">*</span></label>
+                        <input type="date" asp-for="ToDate" class="form-control form-control-sm" required id="toDateInput" />
+                        <span asp-validation-for="ToDate" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Tổng Số Ngày Nghỉ / Công</label>
+                        <input type="number" step="0.5" min="0.5" asp-for="TotalDays" class="form-control form-control-sm font-monospace fw-bold text-primary" id="totalDaysInput" />
+                        <span class="text-muted" style="font-size: 11px;">(Tự động tính theo ngày chọn)</span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Lý Do Đề Xuất Cụ Thể <span class="text-danger">*</span></label>
+                        <textarea asp-for="Reason" class="form-control" rows="3" required placeholder="Ghi rõ lý do xin nghỉ hoặc công tác, người bàn giao công việc thay thế..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Đường Dẫn Tài Liệu / Giấy Khám Bệnh / Kế Hoạch Đính Kèm (nếu có)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                            <input type="text" asp-for="AttachmentUrl" class="form-control" placeholder="https://drive.google.com/... hoặc link ảnh/tài liệu đính kèm" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info py-2 px-3 small mt-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <div>
+                        <strong>Quy trình xử lý tự động:</strong> Đơn sẽ gửi thông báo Real-time SignalR đến Trưởng bộ phận. Sau khi duyệt 2 cấp, số ngày phép hoặc công tác sẽ tự động đồng bộ vào Bảng chấm công.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top">
+                    <a href="/DonTu/Index" class="btn btn-outline-secondary btn-sm px-3">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold"><i class="bi bi-send-fill me-1"></i>Nộp Đơn Phê Duyệt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function calculateDays() {
+            const fromVal = document.getElementById('fromDateInput').value;
+            const toVal = document.getElementById('toDateInput').value;
+            if (fromVal && toVal) {
+                const f = new Date(fromVal);
+                const t = new Date(toVal);
+                if (t >= f) {
+                    const diffTime = Math.abs(t - f);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    document.getElementById('totalDaysInput').value = diffDays;
+                }
+            }
+        }
+        document.getElementById('fromDateInput').addEventListener('change', calculateDays);
+        document.getElementById('toDateInput').addEventListener('change', calculateDays);
+    </script>
+}

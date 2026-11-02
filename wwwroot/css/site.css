@@ -1,0 +1,156 @@
+/* ==========================================================================
+   MINIMALIST BLACK & WHITE LIGHT THEME (TIEN PHONG ERP 2026)
+   ========================================================================== */
+:root {
+    --bg-main: #FFFFFF;
+    --bg-subtle: #FAFAFA;
+    --bg-muted: #F3F4F6;
+    --text-primary: #111111;
+    --text-secondary: #4B5563;
+    --text-muted: #9CA3AF;
+    --border-color: #E5E7EB;
+    --border-dark: #111111;
+    --color-black: #000000;
+    --color-white: #FFFFFF;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
+/* Nút bấm chủ đạo */
+.btn-erp-black {
+    background-color: var(--color-black);
+    color: var(--color-white) !important;
+    border: 1px solid var(--color-black);
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-erp-black:hover {
+        background-color: #262626;
+        border-color: #262626;
+    }
+
+.btn-erp-outline {
+    background-color: transparent;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .btn-erp-outline:hover {
+        background-color: var(--bg-muted);
+        border-color: var(--border-dark);
+    }
+
+/* Thẻ chứa & Khung viền */
+.erp-card {
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.erp-card-header {
+    background-color: var(--bg-main);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    font-weight: 600;
+}
+
+/* Bảng dữ liệu tối giản */
+.erp-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-color: var(--border-color);
+}
+
+    .erp-table thead th {
+        background-color: var(--bg-muted);
+        color: var(--text-primary);
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 12px 16px;
+    }
+
+    .erp-table tbody td {
+        padding: 12px 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 13.5px;
+    }
+
+/* Sidebar chung cho các Layout Quản trị */
+.erp-sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background-color: var(--bg-main);
+    border-right: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.erp-sidebar-brand {
+    padding: 20px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.erp-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+    .erp-nav-item:hover, .erp-nav-item.active {
+        color: var(--color-black);
+        background-color: var(--bg-muted);
+        font-weight: 600;
+    }
+
+.erp-main-content {
+    margin-left: 260px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.erp-topbar {
+    height: 60px;
+    background-color: var(--bg-main);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+}

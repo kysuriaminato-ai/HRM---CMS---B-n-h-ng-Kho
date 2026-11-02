@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+TestResults/
+packages/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# Ghi chú sao lưu cục bộ, không đưa lên git
+*.bak

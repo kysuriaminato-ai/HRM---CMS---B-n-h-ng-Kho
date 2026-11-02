@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "Quản lý Phân Quyền";
+    Layout = "_AdminLayout";
+}
+<script>
+    window.location.href = "@Url.Action("MaTranPhanQuyen", "PhanQuyen")";
+</script>
+<div class="text-center py-5">
+    <div class="spinner-border text-primary me-2" role="status"></div>
+    <span class="text-secondary fw-semibold">Đang chuyển hướng tới Ma trận phân quyền hệ thống...</span>
+</div>

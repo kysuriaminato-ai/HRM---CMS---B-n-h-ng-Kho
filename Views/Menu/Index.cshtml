@@ -1,0 +1,83 @@
+﻿@model List<ERP_HRM_CMS.Models.Entities.Menu>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản Trị Menu Đa Cấp";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Cấu Trúc Menu Website</h4>
+        <p class="text-secondary small mb-0">Quản lý các thanh điều hướng và liên kết trang</p>
+    </div>
+    <a href="/Menu/Create" class="btn btn-erp-black">
+        <i class="bi bi-plus-lg me-1"></i> Thêm Mục Menu
+    </a>
+</div>
+
+<div class="erp-card">
+    <div class="table-responsive">
+        <table class="table erp-table mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">STT</th>
+                    <th>Tiêu Đề</th>
+                    <th>Loại Liên Kết</th>
+                    <th>Đường Dẫn (URL)</th>
+                    <th>Vị Trí</th>
+                    <th>Thứ Tự</th>
+                    <th class="text-center">Trạng Thái</th>
+                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td class="fw-semibold">
+                                @if (item.ParentId != null)
+                                {
+                                    <span class="text-muted me-2">└──</span>
+                                }
+                                @if (!string.IsNullOrEmpty(item.IconClass))
+                                {
+                                    <i class="@item.IconClass me-1"></i>
+                                }
+                                @item.Title
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@item.LinkType</span></td>
+                            <td><code class="small">@item.CustomUrl</code></td>
+                            <td>@item.Position</td>
+                            <td>@item.OrderIndex</td>
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Hiển thị</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border">Ẩn</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a href="/Menu/Edit/@item.Id" class="btn btn-sm btn-erp-outline py-1 px-2"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa menu này?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-erp-outline py-1 px-2 text-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">Chưa có mục menu nào. Hãy tạo mới ngay!</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,217 @@
+@model ERP_HRM_CMS.Models.Entities.Order
+@{
+    Layout = null;
+    string qrUrl = $"https://img.vietqr.io/image/970422-0987654321-compact2.png?amount={Convert.ToInt64(Model.FinalAmount)}&addInfo={Model.OrderCode}&accountName=TIEN%20PHONG%20ENTERPRISE";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>In Hóa Đơn - @Model.OrderCode</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #0f172a;
+            padding: 20px 0;
+        }
+
+        .receipt-container {
+            max-width: 480px; /* Khổ in nhiệt 80mm - A5 linh hoạt */
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #cbd5e1;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+
+        .receipt-title {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 4px 0;
+        }
+
+        .receipt-table th {
+            font-size: 12px;
+            border-bottom: 1px solid #0f172a;
+            padding: 6px 4px;
+        }
+
+        .receipt-table td {
+            font-size: 13px;
+            padding: 6px 4px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .qr-section {
+            text-align: center;
+            padding: 12px 0;
+            border-top: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed #cbd5e1;
+            margin: 14px 0;
+        }
+
+        .receipt-footer {
+            text-align: center;
+            font-size: 11.5px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+
+        @@media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .receipt-container {
+                box-shadow: none;
+                max-width: 100%;
+                width: 100%;
+                padding: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Thanh điều khiển In / Quay lại -->
+    <div class="container text-center mb-3 no-print">
+        <a href="/DonHang/ChiTiet/@Model.Id" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại
+        </a>
+        <button class="btn btn-primary px-4" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> In Hóa Đơn Ngay
+        </button>
+    </div>
+
+    <div class="receipt-container">
+        <!-- Đầu hóa đơn -->
+        <div class="receipt-header">
+            <h5 class="fw-bold mb-0">TIÊN PHONG ENTERPRISE</h5>
+            <div class="small text-muted">Hệ Thống Phân Phối & Bán Lẻ Đa Chi Nhánh</div>
+            <div class="small mt-1">@Model.Branch.Name - @Model.Branch.Address</div>
+            <div class="small">Hotline: @(Model.Branch.Phone ?? "1900 6868")</div>
+
+            <div class="receipt-title mt-2">HÓA ĐƠN BÁN LẺ</div>
+            <div class="font-monospace small fw-bold">MÃ ĐƠN: @Model.OrderCode</div>
+            <div class="small text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</div>
+        </div>
+
+        <!-- Thông tin khách hàng -->
+        <div class="mb-3 small">
+            <div><strong>Khách hàng:</strong> @Model.CustomerName</div>
+            <div><strong>Điện thoại:</strong> @Model.CustomerPhone</div>
+            @if (!string.IsNullOrEmpty(Model.CustomerAddress))
+            {
+                <div><strong>Địa chỉ:</strong> @Model.CustomerAddress</div>
+            }
+            <div><strong>Thu ngân:</strong> @(Model.Creator?.Username ?? "Admin")</div>
+        </div>
+
+        <!-- Bảng hàng hóa -->
+        <table class="table receipt-table mb-2">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Tên Món</th>
+                    <th style="width: 15%;" class="text-center">SL</th>
+                    <th style="width: 20%;" class="text-end">Đ.Giá</th>
+                    <th style="width: 20%;" class="text-end">T.Tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.OrderDetails)
+                {
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">@d.Product.Name</div>
+                            <div class="text-muted" style="font-size: 10px;">@d.Product.SKU</div>
+                        </td>
+                        <td class="text-center">@d.Quantity</td>
+                        <td class="text-end font-monospace">@d.UnitPrice.ToString("N0")</td>
+                        <td class="text-end font-monospace fw-bold">@((d.Quantity * d.UnitPrice).ToString("N0"))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Tổng tiền & Thanh toán -->
+        <div class="border-top pt-2 small">
+            <div class="d-flex justify-content-between py-1">
+                <span>Tổng tiền hàng:</span>
+                <span class="font-monospace fw-semibold">@Model.TotalAmount.ToString("N0") đ</span>
+            </div>
+            @if (Model.DiscountAmount > 0)
+            {
+                <div class="d-flex justify-content-between py-1 text-danger">
+                    <span>Chiết khấu / Giảm giá:</span>
+                    <span class="font-monospace">-@Model.DiscountAmount.ToString("N0") đ</span>
+                </div>
+            }
+            <div class="d-flex justify-content-between py-2 border-top border-bottom my-1">
+                <span class="fw-bold fs-6">KHÁCH PHẢI TRẢ:</span>
+                <span class="fw-bold fs-5 font-monospace text-primary">@Model.FinalAmount.ToString("N0") đ</span>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+                <span>Hình thức thanh toán:</span>
+                <span class="fw-bold text-uppercase">@Model.PaymentMethod</span>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+                <span>Trạng thái:</span>
+                <span class="fw-bold text-success">@(Model.PaymentStatus == "Paid" ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN")</span>
+            </div>
+        </div>
+
+        <!-- Mã QR thanh toán động VietQR Napas247 -->
+        <div class="qr-section">
+            <div class="small fw-bold text-muted mb-1">QUÉT MÃ VIETQR ĐỂ THANH TOÁN HOẶC TRA CỨU</div>
+            <img src="@qrUrl" alt="VietQR Payment" style="max-width: 140px; height: auto;" class="rounded border p-1" />
+            <div class="text-muted mt-1" style="font-size: 10px;">Ngân hàng Quân Đội MBBank • STK: 0987654321</div>
+        </div>
+
+        <!-- Barcode mã vạch đơn hàng -->
+        <div class="text-center my-2">
+            <svg id="barcodeSvg"></svg>
+        </div>
+
+        <!-- Lời cảm ơn & Chính sách -->
+        <div class="receipt-footer">
+            <div class="fw-bold">CẢM ƠN QUÝ KHÁCH & HẸN GẶP LẠI!</div>
+            <div>Quý khách vui lòng giữ hóa đơn khi có nhu cầu đổi trả sản phẩm trong vòng 07 ngày.</div>
+            <div class="font-monospace mt-1" style="font-size: 9px;">Powered by Tiên Phong ERP 2026</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            JsBarcode("#barcodeSvg", "@Model.OrderCode", {
+                format: "CODE128",
+                width: 1.5,
+                height: 38,
+                displayValue: true,
+                fontSize: 12
+            });
+
+            // Tự động mở hộp thoại in nếu có tham số ?autoPrint=true
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('autoPrint') === 'true') {
+                setTimeout(() => window.print(), 500);
+            }
+        });
+    </script>
+</body>
+</html>

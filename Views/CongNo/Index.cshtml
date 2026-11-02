@@ -1,0 +1,335 @@
+@model IEnumerable<ERP_HRM_CMS.Models.Entities.DebtRecord>
+@{
+    ViewData["Title"] = "Quản Trị Công Nợ & Báo Cáo Tuổi Nợ";
+    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    decimal totalReceivable = ViewBag.TotalReceivable ?? 0;
+    decimal totalPayable = ViewBag.TotalPayable ?? 0;
+    decimal agingCurrent = ViewBag.AgingCurrent ?? 0;
+    decimal aging1_30 = ViewBag.Aging1_30 ?? 0;
+    decimal aging31_60 = ViewBag.Aging31_60 ?? 0;
+    decimal agingOver60 = ViewBag.AgingOver60 ?? 0;
+    string selectedType = ViewBag.SelectedType ?? "ALL";
+    string selectedAging = ViewBag.SelectedAging ?? "";
+    DateTime now = DateTime.Now.Date;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-cash-coin text-primary me-2"></i>Quản Trị Công Nợ Doanh Nghiệp (Debt Management)</h4>
+        <p class="text-muted small mb-0">Theo dõi dòng tiền Phải Thu (AR), Phải Trả (AP) và Báo cáo phân tích Tuổi Nợ (Aging Report)</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/DonHang/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-receipt me-1"></i> Tra Cứu Đơn Hàng
+        </a>
+        <a href="/PurchaseOrder/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-journal-text me-1"></i> Đơn Mua Hàng PO
+        </a>
+    </div>
+</div>
+
+<!-- Thẻ KPI Tài Chính -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-semibold">TỔNG CÔNG NỢ PHẢI THU (RECEIVABLES - AR)</div>
+                    <div class="fs-3 fw-bold text-success mt-1">@totalReceivable.ToString("N0") đ</div>
+                    <div class="small text-muted">Dòng tiền khách hàng nợ khi mua sắm tại POS / Hợp đồng</div>
+                </div>
+                <div class="bg-success-subtle p-3 rounded-circle text-success">
+                    <i class="bi bi-arrow-down-left-circle fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small fw-semibold">TỔNG CÔNG NỢ PHẢI TRẢ (PAYABLES - AP)</div>
+                    <div class="fs-3 fw-bold text-danger mt-1">@totalPayable.ToString("N0") đ</div>
+                    <div class="small text-muted">Dòng tiền nợ nhà phân phối / đối tác cung cấp thiết bị</div>
+                </div>
+                <div class="bg-danger-subtle p-3 rounded-circle text-danger">
+                    <i class="bi bi-arrow-up-right-circle fs-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Báo Cáo Ma Trận Tuổi Nợ (Aging Report Matrix) -->
+<div class="card border-0 shadow-sm p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-bar-chart-steps me-2"></i>Báo Cáo Phân Tích Tuổi Nợ (Debt Aging Matrix)</h6>
+        <span class="badge bg-light text-secondary border">Chuẩn Basel II / IFRS</span>
+    </div>
+    <div class="row g-3 text-center">
+        <div class="col-6 col-md-3">
+            <a href="/CongNo/Index?aging=CURRENT" class="text-decoration-none">
+                <div class="p-3 rounded-3 @(selectedAging == "CURRENT" ? "bg-success text-white" : "bg-body-tertiary") border hover-elevate">
+                    <div class="small @(selectedAging == "CURRENT" ? "text-white-50" : "text-muted") fw-semibold">TRONG HẠN (CURRENT)</div>
+                    <div class="fs-5 fw-bold @(selectedAging == "CURRENT" ? "text-white" : "text-success") mt-1">@agingCurrent.ToString("N0") đ</div>
+                    <span class="badge bg-success-subtle text-success border mt-1" style="font-size: 10px;">An toàn</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/CongNo/Index?aging=1_30" class="text-decoration-none">
+                <div class="p-3 rounded-3 @(selectedAging == "1_30" ? "bg-warning text-dark" : "bg-body-tertiary") border hover-elevate">
+                    <div class="small @(selectedAging == "1_30" ? "text-dark" : "text-muted") fw-semibold">QUÁ HẠN 1 - 30 NGÀY</div>
+                    <div class="fs-5 fw-bold @(selectedAging == "1_30" ? "text-dark" : "text-warning") mt-1">@aging1_30.ToString("N0") đ</div>
+                    <span class="badge bg-warning-subtle text-warning border mt-1" style="font-size: 10px;">Cần đôn đốc</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/CongNo/Index?aging=31_60" class="text-decoration-none">
+                <div class="p-3 rounded-3 @(selectedAging == "31_60" ? "bg-warning text-dark" : "bg-body-tertiary") border hover-elevate">
+                    <div class="small @(selectedAging == "31_60" ? "text-dark" : "text-muted") fw-semibold">QUÁ HẠN 31 - 60 NGÀY</div>
+                    <div class="fs-5 fw-bold @(selectedAging == "31_60" ? "text-dark" : "text-danger") mt-1">@aging31_60.ToString("N0") đ</div>
+                    <span class="badge bg-danger-subtle text-danger border mt-1" style="font-size: 10px;">Rủi ro vừa</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="/CongNo/Index?aging=OVER_60" class="text-decoration-none">
+                <div class="p-3 rounded-3 @(selectedAging == "OVER_60" ? "bg-danger text-white" : "bg-body-tertiary") border hover-elevate">
+                    <div class="small @(selectedAging == "OVER_60" ? "text-white-50" : "text-muted") fw-semibold">QUÁ HẠN > 60 NGÀY</div>
+                    <div class="fs-5 fw-bold @(selectedAging == "OVER_60" ? "text-white" : "text-danger") mt-1">@agingOver60.ToString("N0") đ</div>
+                    <span class="badge bg-danger text-white border mt-1" style="font-size: 10px;">Nguy cơ nợ xấu</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs & Bộ lọc danh sách -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent py-2 border-bottom">
+        <ul class="nav nav-tabs card-header-tabs border-0">
+            <li class="nav-item">
+                <a class="nav-link @(selectedType == "ALL" ? "active fw-bold" : "")" href="/CongNo/Index">
+                    <i class="bi bi-collection me-1"></i> Tất Cả (@Model.Count())
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(selectedType == "RECEIVABLE" ? "active fw-bold text-success" : "")" href="/CongNo/Index?type=RECEIVABLE">
+                    <i class="bi bi-arrow-down-left-circle me-1"></i> Phải Thu Khách Hàng (AR)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(selectedType == "PAYABLE" ? "active fw-bold text-danger" : "")" href="/CongNo/Index?type=PAYABLE">
+                    <i class="bi bi-arrow-up-right-circle me-1"></i> Phải Trả Nhà Cung Cấp (AP)
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <input type="hidden" name="type" value="@selectedType" />
+            <div class="col-md-5">
+                <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" 
+                       placeholder="Tìm theo mã chứng từ, tên đối tác, số điện thoại..." />
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái nợ --</option>
+                    <option value="Unpaid" selected="@(ViewBag.SelectedStatus == "Unpaid")">Chưa thanh toán</option>
+                    <option value="PartiallyPaid" selected="@(ViewBag.SelectedStatus == "PartiallyPaid")">Đã thanh toán 1 phần</option>
+                    <option value="Paid" selected="@(ViewBag.SelectedStatus == "Paid")">Đã tất toán</option>
+                    <option value="Overdue" selected="@(ViewBag.SelectedStatus == "Overdue")">Quá hạn thanh toán</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-filter"></i> Lọc Dữ Liệu</button>
+                @if (!string.IsNullOrEmpty(ViewBag.Keyword) || !string.IsNullOrEmpty(selectedAging) || !string.IsNullOrEmpty(ViewBag.SelectedStatus))
+                {
+                    <a href="/CongNo/Index?type=@selectedType" class="btn btn-outline-secondary ms-1">Xóa bộ lọc</a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bảng chi tiết danh mục công nợ -->
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Mã Chứng Từ</th>
+                    <th>Đối Tác (Khách Hàng / NCC)</th>
+                    <th>Phân Loại</th>
+                    <th>Tổng Nợ Ban Đầu</th>
+                    <th>Đã Trả</th>
+                    <th>Số Dư Còn Nợ</th>
+                    <th>Hạn Thanh Toán</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end">Xử Lý Nợ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var d in Model)
+                    {
+                        bool isOverdue = d.DueDate.Date < now && d.RemainingAmount > 0;
+                        int overdueDays = isOverdue ? (int)(now - d.DueDate.Date).TotalDays : 0;
+                        <tr>
+                            <td>
+                                <span class="fw-bold font-monospace text-primary">@d.DocumentCode</span>
+                                <div class="text-muted" style="font-size: 11px;">@d.CreatedAt.ToString("dd/MM/yyyy")</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">@d.PartnerName</div>
+                                <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@(d.PartnerPhone ?? "Không có")</div>
+                            </td>
+                            <td>
+                                @if (d.DebtType == "RECEIVABLE")
+                                {
+                                    <span class="badge bg-success-subtle text-success border">Phải Thu (AR)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border">Phải Trả (AP)</span>
+                                }
+                            </td>
+                            <td class="font-monospace">
+                                @d.TotalAmount.ToString("N0") đ
+                            </td>
+                            <td class="font-monospace text-muted">
+                                @d.PaidAmount.ToString("N0") đ
+                            </td>
+                            <td class="font-monospace fw-bold @(d.RemainingAmount > 0 ? "text-danger" : "text-success")">
+                                @d.RemainingAmount.ToString("N0") đ
+                            </td>
+                            <td>
+                                <div class="small @(isOverdue ? "text-danger fw-bold" : "")">
+                                    @d.DueDate.ToString("dd/MM/yyyy")
+                                </div>
+                                @if (isOverdue)
+                                {
+                                    <span class="badge bg-danger text-white" style="font-size: 10px;">Quá hạn @overdueDays ngày</span>
+                                }
+                            </td>
+                            <td>
+                                @if (d.RemainingAmount <= 0)
+                                {
+                                    <span class="badge bg-success-subtle text-success border"><i class="bi bi-check-circle me-1"></i>Đã tất toán</span>
+                                }
+                                else if (isOverdue)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-exclamation-triangle me-1"></i>Quá hạn</span>
+                                }
+                                else if (d.PaidAmount > 0)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning border"><i class="bi bi-clock-history me-1"></i>Đã trả 1 phần</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border">Chưa trả</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (d.RemainingAmount > 0)
+                                {
+                                    <button class="btn btn-sm @(d.DebtType == "RECEIVABLE" ? "btn-success" : "btn-danger") py-1 px-3" 
+                                            onclick="openPaymentModal(@d.Id, '@d.DocumentCode', '@d.PartnerName', @d.RemainingAmount, '@d.DebtType')">
+                                        <i class="bi bi-cash me-1"></i> @(d.DebtType == "RECEIVABLE" ? "Thu Nợ" : "Chi Trả Nợ")
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small"><i class="bi bi-check2-all text-success me-1"></i>Hoàn tất</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Không có bản ghi công nợ nào phù hợp
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Ghi Nhận Thanh Toán / Thu Chi Nợ -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="ThanhToan" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalDebtId" name="debtRecordId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-cash-stack me-2"></i>Ghi Nhận Thanh Toán Công Nợ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="text-muted small">Mã chứng từ:</label>
+                        <div class="fw-bold fs-6 font-monospace text-primary" id="modalDocCode"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Đối tác:</label>
+                        <div class="fw-semibold" id="modalPartner"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Số dư công nợ còn lại:</label>
+                        <div class="fw-bold fs-5 text-danger font-monospace" id="modalRemaining"></div>
+                    </div>
+                    <hr />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Số tiền thanh toán (VNĐ) <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" id="modalAmount" class="form-control font-monospace fw-bold fs-5 text-end text-primary" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Phương thức giao dịch</label>
+                        <select name="paymentMethod" class="form-select">
+                            <option value="BANK_TRANSFER">Chuyển khoản Ngân hàng (Ủy nhiệm chi)</option>
+                            <option value="CASH">Tiền mặt tại quầy</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Ghi chú giao dịch</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Ghi chú đợt thanh toán, số UNC ngân hàng..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-circle me-1"></i> Xác Nhận Giao Dịch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openPaymentModal(debtId, docCode, partner, remaining, type) {
+        document.getElementById('modalDebtId').value = debtId;
+        document.getElementById('modalDocCode').innerText = docCode;
+        document.getElementById('modalPartner').innerText = partner;
+        document.getElementById('modalRemaining').innerText = remaining.toLocaleString('vi-VN') + ' đ';
+        document.getElementById('modalAmount').value = remaining;
+        document.getElementById('modalAmount').max = remaining;
+
+        if (type === 'RECEIVABLE') {
+            document.getElementById('modalTitle').innerHTML = '<i class="bi bi-arrow-down-left-circle text-success me-2"></i>Lập Phiếu Thu Công Nợ Khách Hàng';
+        } else {
+            document.getElementById('modalTitle').innerHTML = '<i class="bi bi-arrow-up-right-circle text-danger me-2"></i>Lập Phiếu Chi Trả Nợ Nhà Cung Cấp';
+        }
+
+        new bootstrap.Modal(document.getElementById('paymentModal')).show();
+    }
+</script>
+}

@@ -1,0 +1,40 @@
+@model ERP_HRM_CMS.Models.Entities.Company
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Giới Thiệu Doanh Nghiệp";
+}
+
+<div class="container py-5">
+    <div class="row align-items-center mb-5">
+        <div class="col-lg-6">
+            <span class="badge bg-primary px-3 py-2 text-uppercase mb-3">Về chúng tôi</span>
+            <h1 class="fw-bold display-5 mb-3">@(Model?.Name ?? "TẬP ĐOÀN CÔNG NGHỆ TIÊN PHONG")</h1>
+            <p class="lead text-secondary fs-6 mb-4" style="line-height: 1.8;">
+                Chúng tôi là đơn vị tiên phong trong việc cung cấp các giải pháp quản trị số toàn diện cho doanh nghiệp Việt Nam. Nền tảng tích hợp liên thông các trụ cột cốt lõi: Quản trị Nhân sự (HRM), Quản lý Nội dung (CMS), Bán hàng Đa kênh (POS) và Quản trị Kho vận (Logistics).
+            </p>
+            <div class="row g-3 text-center">
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded-3">
+                        <h3 class="fw-bold text-primary mb-1">10+</h3>
+                        <small class="text-muted">Năm kinh nghiệm</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded-3">
+                        <h3 class="fw-bold text-success mb-1">500+</h3>
+                        <small class="text-muted">Khách hàng DN</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 bg-light rounded-3">
+                        <h3 class="fw-bold text-warning mb-1">99.9%</h3>
+                        <small class="text-muted">Độ tin cậy hệ thống</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mt-4 mt-lg-0">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" class="img-fluid rounded-4 shadow" alt="Văn phòng Tiên Phong" />
+        </div>
+    </div>
+</div>

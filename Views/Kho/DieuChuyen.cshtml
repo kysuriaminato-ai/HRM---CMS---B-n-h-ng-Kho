@@ -1,0 +1,63 @@
+@model ERP_HRM_CMS.Controllers.StockTransferDto
+@{
+    Layout = "_WarehouseLayout";
+    ViewData["Title"] = "Lập Lệnh Điều Chuyển Kho";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-arrow-left-right me-1"></i> Điều Chuyển Kho Giữa Các Chi Nhánh</span>
+                <a href="/Kho/Index?branchId=@Model.FromBranchId" class="btn btn-sm btn-erp-outline">Quay lại tồn kho</a>
+            </div>
+            <form asp-action="DieuChuyen" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="FromBranchId" class="form-label small fw-semibold">Chi Nhánh Xuất Hàng (*)</label>
+                        <select asp-for="FromBranchId" class="form-select form-select-sm" asp-items="ViewBag.FromBranches"></select>
+                        <span asp-validation-for="FromBranchId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ToBranchId" class="form-label small fw-semibold">Chi Nhánh Nhận Hàng (*)</label>
+                        <select asp-for="ToBranchId" class="form-select form-select-sm" asp-items="ViewBag.ToBranches"></select>
+                        <span asp-validation-for="ToBranchId" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ProductId" class="form-label small fw-semibold">Chọn Sản Phẩm Điều Chuyển (*)</label>
+                    <select asp-for="ProductId" class="form-select form-select-sm" asp-items="ViewBag.Products"></select>
+                    <span asp-validation-for="ProductId" class="text-danger small"></span>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label asp-for="Quantity" class="form-label small fw-semibold">Số Lượng Điều Chuyển (*)</label>
+                        <input asp-for="Quantity" type="number" min="1" class="form-control form-control-sm" required />
+                        <span asp-validation-for="Quantity" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Mã Lệnh Tự Động</label>
+                        <input type="text" class="form-control form-control-sm bg-light" value="Hệ thống tự động sinh (DCK-YYYYMMDD...)" readonly />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Note" class="form-label small fw-semibold">Ghi Chú Điều Chuyển</label>
+                    <textarea asp-for="Note" rows="2" class="form-control form-control-sm" placeholder="Lý do điều chuyển, đơn vị vận chuyển hoặc người giao nhận..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="/Kho/Index?branchId=@Model.FromBranchId" class="btn btn-sm btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-sm btn-erp-primary">
+                        <i class="bi bi-check-circle me-1"></i> Xác Nhận Điều Chuyển
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,157 @@
+﻿@model ERP_HRM_CMS.Models.Entities.Employee
+@{
+    Layout = "_HRMLayout";
+    ViewData["Title"] = "Hồ Sơ: " + Model.FullName;
+    var userAcc = ViewBag.UserAccount as ERP_HRM_CMS.Models.Entities.User;
+    var attendances = ViewBag.RecentAttendance as List<ERP_HRM_CMS.Models.Entities.AttendanceDaily>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">@Model.FullName</h4>
+        <p class="text-secondary small mb-0">Mã NV: <code>@Model.EmployeeCode</code> | Phòng ban: <strong>@Model.Department?.Name</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/NhanSu/Edit/@Model.Id" class="btn btn-sm btn-erp-outline"><i class="bi bi-pencil me-1"></i> Sửa Hồ Sơ</a>
+        <a href="/HopDong/Create?employeeId=@Model.Id" class="btn btn-sm btn-erp-black"><i class="bi bi-file-earmark-plus me-1"></i> Lập Hợp Đồng</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <!-- Thông tin vắn tắt & Tài khoản -->
+        <div class="erp-card p-4 mb-4 text-center">
+            <div class="mb-3">
+                <i class="bi bi-person-circle display-4 text-dark"></i>
+            </div>
+            <h5 class="fw-bold mb-1">@Model.FullName</h5>
+            <span class="badge bg-light text-dark border mb-3">@Model.Position?.Name</span>
+            <div class="text-start small border-top pt-3">
+                <p class="mb-2"><strong>Email:</strong> @Model.Email</p>
+                <p class="mb-2"><strong>Điện thoại:</strong> @(Model.Phone ?? "Chưa cập nhật")</p>
+                <p class="mb-2"><strong>Ngày sinh:</strong> @(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</p>
+                <p class="mb-0"><strong>Ngày vào làm:</strong> @Model.HireDate.ToString("dd/MM/yyyy")</p>
+            </div>
+        </div>
+
+        <div class="erp-card p-3 mb-4">
+            <h6 class="fw-bold mb-2 small text-uppercase">Tài Khoản Đăng Nhập</h6>
+            @if (userAcc != null)
+            {
+                <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded border">
+                    <div>
+                        <div class="fw-bold small"><code>@userAcc.Username</code></div>
+                        <span class="badge bg-success-subtle text-success" style="font-size: 10px;">Hoạt động</span>
+                    </div>
+                    <span class="text-muted small">ID: #@userAcc.Id</span>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-3">Nhân viên này chưa được cấp tài khoản phần mềm.</p>
+                <form asp-action="CapTaiKhoanNhanh" method="post" class="d-flex gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="employeeId" value="@Model.Id" />
+                    <input type="password" name="rawPassword" class="form-control form-control-sm" placeholder="Mật khẩu (mặc định 123456)" />
+                    <button type="submit" class="btn btn-sm btn-erp-black text-nowrap">Cấp tài khoản</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- Thông tin chi tiết mở rộng -->
+        <div class="erp-card mb-4">
+            <div class="erp-card-header">Chi Tiết Nhân Thân & Pháp Lý</div>
+            <div class="p-4 small">
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Số CCCD:</strong> @(Model.IdentityCard ?? "-")</div>
+                    <div class="col-md-6"><strong>Mã số thuế:</strong> @(Model.EmployeeDetail?.TaxIdentificationNumber ?? "-")</div>
+                    <div class="col-md-6"><strong>Địa chỉ thường trú:</strong> @(Model.EmployeeDetail?.PermanentAddress ?? "-")</div>
+                    <div class="col-md-6"><strong>Địa chỉ hiện tại:</strong> @(Model.EmployeeDetail?.CurrentAddress ?? "-")</div>
+                    <div class="col-md-6"><strong>Tài khoản ngân hàng:</strong> @(Model.EmployeeDetail?.BankAccountNumber ?? "-") (@(Model.EmployeeDetail?.BankName))</div>
+                    <div class="col-md-6"><strong>Liên hệ khẩn cấp:</strong> @(Model.EmployeeDetail?.EmergencyContactName ?? "-") - @(Model.EmployeeDetail?.EmergencyContactPhone ?? "-")</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hợp đồng của nhân viên -->
+        <div class="erp-card mb-4">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Lịch Sử Hợp Đồng Lao Động</span>
+                <span class="badge bg-dark">@Model.Contracts.Count bản ghi</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 small">
+                    <thead>
+                        <tr>
+                            <th>Số HĐ</th>
+                            <th>Loại Hợp Đồng</th>
+                            <th>Thời Hạn</th>
+                            <th>Lương Cơ Bản</th>
+                            <th>Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Contracts.Any())
+                        {
+                            foreach (var c in Model.Contracts)
+                            {
+                                <tr>
+                                    <td><code>@c.ContractNumber</code></td>
+                                    <td>@c.ContractType</td>
+                                    <td>@c.StartDate.ToString("dd/MM/yyyy") - @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                                    <td>@c.BasicSalary.ToString("N0") đ</td>
+                                    <td><span class="badge bg-light text-dark border">@c.Status</span></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có hợp đồng nào được ký kết.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Chấm công gần nhất -->
+        <div class="erp-card">
+            <div class="erp-card-header">Chấm Công 7 Ngày Gần Nhất</div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 small text-center">
+                    <thead>
+                        <tr>
+                            <th>Ngày Làm Việc</th>
+                            <th>Ca</th>
+                            <th>Giờ Vào</th>
+                            <th>Giờ Ra</th>
+                            <th>Đi Muộn</th>
+                            <th>Số Giờ Làm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (attendances != null && attendances.Any())
+                        {
+                            foreach (var a in attendances)
+                            {
+                                <tr>
+                                    <td>@a.WorkDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@a.Shift?.Name</td>
+                                    <td>@(a.FirstInTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                    <td>@(a.LastOutTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                    <td>@(a.LateMinutes > 0 ? $"{a.LateMinutes} phút" : "-")</td>
+                                    <td><strong>@a.WorkHourCount.ToString("0.#")h</strong></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-3">Chưa có dữ liệu chấm công.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

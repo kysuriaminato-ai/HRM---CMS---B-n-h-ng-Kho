@@ -1,0 +1,23 @@
+@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
+@{
+    ViewData["Title"] = "Sửa tài khoản";
+}
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h4 class="fw-bold mb-0">Sửa tài khoản: @Model.Username</h4>
+    @if (Model.IsSuperAdmin)
+    {
+        <span class="badge bg-danger">Admin chính</span>
+    }
+</div>
+
+@if (TempData["ThongBao"] is string tb)
+{
+    <div class="alert alert-success py-2">@tb</div>
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4" style="max-width: 640px;">
+        @await Html.PartialAsync("_TaiKhoanForm", Model)
+    </div>
+</div>

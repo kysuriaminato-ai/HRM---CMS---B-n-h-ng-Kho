@@ -1,0 +1,54 @@
+@model List<ERP_HRM_CMS.Models.Entities.Content>
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Tin Tức & Hoạt Động Doanh Nghiệp";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold display-6 mb-2">Tin Tức & Hoạt Động</h1>
+        <p class="text-muted small">Cập nhật tin tức mới nhất về công nghệ quản trị, chiến lược vận hành và sự kiện doanh nghiệp</p>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var item in Model)
+            {
+                <div class="col-md-6 col-lg-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+                        @if (!string.IsNullOrEmpty(item.ThumbnailUrl))
+                        {
+                            <img src="@item.ThumbnailUrl" class="card-img-top object-fit-cover" style="height: 220px;" alt="@item.Title" />
+                        }
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="text-muted small mb-2 d-flex align-items-center gap-2">
+                                    <i class="bi bi-calendar3"></i> @item.CreatedAt.ToString("dd/MM/yyyy")
+                                    <span>•</span>
+                                    <i class="bi bi-eye"></i> @item.ViewCount lượt xem
+                                </div>
+                                <h5 class="card-title fw-bold mb-3">
+                                    <a href="/bai-viet/@item.Slug" class="text-dark text-decoration-none hover-primary">@item.Title</a>
+                                </h5>
+                                <p class="card-text text-secondary small mb-4" style="line-height: 1.6;">
+                                    @(item.Summary ?? "Đọc thêm để biết chi tiết nội dung bài viết...")
+                                </p>
+                            </div>
+                            <a href="/bai-viet/@item.Slug" class="btn btn-sm btn-outline-dark align-self-start px-3 py-2">
+                                Đọc bài viết <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-journal-x fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Hiện tại chưa có bài viết nào được đăng tải.</p>
+        </div>
+    }
+</div>

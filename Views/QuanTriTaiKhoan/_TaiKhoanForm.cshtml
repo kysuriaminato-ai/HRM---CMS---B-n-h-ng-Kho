@@ -1,0 +1,55 @@
+@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
+@{
+    var isEdit = Model.Id > 0;
+}
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+    @if (isEdit)
+    {
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Username" />
+    }
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Tên đăng nhập</label>
+        @if (isEdit)
+        {
+            <input class="form-control" value="@Model.Username" disabled />
+        }
+        else
+        {
+            <input asp-for="Username" class="form-control" autocomplete="off" />
+        }
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label fw-semibold">
+            @(isEdit ? "Đặt lại mật khẩu (để trống nếu không đổi)" : "Mật khẩu ban đầu")
+        </label>
+        <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
+        <div class="form-text">Tối thiểu 8 ký tự, gồm cả chữ và số.</div>
+    </div>
+
+    <div class="form-check form-switch mb-3">
+        <input asp-for="IsActive" class="form-check-input" />
+        <label asp-for="IsActive" class="form-check-label">Kích hoạt tài khoản</label>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Vai trò</label>
+        @foreach (var r in Model.Roles)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="roleIds" id="role_@r.Id" value="@r.Id" checked="@r.Checked" />
+                <label class="form-check-label" for="role_@r.Id">
+                    @r.Name <small class="text-muted">(@r.Code)</small>
+                </label>
+            </div>
+        }
+    </div>
+
+    <button type="submit" class="btn btn-dark">Lưu</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+</form>

@@ -1,0 +1,36 @@
+﻿@model ERP_HRM_CMS.Models.Entities.Content
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none">Trang chủ</a></li>
+                    <li class="breadcrumb-item active text-muted" aria-current="page">Bài viết</li>
+                </ol>
+            </nav>
+
+            <h1 class="fw-bold mb-3 display-6">@Model.Title</h1>
+            <div class="d-flex align-items-center gap-3 text-secondary small pb-3 border-bottom mb-4">
+                <span><i class="bi bi-person me-1"></i> @(Model.Author?.Username ?? "Ban Biên Tập")</span>
+                <span><i class="bi bi-clock me-1"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                <span><i class="bi bi-eye me-1"></i> @Model.ViewCount lượt xem</span>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Summary))
+            {
+                <div class="lead fs-6 fw-semibold text-secondary mb-4 p-3 bg-light rounded border-start border-4 border-dark">
+                    @Model.Summary
+                </div>
+            }
+
+            <div class="content-body" style="line-height: 1.8;">
+                @Html.Raw(Model.BodyHtml)
+            </div>
+        </div>
+    </div>
+</div>

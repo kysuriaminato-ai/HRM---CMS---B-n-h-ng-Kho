@@ -1,0 +1,279 @@
+@model ERP_HRM_CMS.Models.ViewModels.AttendanceHeatmapViewModel
+@{
+    ViewData["Title"] = $"Heatmap Chấm Công - Tháng {Model.Month:D2}/{Model.Year}";
+    Layout = "_HRMLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Bản Đồ Nhiệt Chấm Công (Calendar Grid Heatmap)</h4>
+        <p class="text-muted small mb-0">Theo dõi trực quan kỷ luật lao động, tỷ lệ đúng giờ và phân bố ngày phép theo màu sắc chuẩn quốc tế</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/ChamCong/BangCongThang?year=@Model.Year&month=@Model.Month" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-month me-1"></i>Bảng Công Chi Tiết</a>
+        <a href="/DonTu/Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-check me-1"></i>Xem Đơn Nghỉ Phép</a>
+    </div>
+</div>
+
+<!-- 1. BỘ LỌC THỜI GIAN & PHÒNG BAN -->
+<div class="erp-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold">Tháng Xem</label>
+            <select name="month" class="form-select form-select-sm">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(m == Model.Month)">Tháng @m</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 col-6">
+            <label class="form-label small fw-semibold">Năm</label>
+            <select name="year" class="form-select form-select-sm">
+                @for (int y = 2024; y <= 2027; y++)
+                {
+                    <option value="@y" selected="@(y == Model.Year)">Năm @y</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Phòng Ban</label>
+            <select name="departmentId" asp-items="ViewBag.Departments" class="form-select form-select-sm">
+                <option value="">-- Toàn bộ công ty --</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Tải Dữ Liệu Heatmap</button>
+            <a href="/ChamCong/Heatmap" class="btn btn-outline-secondary btn-sm" title="Tháng hiện tại"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- 2. KPI CARDS TỔNG QUAN CHUYÊN CẦN -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
+                <i class="bi bi-speedometer2 fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tỷ Lệ Đúng Giờ (On-Time)</div>
+                <div class="fs-4 fw-bold text-success">@Model.OnTimePercentage%</div>
+                <div class="small text-muted" style="font-size: 11px;">@Model.TotalPresentDays lượt đúng giờ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning">
+                <i class="bi bi-clock-history fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Lượt Đi Muộn / Về Sớm</div>
+                <div class="fs-4 fw-bold text-warning">@Model.TotalLateDays</div>
+                <div class="small text-muted" style="font-size: 11px;">Cần nhắc nhở kỷ luật</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-x-octagon fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Lượt Vắng Không Phép</div>
+                <div class="fs-4 fw-bold text-danger">@Model.TotalAbsentDays</div>
+                <div class="small text-muted" style="font-size: 11px;">Trừ công theo nội quy</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
+                <i class="bi bi-calendar2-check fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Lượt Nghỉ Phép / Công Tác</div>
+                <div class="fs-4 fw-bold text-info">@Model.TotalLeaveDays</div>
+                <div class="small text-muted" style="font-size: 11px;">Đã phê duyệt điện tử</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. CHÚ THÍCH MÀU SẮC HEATMAP (LEGEND) -->
+<div class="erp-card p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="small fw-bold text-muted text-uppercase" style="font-size: 11px;">Chú Thích Màu Sắc:</div>
+    <div class="d-flex align-items-center gap-3 flex-wrap small">
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-present"></span> Đúng giờ (Present)
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-late"></span> Đi muộn / Về sớm (Late)
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-leave"></span> Nghỉ phép có duyệt (Leave)
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-trip"></span> Đi công tác (Trip)
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-absent"></span> Vắng mặt (Absent)
+        </div>
+        <div class="d-flex align-items-center gap-1">
+            <span class="heatmap-legend-box heatmap-off"></span> Cuối tuần / Ngày nghỉ (Off)
+        </div>
+    </div>
+</div>
+
+<!-- 4. MA TRẬN LỊCH THÁNG (HEATMAP CALENDAR GRID) -->
+<div class="erp-card shadow-sm overflow-hidden mb-4">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2 text-primary"></i>Lưới Ma Trận Chấm Công Tháng @Model.Month/@Model.Year</h6>
+        <div class="small text-muted">Rê chuột vào từng ô ngày để xem chi tiết giờ ra vào & số phút trễ</div>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table mb-0 align-middle text-center table-bordered" style="border-collapse: separate; border-spacing: 2px;">
+            <thead>
+                <tr class="bg-light">
+                    <th class="text-start ps-3" style="width: 220px; min-width: 200px;">Nhân Sự</th>
+                    @for (int day = 1; day <= Model.DaysInMonth; day++)
+                    {
+                        var curDate = new DateTime(Model.Year, Model.Month, day);
+                        bool isWeekend = curDate.DayOfWeek == DayOfWeek.Saturday || curDate.DayOfWeek == DayOfWeek.Sunday;
+                        <th style="min-width: 32px; padding: 4px;" class="@(isWeekend ? "bg-secondary bg-opacity-10 text-muted" : "")">
+                            <div style="font-size: 9px;" class="text-muted">@(curDate.DayOfWeek == DayOfWeek.Sunday ? "CN" : $"T{(int)curDate.DayOfWeek + 1}")</div>
+                            <div class="fw-bold" style="font-size: 11px;">@day</div>
+                        </th>
+                    }
+                    <th style="min-width: 80px;">Tổng Kết</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.EmployeeRows != null && Model.EmployeeRows.Any())
+                {
+                    @foreach (var row in Model.EmployeeRows)
+                    {
+                        <tr>
+                            <td class="text-start ps-3">
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 190px;" title="@row.FullName">@row.FullName</div>
+                                <div class="text-muted" style="font-size: 11px;">
+                                    <span class="font-monospace text-primary">@row.EmployeeCode</span> | @row.DepartmentName
+                                </div>
+                            </td>
+                            @for (int day = 1; day <= Model.DaysInMonth; day++)
+                            {
+                                var cell = row.DayCells.ContainsKey(day) ? row.DayCells[day] : new ERP_HRM_CMS.Models.ViewModels.HeatmapCellDto();
+                                <td class="p-1">
+                                    <div class="heatmap-cell @cell.ColorClass" 
+                                         data-bs-toggle="tooltip" 
+                                         data-bs-placement="top" 
+                                         title="@cell.Tooltip">
+                                        @if (!string.IsNullOrEmpty(cell.IconClass))
+                                        {
+                                            <i class="bi @cell.IconClass"></i>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                            <td>
+                                <div class="d-flex justify-content-center gap-1 font-monospace" style="font-size: 10px;">
+                                    <span class="badge bg-success" title="Đúng giờ">@row.PresentCount</span>
+                                    <span class="badge bg-warning text-dark" title="Trễ">@row.LateCount</span>
+                                    <span class="badge bg-danger" title="Vắng">@row.AbsentCount</span>
+                                </div>
+                                @if (row.TotalOT > 0)
+                                {
+                                    <div class="text-primary fw-bold font-monospace" style="font-size: 10px;">OT: @row.TotalOT h</div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="@(Model.DaysInMonth + 2)" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                            Chưa có dữ liệu chấm công cho tháng này.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .heatmap-cell {
+        width: 28px;
+        height: 28px;
+        margin: 0 auto;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .heatmap-cell:hover {
+        transform: scale(1.25);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        z-index: 5;
+        position: relative;
+    }
+    .heatmap-legend-box {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+    .heatmap-present {
+        background-color: #10B981 !important;
+        color: #ffffff;
+    }
+    .heatmap-late {
+        background-color: #F59E0B !important;
+        color: #ffffff;
+    }
+    .heatmap-absent {
+        background-color: #EF4444 !important;
+        color: #ffffff;
+    }
+    .heatmap-leave {
+        background-color: #3B82F6 !important;
+        color: #ffffff;
+    }
+    .heatmap-trip {
+        background-color: #8B5CF6 !important;
+        color: #ffffff;
+    }
+    .heatmap-off {
+        background-color: #E2E8F0 !important;
+        color: #94A3B8;
+    }
+    [data-bs-theme="dark"] .heatmap-off {
+        background-color: #334155 !important;
+        color: #64748B;
+    }
+    .heatmap-future {
+        background-color: #F8FAFC !important;
+        border: 1px dashed #CBD5E1;
+    }
+    [data-bs-theme="dark"] .heatmap-future {
+        background-color: #1E293B !important;
+        border: 1px dashed #475569;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+}

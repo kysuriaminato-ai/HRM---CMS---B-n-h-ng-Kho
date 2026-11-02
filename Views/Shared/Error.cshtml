@@ -1,0 +1,40 @@
+@model ErrorViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Lỗi hệ thống";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>500 - Đã xảy ra lỗi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="card border-0 shadow p-5 text-center" style="max-width: 520px; border-radius: 16px;">
+        <div class="mb-3 text-warning">
+            <i class="bi bi-exclamation-triangle-fill" style="font-size: 3.5rem;"></i>
+        </div>
+        <h3 class="fw-bold mb-2">Đã Xảy Ra Lỗi Hệ Thống</h3>
+        <p class="text-secondary small mb-4">Hệ thống đang gặp sự cố gián đoạn khi xử lý yêu cầu này. Đội ngũ kỹ thuật đã được thông báo để khắc phục.</p>
+
+        @if (Model != null && Model.ShowRequestId)
+        {
+            <div class="alert alert-light border small text-muted text-start mb-4">
+                <strong>Mã truy vết lỗi (Request ID):</strong> <code>@Model.RequestId</code>
+            </div>
+        }
+
+        <div class="d-flex gap-2 justify-content-center">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary px-3 py-2">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại trang trước
+            </a>
+            <a href="/" class="btn btn-primary px-4 py-2">
+                <i class="bi bi-house-door me-1"></i> Về trang chủ
+            </a>
+        </div>
+    </div>
+</body>
+</html>

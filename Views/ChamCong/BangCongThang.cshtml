@@ -1,0 +1,78 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.MonthlyTimesheetViewModel
+@{
+    Layout = "_HRMLayout";
+    ViewData["Title"] = $"Bảng Chấm Công Tháng {Model.Month}/{Model.Year}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Bảng Tổng Hợp Chấm Công</h4>
+        <p class="text-secondary small mb-0">Tháng @Model.Month Năm @Model.Year | Ma trận theo dõi ngày làm việc thực tế</p>
+    </div>
+    <a href="/ChamCong/Index" class="btn btn-erp-outline btn-sm">
+        <i class="bi bi-clock-history me-1"></i> Về Chấm Công Ngày
+    </a>
+</div>
+
+<div class="erp-card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-2">
+            <select name="month" class="form-select form-select-sm">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(m == Model.Month)">Tháng @m</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="year" value="@Model.Year" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-4">
+            <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+                <option value="">-- Tất cả phòng ban --</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-erp-black w-100">Xem Bảng Công</button>
+        </div>
+    </form>
+</div>
+
+<div class="erp-card">
+    <div class="table-responsive" style="max-height: 600px;">
+        <table class="table table-bordered table-sm erp-table mb-0 text-center" style="font-size: 11.5px;">
+            <thead class="sticky-top bg-light">
+                <tr>
+                    <th style="min-width: 80px;">Mã NV</th>
+                    <th style="min-width: 150px;" class="text-start">Họ Và Tên</th>
+                    <th style="min-width: 120px;" class="text-start">Phòng Ban</th>
+                    @for (int d = 1; d <= Model.DaysInMonth; d++)
+                    {
+                        <th style="width: 28px;">@d</th>
+                    }
+                    <th style="min-width: 60px;">Số Công</th>
+                    <th style="min-width: 60px;">Tổng Giờ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td><code>@row.EmployeeCode</code></td>
+                        <td class="text-start fw-semibold text-nowrap">@row.FullName</td>
+                        <td class="text-start text-secondary text-nowrap">@row.DepartmentName</td>
+                        @for (int d = 1; d <= Model.DaysInMonth; d++)
+                        {
+                            string st = row.DailyStatuses.GetValueOrDefault(d, "-");
+                            <td class="@(st == "P" ? "bg-light text-dark fw-bold" : (st == "L" ? "bg-warning-subtle text-danger fw-bold" : "text-muted"))">
+                                @st
+                            </td>
+                        }
+                        <td><span class="badge bg-dark">@row.PresentDaysCount</span></td>
+                        <td><strong>@row.TotalWorkHours.ToString("0.#")h</strong></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,262 @@
+@model ERP_HRM_CMS.Models.ViewModels.HrAnalyticsViewModel
+@{
+    ViewData["Title"] = "Báo Cáo Phân Tích Nguồn Nhân Lực & Biến Động Nhân Sự";
+    Layout = "_HRMLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Báo Cáo Phân Tích Nhân Sự & Kỷ Luật Lao Động</h4>
+        <p class="text-muted small mb-0">Thống kê cơ cấu nguồn nhân lực, tỷ lệ biến động (Turnover Rate), độ tuổi, thâm niên và phân bổ phòng ban</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/ChamCong/Heatmap" class="btn btn-outline-secondary btn-sm"><i class="bi bi-grid-3x3-gap me-1"></i>Heatmap Chấm Công</a>
+        <a href="/NhanSu/Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-people me-1"></i>Danh Sách Nhân Sự</a>
+    </div>
+</div>
+
+<!-- 1. KPI CARDS TỔNG QUAN -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
+                <i class="bi bi-people-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tổng Số Nhân Sự</div>
+                <div class="fs-4 fw-bold">@Model.TotalEmployees</div>
+                <div class="small text-muted" style="font-size: 11px;">Hồ sơ lưu trữ trên hệ thống</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
+                <i class="bi bi-person-check-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Đang Hoạt Động (Active)</div>
+                <div class="fs-4 fw-bold text-success">@Model.ActiveEmployees</div>
+                <div class="small text-muted" style="font-size: 11px;">Hợp đồng lao động hợp lệ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger">
+                <i class="bi bi-arrow-left-right fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tỷ Lệ Biến Động (Turnover)</div>
+                <div class="fs-4 fw-bold text-danger">@Model.TurnoverRate%</div>
+                <div class="small text-muted" style="font-size: 11px;">@Model.ResignedEmployees nhân sự đã nghỉ</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-sm-6">
+        <div class="erp-card p-3 d-flex align-items-center gap-3">
+            <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
+                <i class="bi bi-person-plus-fill fs-3"></i>
+            </div>
+            <div>
+                <div class="text-muted small fw-semibold">Tuyển Mới Năm Nay</div>
+                <div class="fs-4 fw-bold text-info">@Model.NewHiresThisYear</div>
+                <div class="small text-muted" style="font-size: 11px;">Gia nhập năm @DateTime.Today.Year</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- 2. CƠ CẤU ĐỘ TUỔI -->
+    <div class="col-lg-6">
+        <div class="erp-card p-4 h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Cơ Cấu Độ Tuổi Nhân Sự</h6>
+                <span class="badge bg-light text-muted border">Tổng @Model.TotalEmployees</span>
+            </div>
+            <p class="text-muted small mb-4">Phân tích lực lượng lao động trẻ vs chuyên gia kinh nghiệm</p>
+
+            @{
+                int tot = Model.TotalEmployees > 0 ? Model.TotalEmployees : 1;
+                int pU25 = (int)Math.Round((double)Model.AgeUnder25 / tot * 100);
+                int p2535 = (int)Math.Round((double)Model.Age25To35 / tot * 100);
+                int p3645 = (int)Math.Round((double)Model.Age36To45 / tot * 100);
+                int pO45 = (int)Math.Round((double)Model.AgeOver45 / tot * 100);
+            }
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-info fs-5 align-middle"></i> Dưới 25 tuổi (Thế hệ Gen Z)</span>
+                    <span class="font-monospace">@Model.AgeUnder25 nhân sự (@pU25%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: @pU25%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-primary fs-5 align-middle"></i> Từ 25 - 35 tuổi (Lực lượng nòng cốt)</span>
+                    <span class="font-monospace">@Model.Age25To35 nhân sự (@p2535%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: @p2535%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-success fs-5 align-middle"></i> Từ 36 - 45 tuổi (Cấp quản lý & Trưởng nhóm)</span>
+                    <span class="font-monospace">@Model.Age36To45 nhân sự (@p3645%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @p3645%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-warning fs-5 align-middle"></i> Trên 45 tuổi (Chuyên gia cao cấp & Cố vấn)</span>
+                    <span class="font-monospace">@Model.AgeOver45 nhân sự (@pO45%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: @pO45%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CƠ CẤU THÂM NIÊN LÀM VIỆC -->
+    <div class="col-lg-6">
+        <div class="erp-card p-4 h-100 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-hourglass-split me-2 text-success"></i>Cơ Cấu Thâm Niên Cống Hiến</h6>
+                <span class="badge bg-light text-muted border">Độ gắn kết</span>
+            </div>
+            <p class="text-muted small mb-4">Đo lường mức độ ổn định và lòng trung thành của nhân viên</p>
+
+            @{
+                int pS1 = (int)Math.Round((double)Model.SeniorityUnder1Year / tot * 100);
+                int pS13 = (int)Math.Round((double)Model.Seniority1To3Years / tot * 100);
+                int pS35 = (int)Math.Round((double)Model.Seniority3To5Years / tot * 100);
+                int pSO5 = (int)Math.Round((double)Model.SeniorityOver5Years / tot * 100);
+            }
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-secondary fs-5 align-middle"></i> Dưới 1 năm (Mới gia nhập / Hội nhập)</span>
+                    <span class="font-monospace">@Model.SeniorityUnder1Year nhân sự (@pS1%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-secondary" role="progressbar" style="width: @pS1%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-info fs-5 align-middle"></i> Từ 1 - 3 năm (Ổn định công việc)</span>
+                    <span class="font-monospace">@Model.Seniority1To3Years nhân sự (@pS13%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: @pS13%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-primary fs-5 align-middle"></i> Từ 3 - 5 năm (Nòng cốt kinh nghiệm)</span>
+                    <span class="font-monospace">@Model.Seniority3To5Years nhân sự (@pS35%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: @pS35%"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small fw-semibold mb-1">
+                    <span><i class="bi bi-dot text-success fs-5 align-middle"></i> Trên 5 năm (Cống hiến bền vững)</span>
+                    <span class="font-monospace">@Model.SeniorityOver5Years nhân sự (@pSO5%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @pSO5%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. PHÂN BỔ THEO PHÒNG BAN -->
+    <div class="col-lg-8">
+        <div class="erp-card p-4 h-100 shadow-sm">
+            <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-diagram-3 me-2 text-primary"></i>Phân Bổ Định Biên Nhân Sự Theo Phòng Ban</h6>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Phòng Ban</th>
+                            <th class="text-center" style="width: 150px;">Số Lượng Nhân Sự</th>
+                            <th style="width: 250px;">Tỷ Lệ Chiếm Dụng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.DepartmentDistribution != null && Model.DepartmentDistribution.Any())
+                        {
+                            @foreach (var dept in Model.DepartmentDistribution)
+                            {
+                                int pct = (int)Math.Round((double)dept.Value / tot * 100);
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">@dept.Key</div>
+                                    </td>
+                                    <td class="text-center font-monospace fw-bold fs-6">
+                                        @dept.Value
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: @pct%"></div>
+                                            </div>
+                                            <span class="small font-monospace text-muted" style="min-width: 40px;">@pct%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. TỶ LỆ GIỚI TÍNH -->
+    <div class="col-lg-4">
+        <div class="erp-card p-4 h-100 shadow-sm text-center d-flex flex-column justify-content-between">
+            <div>
+                <h6 class="fw-bold mb-3 text-dark text-start"><i class="bi bi-gender-ambiguous me-2 text-warning"></i>Cơ Cấu Giới Tính</h6>
+                <div class="my-4 py-2">
+                    <div class="d-flex justify-content-center gap-4">
+                        <div class="p-3 bg-primary bg-opacity-10 rounded-circle text-primary" style="width: 80px; height: 80px; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-gender-male fs-1"></i>
+                        </div>
+                        <div class="p-3 bg-danger bg-opacity-10 rounded-circle text-danger" style="width: 80px; height: 80px; display: inline-flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-gender-female fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-2 pt-3 border-top">
+                <div class="col-6 border-end">
+                    <div class="text-muted small">Nam Giới</div>
+                    <div class="fs-4 fw-bold text-primary">@Model.MaleCount</div>
+                    <div class="small text-muted font-monospace">@((tot > 0 ? (int)Math.Round((double)Model.MaleCount / tot * 100) : 0))%</div>
+                </div>
+                <div class="col-6">
+                    <div class="text-muted small">Nữ Giới</div>
+                    <div class="fs-4 fw-bold text-danger">@Model.FemaleCount</div>
+                    <div class="small text-muted font-monospace">@((tot > 0 ? (int)Math.Round((double)Model.FemaleCount / tot * 100) : 0))%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

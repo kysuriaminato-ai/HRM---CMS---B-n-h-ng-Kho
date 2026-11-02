@@ -1,0 +1,135 @@
+﻿@model ERP_HRM_CMS.Models.ViewModels.SalesDashboardViewModel
+@{
+    Layout = "_SalesLayout";
+    ViewData["Title"] = "Báo Cáo Doanh Số & Đơn Hàng";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Tổng Quan Doanh Thu & Bán Hàng</h4>
+        <p class="text-secondary small mb-0">Số liệu cập nhật thời gian thực dành cho Giám đốc Kinh doanh</p>
+    </div>
+    <a href="/DonHang/Index" class="btn btn-sm btn-erp-black">Tra Cứu Toàn Bộ Đơn Hàng</a>
+</div>
+
+<!-- Khối KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Doanh Thu Hôm Nay</span>
+            <h3 class="fw-bold m-0 text-dark">@Model.TodayRevenue.ToString("N0") đ</h3>
+            <span class="small text-muted">@Model.TodayOrderCount đơn hoàn tất</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Doanh Thu Tháng Này</span>
+            <h3 class="fw-bold m-0 text-dark">@Model.MonthRevenue.ToString("N0") đ</h3>
+            <span class="small text-muted">@Model.MonthOrderCount đơn phát sinh</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Giá Trị Trung Bình / Đơn</span>
+            <h3 class="fw-bold m-0 text-dark">
+                @((Model.MonthOrderCount > 0 ? (Model.MonthRevenue / Model.MonthOrderCount) : 0).ToString("N0")) đ
+            </h3>
+            <span class="small text-muted">Hiệu suất rổ hàng</span>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3">
+            <span class="text-secondary small fw-semibold">Mặt Hàng Bán Chạy Nhất</span>
+            <h4 class="fw-bold m-0 text-truncate text-dark">
+                @(Model.TopSellingProducts.FirstOrDefault()?.ProductName ?? "Chưa có")
+            </h4>
+            <span class="small text-muted">Top 1 doanh số</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Top 5 sản phẩm bán chạy -->
+    <div class="col-lg-6">
+        <div class="erp-card h-100">
+            <div class="erp-card-header">Top 5 Sản Phẩm Xuất Sắc Nhất Tháng</div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle small">
+                    <thead>
+                        <tr>
+                            <th>Sản Phẩm</th>
+                            <th class="text-center">Số Lượng</th>
+                            <th class="text-end">Doanh Thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TopSellingProducts.Any())
+                        {
+                            foreach (var p in Model.TopSellingProducts)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">@p.ProductName</div>
+                                        <code>@p.SKU</code>
+                                    </td>
+                                    <td class="text-center"><span class="badge bg-dark">@p.TotalQuantitySold</span></td>
+                                    <td class="text-end fw-bold">@p.TotalSalesValue.ToString("N0") đ</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted py-4">Chưa có dữ liệu bán hàng tháng này.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Đơn hàng gần nhất -->
+    <div class="col-lg-6">
+        <div class="erp-card h-100">
+            <div class="erp-card-header">Đơn Hàng Gần Đây</div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle small">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách Hàng</th>
+                            <th class="text-end">Giá Trị</th>
+                            <th class="text-center">Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentOrders.Any())
+                        {
+                            foreach (var ord in Model.RecentOrders)
+                            {
+                                <tr>
+                                    <td><a href="/DonHang/ChiTiet/@ord.OrderId" class="fw-bold text-dark"><code>@ord.OrderCode</code></a></td>
+                                    <td>@ord.CustomerName</td>
+                                    <td class="text-end fw-bold">@ord.FinalAmount.ToString("N0") đ</td>
+                                    <td class="text-center">
+                                        @if (ord.OrderStatus == "Completed")
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">Hoàn tất</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark border">@ord.OrderStatus</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-4">Chưa có giao dịch đơn hàng.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

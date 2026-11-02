@@ -1,0 +1,133 @@
+@model IEnumerable<ERP_HRM_CMS.Models.Entities.Shift>
+@{
+    ViewData["Title"] = "Quản Lý Ca Làm Việc";
+    Layout = "_HRMLayout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Quản Lý Ca Làm Việc & Khung Giờ</h4>
+        <p class="text-muted small mb-0">Cấu hình các ca kíp hành chính, ca xoay, ca đêm và thời gian tính công tiêu chuẩn</p>
+    </div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTaoCa">
+        <i class="bi bi-plus-circle me-1"></i> Thêm Ca Làm Việc Mới
+    </button>
+</div>
+
+<!-- BANG DANH SACH CA LAM VIEC -->
+<div class="erp-card shadow-sm p-4">
+    <div class="table-responsive">
+        <table class="table erp-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Mã Ca</th>
+                    <th>Tên Ca Làm Việc</th>
+                    <th class="text-center">Giờ Bắt Đầu</th>
+                    <th class="text-center">Giờ Kết Thúc</th>
+                    <th class="text-center">Nghỉ Giữa Giờ</th>
+                    <th class="text-center">Số Giờ Công</th>
+                    <th class="text-center">Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><span class="badge bg-secondary font-monospace">@item.Code</span></td>
+                            <td class="fw-bold text-dark">@item.Name</td>
+                            <td class="text-center font-monospace text-primary fw-semibold">
+                                @item.StartTime.ToString(@"hh\:mm")
+                            </td>
+                            <td class="text-center font-monospace text-danger fw-semibold">
+                                @item.EndTime.ToString(@"hh\:mm")
+                            </td>
+                            <td class="text-center small text-muted font-monospace">
+                                @(item.BreakStartTime.HasValue && item.BreakEndTime.HasValue ? $"{item.BreakStartTime.Value.ToString(@"hh\:mm")} - {item.BreakEndTime.Value.ToString(@"hh\:mm")}" : "Không nghỉ")
+                            </td>
+                            <td class="text-center font-monospace fw-bold fs-6">
+                                @item.WorkHours <span class="fs-6 fw-normal text-muted">h</span>
+                            </td>
+                            <td class="text-center">
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Đang áp dụng</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">Ngưng sử dụng</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">Chưa có thông tin ca làm việc nào</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL TAO CA LAM VIEC MOI -->
+<div class="modal fade" id="modalTaoCa" tabindex="-1" aria-labelledby="modalTaoCaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-header-title fw-bold mb-0" id="modalTaoCaLabel">
+                    <i class="bi bi-clock me-2 text-primary"></i>Tạo Ca Làm Việc Mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="TaoCa" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Mã Ca (Ví dụ: CA_HANH_CHINH)</label>
+                        <input type="text" name="Code" class="form-control" placeholder="Mã ca kíp..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Tên Ca Làm Việc</label>
+                        <input type="text" name="Name" class="form-control" placeholder="Tên ca (Ca Hành Chính, Ca Sáng...)" required />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Giờ Bắt Đầu</label>
+                            <input type="time" name="StartTime" class="form-control" value="08:00" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Giờ Kết Thúc</label>
+                            <input type="time" name="EndTime" class="form-control" value="17:00" required />
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Bắt Đầu Nghỉ Giữa Giờ</label>
+                            <input type="time" name="BreakStartTime" class="form-control" value="12:00" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold text-secondary">Kết Thúc Nghỉ Giữa Giờ</label>
+                            <input type="time" name="BreakEndTime" class="form-control" value="13:00" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Số Giờ Công Tiêu Chuẩn (Ví dụ: 8.0)</label>
+                        <input type="number" step="0.5" name="WorkHours" class="form-control" value="8.0" required />
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="IsActive" class="form-check-input" value="true" checked id="chkActive" />
+                        <label class="form-check-label small fw-semibold" for="chkActive">Kích hoạt ca làm việc này ngay</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Lưu Ca Làm Việc</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

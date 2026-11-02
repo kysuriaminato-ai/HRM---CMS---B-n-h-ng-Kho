@@ -1,0 +1,191 @@
+@model ERP_HRM_CMS.Models.ViewModels.PhanQuyenCaNhanViewModel
+@{
+    ViewData["Title"] = "Ngoại Lệ Phân Quyền Cá Nhân (ACL Override)";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #F8F9FA;
+            color: #111111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .acl-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .state-select {
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+
+        .state-default {
+            background-color: #F3F4F6;
+            color: #374151;
+        }
+
+        .state-grant {
+            background-color: #DCFCE7;
+            color: #166534;
+            font-weight: 700;
+        }
+
+        .state-deny {
+            background-color: #FEE2E2;
+            color: #991B1B;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-person-gear me-2"></i>Ngoại Lệ Quyền Cá Nhân (ACL Override Matrix)</h4>
+                <p class="text-secondary small mb-0">Thiết lập quyền vượt cấp (Cấp riêng) hoặc tước quyền (Chặn riêng) cho từng người dùng cụ thể</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/PhanQuyen/MaTranPhanQuyen" class="btn btn-outline-dark btn-sm fw-semibold">
+                    <i class="bi bi-shield-lock me-1"></i> Về Ma Trận Vai Trò
+                </a>
+                <button type="button" class="btn btn-dark btn-sm fw-semibold" onclick="luuAclCaNhan()">
+                    <i class="bi bi-check2-circle me-1"></i> Lưu Ngoại Lệ
+                </button>
+            </div>
+        </div>
+
+        <!-- Chọn người dùng -->
+        <div class="mb-4">
+            <label class="form-label small fw-semibold text-secondary mb-2">CHỌN TÀI KHOẢN NGƯỜI DÙNG:</label>
+            <div class="dropdown">
+                <button class="btn btn-white border dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-1"></i> @Model.FullName (@Model.Username)
+                </button>
+                <ul class="dropdown-menu">
+                    @foreach (var u in Model.Users)
+                    {
+                        <li>
+                            <a class="dropdown-item @(u.Id == Model.SelectedUserId ? "active" : "")"
+                               href="@Url.Action("PhanQuyenCaNhan", new { userId = u.Id })">
+                                @u.FullName (<code>@u.Username</code>)
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="acl-card p-3">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 250px;">Mã Quyền</th>
+                            <th style="width: 320px;">Tên Quyền Hạn</th>
+                            <th style="width: 180px;" class="text-center">Kế Thừa Từ Role</th>
+                            <th style="width: 260px;" class="text-center">Ngoại Lệ Cá Nhân (ACL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var mod in Model.Modules)
+                        {
+                            <tr class="table-secondary fw-bold">
+                                <td colspan="4"><i class="@mod.ModuleIcon me-2"></i> @mod.ModuleName</td>
+                            </tr>
+                            @foreach (var p in mod.Permissions)
+                            {
+                                bool inherited = Model.RoleInheritedPermissionIds.Contains(p.Id);
+                                bool hasOverride = Model.UserAclOverrides.TryGetValue(p.Id, out bool isGranted);
+
+                                <tr>
+                                    <td><code>@p.Code</code></td>
+                                    <td>@p.Name</td>
+                                    <td class="text-center">
+                                        @if (inherited)
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Có quyền
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-muted border">Không có</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <select class="form-select form-select-sm state-select d-inline-block w-auto acl-item"
+                                                data-perm-id="@p.Id" onchange="capNhatMauSelect(this)">
+                                            <option value="" class="state-default" selected="@(!hasOverride)">-- Mặc định theo Role --</option>
+                                            <option value="true" class="state-grant" selected="@(hasOverride && isGranted)">[+] CẤP VƯỢT CẤP</option>
+                                            <option value="false" class="state-deny" selected="@(hasOverride && !isGranted)">[-] CHẶN TRUY CẬP</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function capNhatMauSelect(elem) {
+            elem.classList.remove('state-default', 'state-grant', 'state-deny');
+            if (elem.value === 'true') elem.classList.add('state-grant');
+            else if (elem.value === 'false') elem.classList.add('state-deny');
+            else elem.classList.add('state-default');
+        }
+
+        document.querySelectorAll('.state-select').forEach(elem => capNhatMauSelect(elem));
+
+        function luuAclCaNhan() {
+            const userId = @Model.SelectedUserId;
+            const overrides = [];
+
+            document.querySelectorAll('.acl-item').forEach(sel => {
+                const permId = parseInt(sel.getAttribute('data-perm-id'));
+                const val = sel.value;
+                if (val === 'true') {
+                    overrides.push({ permissionId: permId, state: true });
+                } else if (val === 'false') {
+                    overrides.push({ permissionId: permId, state: false });
+                } else {
+                    overrides.push({ permissionId: permId, state: null });
+                }
+            });
+
+            fetch('/PhanQuyen/LuuPhanQuyenCaNhan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: userId, overrides: overrides })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Không thể kết nối đến máy chủ.');
+            });
+        }
+    </script>
+</body>
+</html>

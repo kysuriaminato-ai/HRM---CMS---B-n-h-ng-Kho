@@ -1,0 +1,231 @@
+@model ERP_HRM_CMS.Models.Entities.PurchaseOrder
+@{
+    ViewData["Title"] = $"Chi Tiết Đơn Mua Hàng {Model.POCode}";
+    Layout = "~/Views/Shared/_WarehouseLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <a href="/PurchaseOrder/Index" class="text-decoration-none small text-muted"><i class="bi bi-arrow-left me-1"></i>Quay lại danh sách PO</a>
+        <div class="d-flex align-items-center gap-3 mt-1">
+            <h4 class="fw-bold mb-0">Đơn Hàng: <span class="text-primary font-monospace">@Model.POCode</span></h4>
+            @switch (Model.Status)
+            {
+                case "PendingApproval":
+                    <span class="badge bg-warning-subtle text-warning border px-3 py-2"><i class="bi bi-clock me-1"></i>Chờ Phê Duyệt</span>
+                    break;
+                case "Approved":
+                    <span class="badge bg-info-subtle text-info border px-3 py-2"><i class="bi bi-check2 me-1"></i>Đã Duyệt (Chờ Nhập Kho)</span>
+                    break;
+                case "Received":
+                    <span class="badge bg-success-subtle text-success border px-3 py-2"><i class="bi bi-box-seam me-1"></i>Đã Nhập Kho Thực Tế</span>
+                    break;
+                case "Cancelled":
+                    <span class="badge bg-danger-subtle text-danger border px-3 py-2"><i class="bi bi-x-circle me-1"></i>Đã Hủy Đơn</span>
+                    break;
+            }
+        </div>
+    </div>
+
+    <!-- Nút Quy Trình Hành Động -->
+    <div class="d-flex gap-2">
+        @if (Model.Status == "PendingApproval")
+        {
+            <form asp-action="DuyetDon" asp-route-id="@Model.Id" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success" onclick="return confirm('Bạn có chắc chắn muốn phê duyệt đơn mua hàng này?')">
+                    <i class="bi bi-check-lg me-1"></i> Phê Duyệt Đơn
+                </button>
+            </form>
+            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                <i class="bi bi-x-lg me-1"></i> Hủy Đơn
+            </button>
+        }
+        else if (Model.Status == "Approved")
+        {
+            <form asp-action="NhanHang" asp-route-id="@Model.Id" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary" onclick="return confirm('Xác nhận hàng đã về kho? Hệ thống sẽ tự động TĂNG TỒN KHO và GHI NHẬN CÔNG NỢ.')">
+                    <i class="bi bi-box-arrow-in-down me-1"></i> Xác Nhận Hàng Về Kho
+                </button>
+            </form>
+            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                <i class="bi bi-x-lg me-1"></i> Hủy Đơn
+            </button>
+        }
+        else if (Model.Status == "Received")
+        {
+            <a href="/CongNo/Index?type=PAYABLE" class="btn btn-outline-danger">
+                <i class="bi bi-cash-stack me-1"></i> Xem Công Nợ NCC
+            </a>
+            <a href="/Kho/Index?branchId=@Model.BranchId" class="btn btn-outline-primary">
+                <i class="bi bi-box-seam me-1"></i> Kiểm Tra Tồn Kho
+            </a>
+        }
+    </div>
+</div>
+
+@if (Model.Status == "Received")
+{
+    <div class="alert alert-success d-flex align-items-center mb-4 shadow-sm border-0" role="alert">
+        <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+        <div>
+            <div class="fw-bold">Đơn hàng đã được nhập kho thành công vào lúc @Model.ReceivedDate?.ToString("HH:mm dd/MM/yyyy")!</div>
+            <div class="small">Số lượng sản phẩm đã tự động cộng vào tồn kho chi nhánh <strong>@Model.Branch.Name</strong> và ghi nhận công nợ phải trả nhà cung cấp <strong>@Model.Supplier.Name</strong>.</div>
+        </div>
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <!-- Thông tin nhà cung cấp -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-building me-1"></i>Nhà Cung Cấp</h6>
+            <div class="fs-5 fw-bold text-main">@Model.Supplier.Name</div>
+            <div class="text-muted small mt-1">Mã NCC: <span class="font-monospace text-secondary fw-semibold">@Model.Supplier.Code</span></div>
+            <div class="small mt-2"><i class="bi bi-receipt me-2 text-muted"></i>MST: @(Model.Supplier.TaxCode ?? "Chưa có")</div>
+            <div class="small mt-1"><i class="bi bi-telephone me-2 text-muted"></i>SĐT: @(Model.Supplier.Phone ?? "Chưa có")</div>
+            <div class="small mt-1"><i class="bi bi-envelope me-2 text-muted"></i>Email: @(Model.Supplier.Email ?? "Chưa có")</div>
+            <div class="small mt-1"><i class="bi bi-geo-alt me-2 text-muted"></i>Địa chỉ: @(Model.Supplier.Address ?? "Chưa có")</div>
+        </div>
+    </div>
+
+    <!-- Thông tin nhập kho -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-geo-alt me-1"></i>Địa Điểm & Thời Gian</h6>
+            <div class="fw-semibold">Chi Nhánh Nhập: <span class="text-primary">@Model.Branch.Name</span></div>
+            <div class="text-muted small mt-1"><i class="bi bi-pin-map me-1"></i>@Model.Branch.Address</div>
+            <hr class="my-2" />
+            <div class="small mt-2"><strong>Ngày đặt hàng:</strong> @Model.OrderDate.ToString("dd/MM/yyyy")</div>
+            <div class="small mt-1"><strong>Dự kiến nhận:</strong> @(Model.ExpectedDeliveryDate?.ToString("dd/MM/yyyy") ?? "Chưa ấn định")</div>
+            <div class="small mt-1"><strong>Thực tế nhận:</strong> @(Model.ReceivedDate?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa nhận")</div>
+            @if (!string.IsNullOrEmpty(Model.Note))
+            {
+                <div class="small mt-2 text-muted"><strong>Ghi chú:</strong> @Model.Note</div>
+            }
+        </div>
+    </div>
+
+    <!-- Thông tin nhân sự & Phê duyệt -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shield-check me-1"></i>Kiểm Soát & Phê Duyệt</h6>
+            <div class="small"><strong>Người lập đơn:</strong> @Model.Creator.Username (@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm"))</div>
+            <div class="small mt-2">
+                <strong>Người phê duyệt:</strong> 
+                @if (Model.Approver != null)
+                {
+                    <span class="text-success fw-semibold">@Model.Approver.Username</span>
+                }
+                else
+                {
+                    <span class="text-muted italic">Chưa duyệt</span>
+                }
+            </div>
+            <hr class="my-3" />
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Tình trạng thanh toán:</span>
+                @if (Model.DebtAmount <= 0)
+                {
+                    <span class="badge bg-success-subtle text-success">Đã tất toán</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger-subtle text-danger">Còn nợ: @Model.DebtAmount.ToString("N0") đ</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng chi tiết mặt hàng -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent py-3">
+        <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-list-check me-2"></i>Danh Sách Sản Phẩm Nhập Hàng (@Model.PurchaseOrderDetails.Count mặt hàng)</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">#</th>
+                    <th style="width: 45%;">Tên Hàng Hóa / Sản Phẩm</th>
+                    <th style="width: 15%;" class="text-center">Số Lượng</th>
+                    <th style="width: 15%;" class="text-end">Đơn Giá Nhập</th>
+                    <th style="width: 20%;" class="text-end">Thành Tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int idx = 1; }
+                @foreach (var d in Model.PurchaseOrderDetails)
+                {
+                    <tr>
+                        <td class="text-muted">@(idx++)</td>
+                        <td>
+                            <div class="fw-bold text-main">@d.Product.Name</div>
+                            <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">SKU: @d.Product.SKU</span>
+                            <span class="text-muted small ms-2">ĐVT: @d.Product.Unit</span>
+                        </td>
+                        <td class="text-center fw-bold fs-6">
+                            @d.Quantity
+                        </td>
+                        <td class="text-end font-monospace">
+                            @d.UnitPrice.ToString("N0") đ
+                        </td>
+                        <td class="text-end fw-bold font-monospace text-primary">
+                            @d.TotalPrice.ToString("N0") đ
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="text-end fw-semibold">Tổng tiền hàng:</td>
+                    <td class="text-end fw-bold font-monospace">@Model.TotalAmount.ToString("N0") đ</td>
+                </tr>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <tr>
+                        <td colspan="4" class="text-end text-muted">Chiết khấu / Giảm giá:</td>
+                        <td class="text-end font-monospace text-danger">-@Model.DiscountAmount.ToString("N0") đ</td>
+                    </tr>
+                }
+                <tr class="table-light">
+                    <td colspan="4" class="text-end fw-bold fs-5 text-primary">Tổng tiền thanh toán (Final Amount):</td>
+                    <td class="text-end fw-bold fs-4 text-primary font-monospace">@Model.FinalAmount.ToString("N0") đ</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end text-muted">Đã thanh toán NCC:</td>
+                    <td class="text-end font-monospace text-success">@Model.PaidAmount.ToString("N0") đ</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end fw-bold text-danger">Công nợ còn phải trả NCC:</td>
+                    <td class="text-end fw-bold font-monospace text-danger fs-5">@Model.DebtAmount.ToString("N0") đ</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Hủy Đơn -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <form asp-action="HuyDon" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Hủy Đơn Mua Hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <label class="form-label small fw-semibold">Lý do hủy đơn hàng <span class="text-danger">*</span></label>
+                    <textarea name="reason" class="form-control" rows="3" required placeholder="Nhập nguyên nhân hủy đơn..."></textarea>
+                </div>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger px-3"><i class="bi bi-x-circle me-1"></i> Xác Nhận Hủy Đơn</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

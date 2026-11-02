@@ -1,0 +1,88 @@
+﻿@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản Trị Bố Cục Trang Web (SiteLayouts)";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Cấu Hình Bố Cục Khối Trang Chủ</h4>
+        <p class="text-secondary small mb-0">Bật/tắt và sắp xếp thứ tự xuất hiện của các khối thành phần</p>
+    </div>
+    <button type="button" class="btn btn-erp-black" onclick="luuThuTu()">
+        <i class="bi bi-save me-1"></i> Lưu Thứ Tự
+    </button>
+</div>
+
+<div class="erp-card">
+    <div class="table-responsive">
+        <table class="table erp-table mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">Thứ Tự</th>
+                    <th>Khóa Định Danh (Block Key)</th>
+                    <th>Tên Khối Hiển Thị</th>
+                    <th>Custom CSS Class</th>
+                    <th class="text-center" style="width: 140px;">Bật / Tắt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>
+                            <input type="number" class="form-control form-control-sm block-order"
+                                   data-id="@b.Id" value="@b.OrderIndex" style="width: 70px;" />
+                        </td>
+                        <td><code>@b.BlockKey</code></td>
+                        <td class="fw-semibold">@b.BlockTitle</td>
+                        <td><small class="text-muted">@b.CustomCssClass</small></td>
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input" type="checkbox"
+                                       @(b.IsActive ? "checked" : "") onchange="toggleBlock(@b.Id, this.checked)" />
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleBlock(id, status) {
+            fetch('/LayoutConfig/CapNhatTrangThaiBlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blockId: id, isActive: status })
+            })
+            .then(res => res.json())
+            .then(d => {
+                if (!d.success) alert(d.message);
+            });
+        }
+
+        function luuThuTu() {
+            const list = [];
+            document.querySelectorAll('.block-order').forEach(input => {
+                list.push({
+                    blockId: parseInt(input.getAttribute('data-id')),
+                    orderIndex: parseInt(input.value)
+                });
+            });
+
+            fetch('/LayoutConfig/SapXepThuTu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(list)
+            })
+            .then(res => res.json())
+            .then(d => {
+                alert(d.message);
+                location.reload();
+            });
+        }
+    </script>
+}
