@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -29,7 +30,7 @@ namespace ERP_HRM_CMS.Services.Printing
             }
 
             _tieuDe = tieuDe.Trim();
-            _thoiDiemIn = DateTime.Now;
+            _thoiDiemIn = VietnamTime.Now;
         }
 
         // [OOP - ĐÓNG GÓI] Chỉ đọc từ bên ngoài

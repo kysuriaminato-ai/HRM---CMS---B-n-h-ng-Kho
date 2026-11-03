@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -6,279 +7,79 @@ namespace ERP_HRM_CMS.Data
 {
     public static class DbInitializer
     {
-        public static async Task SeedAsync(AppDbContext context, string? initialAdminPassword = null)
+        /// <param name="initialAdminPassword">Mật khẩu ban đầu cho tài khoản quản trị (SeedAdmin:Password). Bắt buộc khi tạo tài khoản lần đầu.</param>
+        /// <param name="seedDemo">Chỉ true khi Development và Seed:Demo=true. Dữ liệu mẫu không bao giờ chạy ở production.</param>
+        public static async Task SeedAsync(AppDbContext context, string? initialAdminPassword = null, bool seedDemo = false)
         {
-            // 1. Đảm bảo Database và toàn bộ cấu trúc bảng đã được tạo
-            await context.Database.EnsureCreatedAsync();
+            // 1. Áp dụng migration EF Core: tạo DB/bảng cho DB mới, cập nhật DB đã có mà không mất dữ liệu
+            await MigrateSchemaAsync(context);
 
-            // Đảm bảo bảng AuditLogs và Notifications đã tồn tại trong SQL Server
+            // 2. Dữ liệu nền (SeedCore) chạy ở mọi môi trường
+            await SeedCoreDataAsync(context, initialAdminPassword);
+
+            // 3. Dữ liệu mẫu (SeedDemo) chỉ chạy khi được bật rõ ràng
+            if (seedDemo)
+            {
+                await SeedDemoDataAsync(context);
+            }
+        }
+
+        /// <summary>
+        /// Hậu tố tên migration baseline (tạo bằng: dotnet ef migrations add InitialBaseline).
+        /// Baseline phản ánh model hiện tại; DB đã có sẵn được đánh dấu là đã áp dụng baseline.
+        /// </summary>
+        private const string BaselineMigrationSuffix = "_InitialBaseline";
+
+        /// <summary>
+        /// Áp dụng các migration còn thiếu. Với DB đã có bảng nhưng chưa có bảng lịch sử migration
+        /// (tạo bằng EnsureCreated trước đây), đánh dấu baseline là đã áp dụng để không chạy lại CREATE TABLE
+        /// trên dữ liệu thật. Không xóa và không sửa dữ liệu nghiệp vụ.
+        /// </summary>
+        public static async Task MigrateSchemaAsync(AppDbContext context)
+        {
+            var baseline = context.Database.GetMigrations()
+                .FirstOrDefault(id => id.EndsWith(BaselineMigrationSuffix, StringComparison.Ordinal));
+            if (baseline == null)
+            {
+                throw new InvalidOperationException(
+                    "Thiếu migration baseline (…_InitialBaseline). Chạy: dotnet ef migrations add InitialBaseline.");
+            }
+
+            // Chỉ đánh dấu khi DB đã có bảng Users (DB đang dùng) và chưa có bảng lịch sử migration
             await context.Database.ExecuteSqlRawAsync(@"
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'AuditLogs')
+                IF OBJECT_ID(N'dbo.__EFMigrationsHistory') IS NULL AND OBJECT_ID(N'dbo.Users') IS NOT NULL
                 BEGIN
-                    CREATE TABLE [AuditLogs] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [UserId] int NULL,
-                        [Username] nvarchar(100) NULL,
-                        [Action] nvarchar(50) NOT NULL,
-                        [EntityName] nvarchar(100) NOT NULL,
-                        [RecordId] nvarchar(100) NULL,
-                        [OldValues] nvarchar(max) NULL,
-                        [NewValues] nvarchar(max) NULL,
-                        [AffectedColumns] nvarchar(max) NULL,
-                        [IpAddress] nvarchar(50) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
+                    CREATE TABLE dbo.__EFMigrationsHistory (
+                        MigrationId nvarchar(150) NOT NULL PRIMARY KEY,
+                        ProductVersion nvarchar(32) NOT NULL
                     );
-                END;
+                    INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                    VALUES (@baseline, N'8.0.0');
+                END;",
+                new Microsoft.Data.SqlClient.SqlParameter("@baseline", baseline));
 
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Notifications')
-                BEGIN
-                    CREATE TABLE [Notifications] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [ReceiverUserId] int NULL,
-                        [TargetRole] nvarchar(50) NULL,
-                        [Title] nvarchar(250) NOT NULL,
-                        [Content] nvarchar(1000) NOT NULL,
-                        [LinkUrl] nvarchar(500) NULL,
-                        [Type] nvarchar(50) NOT NULL DEFAULT 'SYSTEM',
-                        [IsRead] bit NOT NULL DEFAULT 0,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
+            await context.Database.MigrateAsync();
+        }
 
-                -- BẢNG PHÂN HỆ SCM & MUA HÀNG (PHIÊN 3)
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Suppliers')
-                BEGIN
-                    CREATE TABLE [Suppliers] (
-                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [Code] nvarchar(50) NOT NULL,
-                        [Name] nvarchar(250) NOT NULL,
-                        [TaxCode] nvarchar(50) NULL,
-                        [Phone] nvarchar(20) NULL,
-                        [Email] nvarchar(100) NULL,
-                        [Address] nvarchar(300) NULL,
-                        [TotalDebt] decimal(18,2) NOT NULL DEFAULT 0,
-                        [IsActive] bit NOT NULL DEFAULT 1,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseOrders')
-                BEGIN
-                    CREATE TABLE [PurchaseOrders] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [POCode] nvarchar(50) NOT NULL,
-                        [SupplierId] int NOT NULL FOREIGN KEY REFERENCES [Suppliers]([Id]),
-                        [BranchId] int NOT NULL FOREIGN KEY REFERENCES [Branches]([Id]),
-                        [OrderDate] datetime2 NOT NULL DEFAULT GETDATE(),
-                        [ExpectedDeliveryDate] datetime2 NULL,
-                        [ReceivedDate] datetime2 NULL,
-                        [TotalAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [DiscountAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [FinalAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [PaidAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [DebtAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Status] nvarchar(50) NOT NULL DEFAULT 'PendingApproval',
-                        [CreatedBy] int NOT NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [ApprovedBy] int NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [Note] nvarchar(500) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PurchaseOrderDetails')
-                BEGIN
-                    CREATE TABLE [PurchaseOrderDetails] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [PurchaseOrderId] bigint NOT NULL FOREIGN KEY REFERENCES [PurchaseOrders]([Id]) ON DELETE CASCADE,
-                        [ProductId] int NOT NULL FOREIGN KEY REFERENCES [Products]([Id]),
-                        [Quantity] int NOT NULL DEFAULT 1,
-                        [UnitPrice] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TotalPrice] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Note] nvarchar(250) NULL
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DebtRecords')
-                BEGIN
-                    CREATE TABLE [DebtRecords] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [DebtType] nvarchar(20) NOT NULL,
-                        [PartnerType] nvarchar(20) NOT NULL,
-                        [PartnerName] nvarchar(200) NOT NULL,
-                        [PartnerPhone] nvarchar(50) NULL,
-                        [SupplierId] int NULL FOREIGN KEY REFERENCES [Suppliers]([Id]),
-                        [OrderId] bigint NULL FOREIGN KEY REFERENCES [Orders]([Id]),
-                        [PurchaseOrderId] bigint NULL FOREIGN KEY REFERENCES [PurchaseOrders]([Id]),
-                        [DocumentCode] nvarchar(50) NOT NULL,
-                        [TotalAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [PaidAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [RemainingAmount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [DueDate] datetime2 NOT NULL,
-                        [Status] nvarchar(30) NOT NULL DEFAULT 'Unpaid',
-                        [Note] nvarchar(500) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'DebtPayments')
-                BEGIN
-                    CREATE TABLE [DebtPayments] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [DebtRecordId] bigint NOT NULL FOREIGN KEY REFERENCES [DebtRecords]([Id]) ON DELETE CASCADE,
-                        [PaymentCode] nvarchar(50) NOT NULL,
-                        [Amount] decimal(18,2) NOT NULL DEFAULT 0,
-                        [PaymentMethod] nvarchar(50) NOT NULL DEFAULT 'BANK_TRANSFER',
-                        [PaymentDate] datetime2 NOT NULL DEFAULT GETDATE(),
-                        [Note] nvarchar(500) NULL,
-                        [CreatedBy] int NOT NULL FOREIGN KEY REFERENCES [Users]([Id])
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StocktakingSheets')
-                BEGIN
-                    CREATE TABLE [StocktakingSheets] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [Code] nvarchar(50) NOT NULL,
-                        [BranchId] int NOT NULL FOREIGN KEY REFERENCES [Branches]([Id]),
-                        [CheckDate] datetime2 NOT NULL DEFAULT GETDATE(),
-                        [TotalSystemQty] int NOT NULL DEFAULT 0,
-                        [TotalActualQty] int NOT NULL DEFAULT 0,
-                        [TotalDifferenceQty] int NOT NULL DEFAULT 0,
-                        [TotalDifferenceValue] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Status] nvarchar(30) NOT NULL DEFAULT 'Draft',
-                        [CreatedBy] int NOT NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [Note] nvarchar(500) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'StocktakingDetails')
-                BEGIN
-                    CREATE TABLE [StocktakingDetails] (
-                        [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [StocktakingSheetId] bigint NOT NULL FOREIGN KEY REFERENCES [StocktakingSheets]([Id]) ON DELETE CASCADE,
-                        [ProductId] int NOT NULL FOREIGN KEY REFERENCES [Products]([Id]),
-                        [SystemQuantity] int NOT NULL DEFAULT 0,
-                        [ActualQuantity] int NOT NULL DEFAULT 0,
-                        [DifferenceQuantity] int NOT NULL DEFAULT 0,
-                        [CostPrice] decimal(18,2) NOT NULL DEFAULT 0,
-                        [DifferenceValue] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Reason] nvarchar(250) NULL
-                    );
-                END;
-
-                -- BẢNG PHÂN HỆ HRM NÂNG CAO & TIỀN LƯƠNG (PHIÊN 4)
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'LeaveRequests')
-                BEGIN
-                    CREATE TABLE [LeaveRequests] (
-                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [RequestCode] nvarchar(50) NOT NULL,
-                        [EmployeeId] int NOT NULL FOREIGN KEY REFERENCES [Employees]([Id]),
-                        [RequestType] nvarchar(50) NOT NULL DEFAULT 'ANNUAL_LEAVE',
-                        [FromDate] datetime2 NOT NULL,
-                        [ToDate] datetime2 NOT NULL,
-                        [TotalDays] decimal(5,2) NOT NULL DEFAULT 1.0,
-                        [Reason] nvarchar(500) NOT NULL,
-                        [AttachmentUrl] nvarchar(500) NULL,
-                        [Status] nvarchar(50) NOT NULL DEFAULT 'CHO_DUYET',
-                        [DepartmentHeadId] int NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [DepartmentHeadApprovedAt] datetime2 NULL,
-                        [DepartmentHeadNote] nvarchar(500) NULL,
-                        [DirectorId] int NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [DirectorApprovedAt] datetime2 NULL,
-                        [DirectorNote] nvarchar(500) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PayrollPeriods')
-                BEGIN
-                    CREATE TABLE [PayrollPeriods] (
-                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [Name] nvarchar(150) NOT NULL,
-                        [Month] int NOT NULL,
-                        [Year] int NOT NULL,
-                        [StandardWorkDays] int NOT NULL DEFAULT 22,
-                        [Status] nvarchar(50) NOT NULL DEFAULT 'DRAFT',
-                        [TotalGrossSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TotalNetSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TotalInsurance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TotalPIT] decimal(18,2) NOT NULL DEFAULT 0,
-                        [CreatedBy] int NULL FOREIGN KEY REFERENCES [Users]([Id]),
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE(),
-                        [LockedAt] datetime2 NULL
-                    );
-                END;
-
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'SalarySlips')
-                BEGIN
-                    CREATE TABLE [SalarySlips] (
-                        [Id] int IDENTITY(1,1) NOT NULL PRIMARY KEY,
-                        [PayrollPeriodId] int NOT NULL FOREIGN KEY REFERENCES [PayrollPeriods]([Id]) ON DELETE CASCADE,
-                        [EmployeeId] int NOT NULL FOREIGN KEY REFERENCES [Employees]([Id]),
-                        [BasicSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [InsuranceSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [StandardDays] int NOT NULL DEFAULT 22,
-                        [ActualWorkDays] decimal(5,2) NOT NULL DEFAULT 0,
-                        [PaidLeaveDays] decimal(5,2) NOT NULL DEFAULT 0,
-                        [UnpaidLeaveDays] decimal(5,2) NOT NULL DEFAULT 0,
-                        [OvertimeHours] decimal(5,2) NOT NULL DEFAULT 0,
-                        [StandardWorkSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [OvertimeSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [PositionAllowance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [LunchAllowance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [OtherAllowance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Bonus] decimal(18,2) NOT NULL DEFAULT 0,
-                        [GrossSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [LatePenalty] decimal(18,2) NOT NULL DEFAULT 0,
-                        [SocialInsurance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [HealthInsurance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [UnemploymentInsurance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TotalInsurance] decimal(18,2) NOT NULL DEFAULT 0,
-                        [TaxableIncome] decimal(18,2) NOT NULL DEFAULT 0,
-                        [PersonalIncomeTax] decimal(18,2) NOT NULL DEFAULT 0,
-                        [NetSalary] decimal(18,2) NOT NULL DEFAULT 0,
-                        [Status] nvarchar(50) NOT NULL DEFAULT 'DRAFT',
-                        [Note] nvarchar(500) NULL,
-                        [CreatedAt] datetime2 NOT NULL DEFAULT GETDATE()
-                    );
-                END;
-            ");
-
-            // Bảng trạng thái đã đọc của thông báo chung (mỗi người đọc riêng) cho database đã tồn tại
-            await context.Database.ExecuteSqlRawAsync(@"
-                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'NotificationReads')
-                BEGIN
-                    CREATE TABLE [NotificationReads] (
-                        [NotificationId] bigint NOT NULL,
-                        [UserId] int NOT NULL,
-                        [ReadAt] datetime2 NOT NULL DEFAULT GETDATE(),
-                        CONSTRAINT [PK_NotificationReads] PRIMARY KEY ([NotificationId], [UserId]),
-                        CONSTRAINT [FK_NotificationReads_Notifications] FOREIGN KEY ([NotificationId])
-                            REFERENCES [Notifications]([Id]) ON DELETE CASCADE
-                    );
-                END;
-            ");
-
-            // 2. KHỞI TẠO PHÂN HỆ QUẢN TRỊ & PHÂN QUYỀN (Auth & Permissions)
+        /// <summary>
+        /// SeedCore: bổ sung cột/bảng cho dữ liệu đã có, quyền, tài khoản quản trị và cấu hình site.
+        /// Không tạo dữ liệu nghiệp vụ mẫu và không tạo tài khoản đăng nhập mẫu.
+        /// </summary>
+        private static async Task SeedCoreDataAsync(AppDbContext context, string? initialAdminPassword)
+        {
             await SeedAuthAndPermissionsAsync(context);
+            await SeedAdminAccountsAsync(context, initialAdminPassword);
+            await SeedSiteSettingsAsync(context);
+        }
 
-            // 3. KHỞI TẠO PHÂN HỆ HRM (Công ty, Chi nhánh, Phòng ban, Chức vụ, Ca làm việc, Nhân viên, Hợp đồng, Chi tiết)
+        /// <summary>SeedDemo: dữ liệu nhân sự, CMS, bán hàng, kho, mua hàng và lương mẫu.</summary>
+        private static async Task SeedDemoDataAsync(AppDbContext context)
+        {
             await SeedHrmDataAsync(context);
-
-            // 4. KHỞI TẠO TÀI KHOẢN NGƯỜI DÙNG & GÁN VAI TRÒ
-            await SeedUsersAndRolesAsync(context, initialAdminPassword);
-
-            // 5. KHỞI TẠO PHÂN HỆ CMS (SiteSettings, Banners, Menus, Contents)
+            await AssignDemoRolesAsync(context);
             await SeedCmsDataAsync(context);
-
-            // 6. KHỞI TẠO PHÂN HỆ BÁN HÀNG & KHO (Danh mục, Sản phẩm, Tồn kho ban đầu)
             await SeedSalesAndInventoryDataAsync(context);
-
-            // 7. KHỞI TẠO PHÂN HỆ SCM, MUA HÀNG, CÔNG NỢ & KIỂM KÊ (Phiên 3)
             await SeedScmDataAsync(context);
-
-            // 8. KHỞI TẠO PHÂN HỆ HRM NÂNG CAO & TIỀN LƯƠNG (Phiên 4)
             await SeedHrmAdvancedDataAsync(context);
         }
 
@@ -378,6 +179,8 @@ namespace ERP_HRM_CMS.Data
                 ("hrm_leave", "hrm.leave.view", "Xem danh sách đơn từ trực tuyến"),
                 ("hrm_leave", "hrm.leave.manage", "Tạo và nộp đơn từ trực tuyến"),
                 ("hrm_leave", "hrm.leave.approve", "Phê duyệt hoặc từ chối đơn từ"),
+                // Quyền tự phục vụ: chỉ thao tác trên dữ liệu của chính nhân viên đăng nhập
+                ("hrm_leave", "hrm.self.service", "Tự phục vụ: tạo đơn từ và xem chấm công của chính mình"),
 
                 // Phân hệ Bảng lương & Chi trả (Phiên 4)
                 ("hrm_payroll", "hrm.payroll.view", "Xem bảng lương & phiếu lương"),
@@ -405,7 +208,9 @@ namespace ERP_HRM_CMS.Data
                 new Role { Code = "SUPERADMIN", Name = "Quản trị viên Cấp cao", Description = "Toàn quyền hệ thống", IsSystem = true },
                 new Role { Code = "HR_MANAGER", Name = "Trưởng phòng Nhân sự", Description = "Quản lý nhân viên, chấm công, hợp đồng", IsSystem = false },
                 new Role { Code = "SALES_STAFF", Name = "Nhân viên Bán hàng", Description = "Bán hàng POS và xử lý đơn hàng", IsSystem = false },
+                new Role { Code = "SALES_DIRECTOR", Name = "Giám đốc Kinh doanh", Description = "Quản lý đơn hàng, xem sản phẩm và báo cáo bán hàng", IsSystem = false },
                 new Role { Code = "WAREHOUSE_STAFF", Name = "Thủ kho Chuyên trách", Description = "Quản lý tồn kho và nhập xuất kho", IsSystem = false },
+                new Role { Code = "EMPLOYEE", Name = "Nhân viên", Description = "Tự phục vụ: đơn từ và chấm công của chính mình", IsSystem = false },
                 new Role { Code = "ADMIN_MENU", Name = "Quản trị Menu website", Description = "Quản lý menu điều hướng website", IsSystem = false },
                 new Role { Code = "ADMIN_CONTENT", Name = "Quản trị Nội dung", Description = "Quản lý bài viết, banner và giao diện", IsSystem = false },
                 // Các admin nhóm: mỗi nhóm chỉ giữ đúng nhóm quyền của mình
@@ -452,6 +257,12 @@ namespace ERP_HRM_CMS.Data
             // SALES_STAFF có quyền bán hàng, xem sản phẩm, đơn hàng
             await AssignPermissionsToRole("SALES_STAFF", p => p.Code == "order.pos" || p.Code == "order.view" || p.Code == "product.view");
 
+            // SALES_DIRECTOR (Giám đốc Kinh doanh) thay vai trò alias SaleDirector: quản trị đơn hàng, xem sản phẩm, báo cáo bán hàng
+            await AssignPermissionsToRole("SALES_DIRECTOR", p => p.Code.StartsWith("order.") || p.Code == "product.view" || p.Code == "report.sales");
+
+            // EMPLOYEE chỉ có quyền tự phục vụ; không có quyền xem danh sách toàn công ty
+            await AssignPermissionsToRole("EMPLOYEE", p => p.Code == "hrm.self.service");
+
             // WAREHOUSE_STAFF có quyền xem và nhập xuất kho
             await AssignPermissionsToRole("WAREHOUSE_STAFF", p => p.Code.StartsWith("inventory.") || p.Code == "product.view");
             await AssignPermissionsToRole("ADMIN_MENU", p => p.Code.StartsWith("menu.") || p.Code == "product.view");
@@ -465,48 +276,6 @@ namespace ERP_HRM_CMS.Data
             await AssignPermissionsToRole("ADMIN_KHO", p => p.Code.StartsWith("inventory.") || p.Code.StartsWith("scm."));
 
             await context.SaveChangesAsync();
-        }
-
-        /// <summary>
-        /// Tạo tài khoản "quantritong" (IsSuperAdmin = true, vai trò SUPERADMIN) nếu chưa có.
-        /// Không ghi đè mật khẩu nếu tài khoản đã tồn tại.
-        /// </summary>
-        private static async Task EnsureQuanTriTongAsync(AppDbContext context, string? initialPassword)
-        {
-            const string username = "quantritong";
-            var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
-            if (user == null)
-            {
-                bool coCauHinh = !string.IsNullOrWhiteSpace(initialPassword);
-                string matKhau = coCauHinh
-                    ? initialPassword!
-                    : Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
-                string salt = MatKhauHelper.GenerateSalt();
-                user = new User
-                {
-                    Username = username,
-                    PasswordSalt = salt,
-                    PasswordHash = MatKhauHelper.HashPassword(matKhau, salt),
-                    IsActive = true,
-                    IsSuperAdmin = true,
-                    EmployeeId = null,
-                    CreatedAt = DateTime.Now
-                };
-                context.Users.Add(user);
-                await context.SaveChangesAsync();
-
-                if (!coCauHinh)
-                {
-                    Console.WriteLine($"[SEED] Đã tạo tài khoản quản trị tổng '{username}' với mật khẩu ngẫu nhiên: {matKhau} . Hãy đặt SeedAdmin:Password và đổi mật khẩu ngay.");
-                }
-            }
-
-            var superRole = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == "SUPERADMIN");
-            if (superRole != null && !await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == superRole.Id))
-            {
-                context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = superRole.Id });
-                await context.SaveChangesAsync();
-            }
         }
 
         private static async Task SeedHrmDataAsync(AppDbContext context)
@@ -649,52 +418,81 @@ namespace ERP_HRM_CMS.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedUsersAndRolesAsync(AppDbContext context, string? initialAdminPassword)
+        private const string AdminUsername = "admin";
+        private const string QuanTriTongUsername = "quantritong";
+
+        /// <summary>
+        /// Kiểm tra cấu hình khi phải tạo tài khoản quản trị lần đầu.
+        /// Thiếu mật khẩu thì dừng khởi động: không sinh mật khẩu ngẫu nhiên và không in ra console.
+        /// </summary>
+        public static void EnsureInitialAdminPasswordConfigured(bool accountMissing, string? initialAdminPassword)
         {
-            var rolesList = await context.Roles.ToListAsync();
-            int? GetRoleId(string code) => rolesList.FirstOrDefault(r => string.Equals(r.Code, code, StringComparison.OrdinalIgnoreCase))?.Id;
-
-            // 1. Tạo tài khoản SuperAdmin "admin" CHỈ KHI chưa tồn tại (không ghi đè mật khẩu của tài khoản đã có).
-            //    Mật khẩu lấy từ cấu hình SeedAdmin:Password; nếu để trống sẽ sinh mật khẩu ngẫu nhiên và in ra console một lần.
-            if (!await context.Users.AnyAsync(u => u.Username == "admin"))
+            if (accountMissing && string.IsNullOrWhiteSpace(initialAdminPassword))
             {
-                bool coCauHinh = !string.IsNullOrWhiteSpace(initialAdminPassword);
-                string matKhau = coCauHinh
-                    ? initialAdminPassword!
-                    : Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(12));
-                string salt = MatKhauHelper.GenerateSalt();
+                throw new InvalidOperationException(
+                    "Thiếu cấu hình SeedAdmin:Password. Cần mật khẩu ban đầu cho tài khoản quản trị khi khởi tạo lần đầu. " +
+                    "Ở Development đặt bằng User Secrets; ở môi trường khác đặt biến môi trường SeedAdmin__Password.");
+            }
+        }
 
-                context.Users.Add(new User
-                {
-                    Username = "admin",
-                    PasswordSalt = salt,
-                    PasswordHash = MatKhauHelper.HashPassword(matKhau, salt),
-                    IsActive = true,
-                    IsSuperAdmin = true,
-                    EmployeeId = null,
-                    CreatedAt = DateTime.Now
-                });
-                await context.SaveChangesAsync();
+        /// <summary>
+        /// Tạo tài khoản "admin" và "quantritong" (IsSuperAdmin = true) nếu chưa có.
+        /// Không ghi đè mật khẩu của tài khoản đã tồn tại.
+        /// </summary>
+        private static async Task SeedAdminAccountsAsync(AppDbContext context, string? initialAdminPassword)
+        {
+            bool adminMissing = !await context.Users.AnyAsync(u => u.Username == AdminUsername);
+            bool quanTriTongMissing = !await context.Users.AnyAsync(u => u.Username == QuanTriTongUsername);
 
-                if (!coCauHinh)
+            EnsureInitialAdminPasswordConfigured(adminMissing || quanTriTongMissing, initialAdminPassword);
+
+            if (adminMissing)
+            {
+                await CreateSuperAdminAccountAsync(context, AdminUsername, initialAdminPassword!);
+            }
+            if (quanTriTongMissing)
+            {
+                await CreateSuperAdminAccountAsync(context, QuanTriTongUsername, initialAdminPassword!);
+            }
+
+            // Mọi tài khoản quản trị tổng đều có vai trò SUPERADMIN
+            var superRole = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == "SUPERADMIN");
+            if (superRole != null)
+            {
+                foreach (var username in new[] { AdminUsername, QuanTriTongUsername })
                 {
-                    Console.WriteLine($"[SEED] Đã tạo tài khoản admin với mật khẩu ngẫu nhiên: {matKhau} . Hãy đặt SeedAdmin:Password trong appsettings và đổi mật khẩu ngay.");
+                    var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                    if (user != null && !await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == superRole.Id))
+                    {
+                        context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = superRole.Id });
+                    }
                 }
-            }
-
-            // 1b. [QUẢN TRỊ TỔNG] Tài khoản quản trị tổng thứ hai, có toàn quyền và dùng để tạo các admin nhóm.
-            await EnsureQuanTriTongAsync(context, initialAdminPassword);
-
-            // 2. Đảm bảo admin có vai trò SUPERADMIN
-            var adminUser = await context.Users.FirstAsync(u => u.Username == "admin");
-            int? superRoleId = GetRoleId("SUPERADMIN");
-            if (superRoleId.HasValue && !await context.UserRoles.AnyAsync(ur => ur.UserId == adminUser.Id && ur.RoleId == superRoleId.Value))
-            {
-                context.UserRoles.Add(new UserRole { UserId = adminUser.Id, RoleId = superRoleId.Value });
                 await context.SaveChangesAsync();
             }
+        }
 
-            // 3. Gán vai trò cho các tài khoản demo đã có (KHÔNG đổi mật khẩu của họ)
+        private static async Task CreateSuperAdminAccountAsync(AppDbContext context, string username, string password)
+        {
+            string salt = MatKhauHelper.GenerateSalt();
+            context.Users.Add(new User
+            {
+                Username = username,
+                PasswordSalt = salt,
+                PasswordHash = MatKhauHelper.HashPassword(password, salt),
+                IsActive = true,
+                IsSuperAdmin = true,
+                EmployeeId = null,
+                CreatedAt = VietnamTime.Now
+            });
+            await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Gán vai trò cho các tài khoản demo nếu chúng tồn tại (chỉ chạy trong SeedDemo).
+        /// Không đổi mật khẩu của các tài khoản này.
+        /// </summary>
+        private static async Task AssignDemoRolesAsync(AppDbContext context)
+        {
             var demoRoles = new Dictionary<string, string>
             {
                 ["superadmin"] = "SUPERADMIN",
@@ -709,23 +507,26 @@ namespace ERP_HRM_CMS.Data
             foreach (var (username, roleCode) in demoRoles)
             {
                 var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
-                int? roleId = GetRoleId(roleCode);
-                if (user == null || !roleId.HasValue) continue;
+                var role = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == roleCode.ToUpper());
+                if (user == null || role == null) continue;
 
-                if (!await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == roleId.Value))
+                if (!await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == role.Id))
                 {
-                    context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = roleId.Value });
+                    context.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = role.Id });
                 }
             }
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedCmsDataAsync(AppDbContext context)
+        /// <summary>
+        /// Cấu hình site (tên thương hiệu, hotline, email, địa chỉ, bản quyền). Thêm các khóa còn thiếu, không ghi đè giá trị đã có.
+        /// </summary>
+        private static async Task SeedSiteSettingsAsync(AppDbContext context)
         {
-            // 1. SiteSettings
             var settings = new List<SiteSetting>
             {
                 new SiteSetting { SettingKey = "Site_Name", SettingValue = "TIEN PHONG ENTERPRISE", SettingGroup = "General", Description = "Tên hiển thị hệ thống" },
+                new SiteSetting { SettingKey = "Site_Short_Name", SettingValue = "TIEN PHONG ERP", SettingGroup = "General", Description = "Tên ngắn trên thanh điều hướng quản trị và trang đăng nhập" },
                 new SiteSetting { SettingKey = "Site_Hotline", SettingValue = "1900 6868", SettingGroup = "General", Description = "Hotline liên hệ" },
                 new SiteSetting { SettingKey = "Site_Email", SettingValue = "contact@tienphong.vn", SettingGroup = "General", Description = "Email hỗ trợ" },
                 new SiteSetting { SettingKey = "Site_Address", SettingValue = "Số 1 Duy Tân, Cầu Giấy, Hà Nội", SettingGroup = "General", Description = "Địa chỉ trụ sở" },
@@ -740,6 +541,11 @@ namespace ERP_HRM_CMS.Data
                 }
             }
             await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedCmsDataAsync(AppDbContext context)
+        {
+            // 1. Cấu hình site: xem SeedSiteSettingsAsync (SeedCore)
 
             // 2. Banners
             if (!await context.Banners.AnyAsync())
@@ -797,7 +603,7 @@ namespace ERP_HRM_CMS.Data
                         ThumbnailUrl = "/images/news-1.svg",
                         Status = "Published",
                         AuthorId = adminUser?.Id,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     },
                     new Content
                     {
@@ -808,7 +614,7 @@ namespace ERP_HRM_CMS.Data
                         ThumbnailUrl = "/images/news-2.svg",
                         Status = "Published",
                         AuthorId = adminUser?.Id,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     }
                 );
                 await context.SaveChangesAsync();
@@ -885,7 +691,7 @@ namespace ERP_HRM_CMS.Data
                             StockQuantity = initialStock,
                             MinStockAlert = 5,
                             MaxStockLimit = 500,
-                            UpdatedAt = DateTime.Now
+                            UpdatedAt = VietnamTime.Now
                         });
                     }
                 }
@@ -970,19 +776,19 @@ namespace ERP_HRM_CMS.Data
                     POCode = "PO261001001",
                     SupplierId = hpSupplier.Id,
                     BranchId = hanoiBranch.Id,
-                    OrderDate = DateTime.Now.AddDays(-5),
-                    ExpectedDeliveryDate = DateTime.Now.AddDays(-2),
-                    ReceivedDate = DateTime.Now.AddDays(-2),
+                    OrderDate = VietnamTime.Now.AddDays(-5),
+                    ExpectedDeliveryDate = VietnamTime.Now.AddDays(-2),
+                    ReceivedDate = VietnamTime.Now.AddDays(-2),
                     TotalAmount = 82000000,
                     DiscountAmount = 0,
                     FinalAmount = 82000000,
                     PaidAmount = 30000000,
                     DebtAmount = 52000000,
-                    Status = "Received",
+                    Status = PurchaseOrderStatus.Received,
                     CreatedBy = adminUser.Id,
                     ApprovedBy = adminUser.Id,
                     Note = "Nhập lô máy chủ HP ProLiant cho dự án ngân hàng",
-                    CreatedAt = DateTime.Now.AddDays(-5)
+                    CreatedAt = VietnamTime.Now.AddDays(-5)
                 };
                 po1.PurchaseOrderDetails.Add(new PurchaseOrderDetail
                 {
@@ -1007,18 +813,18 @@ namespace ERP_HRM_CMS.Data
                     POCode = "PO261002002",
                     SupplierId = dellSupplier.Id,
                     BranchId = hanoiBranch.Id,
-                    OrderDate = DateTime.Now.AddDays(-1),
-                    ExpectedDeliveryDate = DateTime.Now.AddDays(2),
+                    OrderDate = VietnamTime.Now.AddDays(-1),
+                    ExpectedDeliveryDate = VietnamTime.Now.AddDays(2),
                     TotalAmount = 195000000,
                     DiscountAmount = 0,
                     FinalAmount = 195000000,
                     PaidAmount = 45000000,
                     DebtAmount = 150000000,
-                    Status = "Approved",
+                    Status = PurchaseOrderStatus.Approved,
                     CreatedBy = adminUser.Id,
                     ApprovedBy = adminUser.Id,
                     Note = "Nhập bổ sung 10 laptop Dell Latitude cho chi nhánh Hà Nội",
-                    CreatedAt = DateTime.Now.AddDays(-1)
+                    CreatedAt = VietnamTime.Now.AddDays(-1)
                 };
                 po2.PurchaseOrderDetails.Add(new PurchaseOrderDetail
                 {
@@ -1035,17 +841,17 @@ namespace ERP_HRM_CMS.Data
                     POCode = "PO261002003",
                     SupplierId = ciscoSupplier?.Id ?? dellSupplier.Id,
                     BranchId = hanoiBranch.Id,
-                    OrderDate = DateTime.Now,
-                    ExpectedDeliveryDate = DateTime.Now.AddDays(5),
+                    OrderDate = VietnamTime.Now,
+                    ExpectedDeliveryDate = VietnamTime.Now.AddDays(5),
                     TotalAmount = 45000000,
                     DiscountAmount = 0,
                     FinalAmount = 45000000,
                     PaidAmount = 0,
                     DebtAmount = 45000000,
-                    Status = "PendingApproval",
+                    Status = PurchaseOrderStatus.PendingApproval,
                     CreatedBy = adminUser.Id,
                     Note = "Đề xuất nhập bổ sung thiết bị mạng dự phòng",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
                 po3.PurchaseOrderDetails.Add(new PurchaseOrderDetail
                 {
@@ -1063,7 +869,7 @@ namespace ERP_HRM_CMS.Data
             // 3. Công nợ (DebtRecords)
             if (!await context.DebtRecords.AnyAsync())
             {
-                var poReceived = await context.PurchaseOrders.FirstOrDefaultAsync(p => p.Status == "Received");
+                var poReceived = await context.PurchaseOrders.FirstOrDefaultAsync(p => p.Status == PurchaseOrderStatus.Received);
                 var debts = new List<DebtRecord>
                 {
                     // Phải trả NCC HP
@@ -1079,10 +885,10 @@ namespace ERP_HRM_CMS.Data
                         TotalAmount = 82000000,
                         PaidAmount = 30000000,
                         RemainingAmount = 52000000,
-                        DueDate = DateTime.Now.AddDays(10),
-                        Status = "PartiallyPaid",
+                        DueDate = VietnamTime.Now.AddDays(10),
+                        Status = DebtStatus.PartiallyPaid,
                         Note = "Thanh toán đợt 1 30tr, đợt 2 theo điều khoản tín dụng 15 ngày",
-                        CreatedAt = DateTime.Now.AddDays(-5)
+                        CreatedAt = VietnamTime.Now.AddDays(-5)
                     },
                     // Phải trả NCC Dell
                     new DebtRecord
@@ -1096,10 +902,10 @@ namespace ERP_HRM_CMS.Data
                         TotalAmount = 195000000,
                         PaidAmount = 45000000,
                         RemainingAmount = 150000000,
-                        DueDate = DateTime.Now.AddDays(25),
-                        Status = "PartiallyPaid",
+                        DueDate = VietnamTime.Now.AddDays(25),
+                        Status = DebtStatus.PartiallyPaid,
                         Note = "Đặt cọc trước 45tr, tất toán khi nhận đủ hóa đơn GTGT",
-                        CreatedAt = DateTime.Now.AddDays(-1)
+                        CreatedAt = VietnamTime.Now.AddDays(-1)
                     },
                     // Phải thu Khách hàng (Đơn hàng dự án)
                     new DebtRecord
@@ -1112,10 +918,10 @@ namespace ERP_HRM_CMS.Data
                         TotalAmount = 75000000,
                         PaidAmount = 25000000,
                         RemainingAmount = 50000000,
-                        DueDate = DateTime.Now.AddDays(7),
-                        Status = "PartiallyPaid",
+                        DueDate = VietnamTime.Now.AddDays(7),
+                        Status = DebtStatus.PartiallyPaid,
                         Note = "Hợp đồng cung cấp máy chủ & thiết bị ngoại vi, trả chậm 15 ngày",
-                        CreatedAt = DateTime.Now.AddDays(-3)
+                        CreatedAt = VietnamTime.Now.AddDays(-3)
                     },
                     // Phải thu Khách hàng (Quá hạn cảnh báo)
                     new DebtRecord
@@ -1128,10 +934,10 @@ namespace ERP_HRM_CMS.Data
                         TotalAmount = 36500000,
                         PaidAmount = 0,
                         RemainingAmount = 36500000,
-                        DueDate = DateTime.Now.AddDays(-12),
-                        Status = "Overdue",
+                        DueDate = VietnamTime.Now.AddDays(-12),
+                        Status = DebtStatus.Overdue,
                         Note = "Đơn hàng mua sắm quý 3/2026 đã quá hạn 12 ngày, đã nhắc nợ lần 2",
-                        CreatedAt = DateTime.Now.AddDays(-27)
+                        CreatedAt = VietnamTime.Now.AddDays(-27)
                     }
                 };
 
@@ -1149,7 +955,7 @@ namespace ERP_HRM_CMS.Data
                         PaymentCode = "PC261001001",
                         Amount = 30000000,
                         PaymentMethod = "BANK_TRANSFER",
-                        PaymentDate = DateTime.Now.AddDays(-4),
+                        PaymentDate = VietnamTime.Now.AddDays(-4),
                         Note = "Ủy nhiệm chi tạm ứng đợt 1 ngân hàng Vietcombank",
                         CreatedBy = adminUser.Id
                     });
@@ -1164,7 +970,7 @@ namespace ERP_HRM_CMS.Data
                 {
                     Code = "KK261001001",
                     BranchId = hanoiBranch.Id,
-                    CheckDate = DateTime.Now.AddDays(-3),
+                    CheckDate = VietnamTime.Now.AddDays(-3),
                     TotalSystemQty = 120,
                     TotalActualQty = 119,
                     TotalDifferenceQty = -1,
@@ -1172,7 +978,7 @@ namespace ERP_HRM_CMS.Data
                     Status = "Balanced",
                     CreatedBy = adminUser.Id,
                     Note = "Kiểm kê định kỳ đầu tháng 10/2026. Lệch 1 Chuột Logitech do rơi vỡ bảo hành.",
-                    CreatedAt = DateTime.Now.AddDays(-3)
+                    CreatedAt = VietnamTime.Now.AddDays(-3)
                 };
 
                 foreach (var prod in products.Take(3))
@@ -1341,14 +1147,14 @@ namespace ERP_HRM_CMS.Data
                         ToDate = new DateTime(2026, 10, 19),
                         TotalDays = 2.0m,
                         Reason = "Nghỉ phép thường niên đi du lịch gia đình đã lên lịch trước.",
-                        Status = "GIAM_DOC_DUYET",
+                        Status = LeaveRequestStatus.DirectorApproved,
                         DepartmentHeadId = adminUser.Id,
-                        DepartmentHeadApprovedAt = DateTime.Now.AddDays(-2),
+                        DepartmentHeadApprovedAt = VietnamTime.Now.AddDays(-2),
                         DepartmentHeadNote = "Nhất trí phân công nhân sự hỗ trợ thay thế.",
                         DirectorId = adminUser.Id,
-                        DirectorApprovedAt = DateTime.Now.AddDays(-1),
+                        DirectorApprovedAt = VietnamTime.Now.AddDays(-1),
                         DirectorNote = "Đã phê duyệt 2 ngày phép năm.",
-                        CreatedAt = DateTime.Now.AddDays(-3)
+                        CreatedAt = VietnamTime.Now.AddDays(-3)
                     },
                     new LeaveRequest
                     {
@@ -1359,11 +1165,11 @@ namespace ERP_HRM_CMS.Data
                         ToDate = new DateTime(2026, 10, 4),
                         TotalDays = 1.0m,
                         Reason = "Nghỉ ốm sốt phát ban, đã có giấy khám bệnh của bệnh viện Thu Cúc.",
-                        Status = "TRUONG_PHONG_DUYET",
+                        Status = LeaveRequestStatus.DepartmentApproved,
                         DepartmentHeadId = adminUser.Id,
-                        DepartmentHeadApprovedAt = DateTime.Now.AddDays(-5),
+                        DepartmentHeadApprovedAt = VietnamTime.Now.AddDays(-5),
                         DepartmentHeadNote = "Đã nhận đơn và toa thuốc đính kèm.",
-                        CreatedAt = DateTime.Now.AddDays(-6)
+                        CreatedAt = VietnamTime.Now.AddDays(-6)
                     },
                     new LeaveRequest
                     {
@@ -1374,8 +1180,8 @@ namespace ERP_HRM_CMS.Data
                         ToDate = new DateTime(2026, 10, 24),
                         TotalDays = 3.0m,
                         Reason = "Đi công tác thẩm định mở showroom đại lý ủy quyền tại Hải Phòng và Quảng Ninh.",
-                        Status = "CHO_DUYET",
-                        CreatedAt = DateTime.Now.AddDays(-1)
+                        Status = LeaveRequestStatus.PendingApproval,
+                        CreatedAt = VietnamTime.Now.AddDays(-1)
                     },
                     new LeaveRequest
                     {
@@ -1386,11 +1192,11 @@ namespace ERP_HRM_CMS.Data
                         ToDate = new DateTime(2026, 10, 10),
                         TotalDays = 0.5m,
                         Reason = "Xin về sớm 2 tiếng giải quyết việc cá nhân tại ngân hàng.",
-                        Status = "TU_CHOI",
+                        Status = LeaveRequestStatus.Rejected,
                         DepartmentHeadId = adminUser.Id,
-                        DepartmentHeadApprovedAt = DateTime.Now.AddDays(-4),
+                        DepartmentHeadApprovedAt = VietnamTime.Now.AddDays(-4),
                         DepartmentHeadNote = "Từ chối vì kho đang có lịch nhập lô hàng Dell lớn buổi chiều.",
-                        CreatedAt = DateTime.Now.AddDays(-5)
+                        CreatedAt = VietnamTime.Now.AddDays(-5)
                     }
                 };
 
@@ -1407,9 +1213,9 @@ namespace ERP_HRM_CMS.Data
                     Month = curMonth,
                     Year = curYear,
                     StandardWorkDays = 22,
-                    Status = "CALCULATED",
+                    Status = PayrollPeriodStatus.Calculated,
                     CreatedBy = adminUser.Id,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
 
                 decimal totalGross = 0;
@@ -1486,7 +1292,7 @@ namespace ERP_HRM_CMS.Data
                         TaxableIncome = taxBase,
                         PersonalIncomeTax = pit,
                         NetSalary = net,
-                        Status = "SENT",
+                        Status = SalarySlipStatus.Sent,
                         Note = "Đã tính lương tự động & gửi phiếu lương tới nhân sự."
                     });
                 }

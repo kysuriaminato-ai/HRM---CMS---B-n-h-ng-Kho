@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -41,7 +42,7 @@ namespace ERP_HRM_CMS.Controllers
         {
             if (ModelState.IsValid)
             {
-                dept.CreatedAt = DateTime.Now;
+                dept.CreatedAt = VietnamTime.Now;
                 _context.Departments.Add(dept);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Thêm phòng ban '{dept.Name}' thành công!";
@@ -56,7 +57,7 @@ namespace ERP_HRM_CMS.Controllers
         {
             if (ModelState.IsValid)
             {
-                pos.CreatedAt = DateTime.Now;
+                pos.CreatedAt = VietnamTime.Now;
                 _context.Positions.Add(pos);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Thêm chức vụ '{pos.Name}' thành công!";

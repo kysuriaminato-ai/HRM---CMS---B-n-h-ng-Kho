@@ -1,3 +1,5 @@
+@inject ERP_HRM_CMS.Data.AppDbContext Db
+@{ var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP"); }
 @{
     var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Nhân sự - QTVP";
 }
@@ -25,7 +27,7 @@
 <body class="bg-body">
     <div class="erp-sidebar">
         <div class="erp-sidebar-brand">
-            <i class="bi bi-people-fill fs-5 text-primary"></i> TIEN PHONG HRM
+            <i class="bi bi-people-fill fs-5 text-primary"></i> @brand HRM
         </div>
         <div class="py-3">
             <div class="px-3 pb-2 text-uppercase text-muted small fw-bold" style="font-size: 11px;">Nhân sự & Tổ chức</div>

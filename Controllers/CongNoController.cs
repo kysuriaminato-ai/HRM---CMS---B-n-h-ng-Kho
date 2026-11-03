@@ -1,3 +1,5 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +38,8 @@ namespace ERP_HRM_CMS.Controllers
 
             if (!string.IsNullOrWhiteSpace(status))
             {
-                query = query.Where(d => d.Status == status);
+                if (WorkflowStatusCodes.TryParse(WorkflowStatusCodes.Debt, status, out var debtStatus))
+                query = query.Where(d => d.Status == debtStatus);
             }
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -47,7 +50,7 @@ namespace ERP_HRM_CMS.Controllers
                                          (d.PartnerPhone != null && d.PartnerPhone.Contains(keyword)));
             }
 
-            var now = DateTime.Today;
+            var now = VietnamTime.Today;
             var date30DaysAgo = now.AddDays(-30);
             var date60DaysAgo = now.AddDays(-60);
 
@@ -118,7 +121,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             string codePrefix = debt.DebtType == "RECEIVABLE" ? "PT" : "PC";
-            string paymentCode = $"{codePrefix}{DateTime.Now:yyMMddHHmmss}";
+            string paymentCode = $"{codePrefix}{VietnamTime.Now:yyMMddHHmmss}";
 
             var payment = new DebtPayment
             {
@@ -126,7 +129,7 @@ namespace ERP_HRM_CMS.Controllers
                 PaymentCode = paymentCode,
                 Amount = amount,
                 PaymentMethod = paymentMethod ?? "BANK_TRANSFER",
-                PaymentDate = DateTime.Now,
+                PaymentDate = VietnamTime.Now,
                 Note = note,
                 CreatedBy = CurrentUserId
             };
@@ -138,11 +141,11 @@ namespace ERP_HRM_CMS.Controllers
 
             if (debt.RemainingAmount <= 0)
             {
-                debt.Status = "Paid";
+                debt.Status = DebtStatus.Paid;
             }
             else
             {
-                debt.Status = "PartiallyPaid";
+                debt.Status = DebtStatus.PartiallyPaid;
             }
 
             // Nếu là nợ phải trả NCC, trừ tổng nợ NCC

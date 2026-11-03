@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -27,7 +28,7 @@ namespace ERP_HRM_CMS.Services
                 LinkUrl = linkUrl,
                 Type = type,
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             _context.Notifications.Add(notif);
@@ -58,7 +59,7 @@ namespace ERP_HRM_CMS.Services
                 LinkUrl = linkUrl,
                 Type = type,
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             _context.Notifications.Add(notif);
@@ -88,7 +89,7 @@ namespace ERP_HRM_CMS.Services
                 LinkUrl = linkUrl,
                 Type = type,
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             _context.Notifications.Add(notif);
@@ -244,7 +245,7 @@ namespace ERP_HRM_CMS.Services
                 {
                     NotificationId = id,
                     UserId = uid,
-                    ReadAt = DateTime.Now
+                    ReadAt = VietnamTime.Now
                 });
             }
         }

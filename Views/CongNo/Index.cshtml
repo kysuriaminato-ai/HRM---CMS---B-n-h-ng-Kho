@@ -10,7 +10,7 @@
     decimal agingOver60 = ViewBag.AgingOver60 ?? 0;
     string selectedType = ViewBag.SelectedType ?? "ALL";
     string selectedAging = ViewBag.SelectedAging ?? "";
-    DateTime now = DateTime.Now.Date;
+    DateTime now = ERP_HRM_CMS.Helpers.VietnamTime.Now.Date;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">

@@ -14,3 +14,6 @@ packages/
 
 # Ghi chú sao lưu cục bộ, không đưa lên git
 *.bak
+
+# Khóa Data Protection (chỉ dùng cục bộ khi Development)
+App_Data/

@@ -1,36 +1,66 @@
-﻿@model ERP_HRM_CMS.Models.Entities.Content
+@model ERP_HRM_CMS.Models.Entities.Content
 @{
     Layout = "_PublicLayout";
     ViewData["Title"] = Model.Title;
+    ViewData["Description"] = Model.Summary ?? Model.Title;
 }
 
+<div class="ps-progress" id="psReadingProgress" aria-hidden="true"></div>
+
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb small">
-                    <li class="breadcrumb-item"><a href="/" class="text-dark text-decoration-none">Trang chủ</a></li>
-                    <li class="breadcrumb-item active text-muted" aria-current="page">Bài viết</li>
-                </ol>
+    <div class="row g-5">
+        <aside class="col-lg-3 ps-toc-wrap" aria-label="Mục lục bài viết">
+            <div class="ps-toc" id="psToc">
+                <div class="ps-toc-title">Mục lục</div>
+            </div>
+        </aside>
+
+        <article class="col-lg-9 col-xl-8">
+            <nav aria-label="Đường dẫn" class="ps-breadcrumb">
+                <a href="/">Trang chủ</a>
+                <span class="mx-1">/</span>
+                <a href="/Public/TinTuc">Tin tức</a>
+                <span class="mx-1">/</span>
+                <span>Bài viết</span>
             </nav>
 
-            <h1 class="fw-bold mb-3 display-6">@Model.Title</h1>
-            <div class="d-flex align-items-center gap-3 text-secondary small pb-3 border-bottom mb-4">
-                <span><i class="bi bi-person me-1"></i> @(Model.Author?.Username ?? "Ban Biên Tập")</span>
-                <span><i class="bi bi-clock me-1"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
-                <span><i class="bi bi-eye me-1"></i> @Model.ViewCount lượt xem</span>
+            <h1 class="ps-article-title">@Model.Title</h1>
+
+            <div class="ps-article-meta">
+                <span><i class="bi bi-person"></i> @(Model.Author?.Username ?? "Ban biên tập")</span>
+                <span><i class="bi bi-clock"></i> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                <span><i class="bi bi-eye"></i> @Model.ViewCount lượt xem</span>
+                <span id="psReadingTime"><i class="bi bi-hourglass-split"></i> Đang tính thời gian đọc</span>
             </div>
+
+            @if (!string.IsNullOrEmpty(Model.ThumbnailUrl))
+            {
+                <img class="ps-hero-image mb-4" src="@Model.ThumbnailUrl" alt="@Model.Title" />
+            }
 
             @if (!string.IsNullOrEmpty(Model.Summary))
             {
-                <div class="lead fs-6 fw-semibold text-secondary mb-4 p-3 bg-light rounded border-start border-4 border-dark">
-                    @Model.Summary
-                </div>
+                <p class="ps-article-summary">@Model.Summary</p>
             }
 
-            <div class="content-body" style="line-height: 1.8;">
+            <div class="ps-prose" id="psArticleBody">
                 @Html.Raw(Model.BodyHtml)
             </div>
-        </div>
+
+            <div class="ps-share">
+                <span>Chia sẻ bài viết:</span>
+                <button type="button" class="ps-share-btn" data-share="facebook" aria-label="Chia sẻ lên Facebook" title="Chia sẻ lên Facebook">
+                    <i class="bi bi-facebook"></i>
+                </button>
+                <button type="button" class="ps-share-btn" data-share="email" aria-label="Chia sẻ qua email" title="Chia sẻ qua email">
+                    <i class="bi bi-envelope"></i>
+                </button>
+                <button type="button" class="ps-share-btn" data-share="copy" aria-label="Sao chép liên kết" title="Sao chép liên kết">
+                    <i class="bi bi-link-45deg"></i>
+                </button>
+            </div>
+
+            <a class="ps-btn-ghost mt-4" href="/Public/TinTuc"><i class="bi bi-arrow-left"></i> Tất cả tin tức</a>
+        </article>
     </div>
 </div>

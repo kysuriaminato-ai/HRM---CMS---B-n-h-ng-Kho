@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -84,7 +85,7 @@ namespace ERP_HRM_CMS.Controllers
             ViewBag.Categories = new SelectList(await _context.Categories.ToListAsync(), "Id", "Name");
             return View(new ProductCreateEditViewModel
             {
-                SKU = $"SKU-{DateTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
+                SKU = $"SKU-{VietnamTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
                 SalePrice = 100000,
                 CostPrice = 70000,
                 InitialStock = 20
@@ -114,7 +115,7 @@ namespace ERP_HRM_CMS.Controllers
                     Description = model.Description,
                     ImageUrl = model.ImageUrl,
                     IsActive = model.IsActive,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
 
                 _context.Products.Add(product);
@@ -131,7 +132,7 @@ namespace ERP_HRM_CMS.Controllers
                         StockQuantity = model.InitialStock,
                         MinStockAlert = model.MinStockAlert,
                         MaxStockLimit = 1000,
-                        UpdatedAt = DateTime.Now
+                        UpdatedAt = VietnamTime.Now
                     });
                 }
                 await _context.SaveChangesAsync();

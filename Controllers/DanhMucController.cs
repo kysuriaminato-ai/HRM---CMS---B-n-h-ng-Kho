@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -47,7 +48,7 @@ namespace ERP_HRM_CMS.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            cat.CreatedAt = DateTime.Now;
+            cat.CreatedAt = VietnamTime.Now;
             _context.Categories.Add(cat);
             await _context.SaveChangesAsync();
 

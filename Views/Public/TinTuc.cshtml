@@ -1,54 +1,94 @@
 @model List<ERP_HRM_CMS.Models.Entities.Content>
 @{
     Layout = "_PublicLayout";
-    ViewData["Title"] = "Tin Tức & Hoạt Động Doanh Nghiệp";
+    ViewData["Title"] = "Tin Tức và Hoạt Động";
+    ViewData["Description"] = "Tin tức, kinh nghiệm quản trị và hoạt động của doanh nghiệp.";
+    string keyword = (Context.Request.Query["keyword"].ToString() ?? string.Empty).Trim();
+    bool hasKeyword = !string.IsNullOrEmpty(keyword);
 }
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold display-6 mb-2">Tin Tức & Hoạt Động</h1>
-        <p class="text-muted small">Cập nhật tin tức mới nhất về công nghệ quản trị, chiến lược vận hành và sự kiện doanh nghiệp</p>
-    </div>
+<section class="ps-page-head">
+    <div class="container">
+        <span class="ps-eyebrow">Tin tức</span>
+        <h1>Tin tức và hoạt động</h1>
+        <p>Cập nhật về công nghệ quản trị, vận hành và các sự kiện của doanh nghiệp.</p>
 
-    @if (Model != null && Model.Any())
-    {
-        <div class="row g-4">
-            @foreach (var item in Model)
+        <form action="/Public/TinTuc" method="get" role="search" class="ps-search-form mt-4">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" name="keyword" class="ps-search-input" value="@keyword" maxlength="120"
+                   placeholder="Nhập tiêu đề hoặc nội dung cần tìm..." aria-label="Từ khóa tìm kiếm bài viết" />
+            <button class="ps-btn-primary" type="submit">Tìm</button>
+        </form>
+    </div>
+</section>
+
+<section class="ps-section">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <p class="text-muted small mb-0">
+                @if (hasKeyword)
+                {
+                    <span>Tìm thấy <strong>@Model.Count</strong> bài viết cho từ khóa "<strong>@keyword</strong>"</span>
+                }
+                else
+                {
+                    <span>Hiển thị <strong>@Model.Count</strong> bài viết</span>
+                }
+            </p>
+            @if (hasKeyword)
             {
-                <div class="col-md-6 col-lg-6">
-                    <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
-                        @if (!string.IsNullOrEmpty(item.ThumbnailUrl))
-                        {
-                            <img src="@item.ThumbnailUrl" class="card-img-top object-fit-cover" style="height: 220px;" alt="@item.Title" />
-                        }
-                        <div class="card-body p-4 d-flex flex-column justify-content-between">
-                            <div>
-                                <div class="text-muted small mb-2 d-flex align-items-center gap-2">
-                                    <i class="bi bi-calendar3"></i> @item.CreatedAt.ToString("dd/MM/yyyy")
-                                    <span>•</span>
-                                    <i class="bi bi-eye"></i> @item.ViewCount lượt xem
-                                </div>
-                                <h5 class="card-title fw-bold mb-3">
-                                    <a href="/bai-viet/@item.Slug" class="text-dark text-decoration-none hover-primary">@item.Title</a>
-                                </h5>
-                                <p class="card-text text-secondary small mb-4" style="line-height: 1.6;">
-                                    @(item.Summary ?? "Đọc thêm để biết chi tiết nội dung bài viết...")
-                                </p>
-                            </div>
-                            <a href="/bai-viet/@item.Slug" class="btn btn-sm btn-outline-dark align-self-start px-3 py-2">
-                                Đọc bài viết <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <a class="ps-link-arrow small" href="/Public/TinTuc"><i class="bi bi-x-circle"></i> Xóa bộ lọc</a>
             }
         </div>
-    }
-    else
-    {
-        <div class="text-center py-5">
-            <i class="bi bi-journal-x fs-1 text-muted"></i>
-            <p class="text-muted mt-2">Hiện tại chưa có bài viết nào được đăng tải.</p>
-        </div>
-    }
-</div>
+
+        @if (Model.Any())
+        {
+            <div class="row g-4">
+                @foreach (var item in Model)
+                {
+                    <div class="col-md-6 col-xl-4 ps-reveal">
+                        <article class="ps-post-card">
+                            <div class="ps-post-thumb">
+                                @if (!string.IsNullOrEmpty(item.ThumbnailUrl))
+                                {
+                                    <img src="@item.ThumbnailUrl" alt="@item.Title" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div class="ps-post-thumb-placeholder"><i class="bi bi-newspaper"></i></div>
+                                }
+                            </div>
+                            <div class="ps-post-body">
+                                <div class="ps-post-meta">
+                                    <span class="ps-pill"><i class="bi bi-calendar3"></i> @item.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                    <span><i class="bi bi-eye"></i> @item.ViewCount lượt xem</span>
+                                </div>
+                                <h2 class="ps-post-title h5"><a href="/bai-viet/@item.Slug">@item.Title</a></h2>
+                                <p class="ps-post-summary ps-clamp-3">@(item.Summary ?? "Nhấn để đọc chi tiết nội dung bài viết.")</p>
+                                <div class="ps-post-foot">
+                                    <a class="ps-link-arrow" href="/bai-viet/@item.Slug">Đọc bài viết <i class="bi bi-arrow-right"></i></a>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="ps-empty ps-reveal">
+                <i class="bi bi-journal-x"></i>
+                @if (hasKeyword)
+                {
+                    <p class="mt-3 mb-1 fw-semibold text-body">Không có bài viết phù hợp</p>
+                    <p class="small mb-3">Thử từ khóa ngắn hơn hoặc dùng từ khóa khác.</p>
+                    <a class="ps-btn-ghost" href="/Public/TinTuc">Xem tất cả bài viết</a>
+                }
+                else
+                {
+                    <p class="mt-3 mb-0">Hiện chưa có bài viết nào được đăng tải.</p>
+                }
+            </div>
+        }
+    </div>
+</section>

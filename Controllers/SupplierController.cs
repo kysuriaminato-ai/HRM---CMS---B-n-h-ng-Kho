@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +55,7 @@ namespace ERP_HRM_CMS.Controllers
 
             if (ModelState.IsValid)
             {
-                model.CreatedAt = DateTime.Now;
+                model.CreatedAt = VietnamTime.Now;
                 _context.Suppliers.Add(model);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Thêm mới nhà cung cấp '{model.Name}' thành công!";

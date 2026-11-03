@@ -15,6 +15,9 @@ namespace ERP_HRM_CMS.Tests
         public const string TestConnectionString =
             "Server=localhost;Database=ERP_HRM_CMS_TEST;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True;";
 
+        /// <summary>Mật khẩu quản trị chỉ dùng trong kiểm thử (không phải bí mật thật).</summary>
+        public const string AdminPasswordForTests = "Test@Admin12345";
+
         private static readonly object ResetLock = new();
         private static bool _databaseReset;
 
@@ -22,6 +25,9 @@ namespace ERP_HRM_CMS.Tests
         {
             builder.UseEnvironment("Development");
             builder.UseSetting("ConnectionStrings:DefaultConnection", TestConnectionString);
+            builder.UseSetting("SeedAdmin:Password", AdminPasswordForTests);
+            // Kiểm thử cần dữ liệu mẫu (nhân viên, lương) để chạy các test in ấn và thông báo
+            builder.UseSetting("Seed:Demo", "true");
 
             lock (ResetLock)
             {

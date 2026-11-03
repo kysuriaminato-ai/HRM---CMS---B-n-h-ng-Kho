@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using ERP_HRM_CMS.Helpers;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Models.Entities;
@@ -234,7 +235,7 @@ namespace ERP_HRM_CMS.Services
                         UserId = userId,
                         ProductId = sItem.ProductId,
                         Quantity = sItem.Quantity,
-                        AddedAt = DateTime.Now
+                        AddedAt = VietnamTime.Now
                     });
                 }
             }
@@ -273,7 +274,7 @@ namespace ERP_HRM_CMS.Services
                         UserId = userId.Value,
                         ProductId = i.ProductId,
                         Quantity = i.Quantity,
-                        AddedAt = DateTime.Now
+                        AddedAt = VietnamTime.Now
                     });
                 }
                 await _context.SaveChangesAsync();

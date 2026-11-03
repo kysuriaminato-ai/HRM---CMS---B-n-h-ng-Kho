@@ -100,8 +100,8 @@ namespace ERP_HRM_CMS.Controllers
             await LoadDropdowns();
             return View(new EmployeeCreateEditViewModel
             {
-                EmployeeCode = $"EMP{DateTime.Now:yyMMddHHmm}",
-                HireDate = DateTime.Today
+                EmployeeCode = $"EMP{VietnamTime.Now:yyMMddHHmm}",
+                HireDate = VietnamTime.Today
             });
         }
 
@@ -141,7 +141,7 @@ namespace ERP_HRM_CMS.Controllers
                     Status = model.Status,
                     HireDate = model.HireDate,
                     AvatarUrl = model.AvatarUrl,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
 
                 _context.Employees.Add(emp);
@@ -185,7 +185,7 @@ namespace ERP_HRM_CMS.Controllers
                             PasswordSalt = salt,
                             IsActive = true,
                             IsSuperAdmin = false,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = VietnamTime.Now
                         };
                         _context.Users.Add(newUser);
                     }
@@ -338,7 +338,7 @@ namespace ERP_HRM_CMS.Controllers
                 PasswordHash = MatKhauHelper.HashPassword(pass, salt),
                 PasswordSalt = salt,
                 IsActive = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             _context.Users.Add(user);
@@ -357,7 +357,7 @@ namespace ERP_HRM_CMS.Controllers
                 .Include(e => e.Position)
                 .ToListAsync();
 
-            var now = DateTime.Today;
+            var now = VietnamTime.Today;
             int total = employees.Count;
             int active = employees.Count(e => e.Status == "Active");
             int resigned = employees.Count(e => e.Status == "Resigned");

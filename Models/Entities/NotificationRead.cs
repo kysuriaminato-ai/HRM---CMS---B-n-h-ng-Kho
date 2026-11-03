@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System;
 
 namespace ERP_HRM_CMS.Models.Entities
@@ -10,7 +11,7 @@ namespace ERP_HRM_CMS.Models.Entities
     {
         public long NotificationId { get; set; }
         public int UserId { get; set; }
-        public DateTime ReadAt { get; set; } = DateTime.Now;
+        public DateTime ReadAt { get; set; } = VietnamTime.Now;
 
         public Notification? Notification { get; set; }
     }

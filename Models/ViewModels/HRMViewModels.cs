@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using ERP_HRM_CMS.Models.Entities;
 
@@ -59,7 +60,7 @@ namespace ERP_HRM_CMS.Models.ViewModels
 
         [Display(Name = "Ngày vào làm")]
         [DataType(DataType.Date)]
-        public DateTime HireDate { get; set; } = DateTime.Today;
+        public DateTime HireDate { get; set; } = VietnamTime.Today;
 
         [Display(Name = "Đường dẫn ảnh đại diện")]
         public string? AvatarUrl { get; set; }
@@ -120,7 +121,7 @@ namespace ERP_HRM_CMS.Models.ViewModels
     // --- 3. VIEWMODELS CHO CHẤM CÔNG ---
     public class AttendanceDailyIndexViewModel
     {
-        public DateTime SelectedDate { get; set; } = DateTime.Today;
+        public DateTime SelectedDate { get; set; } = VietnamTime.Today;
         public int? DepartmentId { get; set; }
         public List<AttendanceDaily> AttendanceList { get; set; } = new();
         public List<Shift> Shifts { get; set; } = new();
@@ -128,8 +129,8 @@ namespace ERP_HRM_CMS.Models.ViewModels
 
     public class MonthlyTimesheetViewModel
     {
-        public int Year { get; set; } = DateTime.Today.Year;
-        public int Month { get; set; } = DateTime.Today.Month;
+        public int Year { get; set; } = VietnamTime.Today.Year;
+        public int Month { get; set; } = VietnamTime.Today.Month;
         public int? DepartmentId { get; set; }
         public List<MonthlyEmployeeRowDto> Rows { get; set; } = new();
         public int DaysInMonth { get; set; }
@@ -157,8 +158,8 @@ namespace ERP_HRM_CMS.Models.ViewModels
     // --- 4. VIEWMODELS CHO HEATMAP CHẤM CÔNG & PHÂN TÍCH NHÂN SỰ ---
     public class AttendanceHeatmapViewModel
     {
-        public int Year { get; set; } = DateTime.Today.Year;
-        public int Month { get; set; } = DateTime.Today.Month;
+        public int Year { get; set; } = VietnamTime.Today.Year;
+        public int Month { get; set; } = VietnamTime.Today.Month;
         public int? DepartmentId { get; set; }
         public int DaysInMonth { get; set; }
         public List<EmployeeHeatmapRowDto> EmployeeRows { get; set; } = new();

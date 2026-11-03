@@ -1,3 +1,5 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -24,7 +26,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.view")]
         public async Task<IActionResult> Index(DateTime? date, int? departmentId)
         {
-            var selectedDate = date ?? DateTime.Today;
+            var selectedDate = date ?? VietnamTime.Today;
 
             var query = _context.AttendanceDailies
                 .Include(a => a.Employee)
@@ -65,14 +67,14 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> QuickAction(QuickCheckInDto dto)
         {
-            var today = DateTime.Today;
+            var today = VietnamTime.Today;
             var shift = await _context.Shifts.FindAsync(dto.ShiftId);
             if (shift == null) return NotFound();
 
             var att = await _context.AttendanceDailies
                 .FirstOrDefaultAsync(a => a.EmployeeId == dto.EmployeeId && a.WorkDate == today);
 
-            var currentTime = DateTime.Now.TimeOfDay;
+            var currentTime = VietnamTime.Now.TimeOfDay;
 
             if (att == null)
             {
@@ -91,7 +93,7 @@ namespace ERP_HRM_CMS.Controllers
                     FirstInTime = currentTime,
                     LateMinutes = lateMin,
                     AttendanceStatus = (lateMin > 0) ? "Late" : "Present",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
                 _context.AttendanceDailies.Add(att);
             }
@@ -131,8 +133,8 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.view")]
         public async Task<IActionResult> BangCongThang(int? year, int? month, int? departmentId)
         {
-            int targetYear = year ?? DateTime.Today.Year;
-            int targetMonth = month ?? DateTime.Today.Month;
+            int targetYear = year ?? VietnamTime.Today.Year;
+            int targetMonth = month ?? VietnamTime.Today.Month;
             int daysInMonth = DateTime.DaysInMonth(targetYear, targetMonth);
 
             var startDate = new DateTime(targetYear, targetMonth, 1);
@@ -241,8 +243,8 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.view")]
         public async Task<IActionResult> Heatmap(int? year, int? month, int? departmentId)
         {
-            int targetYear = year ?? DateTime.Today.Year;
-            int targetMonth = month ?? DateTime.Today.Month;
+            int targetYear = year ?? VietnamTime.Today.Year;
+            int targetMonth = month ?? VietnamTime.Today.Month;
             int daysInMonth = DateTime.DaysInMonth(targetYear, targetMonth);
 
             var startDate = new DateTime(targetYear, targetMonth, 1);
@@ -263,7 +265,7 @@ namespace ERP_HRM_CMS.Controllers
                 .ToListAsync();
 
             var approvedLeaves = await _context.LeaveRequests
-                .Where(l => l.Status == "GIAM_DOC_DUYET" &&
+                .Where(l => l.Status == LeaveRequestStatus.DirectorApproved &&
                            ((l.FromDate >= startDate && l.FromDate <= endDate) ||
                             (l.ToDate >= startDate && l.ToDate <= endDate)))
                 .ToListAsync();
@@ -375,7 +377,7 @@ namespace ERP_HRM_CMS.Controllers
                         cell.IconClass = "bi-dash";
                         cell.Tooltip = $"Ngày {day:D2}/{targetMonth:D2}: Nghỉ cuối tuần ({(currentDate.DayOfWeek == DayOfWeek.Sunday ? "Chủ Nhật" : "Thứ 7")})";
                     }
-                    else if (currentDate <= DateTime.Today)
+                    else if (currentDate <= VietnamTime.Today)
                     {
                         cell.Status = "Absent";
                         cell.ColorClass = "heatmap-absent";

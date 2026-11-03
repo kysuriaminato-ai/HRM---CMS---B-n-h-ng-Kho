@@ -1,3 +1,5 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -46,7 +48,8 @@ namespace ERP_HRM_CMS.Controllers
 
             if (!string.IsNullOrWhiteSpace(status))
             {
-                query = query.Where(p => p.Status == status);
+                if (WorkflowStatusCodes.TryParse(WorkflowStatusCodes.PurchaseOrder, status, out var poStatus))
+                    query = query.Where(p => p.Status == poStatus);
             }
 
             if (supplierId.HasValue && supplierId.Value > 0)
@@ -69,9 +72,9 @@ namespace ERP_HRM_CMS.Controllers
             ViewBag.Branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
 
             ViewBag.TotalAmount = orders.Sum(p => p.FinalAmount);
-            ViewBag.PendingCount = orders.Count(p => p.Status == "PendingApproval");
-            ViewBag.ApprovedCount = orders.Count(p => p.Status == "Approved");
-            ViewBag.ReceivedCount = orders.Count(p => p.Status == "Received");
+            ViewBag.PendingCount = orders.Count(p => p.Status == PurchaseOrderStatus.PendingApproval);
+            ViewBag.ApprovedCount = orders.Count(p => p.Status == PurchaseOrderStatus.Approved);
+            ViewBag.ReceivedCount = orders.Count(p => p.Status == PurchaseOrderStatus.Received);
 
             return View(orders);
         }
@@ -87,9 +90,9 @@ namespace ERP_HRM_CMS.Controllers
 
             var po = new PurchaseOrder
             {
-                POCode = $"PO{DateTime.Now:yyMMddHHmm}",
-                OrderDate = DateTime.Today,
-                ExpectedDeliveryDate = DateTime.Today.AddDays(3),
+                POCode = $"PO{VietnamTime.Now:yyMMddHHmm}",
+                OrderDate = VietnamTime.Today,
+                ExpectedDeliveryDate = VietnamTime.Today.AddDays(3),
                 SupplierId = supplierId ?? 0
             };
 
@@ -111,12 +114,12 @@ namespace ERP_HRM_CMS.Controllers
             // Kiểm tra trùng mã
             if (await _context.PurchaseOrders.AnyAsync(p => p.POCode == model.POCode))
             {
-                model.POCode = $"PO{DateTime.Now:yyMMddHHmmss}";
+                model.POCode = $"PO{VietnamTime.Now:yyMMddHHmmss}";
             }
 
             model.CreatedBy = CurrentUserId;
-            model.CreatedAt = DateTime.Now;
-            model.Status = "PendingApproval";
+            model.CreatedAt = VietnamTime.Now;
+            model.Status = PurchaseOrderStatus.PendingApproval;
 
             decimal total = 0;
             for (int i = 0; i < productIds.Length; i++)
@@ -187,13 +190,13 @@ namespace ERP_HRM_CMS.Controllers
 
             if (po == null) return NotFound();
 
-            if (po.Status != "PendingApproval")
+            if (po.Status != PurchaseOrderStatus.PendingApproval)
             {
                 TempData["ErrorMessage"] = "Đơn hàng này không ở trạng thái Chờ duyệt.";
                 return RedirectToAction(nameof(ChiTiet), new { id });
             }
 
-            po.Status = "Approved";
+            po.Status = PurchaseOrderStatus.Approved;
             po.ApprovedBy = CurrentUserId;
 
             await _context.SaveChangesAsync();
@@ -226,7 +229,7 @@ namespace ERP_HRM_CMS.Controllers
 
             if (po == null) return NotFound();
 
-            if (po.Status != "Approved")
+            if (po.Status != PurchaseOrderStatus.Approved)
             {
                 TempData["ErrorMessage"] = "Chỉ có thể nhập kho đơn hàng đã được phê duyệt (Approved).";
                 return RedirectToAction(nameof(ChiTiet), new { id });
@@ -235,8 +238,8 @@ namespace ERP_HRM_CMS.Controllers
             using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                po.Status = "Received";
-                po.ReceivedDate = DateTime.Now;
+                po.Status = PurchaseOrderStatus.Received;
+                po.ReceivedDate = VietnamTime.Now;
                 po.DebtAmount = po.FinalAmount - po.PaidAmount;
 
                 // 1. Tự động tăng tồn kho thực tế tại chi nhánh
@@ -252,14 +255,14 @@ namespace ERP_HRM_CMS.Controllers
                             StockQuantity = item.Quantity,
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
-                            UpdatedAt = DateTime.Now
+                            UpdatedAt = VietnamTime.Now
                         };
                         _context.Inventories.Add(inv);
                     }
                     else
                     {
                         inv.StockQuantity += item.Quantity;
-                        inv.UpdatedAt = DateTime.Now;
+                        inv.UpdatedAt = VietnamTime.Now;
                     }
 
                     // Ghi nhận lịch sử thẻ kho (InventoryTransaction)
@@ -273,7 +276,7 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = item.UnitPrice,
                         Note = $"Nhập hàng theo đơn PO {po.POCode} từ NCC {po.Supplier.Name}",
                         CreatedBy = CurrentUserId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     });
                 }
 
@@ -290,10 +293,10 @@ namespace ERP_HRM_CMS.Controllers
                     TotalAmount = po.FinalAmount,
                     PaidAmount = po.PaidAmount,
                     RemainingAmount = po.FinalAmount - po.PaidAmount,
-                    DueDate = DateTime.Now.AddDays(30), // Kỳ hạn thanh toán 30 ngày
-                    Status = (po.FinalAmount - po.PaidAmount <= 0) ? "Paid" : (po.PaidAmount > 0 ? "PartiallyPaid" : "Unpaid"),
+                    DueDate = VietnamTime.Now.AddDays(30), // Kỳ hạn thanh toán 30 ngày
+                    Status = (po.FinalAmount - po.PaidAmount <= 0) ? DebtStatus.Paid : (po.PaidAmount > 0 ? DebtStatus.PartiallyPaid : DebtStatus.Unpaid),
                     Note = $"Công nợ nhập hàng theo đơn {po.POCode}",
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
                 _context.DebtRecords.Add(debt);
 
@@ -331,13 +334,13 @@ namespace ERP_HRM_CMS.Controllers
             var po = await _context.PurchaseOrders.FindAsync(id);
             if (po == null) return NotFound();
 
-            if (po.Status == "Received")
+            if (po.Status == PurchaseOrderStatus.Received)
             {
                 TempData["ErrorMessage"] = "Không thể hủy đơn hàng đã nhập kho.";
                 return RedirectToAction(nameof(ChiTiet), new { id });
             }
 
-            po.Status = "Cancelled";
+            po.Status = PurchaseOrderStatus.Cancelled;
             po.Note = $"{po.Note} | Lý do hủy: {reason}";
             await _context.SaveChangesAsync();
 

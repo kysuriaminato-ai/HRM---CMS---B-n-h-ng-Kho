@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Helpers;
 
 namespace ERP_HRM_CMS.Data
@@ -9,11 +11,30 @@ namespace ERP_HRM_CMS.Data
     public class AppDbContext : DbContext
     {
         private readonly IHttpContextAccessor? _httpContextAccessor;
+        private readonly IDataProtectionProvider _dataProtectionProvider;
 
-        public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor? httpContextAccessor = null) 
-            : base(options) 
-        { 
+        // Các cột dữ liệu nhạy cảm: được mã hóa khi lưu và che số trong nhật ký kiểm toán.
+        private const string IdentityCardColumn = "IdentityCard";
+        private const string BankAccountColumn = "BankAccountNumber";
+
+        public AppDbContext(
+            DbContextOptions<AppDbContext> options,
+            IDataProtectionProvider dataProtectionProvider,
+            IHttpContextAccessor? httpContextAccessor = null)
+            : base(options)
+        {
             _httpContextAccessor = httpContextAccessor;
+            _dataProtectionProvider = dataProtectionProvider;
+        }
+
+        /// <summary>Chuyển giá trị nhạy cảm sang dạng che số cho nhật ký kiểm toán.</summary>
+        private static object? MaskForAudit(string propName, object? value)
+        {
+            if (propName == IdentityCardColumn || propName == BankAccountColumn)
+            {
+                return SensitiveDataMasker.Mask(value as string);
+            }
+            return value;
         }
 
         // Phân hệ Auth & Phân quyền
@@ -24,6 +45,7 @@ namespace ERP_HRM_CMS.Data
         public DbSet<UserRole> UserRoles => Set<UserRole>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
         public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
+        public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
 
         // Phân hệ HRM
         public DbSet<Company> Companies => Set<Company>();
@@ -71,11 +93,70 @@ namespace ERP_HRM_CMS.Data
         public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
         public DbSet<SalarySlip> SalarySlips => Set<SalarySlip>();
 
+        /// <summary>
+        /// Cột thời điểm cần đổi múi giờ: tên kết thúc bằng "At" (CreatedAt, ReadAt...)
+        /// hoặc là các cột thời điểm đặc biệt. Không gồm cột ngày lịch hay cột "...Utc".
+        /// </summary>
+        public static bool IsInstantProperty(string propertyName)
+        {
+            if (propertyName.EndsWith("At", StringComparison.Ordinal)) return true;
+            return propertyName is "ReceivedDate" or "PaymentDate" or "CheckDate";
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            // Mã hóa số CCCD và số tài khoản ngân hàng khi lưu xuống database (xem ProtectedStringConverter).
+            // Giá trị mã hóa dài hơn bản gốc nên cột được nới lên 512 ký tự.
+            var sensitiveConverter = new ProtectedStringConverter(
+                ProtectedStringConverter.CreateProtector(_dataProtectionProvider));
+
+            modelBuilder.Entity<Employee>().Property(e => e.IdentityCard)
+                .HasConversion(sensitiveConverter)
+                .HasMaxLength(512);
+
+            modelBuilder.Entity<EmployeeDetail>().Property(d => d.BankAccountNumber)
+                .HasConversion(sensitiveConverter)
+                .HasMaxLength(512);
+
+            // Bộ đếm đăng nhập sai: một dòng cho mỗi cặp (tên đăng nhập, IP)
+            modelBuilder.Entity<LoginAttempt>()
+                .HasIndex(a => new { a.Username, a.IpAddress })
+                .IsUnique();
+
             // Composite Primary Keys
+            // Trạng thái nghiệp vụ: enum trong C#, lưu dưới dạng mã chuỗi cũ (xem WorkflowStatusCodes)
+            modelBuilder.Entity<PurchaseOrder>().Property(p => p.Status)
+                .HasConversion(new WorkflowStatusConverter<PurchaseOrderStatus>(WorkflowStatusCodes.PurchaseOrder));
+            modelBuilder.Entity<DebtRecord>().Property(d => d.Status)
+                .HasConversion(new WorkflowStatusConverter<DebtStatus>(WorkflowStatusCodes.Debt));
+            modelBuilder.Entity<LeaveRequest>().Property(l => l.Status)
+                .HasConversion(new WorkflowStatusConverter<LeaveRequestStatus>(WorkflowStatusCodes.LeaveRequest));
+            modelBuilder.Entity<PayrollPeriod>().Property(p => p.Status)
+                .HasConversion(new WorkflowStatusConverter<PayrollPeriodStatus>(WorkflowStatusCodes.PayrollPeriod));
+            modelBuilder.Entity<SalarySlip>().Property(s => s.Status)
+                .HasConversion(new WorkflowStatusConverter<SalarySlipStatus>(WorkflowStatusCodes.SalarySlip));
+
+            // Thời điểm nghiệp vụ: database lưu UTC, ứng dụng làm việc theo giờ Việt Nam.
+            // Cột ngày lịch (FromDate, WorkDate, DueDate...) và cột đã là UTC (...Utc) không đổi.
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (!IsInstantProperty(property.Name)) continue;
+
+                    if (property.ClrType == typeof(DateTime))
+                    {
+                        property.SetValueConverter(new VietnamTimeConverter());
+                    }
+                    else if (property.ClrType == typeof(DateTime?))
+                    {
+                        property.SetValueConverter(new NullableVietnamTimeConverter());
+                    }
+                }
+            }
+
             modelBuilder.Entity<UserRole>()
                 .HasKey(ur => new { ur.UserId, ur.RoleId });
 
@@ -97,7 +178,7 @@ namespace ERP_HRM_CMS.Data
             modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
 
             // Mỗi nhân viên tối đa một tài khoản; nhiều tài khoản chưa gắn nhân viên (EmployeeId NULL) vẫn được phép.
-            // Khớp với script SQL_fix_users_employeeid_unique.sql (cùng tên IX_Users_EmployeeId).
+            // Khớp với script Database/SQL_fix_users_employeeid_unique.sql (cùng tên IX_Users_EmployeeId).
             modelBuilder.Entity<User>().HasIndex(u => u.EmployeeId).IsUnique().HasFilter("[EmployeeId] IS NOT NULL");
 
             modelBuilder.Entity<NotificationRead>().HasKey(r => new { r.NotificationId, r.UserId });
@@ -301,8 +382,8 @@ namespace ERP_HRM_CMS.Data
 
             foreach (var entry in ChangeTracker.Entries())
             {
-                // Bỏ qua AuditLog và Notification để tránh vòng lặp hoặc dư thừa
-                if (entry.Entity is AuditLog || entry.Entity is Notification || entry.Entity is NotificationRead || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                // Bỏ qua AuditLog, Notification và bộ đếm đăng nhập sai (ghi mỗi lần đăng nhập thất bại, sẽ làm nhật ký nhiễu)
+                if (entry.Entity is AuditLog || entry.Entity is Notification || entry.Entity is NotificationRead || entry.Entity is LoginAttempt || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
                     continue;
 
                 var auditEntry = new AuditEntry(entry)
@@ -327,6 +408,7 @@ namespace ERP_HRM_CMS.Data
                             string propName = prop.Metadata.Name;
                             object? val = prop.CurrentValue;
                             if (propName.Contains("Password", StringComparison.OrdinalIgnoreCase)) val = "***MASKED***";
+                            else val = MaskForAudit(propName, val);
                             auditEntry.NewValues[propName] = val;
                         }
                         break;
@@ -343,6 +425,7 @@ namespace ERP_HRM_CMS.Data
                             string propName = prop.Metadata.Name;
                             object? val = prop.OriginalValue;
                             if (propName.Contains("Password", StringComparison.OrdinalIgnoreCase)) val = "***MASKED***";
+                            else val = MaskForAudit(propName, val);
                             auditEntry.OldValues[propName] = val;
                         }
                         break;
@@ -366,6 +449,11 @@ namespace ERP_HRM_CMS.Data
                                 {
                                     oldVal = "***MASKED***";
                                     newVal = "***MASKED***";
+                                }
+                                else
+                                {
+                                    oldVal = MaskForAudit(propName, oldVal);
+                                    newVal = MaskForAudit(propName, newVal);
                                 }
 
                                 auditEntry.ChangedColumns.Add(propName);

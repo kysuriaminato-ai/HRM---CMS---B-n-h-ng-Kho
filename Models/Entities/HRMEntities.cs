@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,7 +22,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(300)]
         public string? Address { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         public virtual ICollection<Branch> Branches { get; set; } = new List<Branch>();
     }
@@ -41,7 +42,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(300)]
         public string? Address { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("CompanyId")]
         public virtual Company Company { get; set; } = null!;
@@ -60,7 +61,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string Name { get; set; } = string.Empty;
         public int? ParentId { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("BranchId")]
         public virtual Branch Branch { get; set; } = null!;
@@ -83,7 +84,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [Column(TypeName = "decimal(5,2)")]
         public decimal AllowanceRate { get; set; } = 0;
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
     }
@@ -112,8 +113,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? AvatarUrl { get; set; }
         [Required, MaxLength(50)]
         public string Status { get; set; } = "Active";
-        public DateTime HireDate { get; set; } = DateTime.Today;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime HireDate { get; set; } = VietnamTime.Today;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("DepartmentId")]
         public virtual Department Department { get; set; } = null!;
@@ -175,7 +176,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public DateTime SignDate { get; set; }
         [MaxLength(500)]
         public string? Note { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("EmployeeId")]
         public virtual Employee Employee { get; set; } = null!;
@@ -219,7 +220,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string AttendanceStatus { get; set; } = "Present";
         [MaxLength(250)]
         public string? Note { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("EmployeeId")]
         public virtual Employee Employee { get; set; } = null!;

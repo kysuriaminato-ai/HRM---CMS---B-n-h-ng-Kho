@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -18,7 +19,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public bool IsActive { get; set; } = true;
         public bool IsSuperAdmin { get; set; } = false;
         public DateTime? LastLoginAt { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("EmployeeId")]
         public virtual Employee? Employee { get; set; }
@@ -39,7 +40,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? Description { get; set; }
         public bool IsSystem { get; set; } = false;
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
@@ -87,7 +88,7 @@ namespace ERP_HRM_CMS.Models.Entities
     {
         public int UserId { get; set; }
         public int RoleId { get; set; }
-        public DateTime AssignedAt { get; set; } = DateTime.Now;
+        public DateTime AssignedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
@@ -113,7 +114,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public int UserId { get; set; }
         public int PermissionId { get; set; }
         public bool IsGranted { get; set; } = true;
-        public DateTime AssignedAt { get; set; } = DateTime.Now;
+        public DateTime AssignedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;

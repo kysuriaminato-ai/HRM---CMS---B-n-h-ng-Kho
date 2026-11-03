@@ -568,10 +568,10 @@ VALUES
 ('SuperAdmin', N'Quản trị Hệ thống Tối cao', N'Toàn quyền quản trị tất cả các phân hệ và gán quyền đặc quyền', 1, 1),
 ('AdminMenu', N'Quản trị Menu & Điều hướng', N'Chỉ có quyền tạo, sửa, xóa, duyệt Menu và Điều hướng CMS', 0, 1),
 ('AdminContent', N'Quản trị Nội dung & Banner', N'Chỉ có quyền soạn thảo bài viết, tin tức, hình ảnh và banner trang chủ', 0, 1),
-('QTVP', N'Quản trị Văn phòng & Nhân sự', N'Quản lý nhân viên, hợp đồng lao động, ca kíp và bảng chấm công', 0, 1),
-('SaleDirector', N'Giám đốc Kinh doanh', N'Xem báo cáo doanh số, duyệt đơn hàng và phê duyệt chính sách giá', 0, 1),
-('SalesStaff', N'Nhân viên Bán hàng', N'Tạo đơn hàng POS, tra cứu thông tin sản phẩm và giỏ hàng', 0, 1),
-('WarehouseKeeper', N'Thủ kho', N'Quản lý phiếu xuất/nhập/điều chỉnh kho và cảnh báo tồn tối thiểu', 0, 1);
+('HR_MANAGER', N'Quản trị Văn phòng & Nhân sự', N'Quản lý nhân viên, hợp đồng lao động, ca kíp và bảng chấm công', 0, 1),
+('SALES_DIRECTOR', N'Giám đốc Kinh doanh', N'Xem báo cáo doanh số, duyệt đơn hàng và phê duyệt chính sách giá', 0, 1),
+('SALES_STAFF', N'Nhân viên Bán hàng', N'Tạo đơn hàng POS, tra cứu thông tin sản phẩm và giỏ hàng', 0, 1),
+('WAREHOUSE_STAFF', N'Thủ kho', N'Quản lý phiếu xuất/nhập/điều chỉnh kho và cảnh báo tồn tối thiểu', 0, 1);
 END;
 
 -- 6. Seed Modules & Permissions
@@ -692,10 +692,10 @@ DECLARE @U_Wh INT = (SELECT Id FROM dbo.Users WHERE Username = 'warehouse');
 DECLARE @R_SuperAdmin INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SuperAdmin');
 DECLARE @R_AdminMenu INT = (SELECT Id FROM dbo.Roles WHERE Code = 'AdminMenu');
 DECLARE @R_AdminContent INT = (SELECT Id FROM dbo.Roles WHERE Code = 'AdminContent');
-DECLARE @R_Qtvp INT = (SELECT Id FROM dbo.Roles WHERE Code = 'QTVP');
-DECLARE @R_SaleDir INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SaleDirector');
-DECLARE @R_SaleStaff INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SalesStaff');
-DECLARE @R_Wh INT = (SELECT Id FROM dbo.Roles WHERE Code = 'WarehouseKeeper');
+DECLARE @R_Qtvp INT = (SELECT Id FROM dbo.Roles WHERE Code = 'HR_MANAGER');
+DECLARE @R_SaleDir INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SALES_DIRECTOR');
+DECLARE @R_SaleStaff INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SALES_STAFF');
+DECLARE @R_Wh INT = (SELECT Id FROM dbo.Roles WHERE Code = 'WAREHOUSE_STAFF');
 
 INSERT INTO dbo.UserRoles (UserId, RoleId)
 VALUES 
@@ -716,10 +716,10 @@ BEGIN
 DECLARE @RId_Super INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SuperAdmin');
 DECLARE @RId_Menu INT = (SELECT Id FROM dbo.Roles WHERE Code = 'AdminMenu');
 DECLARE @RId_Content INT = (SELECT Id FROM dbo.Roles WHERE Code = 'AdminContent');
-DECLARE @RId_Qtvp INT = (SELECT Id FROM dbo.Roles WHERE Code = 'QTVP');
-DECLARE @RId_SaleDir INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SaleDirector');
-DECLARE @RId_SaleStaff INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SalesStaff');
-DECLARE @RId_Wh INT = (SELECT Id FROM dbo.Roles WHERE Code = 'WarehouseKeeper');
+DECLARE @RId_Qtvp INT = (SELECT Id FROM dbo.Roles WHERE Code = 'HR_MANAGER');
+DECLARE @RId_SaleDir INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SALES_DIRECTOR');
+DECLARE @RId_SaleStaff INT = (SELECT Id FROM dbo.Roles WHERE Code = 'SALES_STAFF');
+DECLARE @RId_Wh INT = (SELECT Id FROM dbo.Roles WHERE Code = 'WAREHOUSE_STAFF');
 
 -- SuperAdmin có toàn bộ quyền
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
@@ -733,19 +733,19 @@ SELECT @RId_Menu, Id FROM dbo.Permissions WHERE Code LIKE 'menu.%';
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @RId_Content, Id FROM dbo.Permissions WHERE Code LIKE 'content.%' OR Code LIKE 'banner.%' OR Code LIKE 'layout.%';
 
--- QTVP quản trị nhân sự & ca kíp chấm công
+-- HR_MANAGER (vai trò cũ QTVP) quản trị nhân sự & ca kíp chấm công
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @RId_Qtvp, Id FROM dbo.Permissions WHERE Code LIKE 'hrm.%' OR Code = 'report.hrm';
 
--- SaleDirector quản trị đơn hàng, xem sản phẩm, báo cáo bán hàng
+-- SALES_DIRECTOR (vai trò cũ SaleDirector) quản trị đơn hàng, xem sản phẩm, báo cáo bán hàng
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @RId_SaleDir, Id FROM dbo.Permissions WHERE Code LIKE 'order.%' OR Code = 'product.view' OR Code = 'report.sales';
 
--- SalesStaff có POS và xem sản phẩm, tạo đơn
+-- SALES_STAFF (vai trò cũ SalesStaff) có POS và xem sản phẩm, tạo đơn
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @RId_SaleStaff, Id FROM dbo.Permissions WHERE Code IN ('order.pos', 'order.view', 'product.view');
 
--- WarehouseKeeper quản lý kho và xuất nhập tồn
+-- WAREHOUSE_STAFF (vai trò cũ WarehouseKeeper) quản lý kho và xuất nhập tồn
 INSERT INTO dbo.RolePermissions (RoleId, PermissionId)
 SELECT @RId_Wh, Id FROM dbo.Permissions WHERE Code LIKE 'inventory.%' OR Code = 'product.view';
 

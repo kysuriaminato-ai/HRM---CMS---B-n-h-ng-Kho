@@ -25,7 +25,7 @@ namespace ERP_HRM_CMS.Tests
                 PasswordHash = MatKhauHelper.HashPassword(Password, salt),
                 IsActive = isActive,
                 IsSuperAdmin = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
             db.Users.Add(user);
             await db.SaveChangesAsync();

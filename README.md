@@ -10,28 +10,61 @@
 
 ## 2. Cấu hình
 
-Chuỗi kết nối mặc định nằm trong `appsettings.json` (`ConnectionStrings:DefaultConnection`, dùng Windows Authentication).
+Cấu hình đọc từ `appsettings.json`, rồi `appsettings.{Environment}.json`, User Secrets (chỉ Development) và biến môi trường. Không commit mật khẩu, chuỗi kết nối có bí mật hay khóa mã hóa.
 
-Không đặt mật khẩu trong file cấu hình. Nếu cần SQL Authentication hoặc mật khẩu admin khởi tạo, dùng User Secrets:
+**Development**
+
+- Chuỗi kết nối cục bộ (Windows Authentication, không có mật khẩu) và `Seed:Demo = true` nằm trong `appsettings.Development.json`.
+- Đặt mật khẩu quản trị ban đầu bằng User Secrets:
 
 ```
 dotnet user-secrets init
 dotnet user-secrets set "SeedAdmin:Password" "<mật khẩu admin mạnh>"
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<chuỗi kết nối>"
 ```
 
-Nếu để trống `SeedAdmin:Password`, khi tạo database lần đầu hệ thống sinh mật khẩu ngẫu nhiên cho tài khoản `admin` và in ra console. Hãy đổi mật khẩu ngay sau lần đăng nhập đầu tiên.
+**Môi trường khác (Production, Staging)**: đặt biến môi trường, không đặt trong file cấu hình.
+
+| Biến | Bắt buộc | Ý nghĩa |
+|---|---|---|
+| `ConnectionStrings__DefaultConnection` | Có | Chuỗi kết nối SQL Server |
+| `SeedAdmin__Password` | Có khi tạo database lần đầu | Mật khẩu ban đầu của `admin` và `quantritong` |
+| `DataProtection__KeysPath` | Có | Thư mục lưu khóa mã hóa (CCCD, số tài khoản). Phải lưu bền và có sao lưu. **Mất khóa này là không đọc lại được dữ liệu đã mã hóa.** |
+
+Ứng dụng không khởi động nếu thiếu `ConnectionStrings:DefaultConnection` hoặc `DataProtection:KeysPath` (ngoài Development). Nếu database chưa có tài khoản quản trị và thiếu `SeedAdmin:Password`, ứng dụng dừng với thông báo cấu hình. Hệ thống không sinh mật khẩu ngẫu nhiên và không in mật khẩu ra console.
 
 ## 3. Tạo database
 
-Cách 1 (khuyến nghị cho dự án mới): chạy ứng dụng một lần. `DbInitializer` tự tạo bảng và seed dữ liệu mẫu.
+Cách 1 (khuyến nghị cho dự án mới): chạy ứng dụng một lần. `DbInitializer` tự tạo bảng, quyền, tài khoản quản trị và cấu hình site (SeedCore). Dữ liệu mẫu (SeedDemo) chỉ được tạo khi Development và `Seed:Demo=true`. Ở production, sau khi khởi động, cần tự tạo chi nhánh, phòng ban, chức vụ, nhân viên và sản phẩm.
 
-Cách 2 (chạy script tạo schema thủ công): mở `SQLQuery1.sql` trong SSMS và chạy. Script này tạo `ERP_HRM_CMS_DB` và toàn bộ bảng, kèm tài khoản mẫu.
+Cách 2 (chạy script tạo schema thủ công): mở `Database/SQLQuery1.sql` trong SSMS và chạy. Script này tạo `ERP_HRM_CMS_DB` và toàn bộ bảng, kèm tài khoản mẫu.
 
 Lưu ý khi dùng script SQL:
-- Script `SQLQuery1.sql` có tài khoản mẫu với mật khẩu `123456`. Chỉ dùng cho môi trường phát triển.
-- Với database đã có từ trước, chạy `SQL_fix_users_employeeid_unique.sql` để sửa ràng buộc `EmployeeId` (cho phép nhiều tài khoản chưa gắn nhân viên). Script chạy trong transaction và an toàn khi chạy lại.
-- `fix-placeholder-images.sql` đổi ảnh placeholder của dữ liệu seed sang file SVG cục bộ. Không cần chạy trên database mới.
+- Script `Database/SQLQuery1.sql` có tài khoản mẫu với mật khẩu `123456`. Chỉ dùng cho môi trường phát triển.
+- Với database đã có từ trước, chạy `Database/SQL_fix_users_employeeid_unique.sql` để sửa ràng buộc `EmployeeId` (cho phép nhiều tài khoản chưa gắn nhân viên). Script chạy trong transaction và an toàn khi chạy lại.
+- `Database/fix-placeholder-images.sql` đổi ảnh placeholder của dữ liệu seed sang file SVG cục bộ. Không cần chạy trên database mới.
+
+### Lược đồ và migration (Giai đoạn 2)
+
+- Ứng dụng dùng **EF Core Migrations** (`MigrateAsync`) thay cho `EnsureCreated`. Khi khởi động, `DbInitializer.MigrateSchemaAsync` áp dụng các migration còn thiếu.
+- Migration baseline tạo bằng lệnh `dotnet ef migrations add InitialBaseline` (chạy tại thư mục dự án). Tên phải kết thúc bằng `_InitialBaseline`. Lệnh dùng `Data/AppDbContextFactory.cs` nên không chạy ứng dụng và không cần dữ liệu thật; có thể đặt `ConnectionStrings__DefaultConnection` nếu muốn. Nếu thiếu baseline, ứng dụng dừng với thông báo rõ ràng.
+- Database đã có dữ liệu: khi khởi động lần đầu, ứng dụng đánh dấu baseline là đã áp dụng (không tạo lại bảng, không xóa dữ liệu).
+- `Database/legacy-schema-fixes.sql` là các khối SQL cũ (chạy lại an toàn), tạo bảng `LoginAttempts`, `NotificationReads` và nới cột nhạy cảm. Với database cũ thiếu các bảng/cột này, chạy script trước khi khởi động ứng dụng.
+
+### Thứ tự nâng cấp database đang có dữ liệu
+
+Chỉ áp dụng cho database đã dùng trước giai đoạn này. Database mới không cần bước 2 và 3. Sao lưu trước; thử trên `ERP_HRM_CMS_DEV` trước khi chạy trên database thật.
+
+1. Chạy `Database/legacy-schema-fixes.sql` (nếu thiếu bảng/cột như mô tả ở trên).
+2. Chạy `Database/shift-instants-to-utc.sql` **một lần**, cùng lúc triển khai bản có `VietnamTimeConverter`. Script trừ 7 giờ cho 40 cột thời điểm (ví dụ `CreatedAt`) vì dữ liệu cũ là giờ Việt Nam. Script ghi nhật ký vào `dbo.__DataMigrationLog` nên chạy lại sẽ không trừ thêm.
+3. Chạy `Database/migrate-role-aliases.sql` (bỏ vai trò alias, xem bảng vai trò bên dưới). Script chạy trong một transaction và an toàn khi chạy lại.
+4. Khởi động ứng dụng.
+
+### Thời gian
+
+- Database lưu thời điểm theo **UTC**. Ứng dụng làm việc theo giờ **Asia/Ho_Chi_Minh** qua `VietnamTime` (`Helpers/VietnamTime.cs`). Converter `VietnamTimeConverter` đổi giờ khi ghi và đọc.
+- Không dùng `DateTime.Now`/`DateTime.Today` trong mã nguồn (phụ thuộc múi giờ của máy chủ). Dùng `VietnamTime.Now`/`VietnamTime.Today`.
+- Cột ngày lịch (`FromDate`, `ToDate`, `WorkDate`, `DueDate`, `HireDate`, `OrderDate`...) không đổi múi giờ. Cột kết thúc bằng `Utc` (ví dụ `LockedUntilUtc`) đã là UTC sẵn.
+- Truy vấn SQL không dùng `.Date`/`.Month`/`.Year` trên cột thời điểm; dùng điều kiện khoảng thời gian.
 
 ## 4. Chạy ứng dụng
 
@@ -41,7 +74,7 @@ Mở `ERP_HRM_CMS.sln`, chọn profile `http` (cổng 5129) hoặc `https` (cổ
 dotnet run --project ERP_HRM_CMS.csproj --launch-profile http
 ```
 
-Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `SQLQuery1.sql` có mật khẩu `123456` (chỉ môi trường phát triển).
+Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `Database/SQLQuery1.sql` có mật khẩu `123456` (chỉ môi trường phát triển).
 
 ## 5. Chạy kiểm thử
 
@@ -58,12 +91,24 @@ Yêu cầu: SQL Server đang chạy trên `localhost` với Windows Authenticati
 Các nhóm test hiện có:
 - Đăng nhập: đúng mật khẩu, sai mật khẩu, tài khoản chưa duyệt, khóa sau 5 lần sai.
 - Thông báo: thông báo cá nhân không lộ sang người khác, không đánh dấu đã đọc thông báo của người khác, trạng thái đã đọc của thông báo vai trò là riêng cho từng người.
-- Bảo mật: Dashboard và SignalR Hub yêu cầu đăng nhập; chính sách mật khẩu.
+- Bảo mật: mọi endpoint yêu cầu đăng nhập trừ khi đánh dấu `[AllowAnonymous]` (kiểm tra bằng `AuthorizationDefaultTests`); Dashboard và SignalR Hub; chính sách mật khẩu.
+- Khóa đăng nhập: 5 lần sai liên tiếp với cùng cặp (tên đăng nhập, IP) sẽ khóa 1 phút, sau đó thời gian khóa tăng gấp đôi tối đa 30 phút (`LoginThrottleTests`).
+- Seed: quyền, tài khoản quản trị và cấu hình site; kiểm tra thiếu `SeedAdmin:Password` (`SeedGuardTests`).
+- Mã hóa CCCD và số tài khoản (`SensitiveDataTests`).
 
 ## 6. Bảo mật
 
 - Tài khoản mẫu và mật khẩu `123456` chỉ dùng trong phát triển. Trước khi đưa lên môi trường thật, xóa hoặc đổi mật khẩu các tài khoản này.
-- Đăng nhập sai 5 lần liên tiếp với cùng tên đăng nhập sẽ bị khóa 15 phút. Bộ đếm lưu trong bộ nhớ, nên reset khi khởi động lại ứng dụng.
+- Đăng nhập sai 5 lần liên tiếp với cùng cặp (tên đăng nhập, IP) sẽ bị khóa 1 phút; mỗi lần khóa lại thời gian gấp đôi, tối đa 30 phút. Không khóa vĩnh viễn, kể cả tài khoản quản trị. Bộ đếm lưu trong bảng `LoginAttempts`, không mất khi khởi động lại. Sau 24 giờ không sai, bộ đếm được đặt lại.
+- Nếu ứng dụng đặt sau reverse proxy, cần cấu hình ForwardedHeaders để IP thật của khách được dùng cho khóa đăng nhập (hiện chưa cấu hình).
+- Số CCCD và số tài khoản ngân hàng được mã hóa khi lưu (tiền tố `enc:v1:`). Trang chi tiết nhân viên chỉ hiển thị dạng che số (`****1234`). Phiếu lương và bảng lương xuất Excel vẫn hiển thị đầy đủ số tài khoản để chuyển khoản. Nhật ký kiểm toán (AuditLogs) cũng ghi dạng che số.
+- Dữ liệu cũ còn ở dạng rõ được mã hóa lại bằng lệnh một lần. Sao lưu database trước khi chạy:
+
+```
+dotnet run --project ERP_HRM_CMS.csproj -- --migrate-sensitive-data
+```
+
+Lệnh chạy xong thì thoát, không khởi động web server. Chạy lại nhiều lần vẫn an toàn.
 - Cookie xác thực và session bật `Secure` khi chạy production (HTTPS). Môi trường Development dùng `SameAsRequest` để chạy được HTTP.
 - Nếu từng đưa mật khẩu SQL vào file cấu hình hoặc Git, hãy đổi mật khẩu đó trên SQL Server.
 
@@ -81,7 +126,7 @@ Các nhóm test hiện có:
 | `tests/` | Project kiểm thử xUnit |
 | `scripts/legacy/` | Script PowerShell kiểm thử thủ công cũ (đã thay bằng project test) |
 
-Các file `.sql` ở thư mục gốc là script vận hành, không được ứng dụng dùng khi chạy.
+Các file `.sql` nằm trong thư mục `Database/` là script vận hành, không được ứng dụng dùng khi chạy.
 
 ---
 
@@ -91,7 +136,7 @@ Các file `.sql` ở thư mục gốc là script vận hành, không được �
 
 - `admin`: tài khoản quản trị ban đầu (`IsSuperAdmin = true`), tạo khi database trống.
 - `quantritong`: tài khoản quản trị tổng thứ hai, có vai trò `SUPERADMIN` và toàn quyền. Có thể sửa khung hệ thống (layout, menu, cấu hình) và tạo các admin nhóm ở mục **Quản trị tài khoản**.
-- Mật khẩu lấy từ `SeedAdmin:Password` (xem User Secrets ở trên). Nếu chưa cấu hình, mật khẩu ngẫu nhiên được in ra cửa sổ Output của Visual Studio **một lần duy nhất** khi tạo tài khoản. Tài khoản đã tồn tại thì không bị ghi đè mật khẩu.
+- Mật khẩu lấy từ `SeedAdmin:Password` (xem mục 2). Khi tạo lần đầu bắt buộc phải có; nếu thiếu, ứng dụng dừng. Tài khoản đã tồn tại thì không bị ghi đè mật khẩu.
 
 ### Admin nhóm (vai trò theo nhóm chức năng)
 
@@ -104,6 +149,13 @@ Các file `.sql` ở thư mục gốc là script vận hành, không được �
 | `ADMIN_KHO` Quản lý kho & mua hàng | `inventory.*`, `scm.*` |
 | `ADMIN_MENU` Quản trị Menu website | `menu.*`, `product.view` |
 | `ADMIN_CONTENT` Quản trị Nội dung | `content.*`, `layout.manage` |
+| `HR_MANAGER` Trưởng phòng Nhân sự | `hrm.*` (thay cho alias `QTVP`) |
+| `SALES_STAFF` Nhân viên Bán hàng | `order.pos`, `order.view`, `product.view` (thay cho alias `SalesStaff`) |
+| `SALES_DIRECTOR` Giám đốc Kinh doanh | `order.*`, `product.view`, `report.sales` (thay cho alias `SaleDirector`) |
+| `WAREHOUSE_STAFF` Thủ kho | `inventory.*`, `product.view` (thay cho alias `WarehouseKeeper`) |
+| `EMPLOYEE` Nhân viên | `hrm.self.service` (tự phục vụ: đơn từ và chấm công của chính mình; các trang này sẽ bổ sung sau) |
+
+Các vai trò alias `QTVP`, `SalesStaff`, `SaleDirector`, `WarehouseKeeper` đã bị bỏ. Không tạo lại chúng; dùng vai trò chuẩn ở trên.
 
 Cách tạo admin nhóm: đăng nhập bằng `quantritong` → **Quản trị tài khoản** → tạo tài khoản mới và chọn một hoặc nhiều vai trò ở trên.
 

@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -71,9 +72,9 @@ namespace ERP_HRM_CMS.Controllers
                 .Where(i => i.BranchId == selectedBranch)
                 .ToListAsync();
 
-            var today = DateTime.Today;
+            var today = VietnamTime.Today;
             int todayTransCount = await _context.InventoryTransactions
-                .CountAsync(t => t.BranchId == selectedBranch && t.CreatedAt.Date == today);
+                .CountAsync(t => t.BranchId == selectedBranch && t.CreatedAt >= today && t.CreatedAt < today.AddDays(1));
 
             var vm = new WarehouseDashboardViewModel
             {
@@ -131,7 +132,7 @@ namespace ERP_HRM_CMS.Controllers
                     }
 
                     // 1. Tạo phiếu giao dịch kho
-                    string transCode = $"PNK-{DateTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = $"PNK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -142,7 +143,7 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = dto.UnitPrice > 0 ? dto.UnitPrice : product.CostPrice,
                         Note = string.IsNullOrWhiteSpace(dto.Note) ? "Nhập hàng từ nhà cung cấp" : dto.Note.Trim(),
                         CreatedBy = CurrentUserId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     };
                     _context.InventoryTransactions.Add(transaction);
 
@@ -159,14 +160,14 @@ namespace ERP_HRM_CMS.Controllers
                             StockQuantity = dto.Quantity,
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
-                            UpdatedAt = DateTime.Now
+                            UpdatedAt = VietnamTime.Now
                         };
                         _context.Inventories.Add(inventory);
                     }
                     else
                     {
                         inventory.StockQuantity += dto.Quantity;
-                        inventory.UpdatedAt = DateTime.Now;
+                        inventory.UpdatedAt = VietnamTime.Now;
                     }
 
                     // 3. Cập nhật giá vốn bình quân nếu có đơn giá mới
@@ -226,7 +227,7 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"PXK-{DateTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = $"PXK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -237,13 +238,13 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = dto.UnitPrice > 0 ? dto.UnitPrice : inventory!.Product.CostPrice,
                         Note = string.IsNullOrWhiteSpace(dto.Note) ? "Xuất kho điều chuyển / hao hụt" : dto.Note.Trim(),
                         CreatedBy = CurrentUserId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     };
                     _context.InventoryTransactions.Add(transaction);
 
                     // Trừ số lượng tồn kho
                     inventory!.StockQuantity -= dto.Quantity;
-                    inventory.UpdatedAt = DateTime.Now;
+                    inventory.UpdatedAt = VietnamTime.Now;
 
                     await _context.SaveChangesAsync();
                     await dbTransaction.CommitAsync();
@@ -281,10 +282,10 @@ namespace ERP_HRM_CMS.Controllers
                 query = query.Where(t => t.TransactionType == type);
 
             if (fromDate.HasValue)
-                query = query.Where(t => t.CreatedAt.Date >= fromDate.Value.Date);
+                query = query.Where(t => t.CreatedAt >= fromDate.Value.Date);
 
             if (toDate.HasValue)
-                query = query.Where(t => t.CreatedAt.Date <= toDate.Value.Date);
+                query = query.Where(t => t.CreatedAt < toDate.Value.Date.AddDays(1));
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
@@ -387,12 +388,12 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"DCK-{DateTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = $"DCK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
                     decimal unitCost = fromInventory!.Product.CostPrice;
 
                     // 1. Trừ tồn kho tại chi nhánh xuất & ghi giao dịch OUT
                     fromInventory.StockQuantity -= dto.Quantity;
-                    fromInventory.UpdatedAt = DateTime.Now;
+                    fromInventory.UpdatedAt = VietnamTime.Now;
 
                     _context.InventoryTransactions.Add(new InventoryTransaction
                     {
@@ -404,7 +405,7 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = unitCost,
                         Note = $"Điều chuyển kho sang chi nhánh #{dto.ToBranchId}. " + (dto.Note ?? string.Empty),
                         CreatedBy = CurrentUserId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     });
 
                     // 2. Cộng tồn kho tại chi nhánh nhận & ghi giao dịch IN
@@ -420,14 +421,14 @@ namespace ERP_HRM_CMS.Controllers
                             StockQuantity = dto.Quantity,
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
-                            UpdatedAt = DateTime.Now
+                            UpdatedAt = VietnamTime.Now
                         };
                         _context.Inventories.Add(toInventory);
                     }
                     else
                     {
                         toInventory.StockQuantity += dto.Quantity;
-                        toInventory.UpdatedAt = DateTime.Now;
+                        toInventory.UpdatedAt = VietnamTime.Now;
                     }
 
                     _context.InventoryTransactions.Add(new InventoryTransaction
@@ -440,7 +441,7 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = unitCost,
                         Note = $"Nhận điều chuyển từ chi nhánh #{dto.FromBranchId}. " + (dto.Note ?? string.Empty),
                         CreatedBy = CurrentUserId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     });
 
                     await _context.SaveChangesAsync();
@@ -526,13 +527,13 @@ namespace ERP_HRM_CMS.Controllers
 
             var sheet = new StocktakingSheet
             {
-                Code = $"KK{DateTime.Now:yyMMddHHmmss}",
+                Code = $"KK{VietnamTime.Now:yyMMddHHmmss}",
                 BranchId = branchId,
-                CheckDate = DateTime.Now,
+                CheckDate = VietnamTime.Now,
                 CreatedBy = CurrentUserId,
                 Note = note,
                 Status = "Balanced",
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             int totalSys = 0;
@@ -576,7 +577,7 @@ namespace ERP_HRM_CMS.Controllers
                     if (diffQty != 0)
                     {
                         inv.StockQuantity = actQty;
-                        inv.UpdatedAt = DateTime.Now;
+                        inv.UpdatedAt = VietnamTime.Now;
 
                         _context.InventoryTransactions.Add(new InventoryTransaction
                         {
@@ -588,7 +589,7 @@ namespace ERP_HRM_CMS.Controllers
                             UnitPrice = inv.Product.CostPrice,
                             Note = $"Cân bằng kiểm kê phiếu {sheet.Code}. Lý do: {reason}",
                             CreatedBy = CurrentUserId,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = VietnamTime.Now
                         });
                     }
                 }
@@ -639,7 +640,7 @@ namespace ERP_HRM_CMS.Controllers
             worksheet.Cell("A2").Style.Font.FontSize = 12;
             worksheet.Cell("A2").Style.Font.FontColor = ClosedXML.Excel.XLColor.FromHtml("#2563EB");
 
-            worksheet.Cell("A3").Value = $"Thời điểm xuất báo cáo: {DateTime.Now:dd/MM/yyyy HH:mm} | Địa chỉ kho: {branch.Address}";
+            worksheet.Cell("A3").Value = $"Thời điểm xuất báo cáo: {VietnamTime.Now:dd/MM/yyyy HH:mm} | Địa chỉ kho: {branch.Address}";
             worksheet.Cell("A3").Style.Font.Italic = true;
             worksheet.Cell("A3").Style.Font.FontSize = 10;
             worksheet.Cell("A3").Style.Font.FontColor = ClosedXML.Excel.XLColor.FromHtml("#64748B");
@@ -744,7 +745,7 @@ namespace ERP_HRM_CMS.Controllers
             return File(
                 content,
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"BaoCao_XuatNhapTon_{branch.Code}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx"
+                $"BaoCao_XuatNhapTon_{branch.Code}_{VietnamTime.Now:yyyyMMdd_HHmm}.xlsx"
             );
         }
     }

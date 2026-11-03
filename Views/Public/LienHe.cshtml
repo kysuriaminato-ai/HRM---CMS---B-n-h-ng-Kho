@@ -1,91 +1,117 @@
 @model ERP_HRM_CMS.Models.Entities.Company
+@inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     Layout = "_PublicLayout";
-    ViewData["Title"] = "Liên Hệ Với Chúng Tôi";
+    ViewData["Title"] = "Liên Hệ";
+    ViewData["Description"] = "Liên hệ đội ngũ tư vấn để nhận phương án quản trị doanh nghiệp phù hợp.";
+
+    string phone = Model?.Phone ?? ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Hotline", "Đang cập nhật");
+    string mail = Model?.Email ?? ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Email", string.Empty);
+    string address = Model?.Address ?? ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Address", "Đang cập nhật");
 }
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="fw-bold display-6 mb-2">Liên Hệ & Hỗ Trợ Doanh Nghiệp</h1>
-        <p class="text-muted small">Hãy liên hệ với đội ngũ chuyên gia tư vấn để nhận giải pháp chuyển đổi số tối ưu nhất</p>
+<section class="ps-page-head">
+    <div class="container">
+        <span class="ps-eyebrow">Liên hệ</span>
+        <h1>Liên hệ và hỗ trợ doanh nghiệp</h1>
+        <p>Đội ngũ tư vấn sẽ liên hệ lại để tìm hiểu nhu cầu và đề xuất phương án triển khai.</p>
     </div>
+</section>
 
-    <div class="row g-4 justify-content-center">
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
-                <h4 class="fw-bold mb-4">Thông Tin Trụ Sở</h4>
-                <div class="d-flex align-items-start gap-3 mb-3">
-                    <div class="p-2 bg-light rounded text-primary"><i class="bi bi-geo-alt-fill fs-5"></i></div>
+<section class="ps-section">
+    <div class="container">
+        <div class="row g-4 g-xl-5">
+            <div class="col-lg-5 ps-reveal">
+                <h2 class="h4 fw-bold mb-4">Thông tin trụ sở</h2>
+
+                <div class="ps-contact-card">
+                    <div class="ps-contact-icon"><i class="bi bi-geo-alt-fill"></i></div>
                     <div>
-                        <div class="fw-semibold">Trụ sở chính</div>
-                        <small class="text-secondary">@(Model?.Address ?? "Số 1 Duy Tân, Cầu Giấy, Hà Nội")</small>
+                        <div class="ps-contact-title">Trụ sở chính</div>
+                        <div class="ps-contact-value">@address</div>
                     </div>
                 </div>
-                <div class="d-flex align-items-start gap-3 mb-3">
-                    <div class="p-2 bg-light rounded text-success"><i class="bi bi-telephone-fill fs-5"></i></div>
+
+                <div class="ps-contact-card">
+                    <div class="ps-contact-icon" style="background: rgba(5,150,105,.12); color: var(--ps-success);"><i class="bi bi-telephone-fill"></i></div>
                     <div>
-                        <div class="fw-semibold">Hotline hỗ trợ 24/7</div>
-                        <small class="text-secondary">@(Model?.Phone ?? "1900 6868")</small>
+                        <div class="ps-contact-title">Hotline hỗ trợ</div>
+                        <div class="ps-contact-value">@phone</div>
                     </div>
                 </div>
-                <div class="d-flex align-items-start gap-3 mb-4">
-                    <div class="p-2 bg-light rounded text-warning"><i class="bi bi-envelope-fill fs-5"></i></div>
+
+                <div class="ps-contact-card">
+                    <div class="ps-contact-icon" style="background: rgba(217,119,6,.12); color: var(--ps-warning);"><i class="bi bi-envelope-fill"></i></div>
                     <div>
-                        <div class="fw-semibold">Hòm thư điện tử</div>
-                        <small class="text-secondary">@(Model?.Email ?? "contact@tienphong.vn")</small>
+                        <div class="ps-contact-title">Email</div>
+                        <div class="ps-contact-value">@(string.IsNullOrEmpty(mail) ? "Đang cập nhật" : mail)</div>
                     </div>
                 </div>
 
                 @if (Model?.Branches != null && Model.Branches.Any())
                 {
-                    <h5 class="fw-bold mb-3 border-top pt-3">Hệ Thống Chi Nhánh</h5>
-                    @foreach (var br in Model.Branches)
+                    <h3 class="h6 fw-bold text-uppercase mt-4 mb-3" style="letter-spacing: .08em;">Chi nhánh</h3>
+                    @foreach (var branch in Model.Branches)
                     {
-                        <div class="p-2 mb-2 bg-light rounded">
-                            <div class="fw-semibold small">@br.Name</div>
-                            <div class="text-muted" style="font-size: 12px;"><i class="bi bi-pin-map"></i> @br.Address - ĐT: @br.Phone</div>
+                        <div class="ps-branch">
+                            <div class="fw-semibold small">@branch.Name</div>
+                            <div class="text-muted small"><i class="bi bi-pin-map"></i> @branch.Address @(string.IsNullOrEmpty(branch.Phone) ? string.Empty : "· " + branch.Phone)</div>
                         </div>
                     }
                 }
             </div>
-        </div>
 
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm p-4 rounded-4">
-                <h4 class="fw-bold mb-4">Gửi Yêu Cầu Tư Vấn</h4>
-                <form onsubmit="event.preventDefault(); alert('Cảm ơn bạn đã gửi liên hệ! Đội ngũ tư vấn sẽ phản hồi trong 24h.');">
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Họ và tên (*)</label>
-                        <input type="text" class="form-control" placeholder="Nguyễn Văn A" required />
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Số điện thoại (*)</label>
-                            <input type="tel" class="form-control" placeholder="0988xxxxxx" required />
+            <div class="col-lg-7 ps-reveal ps-delay-1">
+                <div class="ps-form-card">
+                    <h2 class="h4 fw-bold mb-4">Gửi yêu cầu tư vấn</h2>
+
+                    <form id="psContactForm" class="ps-form" data-email="@mail" novalidate>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="lh-hoten" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                                <input id="lh-hoten" name="fullname" type="text" class="form-control" placeholder="Nguyễn Văn A"
+                                       maxlength="120" required autocomplete="name" />
+                                <div class="invalid-feedback">Vui lòng nhập họ và tên.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lh-sdt" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                <input id="lh-sdt" name="phone" type="tel" class="form-control" placeholder="0988 xxx xxx"
+                                       pattern="[0-9+ ]{8,15}" required autocomplete="tel" />
+                                <div class="invalid-feedback">Số điện thoại gồm 8 đến 15 chữ số.</div>
+                            </div>
+                            <div class="col-12">
+                                <label for="lh-email" class="form-label">Email liên hệ <span class="text-danger">*</span></label>
+                                <input id="lh-email" name="email" type="email" class="form-control" placeholder="email@congty.com"
+                                       maxlength="150" required autocomplete="email" />
+                                <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
+                            </div>
+                            <div class="col-12">
+                                <label for="lh-phanhe" class="form-label">Phân hệ quan tâm</label>
+                                <select id="lh-phanhe" name="service" class="form-select">
+                                    <option value="Tất cả các phân hệ">Tất cả các phân hệ (trọn gói)</option>
+                                    <option value="Nhân sự và chấm công">Nhân sự và chấm công (HRM)</option>
+                                    <option value="Bán hàng và kho">Bán hàng POS và quản lý kho</option>
+                                    <option value="Quản trị nội dung">Website và quản trị nội dung (CMS)</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="lh-noidung" class="form-label">Nội dung chi tiết</label>
+                                <textarea id="lh-noidung" name="message" rows="4" class="form-control" maxlength="1000"
+                                          placeholder="Mô tả quy mô nhân sự, số chi nhánh và nhu cầu hiện tại..."></textarea>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Email liên hệ (*)</label>
-                            <input type="email" class="form-control" placeholder="email@congty.com" required />
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Phân hệ quan tâm</label>
-                        <select class="form-select">
-                            <option>Tất cả các phân hệ (Trọn gói ERP)</option>
-                            <option>Quản trị Nhân sự & Chấm công (HRM)</option>
-                            <option>Bán hàng & Quản lý Kho (POS & Inventory)</option>
-                            <option>Hệ thống Website & Quản trị Nội dung (CMS)</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold">Nội dung chi tiết</label>
-                        <textarea rows="3" class="form-control" placeholder="Mô tả nhu cầu quy mô nhân sự, số lượng chi nhánh..."></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-dark w-100 py-2 fw-semibold">
-                        <i class="bi bi-send-fill me-1"></i> Gửi Tin Nhắn
-                    </button>
-                </form>
+
+                        <button type="submit" class="ps-btn-primary w-100 mt-4">
+                            <i class="bi bi-send-fill"></i> Gửi yêu cầu
+                        </button>
+
+                        <p class="ps-form-note">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Nhấn Gửi sẽ mở ứng dụng email của bạn với nội dung đã điền sẵn. Yêu cầu này chưa được lưu trên hệ thống.</span>
+                        </p>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>

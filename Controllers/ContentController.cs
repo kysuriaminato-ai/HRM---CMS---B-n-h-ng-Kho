@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -44,8 +45,8 @@ namespace ERP_HRM_CMS.Controllers
             if (ModelState.IsValid)
             {
                 content.AuthorId = HttpContext.Session.GetInt32("UserId");
-                content.CreatedAt = DateTime.Now;
-                content.UpdatedAt = DateTime.Now;
+                content.CreatedAt = VietnamTime.Now;
+                content.UpdatedAt = VietnamTime.Now;
 
                 _context.Contents.Add(content);
                 await _context.SaveChangesAsync();
@@ -73,7 +74,7 @@ namespace ERP_HRM_CMS.Controllers
 
             if (ModelState.IsValid)
             {
-                content.UpdatedAt = DateTime.Now;
+                content.UpdatedAt = VietnamTime.Now;
                 _context.Update(content);
 
                 // Anti-Broken Link: Nếu bài viết bị chuyển sang Draft/Archived, vô hiệu hóa Menu liên quan

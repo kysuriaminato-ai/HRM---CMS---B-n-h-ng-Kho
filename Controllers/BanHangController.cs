@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -104,7 +105,7 @@ namespace ERP_HRM_CMS.Controllers
 
             var order = new Order
             {
-                OrderCode = $"ORD-{DateTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}",
+                OrderCode = $"ORD-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}",
                 BranchId = dto.BranchId,
                 CustomerName = dto.CustomerName.Trim(),
                 CustomerPhone = dto.CustomerPhone.Trim(),
@@ -116,7 +117,7 @@ namespace ERP_HRM_CMS.Controllers
                 PaymentStatus = "Paid",
                 PaymentMethod = dto.PaymentMethod,
                 CreatedBy = CurrentUserId,
-                CreatedAt = DateTime.Now,
+                CreatedAt = VietnamTime.Now,
                 Note = dto.Note
             };
 
@@ -139,7 +140,7 @@ namespace ERP_HRM_CMS.Controllers
 
                     var inv = await _context.Inventories.FirstAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
                     inv.StockQuantity -= item.Quantity;
-                    inv.UpdatedAt = DateTime.Now;
+                    inv.UpdatedAt = VietnamTime.Now;
 
                     // Ghi nhận phiếu xuất kho tự động
                     _context.InventoryTransactions.Add(new InventoryTransaction
@@ -152,7 +153,7 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = item.UnitPrice,
                         Note = $"Xuất kho bán lẻ theo đơn hàng {order.OrderCode}",
                         CreatedBy = CurrentUserId ?? 1,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     });
                 }
 

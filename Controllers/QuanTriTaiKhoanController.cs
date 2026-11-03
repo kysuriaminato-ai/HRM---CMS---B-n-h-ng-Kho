@@ -111,7 +111,7 @@ namespace ERP_HRM_CMS.Controllers
                 PasswordHash = MatKhauHelper.HashPassword(model.Password!, salt),
                 IsActive = model.IsActive,
                 IsSuperAdmin = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             foreach (var roleId in chon)

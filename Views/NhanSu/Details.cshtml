@@ -65,11 +65,11 @@
             <div class="erp-card-header">Chi Tiết Nhân Thân & Pháp Lý</div>
             <div class="p-4 small">
                 <div class="row g-3">
-                    <div class="col-md-6"><strong>Số CCCD:</strong> @(Model.IdentityCard ?? "-")</div>
+                    <div class="col-md-6"><strong>Số CCCD:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(Model.IdentityCard) ?? "-")</div>
                     <div class="col-md-6"><strong>Mã số thuế:</strong> @(Model.EmployeeDetail?.TaxIdentificationNumber ?? "-")</div>
                     <div class="col-md-6"><strong>Địa chỉ thường trú:</strong> @(Model.EmployeeDetail?.PermanentAddress ?? "-")</div>
                     <div class="col-md-6"><strong>Địa chỉ hiện tại:</strong> @(Model.EmployeeDetail?.CurrentAddress ?? "-")</div>
-                    <div class="col-md-6"><strong>Tài khoản ngân hàng:</strong> @(Model.EmployeeDetail?.BankAccountNumber ?? "-") (@(Model.EmployeeDetail?.BankName))</div>
+                    <div class="col-md-6"><strong>Tài khoản ngân hàng:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(Model.EmployeeDetail?.BankAccountNumber) ?? "-") (@(Model.EmployeeDetail?.BankName))</div>
                     <div class="col-md-6"><strong>Liên hệ khẩn cấp:</strong> @(Model.EmployeeDetail?.EmergencyContactName ?? "-") - @(Model.EmployeeDetail?.EmergencyContactPhone ?? "-")</div>
                 </div>
             </div>
