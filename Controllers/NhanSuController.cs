@@ -418,7 +418,7 @@ namespace ERP_HRM_CMS.Controllers
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
-        public async Task<IActionResult> BaoCao()
+        public IActionResult BaoCao()
         {
             return RedirectToAction(nameof(Dashboard));
         }

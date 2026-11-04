@@ -1,4 +1,4 @@
-﻿@model List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto>
+@model List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto>
 @{
     Layout = "_HRMLayout";
     ViewData["Title"] = "Cơ Cấu Tổ Chức & Phòng Ban";
@@ -7,9 +7,9 @@
     var flatDepts = ViewBag.FlatDepartments as List<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>;
 }
 
-@* Hàm helper hiển thị cây đệ quy *@
+@* Hàm helper hiển thị cây đệ quy - phải async Task vì dùng tag helpers *@
 @functions {
-    void RenderTree(List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto> nodes, int level)
+    async Task RenderTree(List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto> nodes, int level)
     {
         foreach (var node in nodes)
         {
@@ -59,7 +59,7 @@
             </tr>
             @if (node.Children.Any())
             {
-                RenderTree(node.Children, level + 1);
+                await RenderTree(node.Children, level + 1);
             }
         }
     }
@@ -135,7 +135,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @{ RenderTree(Model, 0); }
+                        @{ await RenderTree(Model, 0); }
                     </tbody>
                 </table>
             </div>
