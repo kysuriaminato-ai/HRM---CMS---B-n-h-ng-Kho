@@ -1,0 +1,444 @@
+# Phân tích hiện trạng và đánh giá khoảng trống
+
+- **Phiên:** 1 (chỉ phân tích, không sửa code)
+- **Ngày:** 2026-11-04
+- **Commit đã đọc:** `4ea45187bd81d397ad8a5daa20e904ebf6934881` (nhánh mặc định, clone shallow)
+- **Phương pháp:** đọc tĩnh mã nguồn, cấu hình, migration, view, JS và test; tìm kiếm mẫu rủi ro bằng grep; đối chiếu thủ công từng điểm nghi ngờ trước khi đưa vào báo cáo.
+
+---
+
+## 0. Tóm tắt điều hành
+
+Repo là một ứng dụng ASP.NET Core MVC **monolith** (.NET 8) gồm 27 controller, 45 entity, 76 view và khoảng 16.000 dòng C# (không tính migration). Phần nghiệp vụ đã khá rộng: nhân sự, chấm công, đơn từ, bảng lương có công thức, POS, kho với kiểm kê, mua hàng, công nợ, CMS và thông báo realtime. Cơ chế bảo mật nền (CSRF trên 100% POST, băm mật khẩu PBKDF2, khóa đăng nhập tăng dần, thu hồi phiên qua SecurityStamp, mã hóa CCCD/số tài khoản, che dữ liệu trong audit log) được làm đúng.
+
+Tuy vậy, **chưa sẵn sàng đưa lên production**. Các vấn đề chính:
+
+1. **.NET 8 hết hỗ trợ ngày 10/11/2026**, tức sau 6 ngày. Cần nâng lên .NET 10 LTS trước tiên.
+2. **Lộ dữ liệu theo quyền:** Dashboard (doanh thu) và tìm kiếm toàn cục (họ tên, email, SĐT nhân viên) không kiểm tra quyền, mọi người dùng đã đăng nhập đều xem được.
+3. **Mật khẩu hiển thị dạng rõ** trong thông báo khi cấp tài khoản nhanh (`NhanSuController.cs:347`).
+4. **Danh tính người thao tác lấy từ Session và rơi về user id `1`** ở nhiều controller. Hoạt động có thể bị ghi nhận sai người, và mất khi restart app hoặc chạy nhiều instance.
+5. **POS không giới hạn mức giảm giá** phía server (`BanHangController.cs:105`), có thể bán miễn phí.
+6. **Không có phạm vi dữ liệu theo chi nhánh/phòng ban.** Với doanh nghiệp đa chi nhánh, đây là khoảng trống kiến trúc lớn nhất.
+7. **Chưa có phân trang** ở hầu hết danh sách (chỉ Audit Log có), không có soft delete, không có Serilog, health check, cache hay CI.
+8. **Kiến trúc không theo Clean Architecture:** chỉ có 2 project, controller gọi DbContext trực tiếp 337 lần.
+
+Có **13 hạng mục P0** (ước lượng khoảng 16–22 ngày công) cần làm trước khi triển khai thật (mục 12).
+
+---
+
+## 1. Phạm vi, giới hạn và cách kiểm chứng
+
+- **Không build và không chạy test được** trong phiên này: môi trường không có .NET SDK và không có SQL Server. Mọi nhận định là đọc tĩnh. Cần kiểm chứng lại bằng `dotnet build` và `dotnet test` trên máy có SDK và SQL Server (xem mục 13).
+- **Không đánh giá giao diện bằng trình duyệt.** Nhận định về responsive và dark mode dựa trên CSS và markup.
+- **Không đánh giá tính đúng pháp lý** của các tham số lương. Các mục `NeedsConfirmation` trong `appsettings.json` cần kế toán hoặc tư vấn pháp lý xác nhận.
+- Ước lượng công việc tính theo ngày công của một lập trình viên .NET, chưa gồm review và kiểm thử đầy đủ. Sai số khoảng ±50%.
+
+---
+
+## 2. Đính chính so với giả định ban đầu
+
+Các điểm dưới đây khác với mô tả dự án trong yêu cầu. Báo cáo dựa trên mã thực tế.
+
+| Yêu cầu / giả định | Thực tế trong repo | Bằng chứng |
+|---|---|---|
+| ASP.NET Core Identity | **Không dùng.** Bảng `Users` tự quản lý, băm PBKDF2 viết tay | `ERP_HRM_CMS.csproj` không có gói Identity; `Helpers/MatKhauHelper.cs` |
+| Clean Architecture (Domain/Application/Infrastructure/Web) | **Không có.** Cấu trúc theo loại: `Controllers/`, `Data/`, `Models/`, `Services/`, `Helpers/` | `ERP_HRM_CMS.sln` chỉ có 2 project |
+| .NET LTS mới nhất | Đang chạy **.NET 8** (`net8.0`), EF Core 8.0.0 | `ERP_HRM_CMS.csproj:4,11` |
+| Font Be Vietnam Pro | **Không dùng.** Theme đang tải Plus Jakarta Sans và JetBrains Mono | `wwwroot/css/enterprise-theme.css:5` |
+| Mỗi migration kèm script `.sql` | **Không có** file `.sql` nào trong `Migrations/` | `Migrations/` chỉ có `.cs` |
+| Chỉ thay đổi tồn kho qua `InventoryStockService` (README) | **Vi phạm** ở luồng nhập kho PO | `Controllers/PurchaseOrderController.cs:264` |
+| Tên class/biến/route bằng tiếng Anh | **Vi phạm** ở nhiều route và action: `NhanSu`, `BanHang`, `DonTu`, `ChamCong`, `BangLuong`, `CongNo`, `PhanQuyen`, `CapTaiKhoanNhanh`, `XuatDonPOS`, `Duyet`, `TuChoi` | Tên controller và action trong `Controllers/` |
+| Test "AuthorizationDefault" bảo vệ mọi endpoint | Test chỉ kiểm tra **người chưa đăng nhập** bị chuyển hướng. **Không** kiểm tra người đã đăng nhập nhưng thiếu quyền | `tests/.../AuthorizationDefaultTests.cs` |
+
+**Ghi chú về cách đếm:** lần đếm đầu chỉ tìm `[KiemTraQuyen]` ở cấp action nên báo cáo nhầm nhiều controller là "không có kiểm tra quyền". Sau khi đối chiếu thủ công, các controller như `QuanTriTaiKhoanController`, `VaiTroController`, `LayoutConfigController`, `PhanQuyenController`, `AuditLogController` đều được bảo vệ bằng `[KiemTraQuyen]` ở cấp class. Phần ghi nhận trong mục 6 đã được kiểm chứng lại.
+
+---
+
+## 3. Công nghệ và phiên bản
+
+| Thành phần | Đang dùng | Nhận xét |
+|---|---|---|
+| Runtime | .NET 8 (`net8.0`) | **Hết hỗ trợ 10/11/2026.** Nâng lên .NET 10 LTS |
+| Web | ASP.NET Core MVC, Razor, SignalR | Phù hợp |
+| ORM | EF Core 8.0.0, SQL Server | Nên nâng cùng .NET (EF Core 10) |
+| Xuất Excel | ClosedXML 0.105.1 | Có, dùng ở Kho, Đơn hàng, Lương |
+| Xác thực | Cookie auth + bảng `Users` tự quản | Không dùng ASP.NET Core Identity |
+| Session | `AddDistributedMemoryCache` (RAM) | Không chia sẻ được giữa nhiều instance, mất khi restart |
+| Front-end | Bootstrap **5.3.2 (CDN)** ở `_Layout`; Bootstrap **5.1.0 (local)** ở `_AdminLayout`; jQuery và jquery-validate local; SignalR client 8.0.0 (CDN); Chart.js 4.4.1 (CDN, chỉ Dashboard) | Hai phiên bản Bootstrap cùng tồn tại; 39 thẻ CDN không có SRI |
+| Font | Plus Jakarta Sans, JetBrains Mono (Google Fonts) | Không đúng yêu cầu Be Vietnam Pro |
+| Test | xUnit, `Microsoft.AspNetCore.Mvc.Testing`; 121 `[Fact]` + 7 `[Theory]` trong 24 file | Cần SQL Server Windows Auth; không có CI |
+| Logging | `ILogger` mặc định | Chưa có Serilog |
+| Bổ sung chưa có | Serilog, Health Check, Cache, Background job, Upload, CI/CD | Xem mục 11 |
+
+---
+
+## 4. Kiến trúc và cấu trúc
+
+### 4.1 Cấu trúc hiện tại
+
+```
+ERP_HRM_CMS.sln          → 2 project: ERP_HRM_CMS, ERP_HRM_CMS.Tests
+Controllers/ (27 file)   → xử lý HTTP, nghiệp vụ, truy vấn DB lẫn lộn
+Data/                    → AppDbContext (518 dòng), DbInitializer (1285 dòng)
+Models/Entities|ViewModels|Enums
+Services/                → Payroll, Kho, Printing, Security, Notification, Cart
+Helpers/ Filters/ Hubs/ Middleware/ ViewComponents/
+Views/ (76 file)         → 6 layout khác nhau
+wwwroot/                 → CSS, JS, lib
+Database/Legacy/         → script SQL cũ (chỉ tham khảo)
+scripts/legacy/          → script PowerShell kiểm thử cũ
+docs/adr/                → ADR-003 (đề xuất, chờ xác nhận)
+```
+
+### 4.2 Vi phạm kiến trúc
+
+- **Controller truy cập DbContext trực tiếp: 337 lần.** Nhiều nhất: `KhoController` (44), `NhanSuController` (29), `PhanQuyenController` (24), `PurchaseOrderController` (21), `DonTuController` (21), `QuanTriTaiKhoanController` (20).
+- **Nghiệp vụ nằm trong controller:** checkout POS (`BanHangController.cs` khoảng dòng 80–170), nhận hàng PO kèm ghi tồn và công nợ (`PurchaseOrderController.cs` khoảng dòng 235–280).
+- **Controller quá lớn:** `KhoController.cs` 777 dòng, `NhanSuController.cs` 436, `QuanTriTaiKhoanController.cs` 430, `ChamCongController.cs` 412.
+- **Không có tầng trừu tượng dữ liệu:** không có repository hay unit of work. Đây là lựa chọn có thể chấp nhận với EF Core, nhưng khi kết hợp với việc controller tự làm nghiệp vụ thì khó kiểm thử và khó bảo trì.
+- **Identity lấy từ Session** trong controller thay vì từ claim (xem S5).
+- **Trạng thái dùng chuỗi cứng** ("Active", "Completed", "Cancelled", "Published") trong khi có `Models/Enums/WorkflowStatuses.cs`. Hai cách viết cùng tồn tại.
+
+### 4.3 Hướng chuyển đổi
+
+Không khuyến nghị viết lại toàn bộ (big-bang). Đề xuất chuyển đổi dần theo kiểu strangler: tạo project `Domain` và `Application` trước, rồi chuyển từng module (bắt đầu từ POS và Kho vì nhạy cảm nhất) sang service ở `Application`. Cần một ADR xác nhận trước khi bắt đầu.
+
+---
+
+## 5. Hiện trạng module
+
+Ký hiệu: **Hoàn chỉnh** = có đủ nghiệp vụ cốt lõi, còn tinh chỉnh; **Một phần** = có nhưng thiếu hoặc có lỗi đáng kể; **Chưa có** = không tìm thấy mã tương ứng.
+
+| # | Module / tính năng | Trạng thái | Bằng chứng chính | Còn thiếu / vấn đề |
+|---|---|---|---|---|
+| 1 | Đăng nhập, đăng xuất | Một phần | `AuthController.cs:50–136, 207`; `Program.cs:82–98` | Không có MFA; không có quên mật khẩu; không có đổi mật khẩu cá nhân; không ghi audit đăng nhập; không xem/thu hồi phiên |
+| 2 | Đăng ký công khai | Một phần | `AuthController.cs:151–203` | Không CAPTCHA, không giới hạn tần suất; tài khoản chờ duyệt |
+| 3 | Phân quyền RBAC (vai trò, quyền, ma trận, quyền cá nhân) | Hoàn chỉnh về cơ chế | `PhanQuyenHelper.cs:26–56`; `KiemTraQuyenAttribute.cs`; `PhanQuyenController` | Không có phạm vi dữ liệu (S4); không có test cho từng endpoint; không cache |
+| 4 | Quản lý người dùng | Một phần | `QuanTriTaiKhoanController` (duyệt, khóa, reset mật khẩu, bảo vệ SuperAdmin cuối cùng) | Cấp tài khoản nhanh lộ mật khẩu (S3); không buộc đổi mật khẩu lần đầu |
+| 5 | Nhật ký kiểm toán | Một phần | `AppDbContext.cs:359–516` (ghi tự động, che mật khẩu); `AuditLogController` (phân trang 25/trang) | Không ghi đăng nhập/đăng xuất; không xuất file; không chính sách lưu trữ |
+| 6 | Thông báo realtime | Hoàn chỉnh | `Hubs/NotificationHub.cs` (nhóm user/role/công ty); `NotificationService.cs`; `NotificationController` | Không có email/đẩy di động (không bắt buộc) |
+| 7 | Hồ sơ nhân viên, cơ cấu tổ chức | Một phần | `NhanSuController` (8 action); `PhongBanController`; entity Company/Branch/Department/Position | Không phân trang; xóa cứng phòng ban (`PhongBanController.cs:82`); không phạm vi dữ liệu |
+| 8 | Hợp đồng lao động | Một phần | `HopDongController` (4 action) | Chưa rà sâu nghiệp vụ; không phân trang |
+| 9 | Chấm công, ca làm việc | Một phần | `ChamCongController` (6 action, 13 chỗ `ToListAsync`); Heatmap; CaLamViec | Không phân trang; không nhập từ máy chấm công; chưa thấy khóa kỳ chấm công |
+| 10 | Đơn từ (nghỉ phép, công tác) | Một phần | `DonTuController.cs` | Không có trang tự phục vụ (vai trò EMPLOYEE có `hrm.self.service` nhưng chưa có màn hình); không kiểm tra người tự duyệt (S7) |
+| 11 | Bảng lương, BH, thuế TNCN | Một phần lớn | `Services/PayrollService.cs`; `Services/Payroll/PayrollCalculator.cs`; `appsettings.json` mục Payroll; test `PayrollCalculatorTests` | Nhiều quy định còn `NeedsConfirmation` (xem mục 14); thưởng hard-code (D5) |
+| 12 | Tuyển dụng | **Chưa có** | Không có entity hay controller | Toàn bộ (tin tuyển dụng, ứng viên, pipeline phỏng vấn) |
+| 13 | KPI, đánh giá hiệu suất | **Chưa có** | Chỉ có trường `SalarySlip.Bonus` ("Thưởng hiệu suất / KPI", `HRMAdvancedEntities.cs:158`) | Toàn bộ (mục tiêu, kỳ đánh giá, phiếu đánh giá, quy trình) |
+| 14 | CMS: bài viết | Một phần | `ContentController`; entity `Content` (`CMSEntities.cs:56–80`) | Không có meta title/description riêng; không lịch đăng; không lịch sử bản; mặc định `Status = "Published"` (`CMSEntities.cs:71`) |
+| 15 | Menu, banner, khung trang | Một phần | `MenuController`; `LayoutConfigController`; ViewComponents Dynamic Menu/Banner | ADR-003 (Super Admin quản trị khung) mới ở trạng thái đề xuất |
+| 16 | Trang công khai, SEO | Một phần | `PublicController`; `Views/Shared/_PublicLayout.cshtml` (title, description) | Không có og:*, canonical, JSON-LD, `sitemap.xml`, `robots.txt` (không có trong `wwwroot/`) |
+| 17 | Upload file, thư viện media | **Chưa có** | Không có `IFormFile` trong toàn repo | Toàn bộ (ảnh sản phẩm hiện chỉ nhập URL) |
+| 18 | Sản phẩm | Hoàn chỉnh cơ bản | `SanPhamController` (3 action) | Không phân trang; xóa cứng không; không upload ảnh |
+| 19 | Kho: nhập, xuất, điều chuyển, kiểm kê, lịch sử | Hoàn chỉnh về nghiệp vụ | `KhoController` (777 dòng); `Services/Kho/InventoryStockService.cs` (UPDATE có điều kiện); unique index `(ProductId, BranchId)` (`AppDbContext.cs:177`) | Controller quá lớn; kiểm kê truy vấn trong vòng lặp (`KhoController.cs:558–561`); phạm vi chi nhánh chưa kiểm soát |
+| 20 | Mua hàng, nhà cung cấp | Một phần | `PurchaseOrderController`; `SupplierController` | Ghi tồn trực tiếp (D1); không phân trang; `GetSupplier` không kiểm tra quyền (`SupplierController.cs:102`) |
+| 21 | Bán hàng POS | Một phần | `BanHangController.XuatDonPOS` (`:80–170`) | Giảm giá không giới hạn (S6); tiền khách đưa không kiểm tra (D2); `CreatedBy ?? 1` (S5); tìm sản phẩm không kiểm tra quyền (`:54`) |
+| 22 | Đơn hàng, hóa đơn | Một phần | `DonHangController` (xuất Excel); `PhieuInController`; `HoaDonPrintable` | Không phân trang; không xuất PDF |
+| 23 | Công nợ phải thu/phải trả | Một phần | `CongNoController` | Tải toàn bộ bảng `DebtRecords` hai lần (`CongNoController.cs:77–78`) |
+| 24 | Báo cáo | Một phần | `NhanSu/BaoCao`; `DonHang/Dashboard`; xuất Excel bằng ClosedXML | **Chưa có xuất PDF**; có in HTML qua `PhieuIn` |
+| 25 | Dashboard điều hành | Một phần | `HomeController.Index` (`:21–22`) | Lộ doanh thu (S1); tải toàn bộ đơn tháng vào RAM (`:30–33`); 12 truy vấn tuần tự (`:78–86`); đếm nhân viên theo mã không thống nhất (`:57`) |
+| 26 | Tìm kiếm toàn cục | Một phần | `HomeController.GlobalQuickSearch` (`:182–183`) | Không kiểm tra quyền; lộ họ tên, email, SĐT nhân viên (S2) |
+| 27 | Quản lý phiên đăng nhập | **Chưa có** | Chỉ có thu hồi toàn cục khi đổi SecurityStamp (`CookieSecurityStampValidator`) | Không xem danh sách phiên; không đăng xuất các thiết bị khác |
+| 28 | Responsive | Một phần | 284 class lưới Bootstrap trong 38 view; `public-site.css` có 6 `@media`, `enterprise-theme.css` có 1 | Chưa kiểm thử thực tế trên mobile; admin layout chưa rà soát |
+| 29 | Dark mode | **Chưa có** | Không có `prefers-color-scheme` hay `data-theme` | Toàn bộ |
+| 30 | Xử lý lỗi tập trung | Một phần | `Program.cs:153, 157` (`UseExceptionHandler`, `StatusCodePages`) | Không có ProblemDetails; chưa log có cấu trúc |
+| 31 | Serilog, logging có cấu trúc | **Chưa có** | Chỉ `ILogger` mặc định | Toàn bộ |
+| 32 | Health check | **Chưa có** | — | Toàn bộ |
+| 33 | Caching | **Chưa có** | Chỉ `DistributedMemoryCache` cho Session | Cache quyền, cache danh mục, output cache |
+| 34 | Test tự động | Một phần | 121 Fact + 7 Theory, 24 file | Thiếu test phân quyền theo người dùng, giới hạn giảm giá, duyệt đơn, cạnh tranh tồn kho PO |
+| 35 | CI/CD | **Chưa có** | Không có thư mục `.github/` | Toàn bộ |
+| 36 | Tài liệu | Một phần | `README.md` chi tiết; `docs/adr/ADR-003` | Không có `docs/PROGRESS.md` (sẽ tạo ở phiên này) |
+
+### 5.1 Đối chiếu quy tắc CRUD của dự án
+
+Quy tắc: mỗi CRUD phải có tìm kiếm, lọc, phân trang, sắp xếp, phân quyền, thông báo kết quả, audit log; xóa mềm khi phù hợp.
+
+| Tiêu chí | Trạng thái | Ghi chú |
+|---|---|---|
+| Tìm kiếm | Có (khoảng 20 màn hình) | Thường là `ToLower().Contains`, không tận dụng index |
+| Lọc | Có | Nhiều màn hình có bộ lọc trạng thái, ngày, phòng ban |
+| Phân trang | **Không đạt** | Chỉ `AuditLogController` phân trang phía server (`Skip/Take`, dòng 44–51). Các màn hình khác `ToListAsync()` toàn bộ |
+| Sắp xếp | **Một phần** | Sắp xếp cố định trong code; người dùng không chọn được cột |
+| Phân quyền | Có | Trừ một số endpoint (xem S2 và bảng mục 6) |
+| Thông báo kết quả | Có | Qua `TempData` |
+| Audit log | Có (tự động) | Mọi `SaveChanges` đều ghi, có che mật khẩu |
+| Xóa mềm | **Không đạt** | Không có `IsDeleted`/`DeletedAt`. Xóa cứng tại `VaiTroController.cs:156`, `DanhMucController.cs:73`, `PhongBanController.cs:82`, `MenuController.cs:116`, `ContentController.cs:140`, `QuanTriTaiKhoanController.cs:216` |
+
+---
+
+## 6. Phát hiện: bảo mật
+
+Thang mức độ: **Nghiêm trọng** (khai thác được, ảnh hưởng dữ liệu hoặc tiền), **Cao**, **Trung bình**, **Thấp**.
+
+| ID | Mức | Vị trí | Mô tả | Khuyến nghị |
+|---|---|---|---|---|
+| S1 | **Nghiêm trọng** | `Controllers/HomeController.cs:21–22` (`[Authorize]`, không kiểm tra quyền), doanh thu ở `:30–60, 81, 90` | Dashboard hiển thị doanh thu tháng, doanh thu hôm nay, doanh thu theo chi nhánh, top sản phẩm cho **mọi người dùng đã đăng nhập**, kể cả vai trò EMPLOYEE | Thêm `[KiemTraQuyen("report.dashboard")]` hoặc quyền tương đương. Chỉ hiển thị khối dữ liệu theo quyền |
+| S2 | **Nghiêm trọng** | `HomeController.cs:182–183` (`[Authorize]`); truy vấn nhân viên `:208`, sản phẩm `:227` | Tìm kiếm toàn cục trả về họ tên, mã nhân viên, email, SĐT, phòng ban, chức vụ cho mọi người dùng đã đăng nhập. Đây là lộ thông tin cá nhân (PII) | Kiểm tra quyền `hrm.employee.view` cho nhóm nhân viên, và chỉ trả về mục người dùng được phép xem |
+| S3 | **Nghiêm trọng** | `Controllers/NhanSuController.cs:313–347`; `Views/NhanSu/Details.cshtml:55` | Cấp tài khoản nhanh **đưa mật khẩu dạng rõ vào `TempData`** ("…với mật khẩu mặc định: {pass}", dòng 347). Tài khoản được tạo với `IsActive = true` (dòng 186), bỏ qua quy trình duyệt. Placeholder ghi "mặc định 123456" (`Details.cshtml:55`) gợi ý mật khẩu yếu | Không hiển thị mật khẩu. Sinh mật khẩu tạm mạnh, hiển thị một lần qua kênh an toàn, và bắt buộc đổi ở lần đăng nhập đầu. Bỏ placeholder gợi ý |
+| S4 | **Cao** | Toàn repo (0 cơ chế phạm vi dữ liệu) | Không có phạm vi theo chi nhánh/phòng ban. Ví dụ `BanHangController.cs:32` và `KhoController.cs:34` nhận `branchId` từ query, người dùng có quyền kho có thể đọc hoặc thao tác chi nhánh khác | Thiết kế ADR "phạm vi dữ liệu": gán chi nhánh và phòng ban cho user. Áp dụng ở tầng truy vấn (filter theo phạm vi), không chỉ ẩn trên UI |
+| S5 | **Cao** | `BanHangController.cs:28, 158`; `KhoController.cs:26`; `CongNoController.cs:22`; `PurchaseOrderController.cs:26`; `BangLuongController.cs:168`; `GioHangController.cs:19` | `CurrentUserId` đọc từ **Session**, và `?? 1` ở nhiều nơi. Khi session mất (restart app, hết hạn, nhiều instance), thao tác bị ghi cho user `1` (thường là quản trị). Làm sai lệch audit và có thể cho phép thao tác dưới danh nghĩa sai | Lấy id từ `ClaimTypes.NameIdentifier` (như `DonTuController.GetCurrentUserId` đang làm). Bỏ `?? 1`; nếu không xác định được user thì trả 401 |
+| S6 | **Cao** | `Controllers/BanHangController.cs:105, 115`; `Models/ViewModels/SalesViewModels.cs:151` | `DiscountAmount` lấy trực tiếp từ client, không có `[Range]`, không kiểm tra `≤ SubTotal`, không có quyền riêng cho giảm giá. Giảm giá lớn hơn tổng tiền làm `FinalAmount` về 0 (`Math.Max(0, …)`), tức bán miễn phí. Giá trị âm làm tăng tiền | Kiểm tra server: `0 ≤ DiscountAmount ≤ SubTotal`. Giảm giá trên ngưỡng cần quyền riêng hoặc người duyệt. Ghi lý do vào audit |
+| S7 | **Cao** | `Controllers/DonTuController.cs:141–` (`Duyet`), `:199` (`TuChoi`) | Bất kỳ ai có `hrm.leave.approve` đều duyệt được **mọi** đơn, kể cả đơn của chính mình. Không kiểm tra người duyệt có phải trưởng bộ phận của nhân viên. Tham số `level` là chuỗi tự do | Không cho tự duyệt. Kiểm tra người duyệt đúng cấp (trưởng bộ phận đúng phòng). Chuẩn hóa `level` thành enum |
+| S8 | **Cao** | `Controllers/AuthController.cs:61–67, 75, 35` | (a) Khi tên đăng nhập không tồn tại, `Verify` không được gọi (`:75` ngắn mạch), nên thời gian phản hồi lộ tên đăng nhập tồn tại. (b) Khóa đếm theo cặp (tên đăng nhập, IP). Với app đặt sau reverse proxy, `RemoteIpAddress` là IP của proxy, nên kẻ tấn công có thể khóa tài khoản bất kỳ, kể cả `quantritong`, bằng 5 lần sai (README mục 6 đã nêu vấn đề này) | Luôn chạy băm dù user không tồn tại. Cấu hình `ForwardedHeaders` với danh sách proxy tin cậy. Thêm giới hạn theo IP độc lập với tên đăng nhập. Cân nhắc cơ chế mở khóa qua email hoặc quản trị viên |
+| S9 | Trung bình | `AuthController.cs:151–203` | Đăng ký công khai không CAPTCHA, không giới hạn tần suất. Có thể tạo hàng loạt tài khoản chờ duyệt | Thêm CAPTCHA hoặc rate limit (`AddRateLimiter` của .NET). Giới hạn số tài khoản chờ duyệt |
+| S10 | Trung bình | `AuthController.cs:50–136, 207` | Không ghi audit đăng nhập thành công, thất bại, đăng xuất, khóa tự động. Tiêu chuẩn kiểm toán và điều tra sự cố đều cần các sự kiện này | Ghi vào `AuditLogs` hoặc bảng riêng `AuthEvents`. Không ghi mật khẩu |
+| S11 | Trung bình | `Helpers/HtmlSanitizerHelper.cs:25–38` (regex), `Controllers/PublicController.cs:62`, `Views/Public/ChiTiet.cshtml:47` (`@Html.Raw`) | Bộ làm sạch HTML dùng **regex**, không phải parser HTML. Regex dễ bị vượt qua bằng HTML lệch chuẩn. Làm sạch ở **thời điểm đọc**, nên dữ liệu lưu vẫn là chuỗi thô, và nếu thêm chỗ hiển thị khác mà quên làm sạch thì lỗ hổng xuất hiện | Thay bằng thư viện parser (HtmlSanitizer hoặc AngleSharp). Làm sạch lúc **ghi** và kiểm tra lại lúc hiển thị. Thêm bộ test XSS |
+| S12 | Trung bình | `Middleware/SecurityHeadersMiddleware.cs:13` | CSP cho phép `'unsafe-inline'` ở `script-src`. 29 view có `<script>`/`<style>` inline và 233 thuộc tính `style=""` | Chuyển script inline sang file ngoài, dùng nonce, bỏ `unsafe-inline` |
+| S13 | Trung bình | `Views/Shared/_Layout.cshtml:9, 181`; `_AdminLayout`; `Views/Home/Index.cshtml:9`; `enterprise-theme.css:5` | **39 thẻ CDN không có `integrity` (SRI)**. Nếu CDN bị xâm phạm, mã độc chạy trong phiên người dùng | Thêm SRI cho từng tài nguyên, hoặc tải về `wwwroot/lib` (đã có bản local cho một số thư viện) |
+| S14 | Thấp | `Helpers/MatKhauHelper.cs:61–74` | Chính sách: tối thiểu 8 ký tự, có chữ và số. Không kiểm tra mật khẩu đã bị lộ, không có MFA. Chính sách này chưa theo hướng NIST SP 800-63B (ưu tiên độ dài và danh sách mật khẩu cấm) | Thêm danh sách mật khẩu phổ biến. Cân nhắc MFA (TOTP) cho vai trò quản trị |
+| S15 | Thấp | `MatKhauHelper.cs:17` | PBKDF2-SHA256 với 100.000 vòng. OWASP hiện khuyến nghị cao hơn (khoảng 600.000 cho PBKDF2-HMAC-SHA256) | Nâng số vòng khi nâng cấp. Dùng cùng cơ chế "nâng cấp khi đăng nhập" đã có cho hash cũ |
+| S16 | Thấp | `Data/AppDbContextFactory.cs:18` | Chuỗi kết nối localdb cứng, chỉ dùng cho design-time EF tools | Chấp nhận được, nhưng ghi chú rõ trong code |
+| S17 | Thấp | `Database/Legacy/SQLQuery1.sql` | Script mẫu có tài khoản mật khẩu `123456`. README đã cảnh báo | Đảm bảo file không dùng cho production. Cân nhắc xóa khỏi repo |
+
+### 6.1 Điểm bảo mật đã làm tốt (giữ nguyên)
+
+- **CSRF:** mọi action POST đều có `[ValidateAntiForgeryToken]` (số lần khai báo POST khớp số lần khai báo token ở cả 23 controller có POST).
+- **FallbackPolicy** yêu cầu đăng nhập; mọi endpoint không có `[AllowAnonymous]` đều được bảo vệ.
+- **SecurityStamp:** đổi vai trò, khóa tài khoản hoặc đổi mật khẩu sẽ thu hồi phiên ngay (`CookieSecurityStampValidator`).
+- **Băm mật khẩu:** PBKDF2 có salt ngẫu nhiên 16 byte, so sánh hằng thời gian (`FixedTimeEquals`), nâng cấp hash SHA-256 cũ khi đăng nhập thành công.
+- **Khóa đăng nhập tăng dần** (1 phút → tối đa 30 phút), lưu trong DB, không mất khi restart.
+- **Mã hóa CCCD và số tài khoản** bằng Data Protection, tiền tố `enc:v1:`, che số khi hiển thị, che trong audit.
+- **Audit tự động** trong `SaveChanges`, tự che các trường có chữ "Password".
+- **Cookie:** `HttpOnly`, `Secure` ở production; HSTS ở production; `X-Frame-Options: DENY`; `nosniff`.
+- **Cấu hình bắt buộc:** ứng dụng dừng nếu thiếu connection string, khóa Data Protection hoặc `AllowedHosts` ở production.
+- **Client-side XSS:** các hàm `HRM.escapeHtml` và `HRM.safeUrl` được dùng nhất quán khi chèn dữ liệu vào `innerHTML` (đã kiểm tra POS và thông báo).
+- **Raw SQL** trong `DbInitializer.cs:52` dùng tham số hóa (`SqlParameter`).
+- **Các chỗ `@Html.Raw`:** 4 lần trong `Views/Home/Index.cshtml:301–357` (serialize JSON cho Chart.js; encoder mặc định của `System.Text.Json` escape ký tự `<`, `>`, `&`), và 1 lần trong `Views/Public/ChiTiet.cshtml:47` (nội dung bài viết đã làm sạch, xem S11).
+
+---
+
+## 7. Phát hiện: toàn vẹn dữ liệu và nghiệp vụ
+
+| ID | Mức | Vị trí | Mô tả | Khuyến nghị |
+|---|---|---|---|---|
+| D1 | Cao | `Controllers/PurchaseOrderController.cs:248–264` | Khi nhận hàng PO, tồn được cập nhật bằng `inv.StockQuantity += item.Quantity` (đọc rồi ghi trên đối tượng). Hai giao dịch đồng thời có thể làm **mất cập nhật**. Vi phạm README (không sửa `StockQuantity` trực tiếp). Trong khi đó `KhoController.cs:157` đã dùng đúng `CongTonAsync` | Dùng `InventoryStockService.CongTonAsync`. Nếu chưa có dòng tồn thì thêm mới, và bắt `DbUpdateException` do unique index |
+| D2 | Cao | `Controllers/BanHangController.cs:118` (`PaymentStatus = "Paid"` cố định); `SalesViewModels.cs:150` (`CustomerCashGiven`) | `CustomerCashGiven` được khai báo nhưng **không dùng ở đâu**. Thanh toán tiền mặt không kiểm tra số tiền khách đưa có đủ hay không, không tính tiền thừa. Mọi đơn đều ghi "Paid" bất kể phương thức | Kiểm tra `CustomerCashGiven ≥ FinalAmount` với tiền mặt. Tính tiền thừa. Trạng thái thanh toán theo phương thức |
+| D3 | Trung bình | Xóa cứng ở 6 nơi (mục 5.1) | Không có soft delete. Xóa vai trò, danh mục, phòng ban, menu, nội dung là mất hẳn. Với phòng ban và vai trò đang được tham chiếu, hành vi phụ thuộc khóa ngoại (chưa rà soát chi tiết) | Thêm `IsDeleted` và `DeletedAt` cho thực thể nghiệp vụ. Thêm global query filter. Kiểm tra ràng buộc trước khi xóa, trả thông báo rõ ràng |
+| D4 | Trung bình | `Controllers/HomeController.cs:57`; dữ liệu seed `Data/DbInitializer.cs` dùng `"Active"` (dòng 490, 1140); `NhanSuController` dùng `"Active"` (11 chỗ) | Trạng thái nhân viên không thống nhất: Dashboard đếm `"DANG_LAM_VIEC"` hoặc `"ACTIVE"`. Mã `DANG_LAM_VIEC` không có trong seed. Kết quả đúng hiện tại chỉ vì SQL Server mặc định không phân biệt hoa thường (collation CI), nên là **đúng do may mắn**, không phải do thiết kế | Định nghĩa enum `EmployeeStatus` và dùng thống nhất. Migration chuẩn hóa dữ liệu cũ |
+| D5 | Trung bình | `Services/PayrollService.cs:133` | Thưởng hard-code theo mã chức vụ: `"NV-KD" ? 2.500.000 : 1.000.000`, có comment TODO | Đưa vào cấu hình `Payroll` có `EffectiveFrom` và `Source` giống các quy định khác |
+| D6 | Trung bình | Toàn repo (`[Timestamp]`, `RowVersion`, `IsConcurrencyToken`: không có) | Không có kiểm soát đồng thời lạc quan cho các thực thể ngoài tồn kho. Sửa nhân viên, sản phẩm, trạng thái PO có thể ghi đè nhau | Thêm `RowVersion` cho thực thể có sửa đồng thời |
+| D7 | Trung bình | `Models/Entities/CMSEntities.cs:71` | Bài viết mặc định `Status = "Published"`. Tạo nháp mà quên đổi trạng thái sẽ công khai ngay | Mặc định `Draft` |
+| D8 | Thấp | `Data/AppDbContext.cs:359–379, 516` | `SaveChanges` đồng bộ gọi `GetAwaiter().GetResult()` (chặn đồng bộ, có rủi ro deadlock). `OnAfterSaveChanges` gọi `SaveChangesAsync` lần thứ hai | Chuyển toàn bộ sang async. Gom hai lần lưu nếu có thể |
+| D9 | Thấp | `Controllers/BanHangController.cs:158` (`CreatedBy = CurrentUserId ?? 1`) | Hệ quả của S5 khi áp dụng cho giao dịch kho | Xem S5 |
+| D10 | Thấp | `BanHangController.cs:32`, `SanPhamController.cs:28`, `GioHangController.cs:26` | Chi nhánh mặc định hard-code là `1` khi không có tham số | Lấy chi nhánh mặc định từ phạm vi người dùng (xem S4) |
+
+---
+
+## 8. Phát hiện: hiệu năng
+
+| ID | Mức | Vị trí | Mô tả | Khuyến nghị |
+|---|---|---|---|---|
+| H1 | Cao (khi dữ liệu lớn) | Hầu hết màn hình `Index`: `NhanSuController.cs:50`, `DonHangController.cs:52`, `PurchaseOrderController.cs:65`, `SupplierController.cs:38`, `ChamCongController.cs` (13 chỗ), `KhoController.cs` (17 chỗ) | Tải **toàn bộ** bảng vào RAM rồi lọc. Lọc keyword và trạng thái trên server nhưng vẫn không giới hạn số dòng | Phân trang phía server (`Skip/Take` + `TotalCount`), tái sử dụng component phân trang từ `AuditLogController` |
+| H2 | Trung bình | `Controllers/CongNoController.cs:77–78` | Tải toàn bộ `DebtRecords` (`allRecords`), rồi tải thêm lần nữa (`filteredRecords`) | Một truy vấn có lọc và phân trang. Tổng hợp bằng `GroupBy`/`SumAsync` |
+| H3 | Trung bình | `Controllers/HomeController.cs:30–33` (đơn tháng vào RAM để `Sum`); `:78–86` (12 truy vấn trong vòng lặp) | Dashboard chạy khoảng 15 truy vấn, trong đó có một truy vấn tải toàn bộ đơn | Một truy vấn `GROUP BY` theo tháng. Dùng `SumAsync` trực tiếp, không `ToListAsync` |
+| H4 | Trung bình | `Helpers/PhanQuyenHelper.cs:26–56`; `Filters/KiemTraQuyenAttribute.cs:59` | Mỗi request có quyền tốn 3–4 truy vấn (lấy user, kiểm tra deny, grant, role). Không cache | Cache quyền hiệu lực theo user bằng `IMemoryCache` (hoặc `IDistributedCache` khi scale-out). Xóa cache khi đổi vai trò hoặc quyền |
+| H5 | Thấp | `Controllers/KhoController.cs:558–561` (kiểm kê), `LayoutConfigController.cs:55` (`FindAsync` trong vòng lặp), `BanHangController.cs:97, 192`, `PurchaseOrderController.cs:248` | N+1 nhỏ: số lần truy vấn tỉ lệ với số dòng hoặc số sản phẩm (thường nhỏ) | Nạp một lần bằng `Where(id ∈ danh sách)` |
+| H6 | Thấp | `NhanSuController.cs:34–38` và các màn hình tương tự | `ToLower().Contains(...)` làm truy vấn khó dùng index. Với SQL Server collation CI thì `ToLower()` không cần thiết | Bỏ `ToLower()`, dùng collation. Với dữ liệu lớn, cân nhắc full-text index |
+| H7 | Trung bình (scale-out) | `Program.cs:101` | `DistributedMemoryCache` cho Session. Không chia sẻ giữa instance, mất khi restart | Dùng Redis hoặc SQL Server cache khi cần nhiều instance. Đồng thời bỏ phụ thuộc vào Session (xem S5) |
+
+---
+
+## 9. Phát hiện: code smell và vi phạm quy tắc dự án
+
+| ID | Vị trí | Mô tả | Khuyến nghị |
+|---|---|---|---|
+| A1 | `Views/Shared/` | 6 layout trùng lặp phần head, nav và CSS. `_Layout1.cshtml` không được tham chiếu (213 byte). `SalesLayout.cshtml` không có tham chiếu chính xác (chỉ có `_SalesLayout`) | Xác nhận rồi xóa file không dùng. Gộp còn 2–3 layout dùng chung partial |
+| A2 | `_columns_check.csv` (root, 434 dòng) | File nháp liệt kê cột, không được tham chiếu ở đâu | Xóa sau khi xác nhận |
+| A3 | `scripts/legacy/*.ps1`, `Database/Legacy/*.sql` | Script cũ, README ghi là đã thay bằng test và migration | Giữ có chú thích, hoặc chuyển ra ngoài repo |
+| A4 | `Data/DbInitializer.cs` (1285 dòng) | Trộn ba việc: vá schema bằng SQL thô (dòng 52), seed quyền và admin (SeedCore), dữ liệu mẫu (SeedDemo) | Tách thành `SchemaPatcher`, `CoreSeeder`, `DemoSeeder`. Vá schema nên chuyển hết sang migration |
+| A5 | Toàn repo | Tên controller, route và action bằng tiếng Việt (xem mục 2) | Đổi dần sang tiếng Anh, giữ route cũ bằng redirect 301 trong một thời gian. Cần ADR |
+| A6 | Migrations | 2 migration cùng ngày 2026-11-04 (`InitialBaseline`, `AddSeedHistory`); không có file `.sql` đi kèm | Sinh script `dotnet ef migrations script` và lưu cạnh migration (yêu cầu của dự án) |
+| A7 | `Controllers/*` | Trạng thái dùng chuỗi cứng ("Active", "Completed", "Cancelled", "Published", "Late", "Early") | Dùng enum có sẵn trong `Models/Enums/WorkflowStatuses.cs`, mở rộng dần |
+| A8 | `Views/**` | 29 view có script/style inline; 233 thuộc tính `style=""` | Chuyển dần sang file CSS và JS riêng (liên quan S12) |
+| A9 | `Program.cs` | Không có Serilog, health check, `UseForwardedHeaders`, rate limiter, output cache | Xem mục 11 |
+| A10 | `tests/` | Test cần SQL Server Windows Auth, không chạy được trên runner Linux mặc định; không có CI | Dùng SQL Server trong container (Testcontainers) và pipeline GitHub Actions |
+| A11 | Views | Bootstrap hai phiên bản, jQuery từ local, Chart.js từ CDN, không có bundling | Thống nhất Bootstrap 5.3.x. Cân nhắc Vite hoặc LibMan để quản lý thư viện |
+
+---
+
+## 10. Điểm mạnh cần giữ
+
+- Phân quyền có công thức rõ ràng: `(quyền vai trò ∪ quyền cấp thêm) \ quyền bị thu hồi`, có ma trận quản lý và quy tắc SuperAdmin không thể tự xóa quyền của mình.
+- Tách nghiệp vụ lương thành `PayrollCalculator` thuần (không truy cập DB), có test. Quy định có nguồn và ngày hiệu lực, thiếu quy định thì báo lỗi thay vì dùng số mặc định.
+- Kho dùng `UPDATE` có điều kiện (`InventoryStockService`) và unique index `(ProductId, BranchId)`. Đây là cách làm đúng cho tồn kho đồng thời.
+- Thời gian xử lý thống nhất qua `VietnamTime`, không dùng `DateTime.Now` (kiểm chứng: chỉ xuất hiện trong chú thích và `VietnamTime.cs`).
+- Thông báo realtime theo nhóm user/role/công ty, trạng thái đã đọc riêng cho từng người.
+- Các mẫu thiết kế OOP được ghi chú rõ trong README (in ấn, template method, DI).
+
+---
+
+## 11. Đối chiếu với chuẩn phần mềm quản lý doanh nghiệp
+
+Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cập), OWASP Top 10, NIST SP 800-63B (mật khẩu), và yêu cầu bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân; nên tư vấn pháp lý để xác nhận phạm vi áp dụng).
+
+| Nhóm | Hạng mục | Hiện trạng | Mức ưu tiên |
+|---|---|---|---|
+| Đăng nhập | MFA (TOTP), SSO (OIDC/SAML), quên và đổi mật khẩu | Chưa có | P1 (MFA cho quản trị), P2 (SSO) |
+| Đăng nhập | Chính sách mật khẩu, kiểm tra mật khẩu bị lộ | Một phần | P1 |
+| Phân quyền | Phạm vi dữ liệu (chi nhánh, phòng ban) | Chưa có | **P0** |
+| Phân quyền | Quyền theo từng endpoint, có test | Một phần | **P0** |
+| Quản lý người dùng | Buộc đổi mật khẩu lần đầu, khóa hàng loạt, nhập từ Excel | Một phần | P0 (buộc đổi), P2 (nhập Excel) |
+| Quản lý phiên | Xem và thu hồi phiên theo thiết bị | Chưa có | P1 |
+| Audit | Đăng nhập, đăng xuất, xuất dữ liệu, chính sách lưu trữ | Một phần | **P0** (đăng nhập) / P1 (còn lại) |
+| Dashboard | Phân quyền từng khối, tổng hợp bằng SQL | Một phần | **P0** (quyền) / P1 (hiệu năng) |
+| Báo cáo | Xuất Excel | Có | — |
+| Báo cáo | Xuất PDF (phiếu lương, hóa đơn, báo cáo) | Chưa có | P1 |
+| Thông báo | Realtime trên web | Có | — |
+| Thông báo | Email, đẩy di động | Chưa có | P2 |
+| Tìm kiếm | Toàn cục có kiểm tra quyền | Một phần | **P0** |
+| Tìm kiếm | Full-text nâng cao | Chưa có | P2 |
+| Upload | Thư viện media, kiểm tra loại và kích thước file, quét mã độc | Chưa có | P1 |
+| Responsive | Đầy đủ trên mobile cho admin | Một phần | P1 |
+| Dark mode | Chuyển theo hệ thống và theo người dùng | Chưa có | P2 |
+| SEO | Meta, og:*, canonical, sitemap.xml, robots.txt, JSON-LD | Một phần | P1 |
+| Lỗi | ProblemDetails, trang lỗi thống nhất, log lỗi có mã tương quan | Một phần | P1 |
+| Logging | Serilog có cấu trúc, sink file hoặc Seq | Chưa có | P1 |
+| Giám sát | Health check (`/health`, kiểm tra DB) | Chưa có | P1 |
+| Hiệu năng | Caching quyền và danh mục, output cache | Chưa có | P1 |
+| Nền tảng | Background job (nhắc việc, dọn dẹp, tính lương định kỳ) | Chưa có | P1 |
+| Nền tảng | CI/CD, kiểm thử tự động trên pipeline | Chưa có | P1 |
+| Nghiệp vụ | Tuyển dụng | Chưa có | P2 |
+| Nghiệp vụ | KPI, đánh giá hiệu suất | Chưa có | P2 |
+| Nghiệp vụ | Chấm công từ máy chấm công, khóa kỳ | Chưa có | P2 |
+| Nghiệp vụ | Trang tự phục vụ cho nhân viên | Chưa có | P1 |
+
+---
+
+## 12. Xếp hạng ưu tiên và ước lượng
+
+- **P0:** bắt buộc trước khi triển khai thật. Lỗ hổng bảo mật, mất tiền hoặc sai dữ liệu.
+- **P1:** nên có trong 1–2 quý. Ảnh hưởng vận hành, chuẩn và khả năng mở rộng.
+- **P2:** nâng cao, theo nhu cầu nghiệp vụ.
+
+### 12.1 P0
+
+| ID | Hạng mục | Liên quan | Ước lượng |
+|---|---|---|---|
+| P0-01 | Nâng lên **.NET 10 LTS** và EF Core tương ứng; build và test sạch | Mục 3 | 1–2 ngày |
+| P0-02 | Thêm kiểm tra quyền cho Dashboard (`HomeController.cs:21`), tìm kiếm toàn cục (`:182`), tìm sản phẩm POS (`BanHangController.cs:54`), `GetSupplier` (`SupplierController.cs:102`) | S1, S2 | 0,5 ngày |
+| P0-03 | Ràng buộc giảm giá POS phía server, quyền riêng cho giảm giá, ghi lý do vào audit | S6 | 1 ngày |
+| P0-04 | Thay `CurrentUserId` (Session, `?? 1`) bằng claim; trả 401 khi không xác định được user | S5, D9 | 1,5 ngày |
+| P0-05 | Ghi audit đăng nhập, thất bại, đăng xuất, khóa tự động, đổi mật khẩu | S10 | 1 ngày |
+| P0-06 | Sửa cấp tài khoản nhanh: không hiện mật khẩu, buộc đổi lần đầu, bỏ gợi ý "123456", kích hoạt theo quy trình | S3 | 1 ngày |
+| P0-07 | Luồng nhập kho PO dùng `CongTonAsync` | D1 | 0,5 ngày |
+| P0-08 | Chống dò tên đăng nhập (luôn băm), `ForwardedHeaders`, giới hạn theo IP độc lập | S8 | 1 ngày |
+| P0-09 | **ADR và triển khai phạm vi dữ liệu** theo chi nhánh và phòng ban, áp dụng ở POS, Kho, Đơn hàng, Nhân sự | S4, D10 | 5–8 ngày |
+| P0-10 | Quy tắc duyệt đơn từ: không tự duyệt, đúng cấp, đúng trưởng bộ phận | S7 | 1 ngày |
+| P0-11 | Chống spam đăng ký: CAPTCHA hoặc rate limit, giới hạn tài khoản chờ duyệt | S9 | 0,5–1 ngày |
+| P0-12 | Thay bộ làm sạch HTML bằng parser; làm sạch lúc ghi; bộ test XSS | S11 | 1–2 ngày |
+| P0-13 | Test phân quyền: người đã đăng nhập thiếu quyền phải nhận 403 hoặc chuyển hướng cho mọi endpoint | Mục 5.1 | 1 ngày |
+
+**Tổng P0: khoảng 16–22 ngày công** (trong đó P0-09 chiếm phần lớn).
+
+### 12.2 P1
+
+| ID | Hạng mục | Ước lượng |
+|---|---|---|
+| P1-01 | Phân trang và sắp xếp phía server cho mọi danh sách (tái sử dụng từ AuditLog) | 3–4 ngày |
+| P1-02 | Soft delete cho thực thể nghiệp vụ, global query filter, migration | 3 ngày |
+| P1-03 | `RowVersion` cho thực thể sửa đồng thời | 1 ngày |
+| P1-04 | Tối ưu Dashboard: GROUP BY, bỏ tải toàn bộ đơn vào RAM | 1 ngày |
+| P1-05 | Tối ưu truy vấn công nợ (mục 8, H2) và các N+1 nhỏ (mục 8, H5) | 1 ngày |
+| P1-06 | Cache quyền hiệu lực (`IMemoryCache`), xóa cache khi đổi quyền | 1 ngày |
+| P1-07 | Serilog có cấu trúc, `UseForwardedHeaders`, ProblemDetails, trang lỗi thống nhất | 1,5–2 ngày |
+| P1-08 | Health check (`/health`) kèm kiểm tra DB | 0,5 ngày |
+| P1-09 | Background job (IHostedService) cho nhắc việc, dọn dẹp, kỳ lương | 2 ngày |
+| P1-10 | Thư viện media và upload có kiểm tra loại, kích thước và nội dung file | 3 ngày |
+| P1-11 | SEO: meta riêng cho bài viết, og:*, canonical, `sitemap.xml`, `robots.txt`, JSON-LD | 2–3 ngày |
+| P1-12 | Responsive và dark mode qua biến CSS; rà soát admin layout | 4–6 ngày |
+| P1-13 | Gộp layout trùng lặp (A1), dọn file thừa (A2, A3) | 2 ngày |
+| P1-14 | Font Be Vietnam Pro theo yêu cầu dự án; thống nhất Bootstrap 5.3.x | 0,5–1 ngày |
+| P1-15 | SRI cho 39 thẻ CDN hoặc tải về local (S13) | 1 ngày |
+| P1-16 | Migration kèm file `.sql` và pipeline CI (build, test) | 1–2 ngày |
+| P1-17 | Xuất PDF cho phiếu lương, hóa đơn, báo cáo | 2–3 ngày |
+| P1-18 | Trang tự phục vụ nhân viên (đơn từ, chấm công của mình) | 3–4 ngày |
+| P1-19 | Quản lý phiên: xem và thu hồi phiên theo thiết bị | 2 ngày |
+| P1-20 | Mở rộng test: giới hạn giảm giá, duyệt đơn, cạnh tranh tồn kho PO, phân quyền từng endpoint | 2–3 ngày |
+| P1-21 | Thay `DbInitializer` bằng `SchemaPatcher`, `CoreSeeder`, `DemoSeeder` (A4) | 1–2 ngày |
+| P1-22 | Chuẩn hóa enum trạng thái (A7, D4) kèm migration dữ liệu | 2 ngày |
+| P1-23 | Thưởng lương đưa vào cấu hình (D5) | 1 ngày |
+| P1-24 | Mật khẩu: danh sách mật khẩu cấm, nâng số vòng PBKDF2 khi nâng cấp (S14, S15) | 1 ngày |
+| P1-25 | Quyết định về ASP.NET Core Identity (giữ custom hay chuyển). Nếu chuyển, thêm 3–5 ngày | 1 ngày (ADR) |
+
+### 12.3 P2
+
+| ID | Hạng mục | Ước lượng |
+|---|---|---|
+| P2-01 | MFA (TOTP) cho vai trò quản trị | 2–3 ngày |
+| P2-02 | SSO (OIDC hoặc SAML) | 3–5 ngày |
+| P2-03 | Module tuyển dụng (tin, ứng viên, pipeline phỏng vấn) | 10–15 ngày |
+| P2-04 | Module KPI và đánh giá hiệu suất (mục tiêu, kỳ, phiếu, quy trình duyệt) | 8–12 ngày |
+| P2-05 | Chấm công từ máy chấm công, khóa kỳ chấm công | 5–8 ngày |
+| P2-06 | Email và đẩy di động cho thông báo | 2–3 ngày |
+| P2-07 | Full-text search và tìm kiếm toàn cục nâng cao | 3 ngày |
+| P2-08 | Dark mode theo người dùng, đa ngôn ngữ | 3–4 ngày |
+| P2-09 | Nhập người dùng và nhân viên từ Excel | 2 ngày |
+| P2-10 | Redis hoặc SQL cache và session phân tán khi scale-out | 2–3 ngày |
+| P2-11 | OpenTelemetry (trace, metric) | 2–3 ngày |
+| P2-12 | Chuyển dần sang kiến trúc Clean Architecture theo module (strangler, mục 4.3) | 15–25 ngày (phân bổ qua nhiều phiên) |
+
+---
+
+## 13. Lộ trình các phiên sau
+
+Mỗi phiên kết thúc bằng cập nhật `docs/PROGRESS.md`, một báo cáo ngắn (file đã đổi, lệnh đã chạy, cách kiểm tra) và dừng chờ xác nhận như yêu cầu.
+
+**Điều kiện tiên quyết cho phiên 2:** máy làm việc có .NET 10 SDK và SQL Server (hoặc container). Chạy trước `dotnet build` và `dotnet test tests/ERP_HRM_CMS.Tests` để có mốc cơ sở. Ghi kết quả vào `docs/PROGRESS.md`.
+
+| Phiên | Trọng tâm | Nội dung chính |
+|---|---|---|
+| 2 | Nền tảng và bảo mật khẩn cấp | P0-01 (nâng .NET), P0-02, P0-03, P0-04, P0-07, P0-13 |
+| 3 | Xác thực và kiểm toán | P0-05, P0-06, P0-08, P0-11, P1-24, P1-25 (ADR Identity) |
+| 4 | Phạm vi dữ liệu | P0-09 (ADR trước, sau đó triển khai), P0-10, D10 |
+| 5 | Danh sách và toàn vẹn dữ liệu | P1-01, P1-02, P1-03, P1-22, P1-23, P0-12 |
+| 6 | Vận hành | P1-06, P1-07, P1-08, P1-09, P1-16, P1-20 |
+| 7 | Giao diện | P1-12, P1-13, P1-14, P1-15, P0-12 (kiểm tra lại XSS), P2-08 (dark mode nếu cần) |
+| 8 | CMS và báo cáo | P1-10, P1-11, P1-17, P1-04, P1-05 |
+| 9 | Tự phục vụ và phiên | P1-18, P1-19, P2-09 |
+| 10+ | Nghiệp vụ nâng cao | P2-03 đến P2-07, P2-12 (theo ADR) |
+
+---
+
+## 14. Quyết định cần bạn xác nhận
+
+Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hiện. Mình sẽ không tự quyết các điểm này.
+
+1. **Phiên bản .NET:** chấp nhận .NET 10 LTS? Lưu ý .NET 8 hết hỗ trợ 10/11/2026.
+2. **Xác thực:** giữ cơ chế tự quản (đã khá tốt) hay chuyển sang ASP.NET Core Identity như yêu cầu ban đầu? Chuyển đổi kéo theo migration bảng người dùng và thay đổi luồng băm mật khẩu.
+3. **Phạm vi dữ liệu:** quy tắc cụ thể. Ví dụ: quản lý kho chi nhánh A có xem được tồn kho chi nhánh B không? Trưởng phòng có xem lương toàn công ty không?
+4. **Giảm giá POS:** mức giảm tối đa theo vai trò? Ai duyệt khi vượt mức? Có cần lý do bắt buộc?
+5. **Duyệt đơn từ:** cấp duyệt là gì (trưởng bộ phận, giám đốc)? Có cần người được ủy quyền?
+6. **Đổi tên route tiếng Việt sang tiếng Anh:** làm ngay, hay để khi có module mới? Cần giữ URL cũ bằng redirect bao lâu?
+7. **Tham số lương:** kế toán hoặc tư vấn pháp lý xác nhận các mục `NeedsConfirmation` trong `appsettings.json` (ví dụ mức lương cơ sở 2.530.000 từ 01/07/2026, trần đóng BHXH, mức phạt đi muộn "nội bộ chưa có văn bản"). Hệ thống hiện đánh dấu cảnh báo trên phiếu lương khi còn TODO.
+8. **Dọn dẹp:** được phép xóa `_columns_check.csv`, `Views/Shared/_Layout1.cshtml`, `Views/Shared/SalesLayout.cshtml`, và chuyển `scripts/legacy/` ra ngoài repo không?
+9. **Ưu tiên nghiệp vụ mới:** tuyển dụng và KPI có cần trong 6 tháng tới không, hay để sau?
+10. **Môi trường triển khai:** một instance hay nhiều instance? Có reverse proxy không (ảnh hưởng S8 và H7)? Dữ liệu lưu ở đâu (ảnh hưởng quyết định về khóa Data Protection và sao lưu)?
+
+---
+
+## 15. Tài liệu tham khảo
+
+- Ngày hết hỗ trợ .NET 8 và .NET 9: 10/11/2026. Nguồn: [Infoworld, "End of support looms for .NET 8 and .NET 9"](https://www.infoworld.com/article/4191704/end-of-support-looms-for-net-8-and-net-9.html); [endoflife.ai, "Decision Guide — .NET 8"](https://endoflife.ai/decide-dotnet-8)
+- Chính sách hỗ trợ .NET: [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)
+- Trạng thái vòng đời .NET 10: [endoflife.ai, ".NET 10 · Version Status"](https://endoflife.ai/dotnet/10)
+
+---
+
+## Phụ lục A. Lệnh đã dùng để thu thập bằng chứng
+
+Các lệnh chỉ đọc (`git`, `find`, `wc`, `grep`, `awk`, `sed`, `cat`). Không chạy build, không chạy test, không ghi vào mã nguồn.
+
+## Phụ lục B. Kiểm tra lại trước khi sửa code (phiên 2)
+
+```bash
+# Cơ sở build và test
+dotnet --list-sdks
+dotnet build ERP_HRM_CMS.sln
+dotnet test tests/ERP_HRM_CMS.Tests
+
+# Kiểm tra lại các điểm P0 (phải thấy kết quả trước khi sửa)
+grep -n "IsActive = true\|mật khẩu mặc định" Controllers/NhanSuController.cs
+grep -n "CurrentUserId.*?? 1" Controllers/*.cs
+grep -n "StockQuantity += " Controllers/PurchaseOrderController.cs
+grep -n "DiscountAmount" Controllers/BanHangController.cs
+grep -n -B1 "IActionResult Index()\|GlobalQuickSearch(" Controllers/HomeController.cs
+```
