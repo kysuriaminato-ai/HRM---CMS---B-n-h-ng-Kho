@@ -25,13 +25,24 @@ dotnet run --project ERP_HRM_CMS.csproj --launch-profile http
 dotnet test tests/ERP_HRM_CMS.Tests
 ```
 
-Yêu cầu: .NET 8 SDK (sẽ đổi sang .NET 10 LTS ở phiên 2), SQL Server ở `localhost` với Windows Authentication.
+Yêu cầu: .NET 8 SDK, SQL Server ở `localhost` với Windows Authentication.
+
+## Phiên 2, bước 2a: tài liệu kiến trúc (đã xong, chưa commit)
+
+**Đã làm**
+- Viết `docs/ARCHITECTURE.md`: kiến trúc mục tiêu 4 tầng, quy tắc phụ thuộc, trách nhiệm từng project, cấu hình dùng chung, quy ước đặt tên.
+- Viết `docs/adr/ADR-004-identity-va-vai-tro.md`: chuyển sang ASP.NET Core Identity, giữ mật khẩu cũ bằng `PasswordHasher` tùy chỉnh, ánh xạ vai trò (giữ bảng cũ, thêm `ACCOUNTANT`).
+
+**Chưa làm**
+- Chưa đổi mã nguồn. Chưa build, chưa chạy test (môi trường không có .NET SDK, không truy cập được NuGet).
+- Quyết định giữ .NET 8 đã chốt (ADR-004 mục 2.1).
+
+**Trạng thái git:** hai file mới chưa commit. Commit `dabd99b` (tài liệu phiên 1) chưa push, vì kết nối GitHub chưa hoạt động.
 
 ## Việc tiếp theo (phiên 2, chờ xác nhận)
 
 1. Chạy `dotnet build` và `dotnet test` để có mốc cơ sở.
-2. Nâng cấp lên .NET 10 LTS (P0-01). Lưu ý: .NET 8 hết hỗ trợ 10/11/2026.
-3. Sửa các P0 nhóm bảo mật khẩn cấp: P0-02, P0-03, P0-04, P0-07, P0-13.
+2. Sửa các P0 nhóm bảo mật khẩn cấp: P0-02, P0-03, P0-04, P0-07, P0-13.
 4. Các quyết định cần người dùng xác nhận: xem mục 14 của `docs/ANALYSIS.md`.
 
 ## Nợ kỹ thuật đã ghi nhận
