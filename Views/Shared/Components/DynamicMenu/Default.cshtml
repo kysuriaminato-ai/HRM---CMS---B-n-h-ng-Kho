@@ -1,9 +1,11 @@
 ﻿@model List<ERP_HRM_CMS.Models.Entities.Menu>
+@inject ERP_HRM_CMS.Data.AppDbContext Db
+@{ var siteName = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Name", "ERP"); }
 
 <nav class="navbar navbar-expand-lg bg-white border-bottom border-light sticky-top shadow-sm py-3">
     <div class="container">
         <a class="navbar-brand fw-bold text-dark fs-4" href="/">
-            <i class="bi bi-triangle-half me-1"></i> TIEN PHONG
+            <i class="bi bi-triangle-half me-1"></i> @siteName
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>

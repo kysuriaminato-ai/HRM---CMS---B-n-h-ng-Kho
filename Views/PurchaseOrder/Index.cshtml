@@ -147,20 +147,20 @@
                             <td>
                                 @switch (item.Status)
                                 {
-                                    case "PendingApproval":
+                                    case PurchaseOrderStatus.PendingApproval:
                                         <span class="badge bg-warning-subtle text-warning border"><i class="bi bi-clock me-1"></i>Chờ duyệt</span>
                                         break;
-                                    case "Approved":
+                                    case PurchaseOrderStatus.Approved:
                                         <span class="badge bg-info-subtle text-info border"><i class="bi bi-check2 me-1"></i>Đã duyệt (Chờ hàng)</span>
                                         break;
-                                    case "Received":
+                                    case PurchaseOrderStatus.Received:
                                         <span class="badge bg-success-subtle text-success border"><i class="bi bi-box-seam me-1"></i>Đã nhập kho</span>
                                         break;
-                                    case "Cancelled":
+                                    case PurchaseOrderStatus.Cancelled:
                                         <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>
                                         break;
                                     default:
-                                        <span class="badge bg-secondary">@item.Status</span>
+                                        <span class="badge bg-secondary">@WorkflowStatusCodes.ToCode(WorkflowStatusCodes.PurchaseOrder, item.Status)</span>
                                         break;
                                 }
                             </td>

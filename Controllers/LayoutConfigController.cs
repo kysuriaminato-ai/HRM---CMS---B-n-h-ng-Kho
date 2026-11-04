@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -36,7 +37,7 @@ namespace ERP_HRM_CMS.Controllers
             if (block == null) return NotFound(new { success = false, message = "Khối giao diện không tồn tại" });
 
             block.IsActive = dto.IsActive;
-            block.UpdatedAt = DateTime.Now;
+            block.UpdatedAt = VietnamTime.Now;
             block.UpdatedBy = User.Identity?.Name ?? "Admin";
 
             await _context.SaveChangesAsync();

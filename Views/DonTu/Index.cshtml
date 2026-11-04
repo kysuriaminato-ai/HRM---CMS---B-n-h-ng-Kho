@@ -181,31 +181,31 @@
                             <td>
                                 @switch (item.Status)
                                 {
-                                    case "CHO_DUYET":
+                                    case LeaveRequestStatus.PendingApproval:
                                         <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Chờ Trưởng Phòng</span>
                                         break;
-                                    case "TRUONG_PHONG_DUYET":
+                                    case LeaveRequestStatus.DepartmentApproved:
                                         <span class="badge bg-info text-white"><i class="bi bi-person-check me-1"></i>Chờ Giám Đốc</span>
                                         break;
-                                    case "GIAM_DOC_DUYET":
+                                    case LeaveRequestStatus.DirectorApproved:
                                         <span class="badge bg-success"><i class="bi bi-check2-all me-1"></i>Đã Phê Duyệt</span>
                                         break;
-                                    case "TU_CHOI":
+                                    case LeaveRequestStatus.Rejected:
                                         <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Bị Từ Chối</span>
                                         break;
                                     default:
-                                        <span class="badge bg-secondary">@item.Status</span>
+                                        <span class="badge bg-secondary">@WorkflowStatusCodes.ToCode(WorkflowStatusCodes.LeaveRequest, item.Status)</span>
                                         break;
                                 }
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
-                                    @if (item.Status == "CHO_DUYET")
+                                    @if (item.Status == LeaveRequestStatus.PendingApproval)
                                     {
                                         <button type="button" class="btn btn-outline-primary" onclick="openApprovalModal(@item.Id, '@item.RequestCode', 'TP')" title="Trưởng phòng duyệt"><i class="bi bi-check-lg"></i> Duyệt TP</button>
                                         <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@item.Id, '@item.RequestCode')" title="Từ chối"><i class="bi bi-x-lg"></i></button>
                                     }
-                                    else if (item.Status == "TRUONG_PHONG_DUYET")
+                                    else if (item.Status == LeaveRequestStatus.DepartmentApproved)
                                     {
                                         <button type="button" class="btn btn-success text-white" onclick="openApprovalModal(@item.Id, '@item.RequestCode', 'GD')" title="Giám đốc duyệt hoàn tất"><i class="bi bi-check-all"></i> Duyệt GĐ</button>
                                         <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@item.Id, '@item.RequestCode')" title="Từ chối"><i class="bi bi-x-lg"></i></button>

@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -183,7 +184,7 @@ namespace ERP_HRM_CMS.Controllers
                             UserId = dto.UserId,
                             PermissionId = item.PermissionId,
                             IsGranted = item.State.Value,
-                            AssignedAt = DateTime.Now
+                            AssignedAt = VietnamTime.Now
                         });
                     }
                 }

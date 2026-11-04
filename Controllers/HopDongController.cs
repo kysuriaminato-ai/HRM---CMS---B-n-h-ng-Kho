@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -42,11 +43,11 @@ namespace ERP_HRM_CMS.Controllers
             var contracts = await query.OrderByDescending(c => c.StartDate).ToListAsync();
 
             // Lọc danh sách cảnh báo sắp hết hạn trong vòng 30 ngày
-            var warningDate = DateTime.Today.AddDays(30);
+            var warningDate = VietnamTime.Today.AddDays(30);
             var expiring = await _context.Contracts
                 .Include(c => c.Employee)
                     .ThenInclude(e => e.Department)
-                .Where(c => c.Status == "Active" && c.EndDate != null && c.EndDate <= warningDate && c.EndDate >= DateTime.Today)
+                .Where(c => c.Status == "Active" && c.EndDate != null && c.EndDate <= warningDate && c.EndDate >= VietnamTime.Today)
                 .OrderBy(c => c.EndDate)
                 .ToListAsync();
 
@@ -69,9 +70,9 @@ namespace ERP_HRM_CMS.Controllers
             return View(new Contract
             {
                 EmployeeId = employeeId ?? 0,
-                ContractNumber = $"HDLD-{DateTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
-                StartDate = DateTime.Today,
-                SignDate = DateTime.Today,
+                ContractNumber = $"HDLD-{VietnamTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
+                StartDate = VietnamTime.Today,
+                SignDate = VietnamTime.Today,
                 ContractType = "Xác định thời hạn 1 năm",
                 BasicSalary = 10000000,
                 InsuranceSalary = 5000000,
@@ -92,7 +93,7 @@ namespace ERP_HRM_CMS.Controllers
 
             if (ModelState.IsValid)
             {
-                contract.CreatedAt = DateTime.Now;
+                contract.CreatedAt = VietnamTime.Now;
                 _context.Contracts.Add(contract);
                 await _context.SaveChangesAsync();
 
@@ -113,7 +114,7 @@ namespace ERP_HRM_CMS.Controllers
             if (contract == null) return NotFound();
 
             contract.Status = "Terminated";
-            contract.EndDate = DateTime.Today;
+            contract.EndDate = VietnamTime.Today;
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Đã chấm dứt hiệu lực hợp đồng {contract.ContractNumber}!";

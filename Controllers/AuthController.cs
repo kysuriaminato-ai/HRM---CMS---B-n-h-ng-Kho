@@ -2,68 +2,31 @@ using System.Collections.Concurrent;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services;
 
 namespace ERP_HRM_CMS.Controllers
 {
+    // Toàn bộ action của AuthController là công khai (đăng nhập, đăng ký, đăng xuất).
+    [AllowAnonymous]
     public class AuthController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly LoginThrottleService _loginThrottle;
 
-        // Khóa tạm thời khi đăng nhập sai nhiều lần theo tên đăng nhập.
-        // Lưu trong bộ nhớ: đủ cho một máy chủ; khi khởi động lại thì bộ đếm bị xóa.
-        private const int MaxFailedLogins = 5;
-        private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
-        private const int MaxTrackedUsernames = 10_000;
-        private static readonly ConcurrentDictionary<string, LoginAttemptState> _loginAttempts =
-            new(StringComparer.OrdinalIgnoreCase);
-
-        private sealed class LoginAttemptState
-        {
-            public int Failures;
-            public DateTime LockedUntilUtc;
-        }
-
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, LoginThrottleService loginThrottle)
         {
             _context = context;
+            _loginThrottle = loginThrottle;
         }
 
-        private static bool IsLockedOut(string username, out TimeSpan remaining)
-        {
-            remaining = TimeSpan.Zero;
-            if (_loginAttempts.TryGetValue(username, out var state) && state.LockedUntilUtc > DateTime.UtcNow)
-            {
-                remaining = state.LockedUntilUtc - DateTime.UtcNow;
-                return true;
-            }
-            return false;
-        }
-
-        private static void RecordFailedLogin(string username)
-        {
-            // Tránh phình bộ nhớ khi kẻ tấn công thử hàng loạt tên đăng nhập ngẫu nhiên
-            if (_loginAttempts.Count > MaxTrackedUsernames)
-            {
-                _loginAttempts.Clear();
-            }
-
-            var state = _loginAttempts.GetOrAdd(username, _ => new LoginAttemptState());
-            lock (state)
-            {
-                state.Failures++;
-                if (state.Failures >= MaxFailedLogins)
-                {
-                    state.LockedUntilUtc = DateTime.UtcNow.Add(LockoutDuration);
-                    state.Failures = 0;
-                }
-            }
-        }
+        private string ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
@@ -86,11 +49,14 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             string tenDangNhap = model.Username.Trim();
+            string ip = ClientIp();
+            var now = DateTime.UtcNow;
 
-            if (IsLockedOut(tenDangNhap, out var conLai))
+            var conLai = await _loginThrottle.GetRemainingLockoutAsync(tenDangNhap, ip, now);
+            if (conLai is TimeSpan remaining)
             {
                 ModelState.AddModelError(string.Empty,
-                    $"Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau khoảng {Math.Ceiling(conLai.TotalMinutes)} phút.");
+                    $"Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau khoảng {Math.Ceiling(remaining.TotalMinutes)} phút.");
                 return View(model);
             }
 
@@ -102,13 +68,13 @@ namespace ERP_HRM_CMS.Controllers
 
             if (user == null || !MatKhauHelper.Verify(model.Password, user.PasswordHash, user.PasswordSalt))
             {
-                RecordFailedLogin(tenDangNhap);
+                await _loginThrottle.RecordFailureAsync(tenDangNhap, ip, now);
                 ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không chính xác.");
                 return View(model);
             }
 
-            // Đăng nhập đúng: xóa bộ đếm sai của tài khoản này
-            _loginAttempts.TryRemove(tenDangNhap, out _);
+            // Đăng nhập đúng: xóa bộ đếm sai của cặp (tài khoản, IP) này
+            await _loginThrottle.ClearAsync(tenDangNhap, ip);
 
             if (!user.IsActive)
             {
@@ -123,7 +89,7 @@ namespace ERP_HRM_CMS.Controllers
                 user.PasswordHash = MatKhauHelper.HashPassword(model.Password, user.PasswordSalt);
             }
 
-            user.LastLoginAt = DateTime.Now;
+            user.LastLoginAt = VietnamTime.Now;
             await _context.SaveChangesAsync();
 
             var roleCodes = user.UserRoles.Select(ur => ur.Role.Code).ToList();
@@ -205,7 +171,7 @@ namespace ERP_HRM_CMS.Controllers
                 PasswordHash = MatKhauHelper.HashPassword(model.Password, salt),
                 IsActive = false,
                 IsSuperAdmin = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
 
             _context.Users.Add(user);
@@ -247,15 +213,15 @@ namespace ERP_HRM_CMS.Controllers
             {
                 return RedirectToAction("Index", "Content");
             }
-            if (HasRole("HR_MANAGER") || HasRole("QTVP"))
+            if (HasRole("HR_MANAGER"))
             {
                 return RedirectToAction("Index", "NhanSu");
             }
-            if (HasRole("SALES_STAFF") || HasRole("SalesStaff") || HasRole("SaleDirector"))
+            if (HasRole("SALES_STAFF") || HasRole("SALES_DIRECTOR"))
             {
                 return RedirectToAction("POS", "BanHang");
             }
-            if (HasRole("WAREHOUSE_STAFF") || HasRole("WarehouseKeeper"))
+            if (HasRole("WAREHOUSE_STAFF"))
             {
                 return RedirectToAction("Index", "Kho");
             }

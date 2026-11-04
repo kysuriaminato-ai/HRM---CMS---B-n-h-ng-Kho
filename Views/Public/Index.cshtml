@@ -2,43 +2,51 @@
 @{
     Layout = "_PublicLayout";
     ViewData["Title"] = "Trang Chủ";
+    ViewData["Description"] = "Hệ sinh thái quản trị doanh nghiệp: nhân sự, bán hàng, kho vận và quản trị nội dung trên một nền tảng.";
     var latestPosts = ViewBag.LatestPosts as List<ERP_HRM_CMS.Models.Entities.Content> ?? new List<ERP_HRM_CMS.Models.Entities.Content>();
-    var featuredProducts = ViewBag.FeaturedProducts as List<ERP_HRM_CMS.Models.Entities.Product> ?? new List<ERP_HRM_CMS.Models.Entities.Product>();
+
+    // Khi chưa cấu hình khối bố cục nào, hiển thị bố cục mặc định để trang không bị trống
+    var blockKeys = Model.Count > 0
+        ? Model.Select(b => b.BlockKey).ToList()
+        : new List<string> { "HeroSlider", "FeatureSection", "LatestNews" };
 }
 
-@foreach (var block in Model)
+@foreach (var blockKey in blockKeys)
 {
-    switch (block.BlockKey)
+    switch (blockKey)
     {
         case "HeroSlider":
             @await Component.InvokeAsync("DynamicBanner", new { position = "HomeSlider" })
             break;
 
         case "FeatureSection":
-            <section class="py-5 bg-light border-bottom">
-                <div class="container text-center">
-                    <h3 class="fw-bold mb-3">Hệ Sinh Thái Doanh Nghiệp Tiên Phong</h3>
-                    <p class="text-secondary mx-auto mb-5" style="max-width: 600px;">Tối ưu hóa nguồn lực với hệ thống tự động hóa liên kết Nhân sự, Quản trị nội dung và Bán hàng đa kênh.</p>
+            <section class="ps-section ps-section-alt" aria-labelledby="tieu-de-tinh-nang">
+                <div class="container">
+                    <div class="text-center mb-5 ps-reveal">
+                        <span class="ps-eyebrow">Nền tảng tích hợp</span>
+                        <h2 id="tieu-de-tinh-nang" class="ps-section-title">Hệ sinh thái quản trị doanh nghiệp</h2>
+                        <p class="ps-section-lead mx-auto">Tự động hóa liên kết Nhân sự, Bán hàng, Kho vận và Quản trị nội dung trên cùng một dữ liệu.</p>
+                    </div>
                     <div class="row g-4">
-                        <div class="col-md-4">
-                            <div class="erp-card p-4 h-100 shadow-sm border-0">
-                                <i class="bi bi-people fs-1 text-primary mb-3"></i>
-                                <h5 class="fw-bold">Nhân Sự & Chấm Công</h5>
-                                <p class="small text-secondary mb-0">Tích hợp chấm công tự động, tính lương và phân quyền ca làm việc chuẩn mực.</p>
+                        <div class="col-md-6 col-lg-4 ps-reveal">
+                            <div class="ps-feature">
+                                <div class="ps-feature-icon"><i class="bi bi-people"></i></div>
+                                <h3>Nhân sự và chấm công</h3>
+                                <p>Chấm công tự động theo ca làm việc, tính lương, quản lý đơn từ và hồ sơ nhân viên theo phân quyền.</p>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="erp-card p-4 h-100 shadow-sm border-0">
-                                <i class="bi bi-cart3 fs-1 text-success mb-3"></i>
-                                <h5 class="fw-bold">Bán Hàng POS & Kho</h5>
-                                <p class="small text-secondary mb-0">Kiểm soát đơn hàng, tồn kho thực tế và quản lý phiếu xuất nhập tức thời.</p>
+                        <div class="col-md-6 col-lg-4 ps-reveal ps-delay-1">
+                            <div class="ps-feature">
+                                <div class="ps-feature-icon ps-feature-icon--green"><i class="bi bi-cart3"></i></div>
+                                <h3>Bán hàng POS và kho</h3>
+                                <p>Theo dõi đơn hàng, tồn kho thực tế theo chi nhánh, nhập xuất điều chuyển và kiểm kê ngay trên hệ thống.</p>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="erp-card p-4 h-100 shadow-sm border-0">
-                                <i class="bi bi-layout-text-window-reverse fs-1 text-purple mb-3"></i>
-                                <h5 class="fw-bold">Dynamic CMS</h5>
-                                <p class="small text-secondary mb-0">Thay đổi menu, bài viết và bố cục trang web hoàn toàn bằng giao diện ma trận.</p>
+                        <div class="col-md-6 col-lg-4 ps-reveal ps-delay-2">
+                            <div class="ps-feature">
+                                <div class="ps-feature-icon ps-feature-icon--violet"><i class="bi bi-layout-text-window-reverse"></i></div>
+                                <h3>Quản trị nội dung động</h3>
+                                <p>Thay đổi menu, banner, bài viết và bố cục trang web bằng giao diện quản trị, không cần sửa mã nguồn.</p>
                             </div>
                         </div>
                     </div>
@@ -47,46 +55,58 @@
             break;
 
         case "LatestNews":
-            <section class="py-5">
+            <section class="ps-section" aria-labelledby="tieu-de-tin-tuc">
                 <div class="container">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="ps-section-head ps-reveal">
                         <div>
-                            <h4 class="fw-bold m-0">Tin Tức & Hoạt Động Mới Nhất</h4>
-                            <p class="text-muted small mb-0">Cập nhật tin tức và thông báo mới nhất từ Tập đoàn Tiên Phong</p>
+                            <span class="ps-eyebrow">Cập nhật</span>
+                            <h2 id="tieu-de-tin-tuc" class="ps-section-title mb-1">Tin tức và hoạt động mới nhất</h2>
+                            <p class="ps-section-lead mb-0">Thông báo và bài viết mới nhất từ doanh nghiệp.</p>
                         </div>
-                        <a href="/Public/TinTuc" class="btn btn-outline-dark btn-sm rounded-pill px-3">Xem tất cả <i class="bi bi-arrow-right ms-1"></i></a>
+                        <a href="/Public/TinTuc" class="ps-btn-ghost">Xem tất cả <i class="bi bi-arrow-right"></i></a>
                     </div>
                     <div class="row g-4">
                         @if (latestPosts.Any())
                         {
+                            var index = 0;
                             foreach (var post in latestPosts)
                             {
-                                <div class="col-md-6">
-                                    <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
-                                        @if (!string.IsNullOrEmpty(post.ThumbnailUrl))
-                                        {
-                                            <img src="@post.ThumbnailUrl" class="card-img-top" alt="@post.Title" style="height: 200px; object-fit: cover;" />
-                                        }
-                                        <div class="card-body p-4">
-                                            <div class="d-flex align-items-center gap-2 mb-2">
-                                                <span class="badge bg-primary-subtle text-primary border">@post.Status</span>
-                                                <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>@post.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                index++;
+                                <div class="col-md-6 ps-reveal ps-delay-@(index % 3)">
+                                    <article class="ps-post-card">
+                                        <div class="ps-post-thumb">
+                                            @if (!string.IsNullOrEmpty(post.ThumbnailUrl))
+                                            {
+                                                <img src="@post.ThumbnailUrl" alt="@post.Title" loading="lazy" />
+                                            }
+                                            else
+                                            {
+                                                <div class="ps-post-thumb-placeholder"><i class="bi bi-newspaper"></i></div>
+                                            }
+                                        </div>
+                                        <div class="ps-post-body">
+                                            <div class="ps-post-meta">
+                                                <span class="ps-pill"><i class="bi bi-calendar3"></i> @post.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                                <span><i class="bi bi-eye"></i> @post.ViewCount lượt xem</span>
                                             </div>
-                                            <h5 class="fw-bold card-title">
-                                                <a href="/bai-viet/@post.Slug" class="text-dark text-decoration-none hover-primary">@post.Title</a>
-                                            </h5>
-                                            <p class="card-text text-secondary small line-clamp-2">@post.Summary</p>
+                                            <h3 class="ps-post-title"><a href="/bai-viet/@post.Slug">@post.Title</a></h3>
+                                            <p class="ps-post-summary ps-clamp-2">@(post.Summary ?? "Nhấn để đọc chi tiết bài viết.")</p>
+                                            <div class="ps-post-foot">
+                                                <a class="ps-link-arrow" href="/bai-viet/@post.Slug">Đọc chi tiết <i class="bi bi-arrow-right"></i></a>
+                                            </div>
                                         </div>
-                                        <div class="card-footer bg-transparent border-0 px-4 pb-4">
-                                            <a href="/bai-viet/@post.Slug" class="fw-semibold small text-primary text-decoration-none">Đọc chi tiết &rarr;</a>
-                                        </div>
-                                    </div>
+                                    </article>
                                 </div>
                             }
                         }
                         else
                         {
-                            <div class="col-12 text-center py-4 text-muted">Chưa có bài viết nào được xuất bản.</div>
+                            <div class="col-12">
+                                <div class="ps-empty">
+                                    <i class="bi bi-journal-text"></i>
+                                    <p class="mt-2 mb-0">Chưa có bài viết nào được xuất bản.</p>
+                                </div>
+                            </div>
                         }
                     </div>
                 </div>
@@ -94,3 +114,23 @@
             break;
     }
 }
+
+<!-- Kêu gọi hành động -->
+<section class="ps-section pt-0" aria-labelledby="tieu-de-cta">
+    <div class="container">
+        <div class="ps-cta ps-reveal">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <h2 id="tieu-de-cta">Sẵn sàng số hóa vận hành doanh nghiệp?</h2>
+                    <p>Đội ngũ tư vấn sẽ khảo sát quy mô nhân sự, chi nhánh và quy trình hiện tại để đề xuất lộ trình triển khai phù hợp.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                        <a class="ps-btn-light" href="/Public/LienHe"><i class="bi bi-chat-dots"></i> Nhận tư vấn</a>
+                        <a class="ps-btn-ghost" href="/Public/GioiThieu">Tìm hiểu thêm</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,8 +27,8 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.payroll.view")]
         public async Task<IActionResult> Index(int? month, int? year, int? departmentId, string? keyword)
         {
-            int targetMonth = month ?? DateTime.Today.Month;
-            int targetYear = year ?? DateTime.Today.Year;
+            int targetMonth = month ?? VietnamTime.Today.Month;
+            int targetYear = year ?? VietnamTime.Today.Year;
 
             var period = await _context.PayrollPeriods
                 .Include(p => p.SalarySlips)
@@ -136,7 +137,7 @@ namespace ERP_HRM_CMS.Controllers
             if (period == null) return NotFound();
 
             var fileBytes = _payrollService.GeneratePayrollExcel(period);
-            string fileName = $"BangLuong_{period.Month:D2}_{period.Year}_{DateTime.Now:yyyyMMddHHmm}.xlsx";
+            string fileName = $"BangLuong_{period.Month:D2}_{period.Year}_{VietnamTime.Now:yyyyMMddHHmm}.xlsx";
 
             return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }

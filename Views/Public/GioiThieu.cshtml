@@ -1,40 +1,98 @@
 @model ERP_HRM_CMS.Models.Entities.Company
 @{
     Layout = "_PublicLayout";
-    ViewData["Title"] = "Giới Thiệu Doanh Nghiệp";
+    ViewData["Title"] = "Giới Thiệu";
+    ViewData["Description"] = "Giới thiệu đơn vị cung cấp giải pháp quản trị số tích hợp cho doanh nghiệp.";
 }
 
-<div class="container py-5">
-    <div class="row align-items-center mb-5">
-        <div class="col-lg-6">
-            <span class="badge bg-primary px-3 py-2 text-uppercase mb-3">Về chúng tôi</span>
-            <h1 class="fw-bold display-5 mb-3">@(Model?.Name ?? "TẬP ĐOÀN CÔNG NGHỆ TIÊN PHONG")</h1>
-            <p class="lead text-secondary fs-6 mb-4" style="line-height: 1.8;">
-                Chúng tôi là đơn vị tiên phong trong việc cung cấp các giải pháp quản trị số toàn diện cho doanh nghiệp Việt Nam. Nền tảng tích hợp liên thông các trụ cột cốt lõi: Quản trị Nhân sự (HRM), Quản lý Nội dung (CMS), Bán hàng Đa kênh (POS) và Quản trị Kho vận (Logistics).
-            </p>
-            <div class="row g-3 text-center">
-                <div class="col-4">
-                    <div class="p-3 bg-light rounded-3">
-                        <h3 class="fw-bold text-primary mb-1">10+</h3>
-                        <small class="text-muted">Năm kinh nghiệm</small>
-                    </div>
+<section class="ps-section pb-4">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6 ps-reveal">
+                <span class="ps-eyebrow">Về chúng tôi</span>
+                <h1 class="ps-section-title display-6">@(Model?.Name ?? "Doanh nghiệp của chúng tôi")</h1>
+                <p class="ps-section-lead mb-4">
+                    Chúng tôi cung cấp giải pháp quản trị số toàn diện cho doanh nghiệp. Nền tảng liên thông các trụ cột cốt lõi: quản trị nhân sự (HRM), quản lý nội dung (CMS), bán hàng đa kênh (POS) và quản trị kho vận.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="ps-btn-primary" href="/Public/LienHe"><i class="bi bi-chat-dots"></i> Liên hệ tư vấn</a>
+                    <a class="ps-btn-ghost" href="/Public/TinTuc">Xem tin tức</a>
                 </div>
-                <div class="col-4">
-                    <div class="p-3 bg-light rounded-3">
-                        <h3 class="fw-bold text-success mb-1">500+</h3>
-                        <small class="text-muted">Khách hàng DN</small>
-                    </div>
+            </div>
+            <div class="col-lg-6 ps-reveal ps-delay-1">
+                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=80"
+                     class="ps-hero-image" alt="Không gian làm việc của đội ngũ" loading="lazy" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="ps-section pt-0">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-6 col-lg-4 ps-reveal">
+                <div class="ps-stat">
+                    <div class="ps-stat-value" data-count="10" data-suffix="+">10+</div>
+                    <div class="ps-stat-label">Năm kinh nghiệm</div>
                 </div>
-                <div class="col-4">
-                    <div class="p-3 bg-light rounded-3">
-                        <h3 class="fw-bold text-warning mb-1">99.9%</h3>
-                        <small class="text-muted">Độ tin cậy hệ thống</small>
-                    </div>
+            </div>
+            <div class="col-6 col-lg-4 ps-reveal ps-delay-1">
+                <div class="ps-stat">
+                    <div class="ps-stat-value" data-count="500" data-suffix="+">500+</div>
+                    <div class="ps-stat-label">Khách hàng doanh nghiệp</div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4 ps-reveal ps-delay-2">
+                <div class="ps-stat">
+                    <div class="ps-stat-value" data-count="99.9" data-decimals="1" data-suffix="%">99.9%</div>
+                    <div class="ps-stat-label">Độ sẵn sàng của hệ thống</div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6 mt-4 mt-lg-0">
-            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" class="img-fluid rounded-4 shadow" alt="Văn phòng Tiên Phong" />
+    </div>
+</section>
+
+<section class="ps-section ps-section-alt">
+    <div class="container">
+        <div class="ps-section-head ps-reveal">
+            <div>
+                <span class="ps-eyebrow">Giá trị cốt lõi</span>
+                <h2 class="ps-section-title mb-1">Điều chúng tôi theo đuổi</h2>
+            </div>
+        </div>
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-7">
+                <ul class="ps-value-list">
+                    <li class="ps-reveal">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>
+                            <strong>Dữ liệu thống nhất</strong>
+                            <span>Nhân sự, bán hàng, kho và nội dung dùng chung một nguồn dữ liệu, giảm nhập liệu trùng lặp.</span>
+                        </div>
+                    </li>
+                    <li class="ps-reveal ps-delay-1">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>
+                            <strong>Vận hành có kiểm soát</strong>
+                            <span>Phân quyền theo vai trò và nhật ký thao tác giúp biết ai đã làm gì, khi nào.</span>
+                        </div>
+                    </li>
+                    <li class="ps-reveal ps-delay-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>
+                            <strong>Triển khai theo nhu cầu</strong>
+                            <span>Bật từng phân hệ khi doanh nghiệp sẵn sàng, không bắt buộc triển khai toàn bộ ngay từ đầu.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-5">
+                <div class="ps-form-card ps-reveal">
+                    <h3 class="h5 fw-bold mb-3">Bạn cần hệ thống cho quy mô nào?</h3>
+                    <p class="text-muted small mb-4">Mô tả số lượng nhân sự và chi nhánh để đội ngũ tư vấn đề xuất phương án phù hợp.</p>
+                    <a class="ps-btn-primary w-100" href="/Public/LienHe"><i class="bi bi-arrow-right-circle"></i> Gửi yêu cầu tư vấn</a>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>

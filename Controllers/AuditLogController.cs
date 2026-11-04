@@ -33,10 +33,10 @@ namespace ERP_HRM_CMS.Controllers
                 query = query.Where(a => a.Username != null && a.Username.Contains(username.Trim()));
 
             if (fromDate.HasValue)
-                query = query.Where(a => a.CreatedAt.Date >= fromDate.Value.Date);
+                query = query.Where(a => a.CreatedAt >= fromDate.Value.Date);
 
             if (toDate.HasValue)
-                query = query.Where(a => a.CreatedAt.Date <= toDate.Value.Date);
+                query = query.Where(a => a.CreatedAt < toDate.Value.Date.AddDays(1));
 
             int totalRecords = await query.CountAsync();
             var logs = await query

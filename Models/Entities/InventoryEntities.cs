@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,7 +20,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? ImageUrl { get; set; }
         public int OrderIndex { get; set; } = 0;
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("ParentId")]
         public virtual Category? Parent { get; set; }
@@ -50,7 +51,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(500)]
         public string? ImageUrl { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("CategoryId")]
         public virtual Category Category { get; set; } = null!;
@@ -67,7 +68,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public int StockQuantity { get; set; } = 0;
         public int MinStockAlert { get; set; } = 5;
         public int MaxStockLimit { get; set; } = 1000;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
@@ -95,7 +96,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(500)]
         public string? Note { get; set; }
         public int CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("BranchId")]
         public virtual Branch Branch { get; set; } = null!;
@@ -132,7 +133,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [Required, MaxLength(50)]
         public string PaymentMethod { get; set; } = "CASH";
         public int? CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
         [MaxLength(500)]
         public string? Note { get; set; }
 
@@ -175,7 +176,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public int? UserId { get; set; }
         public int ProductId { get; set; }
         public int Quantity { get; set; } = 1;
-        public DateTime AddedAt { get; set; } = DateTime.Now;
+        public DateTime AddedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("UserId")]
         public virtual User? User { get; set; }

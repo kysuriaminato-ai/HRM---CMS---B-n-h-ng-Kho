@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 
@@ -15,7 +16,7 @@ namespace ERP_HRM_CMS.ViewComponents
 
         public async Task<IViewComponentResult> InvokeAsync(string position = "HomeSlider")
         {
-            var now = DateTime.Now;
+            var now = VietnamTime.Now;
             var banners = await _context.Banners
                 .Where(b => b.IsActive && b.Position == position &&
                             (b.StartDate == null || b.StartDate <= now) &&

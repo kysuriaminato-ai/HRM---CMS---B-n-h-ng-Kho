@@ -1,5 +1,7 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ERP_HRM_CMS.Models.Enums;
 
 namespace ERP_HRM_CMS.Models.Entities
 {
@@ -35,7 +37,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? AttachmentUrl { get; set; }
 
         [Required, MaxLength(50)]
-        public string Status { get; set; } = "CHO_DUYET"; 
+        public LeaveRequestStatus Status { get; set; } = LeaveRequestStatus.PendingApproval; 
         // Statuses: CHO_DUYET (Chờ duyệt), TRUONG_PHONG_DUYET (Trưởng phòng duyệt), GIAM_DOC_DUYET (Hoàn tất/Giám đốc duyệt), TU_CHOI (Bị từ chối)
 
         public int? DepartmentHeadId { get; set; }
@@ -48,7 +50,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(500)]
         public string? DirectorNote { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("EmployeeId")]
         public virtual Employee Employee { get; set; } = null!;
@@ -78,7 +80,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public int StandardWorkDays { get; set; } = 22; // Số ngày công chuẩn tháng
 
         [Required, MaxLength(50)]
-        public string Status { get; set; } = "DRAFT"; 
+        public PayrollPeriodStatus Status { get; set; } = PayrollPeriodStatus.Draft; 
         // Statuses: DRAFT (Dự thảo), CALCULATED (Đã tính toán), LOCKED (Đã chốt lương), PAID (Đã giải ngân)
 
         [Column(TypeName = "decimal(18,2)")]
@@ -94,7 +96,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public decimal TotalPIT { get; set; } = 0; // Thuế TNCN
 
         public int? CreatedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
         public DateTime? LockedAt { get; set; }
 
         [ForeignKey("CreatedBy")]
@@ -181,12 +183,12 @@ namespace ERP_HRM_CMS.Models.Entities
         public decimal NetSalary { get; set; } = 0; // Thực lĩnh
 
         [Required, MaxLength(50)]
-        public string Status { get; set; } = "DRAFT"; // DRAFT, SENT (Đã gửi cho NV), CONFIRMED (NV đã xác nhận)
+        public SalarySlipStatus Status { get; set; } = SalarySlipStatus.Draft; // DRAFT, SENT (Đã gửi cho NV), CONFIRMED (NV đã xác nhận)
 
         [MaxLength(500)]
         public string? Note { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("PayrollPeriodId")]
         public virtual PayrollPeriod PayrollPeriod { get; set; } = null!;

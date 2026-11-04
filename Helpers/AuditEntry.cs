@@ -35,7 +35,7 @@ namespace ERP_HRM_CMS.Helpers
                 NewValues = NewValues.Count == 0 ? null : JsonSerializer.Serialize(NewValues),
                 AffectedColumns = ChangedColumns.Count == 0 ? null : JsonSerializer.Serialize(ChangedColumns),
                 IpAddress = IpAddress,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
         }
     }

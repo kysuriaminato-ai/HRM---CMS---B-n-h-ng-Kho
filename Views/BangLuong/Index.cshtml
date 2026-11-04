@@ -128,7 +128,7 @@
             <i class="bi bi-table me-2 text-primary"></i>Danh Sách Bảng Lương Chi Tiết (@(Model?.SalarySlips?.Count ?? 0) nhân sự)
         </div>
         <div class="small text-muted">
-            Công chuẩn: <strong class="text-dark">@(Model?.StandardWorkDays ?? 22) ngày</strong> | Trạng thái: <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">@(Model?.Status ?? "DRAFT")</span>
+            Công chuẩn: <strong class="text-dark">@(Model?.StandardWorkDays ?? 22) ngày</strong> | Trạng thái: <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">@(Model != null ? WorkflowStatusCodes.ToCode(WorkflowStatusCodes.PayrollPeriod, Model.Status) : "DRAFT")</span>
         </div>
     </div>
     <div class="table-responsive">
@@ -193,11 +193,11 @@
                                 @slip.NetSalary.ToString("N0") đ
                             </td>
                             <td class="text-center">
-                                @if (slip.Status == "SENT")
+                                @if (slip.Status == SalarySlipStatus.Sent)
                                 {
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check me-1"></i>Đã Gửi</span>
                                 }
-                                else if (slip.Status == "CONFIRMED")
+                                else if (slip.Status == SalarySlipStatus.Confirmed)
                                 {
                                     <span class="badge bg-primary text-white"><i class="bi bi-check2-all me-1"></i>Đã Ký</span>
                                 }

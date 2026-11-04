@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Models.Enums;
 using System.Globalization;
 using System.Text;
 using ERP_HRM_CMS.Models.Entities;
@@ -38,7 +39,7 @@ namespace ERP_HRM_CMS.Services.Printing
             return base.RenderHeader() +
                    "<p class=\"ngay\">Kỳ: tháng " + _ky.Month + "/" + _ky.Year +
                    " - Ngày công chuẩn: " + _ky.StandardWorkDays +
-                   " - Trạng thái: " + Enc(_ky.Status) + "</p>";
+                   " - Trạng thái: " + Enc(WorkflowStatusCodes.ToCode(WorkflowStatusCodes.PayrollPeriod, _ky.Status)) + "</p>";
         }
 
         protected override string NoiDungChinh()

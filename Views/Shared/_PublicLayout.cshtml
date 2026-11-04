@@ -1,68 +1,140 @@
 @inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     var settings = Db.SiteSettings.ToDictionary(s => s.SettingKey, s => s.SettingValue ?? string.Empty);
-    string siteName = settings.GetValueOrDefault("Site_Name") ?? "TIEN PHONG ENTERPRISE";
-    string hotline = settings.GetValueOrDefault("Site_Hotline") ?? "1900 6868";
-    string email = settings.GetValueOrDefault("Site_Email") ?? "contact@tienphong.vn";
-    string copyright = settings.GetValueOrDefault("Site_Copyright") ?? "© 2026 Tien Phong Corp.";
+    string siteName = settings.GetValueOrDefault("Site_Name") ?? "ERP";
+    string hotline = settings.GetValueOrDefault("Site_Hotline") ?? string.Empty;
+    string email = settings.GetValueOrDefault("Site_Email") ?? string.Empty;
+    string address = settings.GetValueOrDefault("Site_Address") ?? string.Empty;
+    string copyright = settings.GetValueOrDefault("Site_Copyright") ?? $"© {ERP_HRM_CMS.Helpers.VietnamTime.Now.Year} {siteName}";
+    string keyword = Context.Request.Query["keyword"].ToString();
+    string hotlineDigits = new string(hotline.Where(char.IsDigit).ToArray());
 }
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="@(ViewData["Description"] ?? siteName)" />
     <title>@ViewData["Title"] - @siteName</title>
+    <script>
+        // Áp dụng giao diện đã chọn trước khi trang hiển thị, tránh nháy sáng/tối
+        try {
+            var savedTheme = window.localStorage.getItem('ps-theme');
+            if (savedTheme === 'dark' || savedTheme === 'light') {
+                document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            }
+        } catch (e) { }
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/css/public-site.css" rel="stylesheet" />
 </head>
-<body class="bg-white">
-    <!-- Header Top -->
-    <div class="bg-dark text-white py-2 small border-bottom border-secondary">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex gap-4">
-                <span><i class="bi bi-telephone me-1"></i> Hotline: <strong>@hotline</strong></span>
-                <span><i class="bi bi-envelope me-1"></i> Email: @email</span>
+<body class="ps-body">
+    <a class="ps-skip-link" href="#noi-dung-chinh">Bỏ qua điều hướng</a>
+
+    <!-- Thanh trên cùng -->
+    <div class="ps-topbar">
+        <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                @if (!string.IsNullOrEmpty(hotline))
+                {
+                    <a href="tel:@hotlineDigits"><i class="bi bi-telephone me-1"></i>Hotline: <strong>@hotline</strong></a>
+                }
+                @if (!string.IsNullOrEmpty(email))
+                {
+                    <a class="ps-topbar-hide-sm" href="mailto:@email"><i class="bi bi-envelope me-1"></i>@email</a>
+                }
             </div>
-            <div class="d-flex gap-3">
-                <a href="/Auth/Login" class="text-white text-decoration-none"><i class="bi bi-shield-lock me-1"></i> Cổng Nội Bộ</a>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="ps-icon-btn" id="psSearchToggle" aria-expanded="false" aria-controls="psSearchPanel" aria-label="Tìm kiếm bài viết" title="Tìm kiếm">
+                    <i class="bi bi-search"></i>
+                </button>
+                <button type="button" class="ps-icon-btn" id="psThemeToggle" aria-pressed="false" aria-label="Chuyển giao diện sáng/tối" title="Chuyển giao diện">
+                    <i class="bi bi-moon-stars"></i>
+                </button>
+                <a href="/Auth/Login" class="ps-topbar-link"><i class="bi bi-shield-lock"></i> Cổng nội bộ</a>
             </div>
         </div>
     </div>
 
-    <!-- Dynamic Menu Component -->
-    @await Component.InvokeAsync("DynamicMenu")
+    <!-- Điều hướng động (DynamicMenu) -->
+    <div class="ps-nav-wrap">
+        @await Component.InvokeAsync("DynamicMenu")
 
-    <!-- Nội dung chính động -->
-    <main role="main">
+        <!-- Thanh tìm kiếm trượt xuống -->
+        <div class="ps-search-panel" id="psSearchPanel">
+            <div class="container">
+                <form action="/Public/TinTuc" method="get" role="search" class="ps-search-form">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" name="keyword" id="psSearchInput" class="ps-search-input"
+                           placeholder="Tìm bài viết, tin tức, hoạt động..." aria-label="Từ khóa tìm kiếm"
+                           value="@keyword" maxlength="120" />
+                    <button class="ps-btn-primary" type="submit">Tìm kiếm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nội dung chính -->
+    <main id="noi-dung-chinh" role="main" tabindex="-1">
         @RenderBody()
     </main>
 
-    <!-- Footer Main -->
-    <footer class="bg-black text-white pt-5 pb-4 mt-5">
+    <!-- Chân trang -->
+    <footer class="ps-footer">
         <div class="container">
             <div class="row g-4">
-                <div class="col-md-5">
-                    <h5 class="fw-bold mb-3">@siteName</h5>
-                    <p class="text-secondary small">Giải pháp quản trị nguồn lực doanh nghiệp tích hợp Nhân sự, Bán hàng, Kho vận và CMS động.</p>
+                <div class="col-lg-5">
+                    <a class="ps-footer-brand mb-3" href="/"><i class="bi bi-triangle-half"></i>@siteName</a>
+                    <p class="small mt-3 mb-0" style="max-width: 420px; line-height: 1.7;">
+                        Nền tảng quản trị doanh nghiệp tích hợp Nhân sự, Bán hàng, Kho vận và quản trị nội dung website trên một hệ thống.
+                    </p>
                 </div>
-                <div class="col-md-3">
-                    <h6 class="text-uppercase fw-bold mb-3 text-white">Liên Hệ</h6>
-                    <p class="small text-secondary mb-1">Điện thoại: @hotline</p>
-                    <p class="small text-secondary mb-1">Email: @email</p>
+                <div class="col-6 col-lg-2">
+                    <h6>Khám phá</h6>
+                    <ul>
+                        <li><a href="/">Trang chủ</a></li>
+                        <li><a href="/Public/GioiThieu">Giới thiệu</a></li>
+                        <li><a href="/Public/TinTuc">Tin tức</a></li>
+                        <li><a href="/Public/LienHe">Liên hệ</a></li>
+                    </ul>
                 </div>
-                <div class="col-md-4">
-                    <h6 class="text-uppercase fw-bold mb-3 text-white">Chính Sách</h6>
-                    <p class="small text-secondary">Tất cả dữ liệu và quy trình được bảo mật theo tiêu chuẩn ISO/IEC 27001.</p>
+                <div class="col-lg-5">
+                    <h6>Liên hệ</h6>
+                    <ul>
+                        @if (!string.IsNullOrEmpty(address))
+                        {
+                            <li class="d-flex gap-2"><i class="bi bi-geo-alt mt-1"></i><span>@address</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(hotline))
+                        {
+                            <li class="d-flex gap-2"><i class="bi bi-telephone mt-1"></i><span>@hotline</span></li>
+                        }
+                        @if (!string.IsNullOrEmpty(email))
+                        {
+                            <li class="d-flex gap-2"><i class="bi bi-envelope mt-1"></i><a href="mailto:@email">@email</a></li>
+                        }
+                    </ul>
                 </div>
             </div>
-            <div class="border-top border-secondary mt-4 pt-3 text-center small text-secondary">
-                @copyright
+            <div class="ps-footer-bottom">
+                <span>@copyright</span>
+                <span>Dữ liệu được phân quyền theo vai trò và ghi nhật ký thao tác.</span>
             </div>
         </div>
     </footer>
 
+    <!-- Nút lên đầu trang -->
+    <button type="button" class="ps-to-top" id="psToTop" aria-label="Lên đầu trang" title="Lên đầu trang">
+        <i class="bi bi-arrow-up"></i>
+    </button>
+
+    <!-- Khu vực hiển thị thông báo nhanh -->
+    <div class="ps-toast-host" id="psToastHost" aria-live="polite"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/public-site.js" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

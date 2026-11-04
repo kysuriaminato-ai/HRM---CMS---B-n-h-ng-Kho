@@ -1,7 +1,10 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Models;
 using ERP_HRM_CMS.Models.ViewModels;
 
 namespace ERP_HRM_CMS.Controllers
@@ -19,7 +22,7 @@ namespace ERP_HRM_CMS.Controllers
         public async Task<IActionResult> Index()
         {
             var model = new ExecutiveDashboardViewModel();
-            var today = DateTime.Today;
+            var today = VietnamTime.Today;
             var thisMonthStart = new DateTime(today.Year, today.Month, 1);
             var lastMonthStart = thisMonthStart.AddMonths(-1);
 
@@ -55,8 +58,8 @@ namespace ERP_HRM_CMS.Controllers
             model.TotalEmployeesCount = await _context.Employees.CountAsync();
 
             // 4. Đơn chờ duyệt (Đơn nghỉ phép/công tác + Đơn PO nhập hàng)
-            var pendingLeaveCount = await _context.LeaveRequests.CountAsync(l => l.Status == "CHO_DUYET" || l.Status == "TRUONG_PHONG_DUYET");
-            var pendingPOCount = await _context.PurchaseOrders.CountAsync(p => p.Status == "PendingApproval");
+            var pendingLeaveCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.PendingApproval || l.Status == LeaveRequestStatus.DepartmentApproved);
+            var pendingPOCount = await _context.PurchaseOrders.CountAsync(p => p.Status == PurchaseOrderStatus.PendingApproval);
             model.PendingApprovalsCount = pendingLeaveCount + pendingPOCount;
 
             // 5. Sản phẩm cảnh báo tồn kho (Tồn kho <= Ngưỡng tồn an toàn)
@@ -65,7 +68,7 @@ namespace ERP_HRM_CMS.Controllers
 
             // 6. Công nợ quá hạn
             model.OverdueDebtTotal = await _context.DebtRecords
-                .Where(d => d.Status != "Paid" && (d.Status == "Overdue" || d.DueDate < today))
+                .Where(d => d.Status != DebtStatus.Paid && (d.Status == DebtStatus.Overdue || d.DueDate < today))
                 .SumAsync(d => d.RemainingAmount);
 
             // 7. Biểu đồ Doanh thu 12 tháng gần nhất
@@ -160,9 +163,19 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult KhongCoQuyen()
         {
             return View();
+        }
+
+        // Trang lỗi chung. Được UseExceptionHandler và UseStatusCodePagesWithReExecute gọi lại,
+        // nên phải công khai để người chưa đăng nhập không bị chuyển sang trang đăng nhập khi gặp lỗi.
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = HttpContext.TraceIdentifier });
         }
 
         [HttpGet]

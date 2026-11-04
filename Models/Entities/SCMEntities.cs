@@ -1,5 +1,7 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ERP_HRM_CMS.Models.Enums;
 
 namespace ERP_HRM_CMS.Models.Entities
 {
@@ -36,7 +38,7 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public bool IsActive { get; set; } = true;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
         public virtual ICollection<DebtRecord> DebtRecords { get; set; } = new List<DebtRecord>();
@@ -55,7 +57,7 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int BranchId { get; set; }
 
-        public DateTime OrderDate { get; set; } = DateTime.Now;
+        public DateTime OrderDate { get; set; } = VietnamTime.Now;
 
         public DateTime? ExpectedDeliveryDate { get; set; }
 
@@ -77,7 +79,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public decimal DebtAmount { get; set; } = 0;
 
         [Required, MaxLength(50)]
-        public string Status { get; set; } = "PendingApproval"; // PendingApproval, Approved, Received, Cancelled
+        public PurchaseOrderStatus Status { get; set; } = PurchaseOrderStatus.PendingApproval; // PendingApproval, Approved, Received, Cancelled
 
         public int CreatedBy { get; set; }
 
@@ -86,7 +88,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(500)]
         public string? Note { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("SupplierId")]
         public virtual Supplier Supplier { get; set; } = null!;
@@ -174,12 +176,12 @@ namespace ERP_HRM_CMS.Models.Entities
         public DateTime DueDate { get; set; } // Ngày đáo hạn công nợ
 
         [Required, MaxLength(30)]
-        public string Status { get; set; } = "Unpaid"; // Unpaid, PartiallyPaid, Paid, Overdue
+        public DebtStatus Status { get; set; } = DebtStatus.Unpaid; // Unpaid, PartiallyPaid, Paid, Overdue
 
         [MaxLength(500)]
         public string? Note { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("SupplierId")]
         public virtual Supplier? Supplier { get; set; }
@@ -210,7 +212,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [Required, MaxLength(50)]
         public string PaymentMethod { get; set; } = "BANK_TRANSFER"; // CASH, BANK_TRANSFER
 
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime PaymentDate { get; set; } = VietnamTime.Now;
 
         [MaxLength(500)]
         public string? Note { get; set; }
@@ -239,7 +241,7 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int BranchId { get; set; }
 
-        public DateTime CheckDate { get; set; } = DateTime.Now;
+        public DateTime CheckDate { get; set; } = VietnamTime.Now;
 
         public int TotalSystemQty { get; set; } = 0;
 
@@ -258,7 +260,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(500)]
         public string? Note { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("BranchId")]
         public virtual Branch Branch { get; set; } = null!;

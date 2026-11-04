@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -65,7 +66,7 @@ namespace ERP_HRM_CMS.Controllers
                 Description = model.Description,
                 IsSystem = false,
                 IsActive = true,
-                CreatedAt = DateTime.Now
+                CreatedAt = VietnamTime.Now
             };
             _context.Roles.Add(role);
             await _context.SaveChangesAsync();

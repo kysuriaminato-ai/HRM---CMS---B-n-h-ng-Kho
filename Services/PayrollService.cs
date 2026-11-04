@@ -1,3 +1,5 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -30,9 +32,9 @@ namespace ERP_HRM_CMS.Services
                     Month = month,
                     Year = year,
                     StandardWorkDays = standardDays,
-                    Status = "CALCULATED",
+                    Status = PayrollPeriodStatus.Calculated,
                     CreatedBy = creatorUserId,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = VietnamTime.Now
                 };
                 _context.PayrollPeriods.Add(period);
                 await _context.SaveChangesAsync();
@@ -40,7 +42,7 @@ namespace ERP_HRM_CMS.Services
             else
             {
                 period.StandardWorkDays = standardDays;
-                period.Status = "CALCULATED";
+                period.Status = PayrollPeriodStatus.Calculated;
             }
 
             int daysInMonth = DateTime.DaysInMonth(year, month);
@@ -62,7 +64,7 @@ namespace ERP_HRM_CMS.Services
 
             // 3. Lấy đơn từ nghỉ phép / công tác đã duyệt
             var approvedLeaves = await _context.LeaveRequests
-                .Where(l => l.Status == "GIAM_DOC_DUYET" &&
+                .Where(l => l.Status == LeaveRequestStatus.DirectorApproved &&
                            ((l.FromDate >= startDate && l.FromDate <= endDate) ||
                             (l.ToDate >= startDate && l.ToDate <= endDate)))
                 .ToListAsync();
@@ -180,7 +182,7 @@ namespace ERP_HRM_CMS.Services
                 slip.TaxableIncome = taxableIncome;
                 slip.PersonalIncomeTax = pit;
                 slip.NetSalary = netSalary;
-                slip.Status = "DRAFT";
+                slip.Status = SalarySlipStatus.Draft;
                 slip.Note = $"Đã tính tự động theo công chuẩn {standardDays} ngày.";
             }
 
@@ -218,7 +220,7 @@ namespace ERP_HRM_CMS.Services
 
             foreach (var slip in slipsList)
             {
-                slip.Status = "SENT";
+                slip.Status = SalarySlipStatus.Sent;
                 var linkedUser = users.FirstOrDefault(u => u.EmployeeId == slip.EmployeeId);
 
                 string title = $"[PHIẾU LƯƠNG] {period.Name}";
@@ -258,7 +260,7 @@ namespace ERP_HRM_CMS.Services
             ws.Cell(2, 1).Style.Font.FontSize = 12;
             ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#2563EB");
 
-            ws.Cell(3, 1).Value = $"Công chuẩn: {period.StandardWorkDays} ngày | Trạng thái: {period.Status} | Xuất ngày: {DateTime.Now:dd/MM/yyyy HH:mm}";
+            ws.Cell(3, 1).Value = $"Công chuẩn: {period.StandardWorkDays} ngày | Trạng thái: {WorkflowStatusCodes.ToCode(WorkflowStatusCodes.PayrollPeriod, period.Status)} | Xuất ngày: {VietnamTime.Now:dd/MM/yyyy HH:mm}";
             ws.Cell(3, 1).Style.Font.Italic = true;
             ws.Cell(3, 1).Style.Font.FontSize = 10;
             ws.Cell(3, 1).Style.Font.FontColor = XLColor.Gray;
@@ -318,7 +320,7 @@ namespace ERP_HRM_CMS.Services
                 ws.Cell(rowIdx, 23).Value = (double)slip.LatePenalty;
                 ws.Cell(rowIdx, 24).Value = (double)slip.PersonalIncomeTax;
                 ws.Cell(rowIdx, 25).Value = (double)slip.NetSalary;
-                ws.Cell(rowIdx, 26).Value = slip.Status;
+                ws.Cell(rowIdx, 26).Value = WorkflowStatusCodes.ToCode(WorkflowStatusCodes.SalarySlip, slip.Status);
                 ws.Cell(rowIdx, 27).Value = "";
 
                 // Format tiền tệ

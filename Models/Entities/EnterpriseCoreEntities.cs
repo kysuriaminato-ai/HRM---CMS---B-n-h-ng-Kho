@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -32,7 +33,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [MaxLength(50)]
         public string? IpAddress { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
     }
 
     [Table("Notifications")]
@@ -60,6 +61,6 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public bool IsRead { get; set; } = false;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
     }
 }

@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -20,7 +21,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? CustomCssClass { get; set; }
         [MaxLength(50)]
         public string? UpdatedBy { get; set; }
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; } = VietnamTime.Now;
     }
 
     [Table("Menus")]
@@ -44,7 +45,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public bool IsActive { get; set; } = true;
         [MaxLength(100)]
         public string? IconClass { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("ParentId")]
         public virtual Menu? Parent { get; set; }
@@ -70,8 +71,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public string Status { get; set; } = "Published";
         public int ViewCount { get; set; } = 0;
         public int? AuthorId { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
+        public DateTime UpdatedAt { get; set; } = VietnamTime.Now;
 
         [ForeignKey("AuthorId")]
         public virtual User? Author { get; set; }
@@ -96,7 +97,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public bool IsActive { get; set; } = true;
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = VietnamTime.Now;
     }
 
     [Table("SiteSettings")]
@@ -111,6 +112,6 @@ namespace ERP_HRM_CMS.Models.Entities
         public string SettingGroup { get; set; } = "General";
         [MaxLength(250)]
         public string? Description { get; set; }
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; } = VietnamTime.Now;
     }
 }

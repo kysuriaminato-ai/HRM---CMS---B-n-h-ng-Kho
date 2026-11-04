@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -6,6 +7,8 @@ using ERP_HRM_CMS.Helpers;
 
 namespace ERP_HRM_CMS.Controllers
 {
+    // Trang công khai: trang chủ, bài viết, giới thiệu, liên hệ.
+    [AllowAnonymous]
     public class PublicController : Controller
     {
         private readonly AppDbContext _context;

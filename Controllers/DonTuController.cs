@@ -1,3 +1,5 @@
+using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -35,7 +37,8 @@ namespace ERP_HRM_CMS.Controllers
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(status))
-                query = query.Where(l => l.Status == status);
+                if (WorkflowStatusCodes.TryParse(WorkflowStatusCodes.LeaveRequest, status, out var leaveStatus))
+                    query = query.Where(l => l.Status == leaveStatus);
 
             if (!string.IsNullOrWhiteSpace(type))
                 query = query.Where(l => l.RequestType == type);
@@ -53,10 +56,10 @@ namespace ERP_HRM_CMS.Controllers
 
             // Thống kê nhanh KPI
             ViewBag.TotalCount = await _context.LeaveRequests.CountAsync();
-            ViewBag.PendingCount = await _context.LeaveRequests.CountAsync(l => l.Status == "CHO_DUYET");
-            ViewBag.DeptApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == "TRUONG_PHONG_DUYET");
-            ViewBag.ApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == "GIAM_DOC_DUYET");
-            ViewBag.RejectedCount = await _context.LeaveRequests.CountAsync(l => l.Status == "TU_CHOI");
+            ViewBag.PendingCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.PendingApproval);
+            ViewBag.DeptApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.DepartmentApproved);
+            ViewBag.ApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.DirectorApproved);
+            ViewBag.RejectedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.Rejected);
 
             ViewBag.Departments = new SelectList(await _context.Departments.OrderBy(d => d.Name).ToListAsync(), "Id", "Name", departmentId);
             ViewBag.Status = status;
@@ -76,8 +79,8 @@ namespace ERP_HRM_CMS.Controllers
             await LoadDropdowns();
             var model = new LeaveRequest
             {
-                FromDate = DateTime.Today,
-                ToDate = DateTime.Today,
+                FromDate = VietnamTime.Today,
+                ToDate = VietnamTime.Today,
                 TotalDays = 1.0m,
                 RequestType = "ANNUAL_LEAVE"
             };
@@ -97,7 +100,7 @@ namespace ERP_HRM_CMS.Controllers
             if (ModelState.IsValid)
             {
                 // Tự sinh mã đơn
-                string prefix = $"LR-{DateTime.Now:yyMM}";
+                string prefix = $"LR-{VietnamTime.Now:yyMM}";
                 int countThisMonth = await _context.LeaveRequests.CountAsync(l => l.RequestCode.StartsWith(prefix));
                 model.RequestCode = $"{prefix}-{(countThisMonth + 1):D3}";
 
@@ -107,8 +110,8 @@ namespace ERP_HRM_CMS.Controllers
                     model.TotalDays = Math.Max(1, (decimal)span.TotalDays + 1);
                 }
 
-                model.Status = "CHO_DUYET";
-                model.CreatedAt = DateTime.Now;
+                model.Status = LeaveRequestStatus.PendingApproval;
+                model.CreatedAt = VietnamTime.Now;
 
                 _context.LeaveRequests.Add(model);
                 await _context.SaveChangesAsync();
@@ -147,9 +150,9 @@ namespace ERP_HRM_CMS.Controllers
 
             if (level == "TP") // Trưởng phòng duyệt
             {
-                req.Status = "TRUONG_PHONG_DUYET";
+                req.Status = LeaveRequestStatus.DepartmentApproved;
                 req.DepartmentHeadId = currentUserId;
-                req.DepartmentHeadApprovedAt = DateTime.Now;
+                req.DepartmentHeadApprovedAt = VietnamTime.Now;
                 req.DepartmentHeadNote = note;
 
                 // Gửi thông báo lên Giám Đốc / SuperAdmin
@@ -163,9 +166,9 @@ namespace ERP_HRM_CMS.Controllers
             }
             else // Giám đốc duyệt (Hoàn tất)
             {
-                req.Status = "GIAM_DOC_DUYET";
+                req.Status = LeaveRequestStatus.DirectorApproved;
                 req.DirectorId = currentUserId;
-                req.DirectorApprovedAt = DateTime.Now;
+                req.DirectorApprovedAt = VietnamTime.Now;
                 req.DirectorNote = note;
 
                 // TỰ ĐỘNG ĐỒNG BỘ VÀO BẢNG CHẤM CÔNG HÀNG NGÀY (AttendanceDaily)
@@ -202,9 +205,9 @@ namespace ERP_HRM_CMS.Controllers
             if (req == null) return NotFound();
 
             int currentUserId = GetCurrentUserId();
-            req.Status = "TU_CHOI";
+            req.Status = LeaveRequestStatus.Rejected;
             req.DirectorId = currentUserId;
-            req.DirectorApprovedAt = DateTime.Now;
+            req.DirectorApprovedAt = VietnamTime.Now;
             req.DirectorNote = string.IsNullOrWhiteSpace(reason) ? "Từ chối theo quy định nội bộ" : reason;
 
             // Thông báo cho Nhân viên
@@ -243,7 +246,7 @@ namespace ERP_HRM_CMS.Controllers
                         EmployeeId = req.EmployeeId,
                         ShiftId = defaultShift.Id,
                         WorkDate = d,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = VietnamTime.Now
                     };
                     _context.AttendanceDailies.Add(att);
                 }

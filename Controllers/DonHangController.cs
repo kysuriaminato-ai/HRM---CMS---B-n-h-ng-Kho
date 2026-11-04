@@ -1,3 +1,4 @@
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -43,10 +44,10 @@ namespace ERP_HRM_CMS.Controllers
                 query = query.Where(o => o.PaymentStatus == paymentStatus);
 
             if (fromDate.HasValue)
-                query = query.Where(o => o.CreatedAt.Date >= fromDate.Value.Date);
+                query = query.Where(o => o.CreatedAt >= fromDate.Value.Date);
 
             if (toDate.HasValue)
-                query = query.Where(o => o.CreatedAt.Date <= toDate.Value.Date);
+                query = query.Where(o => o.CreatedAt < toDate.Value.Date.AddDays(1));
 
             var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
 
@@ -106,12 +107,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("report.sales")]
         public async Task<IActionResult> Dashboard()
         {
-            var today = DateTime.Today;
+            var today = VietnamTime.Today;
             var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
             // Doanh số hôm nay
             var todayOrders = await _context.Orders
-                .Where(o => o.CreatedAt.Date == today && o.OrderStatus != "Cancelled")
+                .Where(o => o.CreatedAt >= today && o.CreatedAt < today.AddDays(1) && o.OrderStatus != "Cancelled")
                 .ToListAsync();
 
             // Doanh số tháng này
@@ -191,13 +192,14 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("report.sales")]
         public async Task<IActionResult> ExportDoanhThuExcel(int? month, int? year)
         {
-            int selectedMonth = month ?? DateTime.Now.Month;
-            int selectedYear = year ?? DateTime.Now.Year;
+            int selectedMonth = month ?? VietnamTime.Now.Month;
+            int selectedYear = year ?? VietnamTime.Now.Year;
+            var monthStart = new DateTime(selectedYear, selectedMonth, 1);
 
             var orders = await _context.Orders
                 .Include(o => o.Branch)
                 .Include(o => o.Creator)
-                .Where(o => o.CreatedAt.Month == selectedMonth && o.CreatedAt.Year == selectedYear)
+                .Where(o => o.CreatedAt >= monthStart && o.CreatedAt < monthStart.AddMonths(1))
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
@@ -209,7 +211,7 @@ namespace ERP_HRM_CMS.Controllers
             worksheet.Cell("A1").Style.Font.Bold = true;
             worksheet.Cell("A1").Style.Font.FontSize = 14;
 
-            worksheet.Cell("A2").Value = $"KỲ BÁO CÁO: THÁNG {selectedMonth:00}/{selectedYear} (Xuất lúc: {DateTime.Now:dd/MM/yyyy HH:mm})";
+            worksheet.Cell("A2").Value = $"KỲ BÁO CÁO: THÁNG {selectedMonth:00}/{selectedYear} (Xuất lúc: {VietnamTime.Now:dd/MM/yyyy HH:mm})";
             worksheet.Cell("A2").Style.Font.Bold = true;
             worksheet.Cell("A2").Style.Font.FontColor = ClosedXML.Excel.XLColor.FromHtml("#2563EB");
 
