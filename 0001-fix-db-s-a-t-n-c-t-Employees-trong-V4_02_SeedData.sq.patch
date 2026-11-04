@@ -1,0 +1,151 @@
+From e3bc31ec59e4c36ee6209691442c35b97401365a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 4 Nov 2026 13:01:01 +0000
+Subject: [PATCH] =?UTF-8?q?fix(db):=20s=E1=BB=ADa=20t=C3=AAn=20c=E1=BB=99t?=
+ =?UTF-8?q?=20Employees=20trong=20V4=5F02=5FSeedData.sql?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Code → EmployeeCode
+- Address, BranchId → xóa (không tồn tại trong bảng)
+- JoinDate → HireDate
+- IsActive (BIT) → Status (NVARCHAR) = 'Active'
+- Sắp xếp lại thứ tự cột đúng schema: DepartmentId, PositionId trước EmployeeCode
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EqW8ZVjYPXQ2Jwe9Tm1Wqg
+---
+ db/scripts/V4_02_SeedData.sql | 105 +++++++++++++++++-----------------
+ 1 file changed, 53 insertions(+), 52 deletions(-)
+
+diff --git a/db/scripts/V4_02_SeedData.sql b/db/scripts/V4_02_SeedData.sql
+index e3b4c74..128e3a8 100644
+--- a/db/scripts/V4_02_SeedData.sql
++++ b/db/scripts/V4_02_SeedData.sql
+@@ -105,69 +105,70 @@ END
+ -- 5. EMPLOYEES (50 nhân viên)
+ -- ==========================================================================
+ 
+-IF NOT EXISTS (SELECT 1 FROM [Employees] WHERE Code = 'NV001')
++IF NOT EXISTS (SELECT 1 FROM [Employees] WHERE EmployeeCode = 'NV001')
+ BEGIN
+     SET IDENTITY_INSERT [Employees] ON;
+-    INSERT INTO [Employees] (Id, Code, FullName, Gender, DateOfBirth, Phone, Email, Address, DepartmentId, PositionId, BranchId, JoinDate, IsActive, CreatedAt) VALUES
++    -- Cột: Id, DepartmentId, PositionId, EmployeeCode, FullName, DateOfBirth, Gender, Email, Phone, Status, HireDate, CreatedAt
++    INSERT INTO [Employees] (Id, DepartmentId, PositionId, EmployeeCode, FullName, DateOfBirth, Gender, Email, Phone, Status, HireDate, CreatedAt) VALUES
+         -- Ban Giám đốc (2)
+-        (1,  'NV001', N'Nguyễn Văn An',       N'Nam',  '1975-03-15', '0901000001', 'an.nguyen@erpvn.com',       N'12 Lê Lợi, Q1, HCM',           1, 1, 1, '2020-01-01', 1, GETUTCDATE()),
+-        (2,  'NV002', N'Trần Thị Bích',       N'Nữ',   '1978-07-22', '0901000002', 'bich.tran@erpvn.com',       N'34 Hai Bà Trưng, Q1, HCM',     1, 2, 1, '2020-01-01', 1, GETUTCDATE()),
++        (1,  1, 1, 'NV001', N'Nguyễn Văn An',       '1975-03-15', N'Nam', 'an.nguyen@erpvn.com',       '0901000001', 'Active', '2020-01-01', GETUTCDATE()),
++        (2,  1, 2, 'NV002', N'Trần Thị Bích',       '1978-07-22', N'Nữ',  'bich.tran@erpvn.com',       '0901000002', 'Active', '2020-01-01', GETUTCDATE()),
+         -- Phòng Nhân sự (5)
+-        (3,  'NV003', N'Lê Minh Cường',       N'Nam',  '1985-11-10', '0901000003', 'cuong.le@erpvn.com',        N'56 Nguyễn Trãi, Q5, HCM',      2, 3, 1, '2020-03-01', 1, GETUTCDATE()),
+-        (4,  'NV004', N'Phạm Thị Dung',       N'Nữ',   '1990-04-05', '0901000004', 'dung.pham@erpvn.com',       N'78 CMT8, Q3, HCM',             2, 5, 1, '2021-06-15', 1, GETUTCDATE()),
+-        (5,  'NV005', N'Hoàng Văn Em',        N'Nam',  '1992-08-20', '0901000005', 'em.hoang@erpvn.com',        N'90 Điện Biên Phủ, Q3, HCM',    2, 5, 1, '2022-01-10', 1, GETUTCDATE()),
+-        (6,  'NV006', N'Ngô Thị Phương',      N'Nữ',   '1993-01-12', '0901000006', 'phuong.ngo@erpvn.com',      N'12 Võ Văn Tần, Q3, HCM',       2, 5, 1, '2022-04-01', 1, GETUTCDATE()),
+-        (7,  'NV007', N'Vũ Đình Gia',         N'Nam',  '1991-06-30', '0901000007', 'gia.vu@erpvn.com',          N'45 Lý Tự Trọng, Q1, HCM',      2, 4, 1, '2021-08-01', 1, GETUTCDATE()),
++        (3,  2, 3, 'NV003', N'Lê Minh Cường',       '1985-11-10', N'Nam', 'cuong.le@erpvn.com',        '0901000003', 'Active', '2020-03-01', GETUTCDATE()),
++        (4,  2, 5, 'NV004', N'Phạm Thị Dung',       '1990-04-05', N'Nữ',  'dung.pham@erpvn.com',       '0901000004', 'Active', '2021-06-15', GETUTCDATE()),
++        (5,  2, 5, 'NV005', N'Hoàng Văn Em',        '1992-08-20', N'Nam', 'em.hoang@erpvn.com',        '0901000005', 'Active', '2022-01-10', GETUTCDATE()),
++        (6,  2, 5, 'NV006', N'Ngô Thị Phương',      '1993-01-12', N'Nữ',  'phuong.ngo@erpvn.com',      '0901000006', 'Active', '2022-04-01', GETUTCDATE()),
++        (7,  2, 4, 'NV007', N'Vũ Đình Gia',         '1991-06-30', N'Nam', 'gia.vu@erpvn.com',          '0901000007', 'Active', '2021-08-01', GETUTCDATE()),
+         -- Phòng Kế toán (5)
+-        (8,  'NV008', N'Đặng Thị Hạnh',       N'Nữ',   '1987-09-18', '0901000008', 'hanh.dang@erpvn.com',       N'67 Trần Quốc Toản, Q3, HCM',   3, 3, 1, '2020-05-01', 1, GETUTCDATE()),
+-        (9,  'NV009', N'Bùi Văn Ích',         N'Nam',  '1993-02-25', '0901000009', 'ich.bui@erpvn.com',         N'89 Nam Kỳ Khởi Nghĩa, Q1, HCM',3, 8, 1, '2021-09-15', 1, GETUTCDATE()),
+-        (10, 'NV010', N'Cao Thị Kim',         N'Nữ',   '1994-12-03', '0901000010', 'kim.cao@erpvn.com',         N'23 Pasteur, Q1, HCM',           3, 8, 1, '2022-02-01', 1, GETUTCDATE()),
+-        (11, 'NV011', N'Dương Văn Long',      N'Nam',  '1989-05-14', '0901000011', 'long.duong@erpvn.com',      N'45 Bến Vân Đồn, Q4, HCM',      3, 8, 1, '2023-01-10', 1, GETUTCDATE()),
+-        (12, 'NV012', N'Mai Thị Ngọc',        N'Nữ',   '1995-07-28', '0901000012', 'ngoc.mai@erpvn.com',        N'67 Hùng Vương, Q5, HCM',        3, 5, 1, '2023-06-01', 1, GETUTCDATE()),
++        (8,  3, 3, 'NV008', N'Đặng Thị Hạnh',       '1987-09-18', N'Nữ',  'hanh.dang@erpvn.com',       '0901000008', 'Active', '2020-05-01', GETUTCDATE()),
++        (9,  3, 8, 'NV009', N'Bùi Văn Ích',         '1993-02-25', N'Nam', 'ich.bui@erpvn.com',         '0901000009', 'Active', '2021-09-15', GETUTCDATE()),
++        (10, 3, 8, 'NV010', N'Cao Thị Kim',         '1994-12-03', N'Nữ',  'kim.cao@erpvn.com',         '0901000010', 'Active', '2022-02-01', GETUTCDATE()),
++        (11, 3, 8, 'NV011', N'Dương Văn Long',      '1989-05-14', N'Nam', 'long.duong@erpvn.com',      '0901000011', 'Active', '2023-01-10', GETUTCDATE()),
++        (12, 3, 5, 'NV012', N'Mai Thị Ngọc',        '1995-07-28', N'Nữ',  'ngoc.mai@erpvn.com',        '0901000012', 'Active', '2023-06-01', GETUTCDATE()),
+         -- Phòng Kinh doanh HCM (8)
+-        (13, 'NV013', N'Trịnh Văn Phúc',      N'Nam',  '1986-10-07', '0901000013', 'phuc.trinh@erpvn.com',      N'12 Nguyễn Đình Chiểu, Q3, HCM',4, 3, 1, '2020-06-01', 1, GETUTCDATE()),
+-        (14, 'NV014', N'Lý Thị Quỳnh',        N'Nữ',   '1991-03-19', '0901000014', 'quynh.ly@erpvn.com',        N'34 Đồng Khởi, Q1, HCM',        4, 10, 1, '2021-02-15', 1, GETUTCDATE()),
+-        (15, 'NV015', N'Hồ Văn Rạng',         N'Nam',  '1993-09-11', '0901000015', 'rang.ho@erpvn.com',         N'56 Tôn Đức Thắng, Q1, HCM',    4, 10, 1, '2021-07-01', 1, GETUTCDATE()),
+-        (16, 'NV016', N'Nguyễn Thị Sương',    N'Nữ',   '1994-01-30', '0901000016', 'suong.nguyen@erpvn.com',    N'78 Lê Văn Sỹ, Q3, HCM',        4, 10, 1, '2022-03-01', 1, GETUTCDATE()),
+-        (17, 'NV017', N'Phan Văn Tài',        N'Nam',  '1990-06-15', '0901000017', 'tai.phan@erpvn.com',        N'90 Cách Mạng T8, Q10, HCM',    4, 10, 1, '2022-08-15', 1, GETUTCDATE()),
+-        (18, 'NV018', N'Đỗ Thị Uyên',         N'Nữ',   '1992-11-08', '0901000018', 'uyen.do@erpvn.com',         N'23 Nguyễn Thị Minh Khai, Q1',   4, 10, 1, '2023-01-05', 1, GETUTCDATE()),
+-        (19, 'NV019', N'Lê Văn Vinh',         N'Nam',  '1988-04-22', '0901000019', 'vinh.le@erpvn.com',         N'45 Hoàng Sa, Q3, HCM',          4, 4, 1, '2021-04-01', 1, GETUTCDATE()),
+-        (20, 'NV020', N'Trần Thị Xuân',       N'Nữ',   '1996-12-25', '0901000020', 'xuan.tran@erpvn.com',       N'67 Trường Sa, Phú Nhuận, HCM',  4, 10, 1, '2024-01-15', 1, GETUTCDATE()),
++        (13, 4, 3,  'NV013', N'Trịnh Văn Phúc',      '1986-10-07', N'Nam', 'phuc.trinh@erpvn.com',      '0901000013', 'Active', '2020-06-01', GETUTCDATE()),
++        (14, 4, 10, 'NV014', N'Lý Thị Quỳnh',        '1991-03-19', N'Nữ',  'quynh.ly@erpvn.com',        '0901000014', 'Active', '2021-02-15', GETUTCDATE()),
++        (15, 4, 10, 'NV015', N'Hồ Văn Rạng',         '1993-09-11', N'Nam', 'rang.ho@erpvn.com',         '0901000015', 'Active', '2021-07-01', GETUTCDATE()),
++        (16, 4, 10, 'NV016', N'Nguyễn Thị Sương',    '1994-01-30', N'Nữ',  'suong.nguyen@erpvn.com',    '0901000016', 'Active', '2022-03-01', GETUTCDATE()),
++        (17, 4, 10, 'NV017', N'Phan Văn Tài',        '1990-06-15', N'Nam', 'tai.phan@erpvn.com',        '0901000017', 'Active', '2022-08-15', GETUTCDATE()),
++        (18, 4, 10, 'NV018', N'Đỗ Thị Uyên',         '1992-11-08', N'Nữ',  'uyen.do@erpvn.com',         '0901000018', 'Active', '2023-01-05', GETUTCDATE()),
++        (19, 4, 4,  'NV019', N'Lê Văn Vinh',         '1988-04-22', N'Nam', 'vinh.le@erpvn.com',         '0901000019', 'Active', '2021-04-01', GETUTCDATE()),
++        (20, 4, 10, 'NV020', N'Trần Thị Xuân',       '1996-12-25', N'Nữ',  'xuan.tran@erpvn.com',       '0901000020', 'Active', '2024-01-15', GETUTCDATE()),
+         -- Phòng Kho vận (5)
+-        (21, 'NV021', N'Nguyễn Hữu Yên',      N'Nam',  '1984-02-14', '0901000021', 'yen.nguyen@erpvn.com',      N'89 Đinh Tiên Hoàng, Q1, HCM',   5, 3, 1, '2020-07-01', 1, GETUTCDATE()),
+-        (22, 'NV022', N'Võ Văn Anh',          N'Nam',  '1991-08-05', '0901000022', 'anh.vo@erpvn.com',          N'12 Phan Đăng Lưu, Phú Nhuận',   5, 7, 1, '2021-11-01', 1, GETUTCDATE()),
+-        (23, 'NV023', N'Trương Thị Bé',       N'Nữ',   '1993-05-17', '0901000023', 'be.truong@erpvn.com',       N'34 Nguyễn Kiệm, Gò Vấp, HCM',  5, 7, 1, '2022-05-15', 1, GETUTCDATE()),
+-        (24, 'NV024', N'Huỳnh Văn Châu',      N'Nam',  '1990-10-09', '0901000024', 'chau.huynh@erpvn.com',      N'56 Lạc Long Quân, Q11, HCM',    5, 5, 1, '2023-03-01', 1, GETUTCDATE()),
+-        (25, 'NV025', N'Lâm Thị Diễm',        N'Nữ',   '1995-03-28', '0901000025', 'diem.lam@erpvn.com',        N'78 Âu Cơ, Tân Bình, HCM',       5, 5, 1, '2024-02-01', 1, GETUTCDATE()),
++        (21, 5, 3, 'NV021', N'Nguyễn Hữu Yên',      '1984-02-14', N'Nam', 'yen.nguyen@erpvn.com',      '0901000021', 'Active', '2020-07-01', GETUTCDATE()),
++        (22, 5, 7, 'NV022', N'Võ Văn Anh',          '1991-08-05', N'Nam', 'anh.vo@erpvn.com',          '0901000022', 'Active', '2021-11-01', GETUTCDATE()),
++        (23, 5, 7, 'NV023', N'Trương Thị Bé',       '1993-05-17', N'Nữ',  'be.truong@erpvn.com',       '0901000023', 'Active', '2022-05-15', GETUTCDATE()),
++        (24, 5, 5, 'NV024', N'Huỳnh Văn Châu',      '1990-10-09', N'Nam', 'chau.huynh@erpvn.com',      '0901000024', 'Active', '2023-03-01', GETUTCDATE()),
++        (25, 5, 5, 'NV025', N'Lâm Thị Diễm',        '1995-03-28', N'Nữ',  'diem.lam@erpvn.com',        '0901000025', 'Active', '2024-02-01', GETUTCDATE()),
+         -- Phòng IT (5)
+-        (26, 'NV026', N'Đoàn Minh Đức',       N'Nam',  '1988-07-20', '0901000026', 'duc.doan@erpvn.com',        N'90 Trường Chinh, Tân Bình',      6, 3, 1, '2020-08-01', 1, GETUTCDATE()),
+-        (27, 'NV027', N'Tô Văn Giang',        N'Nam',  '1992-01-15', '0901000027', 'giang.to@erpvn.com',        N'23 Phạm Văn Đồng, Thủ Đức',     6, 9, 1, '2021-05-15', 1, GETUTCDATE()),
+-        (28, 'NV028', N'Châu Thị Hà',         N'Nữ',   '1994-09-03', '0901000028', 'ha.chau@erpvn.com',         N'45 Lê Đức Thọ, Gò Vấp, HCM',   6, 9, 1, '2022-06-01', 1, GETUTCDATE()),
+-        (29, 'NV029', N'Lương Văn Hải',       N'Nam',  '1993-04-12', '0901000029', 'hai.luong@erpvn.com',       N'67 Kha Vạn Cân, Thủ Đức',       6, 9, 1, '2023-02-15', 1, GETUTCDATE()),
+-        (30, 'NV030', N'Nguyễn Thị Lan',      N'Nữ',   '1997-11-27', '0901000030', 'lan.nguyen2@erpvn.com',     N'89 Võ Văn Ngân, Thủ Đức',        6, 6, 1, '2024-06-01', 1, GETUTCDATE()),
++        (26, 6, 3, 'NV026', N'Đoàn Minh Đức',       '1988-07-20', N'Nam', 'duc.doan@erpvn.com',        '0901000026', 'Active', '2020-08-01', GETUTCDATE()),
++        (27, 6, 9, 'NV027', N'Tô Văn Giang',        '1992-01-15', N'Nam', 'giang.to@erpvn.com',        '0901000027', 'Active', '2021-05-15', GETUTCDATE()),
++        (28, 6, 9, 'NV028', N'Châu Thị Hà',         '1994-09-03', N'Nữ',  'ha.chau@erpvn.com',         '0901000028', 'Active', '2022-06-01', GETUTCDATE()),
++        (29, 6, 9, 'NV029', N'Lương Văn Hải',       '1993-04-12', N'Nam', 'hai.luong@erpvn.com',       '0901000029', 'Active', '2023-02-15', GETUTCDATE()),
++        (30, 6, 6, 'NV030', N'Nguyễn Thị Lan',      '1997-11-27', N'Nữ',  'lan.nguyen2@erpvn.com',     '0901000030', 'Active', '2024-06-01', GETUTCDATE()),
+         -- Phòng Marketing (5)
+-        (31, 'NV031', N'Trần Quốc Minh',      N'Nam',  '1987-06-08', '0901000031', 'minh.tran@erpvn.com',       N'12 Nguyễn Văn Trỗi, Phú Nhuận', 7, 3, 1, '2020-09-01', 1, GETUTCDATE()),
+-        (32, 'NV032', N'Phạm Thị Nga',        N'Nữ',   '1993-02-14', '0901000032', 'nga.pham@erpvn.com',        N'34 Phan Xích Long, Phú Nhuận',  7, 5, 1, '2022-01-15', 1, GETUTCDATE()),
+-        (33, 'NV033', N'Lê Hoàng Oanh',       N'Nữ',   '1995-08-19', '0901000033', 'oanh.le@erpvn.com',         N'56 Trần Huy Liệu, Phú Nhuận',   7, 5, 1, '2022-09-01', 1, GETUTCDATE()),
+-        (34, 'NV034', N'Hà Văn Phong',        N'Nam',  '1991-12-01', '0901000034', 'phong.ha@erpvn.com',        N'78 Huỳnh Văn Bánh, Phú Nhuận',  7, 5, 1, '2023-04-15', 1, GETUTCDATE()),
+-        (35, 'NV035', N'Kiều Thị Quế',        N'Nữ',   '1996-05-23', '0901000035', 'que.kieu@erpvn.com',        N'90 Nguyễn Trọng Tuyển, TB',      7, 6, 1, '2024-03-01', 1, GETUTCDATE()),
++        (31, 7, 3, 'NV031', N'Trần Quốc Minh',      '1987-06-08', N'Nam', 'minh.tran@erpvn.com',       '0901000031', 'Active', '2020-09-01', GETUTCDATE()),
++        (32, 7, 5, 'NV032', N'Phạm Thị Nga',        '1993-02-14', N'Nữ',  'nga.pham@erpvn.com',        '0901000032', 'Active', '2022-01-15', GETUTCDATE()),
++        (33, 7, 5, 'NV033', N'Lê Hoàng Oanh',       '1995-08-19', N'Nữ',  'oanh.le@erpvn.com',         '0901000033', 'Active', '2022-09-01', GETUTCDATE()),
++        (34, 7, 5, 'NV034', N'Hà Văn Phong',        '1991-12-01', N'Nam', 'phong.ha@erpvn.com',        '0901000034', 'Active', '2023-04-15', GETUTCDATE()),
++        (35, 7, 6, 'NV035', N'Kiều Thị Quế',        '1996-05-23', N'Nữ',  'que.kieu@erpvn.com',        '0901000035', 'Active', '2024-03-01', GETUTCDATE()),
+         -- Chi nhánh Hà Nội (10)
+-        (36, 'NV036', N'Vương Đình Sơn',      N'Nam',  '1986-01-18', '0241000036', 'son.vuong@erpvn.com',       N'12 Bà Triệu, Hoàn Kiếm, HN',    8, 3, 2, '2021-01-01', 1, GETUTCDATE()),
+-        (37, 'NV037', N'Đinh Thị Thanh',      N'Nữ',   '1992-07-04', '0241000037', 'thanh.dinh@erpvn.com',      N'34 Tràng Tiền, Hoàn Kiếm, HN',  8, 5, 2, '2021-06-01', 1, GETUTCDATE()),
+-        (38, 'NV038', N'Bùi Xuân Ước',        N'Nam',  '1990-03-22', '0241000038', 'uoc.bui@erpvn.com',         N'56 Hàng Bài, Hoàn Kiếm, HN',    9, 3, 2, '2021-03-01', 1, GETUTCDATE()),
+-        (39, 'NV039', N'Trần Văn Viện',       N'Nam',  '1993-10-16', '0241000039', 'vien.tran@erpvn.com',       N'78 Lý Thường Kiệt, HBT, HN',    9, 10, 2, '2022-01-15', 1, GETUTCDATE()),
+-        (40, 'NV040', N'Lê Thị Yến',          N'Nữ',   '1994-05-09', '0241000040', 'yen.le@erpvn.com',          N'90 Láng Hạ, Đống Đa, HN',       9, 10, 2, '2022-07-01', 1, GETUTCDATE()),
+-        (41, 'NV041', N'Nguyễn Thành Đạt',    N'Nam',  '1991-08-13', '0241000041', 'dat.nguyen@erpvn.com',      N'23 Kim Mã, Ba Đình, HN',        9, 10, 2, '2023-02-01', 1, GETUTCDATE()),
+-        (42, 'NV042', N'Phạm Hồng Hải',       N'Nam',  '1989-12-30', '0241000042', 'hai.pham@erpvn.com',        N'45 Đội Cấn, Ba Đình, HN',       9, 10, 2, '2023-05-15', 1, GETUTCDATE()),
+-        (43, 'NV043', N'Vũ Thị Hương',        N'Nữ',   '1995-02-06', '0241000043', 'huong.vu@erpvn.com',        N'67 Giảng Võ, Đống Đa, HN',      8, 5, 2, '2023-08-01', 1, GETUTCDATE()),
+-        (44, 'NV044', N'Đặng Quốc Khánh',     N'Nam',  '1992-06-21', '0241000044', 'khanh.dang@erpvn.com',      N'89 Nguyễn Chí Thanh, ĐĐ, HN',   9, 10, 2, '2024-01-10', 1, GETUTCDATE()),
+-        (45, 'NV045', N'Hoàng Thị Liên',      N'Nữ',   '1996-09-14', '0241000045', 'lien.hoang@erpvn.com',      N'12 Cầu Giấy, CG, HN',           9, 6, 2, '2024-07-01', 1, GETUTCDATE()),
++        (36, 8,  3,  'NV036', N'Vương Đình Sơn',      '1986-01-18', N'Nam', 'son.vuong@erpvn.com',       '0241000036', 'Active', '2021-01-01', GETUTCDATE()),
++        (37, 8,  5,  'NV037', N'Đinh Thị Thanh',      '1992-07-04', N'Nữ',  'thanh.dinh@erpvn.com',      '0241000037', 'Active', '2021-06-01', GETUTCDATE()),
++        (38, 9,  3,  'NV038', N'Bùi Xuân Ước',        '1990-03-22', N'Nam', 'uoc.bui@erpvn.com',         '0241000038', 'Active', '2021-03-01', GETUTCDATE()),
++        (39, 9,  10, 'NV039', N'Trần Văn Viện',       '1993-10-16', N'Nam', 'vien.tran@erpvn.com',       '0241000039', 'Active', '2022-01-15', GETUTCDATE()),
++        (40, 9,  10, 'NV040', N'Lê Thị Yến',          '1994-05-09', N'Nữ',  'yen.le@erpvn.com',          '0241000040', 'Active', '2022-07-01', GETUTCDATE()),
++        (41, 9,  10, 'NV041', N'Nguyễn Thành Đạt',    '1991-08-13', N'Nam', 'dat.nguyen@erpvn.com',      '0241000041', 'Active', '2023-02-01', GETUTCDATE()),
++        (42, 9,  10, 'NV042', N'Phạm Hồng Hải',       '1989-12-30', N'Nam', 'hai.pham@erpvn.com',        '0241000042', 'Active', '2023-05-15', GETUTCDATE()),
++        (43, 8,  5,  'NV043', N'Vũ Thị Hương',        '1995-02-06', N'Nữ',  'huong.vu@erpvn.com',        '0241000043', 'Active', '2023-08-01', GETUTCDATE()),
++        (44, 9,  10, 'NV044', N'Đặng Quốc Khánh',     '1992-06-21', N'Nam', 'khanh.dang@erpvn.com',      '0241000044', 'Active', '2024-01-10', GETUTCDATE()),
++        (45, 9,  6,  'NV045', N'Hoàng Thị Liên',      '1996-09-14', N'Nữ',  'lien.hoang@erpvn.com',      '0241000045', 'Active', '2024-07-01', GETUTCDATE()),
+         -- Chi nhánh Đà Nẵng (5)
+-        (46, 'NV046', N'Trần Đức Mạnh',       N'Nam',  '1988-04-17', '0361000046', 'manh.tran@erpvn.com',       N'23 Trần Phú, Hải Châu, ĐN',     10, 3, 3, '2022-01-01', 1, GETUTCDATE()),
+-        (47, 'NV047', N'Lê Thị Như',          N'Nữ',   '1993-11-25', '0361000047', 'nhu.le@erpvn.com',          N'45 Nguyễn Văn Linh, HC, ĐN',    10, 10, 3, '2022-06-15', 1, GETUTCDATE()),
+-        (48, 'NV048', N'Phan Minh Quân',      N'Nam',  '1994-07-03', '0361000048', 'quan.phan@erpvn.com',       N'67 Điện Biên Phủ, TK, ĐN',      10, 10, 3, '2023-01-01', 1, GETUTCDATE()),
+-        (49, 'NV049', N'Ngô Thị Tâm',         N'Nữ',   '1995-10-12', '0361000049', 'tam.ngo@erpvn.com',         N'89 Hùng Vương, HC, ĐN',         10, 10, 3, '2023-09-01', 1, GETUTCDATE()),
+-        (50, 'NV050', N'Huỳnh Văn Thắng',     N'Nam',  '1997-03-08', '0361000050', 'thang.huynh@erpvn.com',     N'12 Lê Duẩn, HC, ĐN',            10, 6, 3, '2024-05-01', 1, GETUTCDATE());
++        (46, 10, 3,  'NV046', N'Trần Đức Mạnh',       '1988-04-17', N'Nam', 'manh.tran@erpvn.com',       '0361000046', 'Active', '2022-01-01', GETUTCDATE()),
++        (47, 10, 10, 'NV047', N'Lê Thị Như',          '1993-11-25', N'Nữ',  'nhu.le@erpvn.com',          '0361000047', 'Active', '2022-06-15', GETUTCDATE()),
++        (48, 10, 10, 'NV048', N'Phan Minh Quân',      '1994-07-03', N'Nam', 'quan.phan@erpvn.com',       '0361000048', 'Active', '2023-01-01', GETUTCDATE()),
++        (49, 10, 10, 'NV049', N'Ngô Thị Tâm',         '1995-10-12', N'Nữ',  'tam.ngo@erpvn.com',         '0361000049', 'Active', '2023-09-01', GETUTCDATE()),
++        (50, 10, 6,  'NV050', N'Huỳnh Văn Thắng',     '1997-03-08', N'Nam', 'thang.huynh@erpvn.com',     '0361000050', 'Active', '2024-05-01', GETUTCDATE());
+     SET IDENTITY_INSERT [Employees] OFF;
+     PRINT N'   → 50 Employees đã tạo.';
+ END
+-- 
+2.43.0
+
