@@ -1,0 +1,832 @@
+/* ==========================================================================
+   ADMIN COMPONENTS - Thành phần giao diện dùng chung
+   Dự án: ERP HRM - CMS - Bán hàng Kho
+   Phiên 3 - Xem docs/UI-GUIDE.md để biết quy ước
+   ========================================================================== */
+
+/* ==========================================================================
+   1. SIDEBAR - Layout, thu gọn, responsive
+   ========================================================================== */
+.erp-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    background: var(--erp-bg-sidebar);
+    border-right: 1px solid var(--erp-sidebar-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 1040;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.erp-sidebar-brand {
+    display: flex;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--erp-sidebar-border);
+    min-height: 60px;
+}
+
+.sidebar-brand-full {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-brand-full .brand-text {
+    font-weight: 700;
+    font-size: 18px;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.sidebar-brand-mini {
+    display: none;
+    justify-content: center;
+    width: 100%;
+}
+
+.erp-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 0;
+}
+
+.nav-section-title {
+    padding: 16px 18px 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--erp-sidebar-muted);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.erp-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 18px;
+    margin: 2px 10px;
+    color: var(--erp-sidebar-text);
+    text-decoration: none;
+    border-radius: var(--erp-radius-md);
+    font-size: 13.5px;
+    font-weight: 450;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.erp-nav-item i {
+    font-size: 17px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.erp-nav-item:hover {
+    background: var(--erp-sidebar-active);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.erp-nav-item.active {
+    background: var(--erp-primary);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(var(--erp-primary-rgb), 0.35);
+}
+
+/* Footer sidebar - nút thu gọn */
+.erp-sidebar-footer {
+    padding: 8px 10px;
+    border-top: 1px solid var(--erp-sidebar-border);
+}
+
+.erp-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: var(--erp-sidebar-muted);
+    border-radius: var(--erp-radius-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.erp-sidebar-toggle:hover {
+    background: var(--erp-sidebar-active);
+    color: #fff;
+}
+
+/* Sidebar thu gọn */
+.sidebar-collapsed .erp-sidebar {
+    width: 68px;
+}
+
+.sidebar-collapsed .sidebar-brand-full { display: none; }
+.sidebar-collapsed .sidebar-brand-mini { display: flex; }
+.sidebar-collapsed .nav-section-title { text-align: center; padding: 12px 4px 4px; font-size: 0; height: 12px; }
+.sidebar-collapsed .nav-section-title::after { content: ''; display: block; width: 20px; height: 1px; background: var(--erp-sidebar-border); margin: 0 auto; }
+.sidebar-collapsed .erp-nav-item { justify-content: center; padding: 10px; margin: 2px 6px; gap: 0; }
+.sidebar-collapsed .erp-nav-item .nav-label { display: none; }
+.sidebar-collapsed .erp-nav-item i { font-size: 18px; }
+.sidebar-collapsed #sidebarToggleIcon { transform: rotate(180deg); }
+
+/* Tooltip cho sidebar thu gọn */
+.sidebar-collapsed .erp-nav-item { position: relative; }
+.sidebar-collapsed .erp-nav-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--erp-bg-sidebar);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.sidebar-collapsed .erp-nav-item:hover::after {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   2. MAIN CONTENT AREA
+   ========================================================================== */
+.erp-main-content {
+    margin-left: 260px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapsed .erp-main-content {
+    margin-left: 68px;
+}
+
+/* ==========================================================================
+   3. TOPBAR
+   ========================================================================== */
+.erp-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 60px;
+    background: var(--erp-bg-surface);
+    border-bottom: 1px solid var(--erp-border-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.topbar-left, .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.topbar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    color: var(--erp-text-muted);
+    border-radius: var(--erp-radius-md);
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.15s ease;
+}
+
+.topbar-icon-btn:hover {
+    background: var(--erp-bg-subtle);
+    color: var(--erp-text-main);
+}
+
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    background: var(--erp-danger);
+    color: #fff;
+    border-radius: 8px;
+}
+
+/* Avatar dropdown */
+.topbar-avatar-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    border-radius: var(--erp-radius-md);
+    cursor: pointer;
+    color: var(--erp-text-main);
+    transition: background 0.15s ease;
+}
+
+.topbar-avatar-btn:hover {
+    background: var(--erp-bg-subtle);
+}
+
+.avatar-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--erp-primary), var(--erp-purple, #6366F1));
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.avatar-name {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Breadcrumb trong topbar */
+.erp-topbar .breadcrumb {
+    background: transparent;
+    font-size: 13px;
+}
+
+.erp-topbar .breadcrumb-item a {
+    color: var(--erp-text-muted);
+}
+
+.erp-topbar .breadcrumb-item.active {
+    color: var(--erp-text-main);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   4. CONTENT WRAPPER & FOOTER
+   ========================================================================== */
+.erp-content-wrapper {
+    flex: 1;
+    padding: 24px;
+}
+
+.erp-page-content {
+    /* Placeholder cho nội dung chính */
+}
+
+.erp-footer {
+    padding: 16px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--erp-text-muted);
+    border-top: 1px solid var(--erp-border-color);
+}
+
+/* Mobile sidebar toggle */
+.erp-sidebar-mobile-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    color: var(--erp-text-main);
+    cursor: pointer;
+    border-radius: var(--erp-radius-md);
+}
+
+.erp-sidebar-mobile-toggle:hover {
+    background: var(--erp-bg-subtle);
+}
+
+/* Overlay */
+.erp-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1035;
+    backdrop-filter: blur(2px);
+}
+
+/* ==========================================================================
+   5. TOAST ALERT (thay cho Bootstrap alert)
+   ========================================================================== */
+.erp-toast-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--erp-radius-md);
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.erp-toast-alert .btn-close-sm {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+}
+
+.erp-toast-success {
+    background: var(--erp-success-subtle);
+    color: var(--erp-success);
+    border: 1px solid var(--erp-success);
+}
+
+.erp-toast-danger {
+    background: var(--erp-danger-subtle);
+    color: var(--erp-danger);
+    border: 1px solid var(--erp-danger);
+}
+
+.erp-toast-warning {
+    background: var(--erp-warning-subtle);
+    color: var(--erp-warning);
+    border: 1px solid var(--erp-warning);
+}
+
+.erp-toast-info {
+    background: rgba(6, 182, 212, 0.1);
+    color: var(--erp-info);
+    border: 1px solid var(--erp-info);
+}
+
+/* ==========================================================================
+   6. STAT CARD (thẻ thống kê)
+   ========================================================================== */
+.stat-card {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    padding: 20px 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    box-shadow: var(--erp-card-shadow);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--erp-elevated-shadow);
+}
+
+.stat-card-body {
+    flex: 1;
+}
+
+.stat-card-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--erp-text-muted);
+    margin-bottom: 6px;
+}
+
+.stat-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--erp-text-main);
+}
+
+.stat-card-trend {
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.stat-card-trend.up { color: var(--erp-success); }
+.stat-card-trend.down { color: var(--erp-danger); }
+
+.stat-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--erp-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.stat-card-icon.primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
+.stat-card-icon.success { background: var(--erp-success-subtle); color: var(--erp-success); }
+.stat-card-icon.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
+.stat-card-icon.danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
+.stat-card-icon.info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
+.stat-card-icon.purple { background: rgba(99,102,241,0.1); color: var(--erp-purple); }
+
+/* ==========================================================================
+   7. DATA TABLE WRAPPER
+   ========================================================================== */
+.erp-table-wrapper {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    box-shadow: var(--erp-card-shadow);
+    overflow: hidden;
+}
+
+.erp-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--erp-border-color);
+}
+
+.erp-table-toolbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--erp-text-main);
+}
+
+.erp-table-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Empty state cho bảng */
+.erp-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--erp-text-muted);
+}
+
+.erp-empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+
+.erp-empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--erp-text-secondary);
+    margin-bottom: 6px;
+}
+
+.erp-empty-state-desc {
+    font-size: 13px;
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+/* ==========================================================================
+   8. FORM - Nhãn nổi (Floating Label) nâng cao
+   ========================================================================== */
+.erp-floating-label {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.erp-floating-label input,
+.erp-floating-label select,
+.erp-floating-label textarea {
+    width: 100%;
+    padding: 14px 16px 6px;
+    font-size: 14px;
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-md);
+    background: var(--erp-bg-surface);
+    color: var(--erp-text-main);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.erp-floating-label label {
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--erp-text-muted);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.erp-floating-label input:focus,
+.erp-floating-label select:focus,
+.erp-floating-label textarea:focus {
+    border-color: var(--erp-primary);
+    box-shadow: var(--erp-focus-ring);
+    outline: none;
+}
+
+.erp-floating-label input:focus + label,
+.erp-floating-label input:not(:placeholder-shown) + label,
+.erp-floating-label select:focus + label,
+.erp-floating-label select:not([value=""]) + label,
+.erp-floating-label textarea:focus + label,
+.erp-floating-label textarea:not(:placeholder-shown) + label {
+    top: 6px;
+    transform: translateY(0);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--erp-primary);
+    background: var(--erp-bg-surface);
+    padding: 0 4px;
+}
+
+/* Inline error */
+.erp-field-error {
+    font-size: 12px;
+    color: var(--erp-danger);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ==========================================================================
+   9. BUTTON LOADING STATE
+   ========================================================================== */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: btn-spin 0.6s linear infinite;
+}
+
+.btn-loading > * {
+    visibility: hidden;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   10. MODAL XÁC NHẬN
+   ========================================================================== */
+.erp-confirm-modal .modal-content {
+    border-radius: var(--erp-radius-xl);
+    border: none;
+    box-shadow: var(--erp-modal-shadow);
+}
+
+.erp-confirm-modal .modal-body {
+    text-align: center;
+    padding: 32px 24px 16px;
+}
+
+.erp-confirm-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+}
+
+.erp-confirm-icon.danger {
+    background: var(--erp-danger-subtle);
+    color: var(--erp-danger);
+}
+
+.erp-confirm-icon.warning {
+    background: var(--erp-warning-subtle);
+    color: var(--erp-warning);
+}
+
+/* ==========================================================================
+   11. BADGE TRẠNG THÁI
+   ========================================================================== */
+.erp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.erp-badge-success { background: var(--erp-success-subtle); color: var(--erp-success); }
+.erp-badge-danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
+.erp-badge-warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
+.erp-badge-info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
+.erp-badge-primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
+.erp-badge-neutral { background: var(--erp-bg-subtle); color: var(--erp-text-muted); }
+
+/* Dot badge */
+.erp-badge-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* ==========================================================================
+   12. TAB
+   ========================================================================== */
+.erp-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--erp-border-color);
+    margin-bottom: 20px;
+}
+
+.erp-tab {
+    padding: 10px 16px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--erp-text-muted);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s ease;
+}
+
+.erp-tab:hover { color: var(--erp-text-main); }
+
+.erp-tab.active {
+    color: var(--erp-primary);
+    font-weight: 600;
+}
+
+.erp-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--erp-primary);
+    border-radius: 2px 2px 0 0;
+}
+
+/* ==========================================================================
+   13. SKELETON LOADING (bổ sung từ enterprise-theme.css)
+   ========================================================================== */
+.skeleton-card {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    padding: 20px 24px;
+}
+
+.skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    background: var(--erp-border-color);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.skeleton-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent 0, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.5) 60%, transparent);
+    animation: skeleton-shimmer 2s infinite;
+}
+
+.skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--erp-border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-circle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: skeleton-shimmer 2s infinite;
+}
+
+/* ==========================================================================
+   14. ACCESSIBILITY - Focus ring
+   ========================================================================== */
+:focus-visible {
+    outline: 2px solid var(--erp-primary);
+    outline-offset: 2px;
+}
+
+.erp-nav-item:focus-visible,
+.topbar-icon-btn:focus-visible,
+.btn:focus-visible {
+    box-shadow: var(--erp-focus-ring);
+}
+
+/* ==========================================================================
+   15. RESPONSIVE
+   ========================================================================== */
+@media (max-width: 991.98px) {
+    .erp-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 260px !important;
+    }
+
+    .erp-sidebar.show {
+        transform: translateX(0);
+    }
+
+    .erp-sidebar.show ~ .erp-sidebar-overlay {
+        display: block;
+    }
+
+    .erp-main-content {
+        margin-left: 0 !important;
+    }
+
+    .erp-sidebar-mobile-toggle {
+        display: flex;
+    }
+
+    .erp-sidebar-footer {
+        display: none;
+    }
+
+    .erp-content-wrapper {
+        padding: 16px;
+    }
+
+    .erp-topbar {
+        padding: 0 16px;
+    }
+
+    /* Sidebar thu gọn không áp dụng trên mobile */
+    .sidebar-collapsed .erp-sidebar {
+        width: 260px !important;
+    }
+    .sidebar-collapsed .sidebar-brand-full { display: flex; }
+    .sidebar-collapsed .sidebar-brand-mini { display: none; }
+    .sidebar-collapsed .nav-section-title { font-size: 10.5px; height: auto; text-align: left; padding: 16px 18px 6px; }
+    .sidebar-collapsed .nav-section-title::after { display: none; }
+    .sidebar-collapsed .erp-nav-item { justify-content: flex-start; gap: 12px; padding: 9px 18px; margin: 2px 10px; }
+    .sidebar-collapsed .erp-nav-item .nav-label { display: inline; }
+}
+
+@media (max-width: 575.98px) {
+    .stat-card { padding: 16px; }
+    .stat-card-value { font-size: 22px; }
+    .stat-card-icon { width: 40px; height: 40px; font-size: 18px; }
+    .command-palette-trigger span,
+    .command-palette-trigger kbd { display: none !important; }
+}

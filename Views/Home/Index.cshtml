@@ -1,213 +1,187 @@
 @model ERP_HRM_CMS.Models.ViewModels.ExecutiveDashboardViewModel
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Executive Dashboard - Trung Tâm Điều Hành Enterprise";
+    ViewData["Title"] = "Dashboard";
+    ViewData["BreadcrumbSection"] = "Tổng quan";
     var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
 }
 
-<!-- Load Chart.js for Interactive Data Visualization -->
+@* Chart.js *@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-<div class="py-3">
-    <!-- 1. EXECUTIVE WELCOME HEADER BANNER -->
-    <div class="p-4 rounded-4 shadow-sm bg-gradient mb-4 text-white position-relative overflow-hidden" 
-         style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #2563EB 100%); border-left: 5px solid #3B82F6;">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 2;">
+<div class="py-2">
+    @* ═══════ WELCOME BANNER ═══════ *@
+    <div class="erp-welcome-banner slide-up mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
-                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill small">
-                        <i class="bi bi-broadcast me-1 spin text-success"></i> SignalR Real-time Connected
+                    <span class="erp-badge erp-badge-success erp-badge-dot" style="font-size:11px;">
+                        Real-time Connected
                     </span>
-                    <span class="text-white-50 small"><i class="bi bi-clock me-1"></i> @ERP_HRM_CMS.Helpers.VietnamTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                    <span class="text-white-50 small"><i class="bi bi-clock me-1"></i>@ERP_HRM_CMS.Helpers.VietnamTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
                 </div>
-                <h3 class="fw-bold mb-1">Trung Tâm Điều Hành Doanh Nghiệp (Executive Dashboard)</h3>
-                <p class="text-white-50 small mb-0">Xin chào <strong class="text-white">@fullName</strong>. Dưới đây là bức tranh toàn cảnh về Doanh thu, Nhân sự, Kho vận và Công nợ real-time.</p>
+                <h4 class="fw-bold mb-1 text-white">Trung tâm điều hành</h4>
+                <p class="text-white-50 small mb-0">Xin chào <strong class="text-white">@fullName</strong> — Doanh thu, Nhân sự, Kho vận, Công nợ real-time.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="/BanHang/POS" class="btn btn-primary fw-semibold px-3 shadow-sm">
-                    <i class="bi bi-cart3 me-1"></i> Mở Bán Hàng POS
-                </a>
-                <a href="/Kho/NhapKho" class="btn btn-warning text-dark fw-semibold px-3 shadow-sm">
-                    <i class="bi bi-box-arrow-in-down me-1"></i> Nhập Kho PO
-                </a>
-                <a href="/DonTu/Create" class="btn btn-info text-white fw-semibold px-3 shadow-sm">
-                    <i class="bi bi-file-earmark-plus me-1"></i> Tạo Đơn Từ
-                </a>
-                <a href="/ChamCong/Index" class="btn btn-success fw-semibold px-3 shadow-sm">
-                    <i class="bi bi-calendar2-check me-1"></i> Chấm Công
-                </a>
+                <a href="/BanHang/POS" class="btn btn-primary btn-sm ripple"><i class="bi bi-cart3 me-1"></i>POS</a>
+                <a href="/Kho/NhapKho" class="btn btn-warning btn-sm text-dark ripple"><i class="bi bi-box-arrow-in-down me-1"></i>Nhập kho</a>
+                <a href="/DonTu/Create" class="btn btn-info btn-sm text-white ripple"><i class="bi bi-file-earmark-plus me-1"></i>Đơn từ</a>
+                <a href="/ChamCong/Index" class="btn btn-success btn-sm ripple"><i class="bi bi-calendar2-check me-1"></i>Chấm công</a>
             </div>
         </div>
     </div>
 
-    <!-- 2. EXECUTIVE 6 KPI METRIC CARDS GRID -->
-    <div class="row g-3 mb-4">
-        <!-- KPI 1: Doanh Thu Tháng Này -->
+    @* ═══════ 6 KPI STAT CARDS ═══════ *@
+    <div class="row g-3 mb-4 stagger-list">
+        @* Doanh Thu Tháng *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Doanh Thu Tháng</span>
-                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-currency-dollar fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Doanh thu tháng</div>
+                    <div class="stat-card-value">
+                        <span class="count-up" data-target="@Model.MonthlyRevenue" data-suffix=" đ">0</span>
+                    </div>
+                    <div class="stat-card-trend @(Model.RevenueGrowthPercent >= 0 ? "up" : "down")">
+                        <i class="bi @(Model.RevenueGrowthPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right") me-1"></i>@Model.RevenueGrowthPercent% vs tháng trước
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-primary">@Model.MonthlyRevenue.ToString("N0") đ</h4>
-                <div class="d-flex align-items-center gap-1 small">
-                    @if (Model.RevenueGrowthPercent >= 0)
-                    {
-                        <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-arrow-up-right me-1"></i>+@Model.RevenueGrowthPercent%</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-down-right me-1"></i>@Model.RevenueGrowthPercent%</span>
-                    }
-                    <span class="text-muted" style="font-size: 11px;">vs tháng trước</span>
-                </div>
+                <div class="stat-card-icon primary"><i class="bi bi-currency-dollar"></i></div>
             </div>
         </div>
 
-        <!-- KPI 2: Đơn Hàng Hôm Nay -->
+        @* Đơn Hàng Hôm Nay *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Đơn Hàng Hôm Nay</span>
-                    <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-bag-check-fill fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Đơn hàng hôm nay</div>
+                    <div class="stat-card-value">
+                        <span class="count-up" data-target="@Model.TodayOrdersCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+                    </div>
+                    <div class="stat-card-trend up">
+                        <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.TodayOrdersCount <span class="fs-6 fw-normal text-muted">đơn</span></h4>
-                <div class="text-success small fw-semibold">
-                    <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
-                </div>
+                <div class="stat-card-icon success"><i class="bi bi-bag-check-fill"></i></div>
             </div>
         </div>
 
-        <!-- KPI 3: Nhân Sự Active -->
+        @* Nhân Sự Active *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Nhân Sự Active</span>
-                    <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
-                        <i class="bi bi-people-fill fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Nhân sự</div>
+                    <div class="stat-card-value">
+                        <span class="count-up" data-target="@Model.ActiveEmployeesCount">0</span>
+                        <small class="text-muted" style="font-size:14px;">/ @Model.TotalEmployeesCount</small>
+                    </div>
+                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                        <i class="bi bi-check-circle-fill text-success me-1"></i>Đang hoạt động
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.ActiveEmployeesCount <span class="fs-6 fw-normal text-muted">/ @Model.TotalEmployeesCount</span></h4>
-                <div class="text-muted small" style="font-size: 11px;">
-                    <i class="bi bi-check-circle-fill text-success me-1"></i>Hồ sơ đang hoạt động
-                </div>
+                <div class="stat-card-icon info"><i class="bi bi-people-fill"></i></div>
             </div>
         </div>
 
-        <!-- KPI 4: Đơn Chờ Duyệt -->
+        @* Đơn Chờ Duyệt *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Đơn Chờ Phê Duyệt</span>
-                    <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
-                        <i class="bi bi-clock-history fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Chờ phê duyệt</div>
+                    <div class="stat-card-value" style="color:var(--erp-warning);">
+                        <span class="count-up" data-target="@Model.PendingApprovalsCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+                    </div>
+                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                        <a href="/DonTu/Index" class="text-decoration-none small">Duyệt ngay →</a>
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-warning">@Model.PendingApprovalsCount <span class="fs-6 fw-normal text-muted">đơn</span></h4>
-                <div class="text-muted small" style="font-size: 11px;">
-                    <a href="/DonTu/Index" class="text-decoration-none">Duyệt nghỉ phép & PO &rarr;</a>
-                </div>
+                <div class="stat-card-icon warning"><i class="bi bi-clock-history"></i></div>
             </div>
         </div>
 
-        <!-- KPI 5: Tồn Kho Cảnh Báo -->
+        @* Tồn Kho Cảnh Báo *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Cảnh Báo Tồn Kho</span>
-                    <div class="p-2 rounded-3 bg-danger bg-opacity-10 text-danger">
-                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Cảnh báo tồn kho</div>
+                    <div class="stat-card-value" style="color:var(--erp-danger);">
+                        <span class="count-up" data-target="@Model.LowStockCount">0</span> <small class="text-muted" style="font-size:14px;">mặt hàng</small>
+                    </div>
+                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                        <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none small">Dưới ngưỡng →</a>
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-danger">@Model.LowStockCount <span class="fs-6 fw-normal text-muted">mặt hàng</span></h4>
-                <div class="text-muted small" style="font-size: 11px;">
-                    <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none fw-semibold">Dưới ngưỡng an toàn &rarr;</a>
-                </div>
+                <div class="stat-card-icon danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
             </div>
         </div>
 
-        <!-- KPI 6: Công Nợ Quá Hạn -->
+        @* Công Nợ Quá Hạn *@
         <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-muted small fw-semibold">Nợ Quá Hạn</span>
-                    <div class="p-2 rounded-3 bg-dark bg-opacity-10 text-dark">
-                        <i class="bi bi-credit-card-2-front-fill fs-5"></i>
+            <div class="stat-card hover-lift">
+                <div class="stat-card-body">
+                    <div class="stat-card-label">Nợ quá hạn</div>
+                    <div class="stat-card-value">
+                        <span class="count-up" data-target="@Model.OverdueDebtTotal" data-suffix=" đ">0</span>
+                    </div>
+                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                        <a href="/CongNo/Index" class="text-decoration-none small">Phân tích tuổi nợ →</a>
                     </div>
                 </div>
-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.OverdueDebtTotal.ToString("N0") đ</h4>
-                <div class="text-muted small" style="font-size: 11px;">
-                    <a href="/CongNo/Index" class="text-decoration-none">Phân tích tuổi nợ &rarr;</a>
-                </div>
+                <div class="stat-card-icon purple"><i class="bi bi-credit-card-2-front-fill"></i></div>
             </div>
         </div>
     </div>
 
-    <!-- 3. REALTIME INTERACTIVE ANALYTICS CHARTS SECTION -->
+    @* ═══════ BIỂU ĐỒ ═══════ *@
     <div class="row g-4 mb-4">
-        <!-- 12 Months Revenue Growth Line Chart -->
+        @* Doanh thu 12 tháng *@
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+            <div class="erp-table-wrapper p-4 h-100 chart-container">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h5 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Biểu Đồ Doanh Thu 12 Tháng Gần Nhất</h5>
-                        <p class="text-muted small mb-0">Xu hướng phát triển doanh số bán hàng lẻ & đơn đặt hàng</p>
+                        <h6 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Doanh thu 12 tháng</h6>
+                        <p class="text-muted small mb-0">Xu hướng doanh số bán hàng lẻ & đơn đặt hàng</p>
                     </div>
-                    <span class="badge bg-primary bg-opacity-10 text-primary font-monospace px-3 py-2">
-                        Tổng: @Model.MonthlyRevenue.ToString("N0") đ
-                    </span>
+                    <span class="erp-badge erp-badge-primary">Tổng: @Model.MonthlyRevenue.ToString("N0") đ</span>
                 </div>
-                <div style="height: 300px; position: relative;">
+                <div style="height:300px; position:relative;">
                     <canvas id="revenue12MonthsChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Revenue Distribution By Branch Doughnut Chart -->
+        @* Tỷ trọng doanh thu *@
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ Trọng Doanh Thu</h5>
-                        <p class="text-muted small mb-0">Phân bổ doanh số theo Chi Nhánh</p>
-                    </div>
-                </div>
-                <div style="height: 250px; position: relative;" class="d-flex justify-content-center align-items-center">
+            <div class="erp-table-wrapper p-4 h-100 chart-container">
+                <h6 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ trọng doanh thu</h6>
+                <p class="text-muted small mb-3">Phân bổ theo chi nhánh</p>
+                <div style="height:250px;" class="d-flex justify-content-center align-items-center">
                     <canvas id="branchRevenueChart"></canvas>
-                </div>
-                <div class="mt-3 text-center text-muted small">
-                    <i class="bi bi-info-circle me-1"></i> Cập nhật tự động theo giao dịch POS real-time
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 4. BOTTOM GRID: TOP BEST-SELLING PRODUCTS & REALTIME ACTIVITY FEED -->
+    @* ═══════ BẢNG SẢN PHẨM BÁN CHẠY + ACTIVITY FEED ═══════ *@
     <div class="row g-4">
-        <!-- Top 10 Best-Selling Products -->
+        @* Top sản phẩm *@
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="erp-table-wrapper h-100">
+                <div class="erp-table-toolbar">
                     <div>
-                        <h5 class="fw-bold mb-1"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Sản Phẩm Bán Chạy Nhất</h5>
-                        <p class="text-muted small mb-0">Xếp hạng dựa trên tổng số lượng tiêu thụ trong hệ thống</p>
+                        <span class="erp-table-toolbar-title"><i class="bi bi-trophy-fill text-warning me-2"></i>Top sản phẩm bán chạy</span>
                     </div>
-                    <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả &rarr;</a>
+                    <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả →</a>
                 </div>
-
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" style="font-size: 13.5px;">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Mã SKU / Sản phẩm</th>
+                                <th>Sản phẩm</th>
                                 <th>Danh mục</th>
-                                <th class="text-center">Đã Bán</th>
-                                <th class="text-end">Doanh Số</th>
+                                <th class="text-center">Đã bán</th>
+                                <th class="text-end">Doanh số</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -220,18 +194,18 @@
                                         <td class="fw-bold text-muted font-monospace">@rank</td>
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="rounded-3 p-2 bg-light border text-center text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
+                                                <div class="stat-card-icon primary" style="width:32px;height:32px;font-size:14px;border-radius:8px;">
                                                     <i class="bi bi-box-seam"></i>
                                                 </div>
                                                 <div>
-                                                    <div class="fw-bold text-dark">@p.Name</div>
-                                                    <div class="font-monospace text-muted" style="font-size: 11px;">@p.SKU</div>
+                                                    <div class="fw-semibold small">@p.Name</div>
+                                                    <div class="text-muted" style="font-size:11px;">@p.SKU</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@p.CategoryName</span></td>
-                                        <td class="text-center font-monospace fw-bold text-primary">@p.QuantitySold</td>
-                                        <td class="text-end font-monospace fw-bold text-success">@p.Revenue.ToString("N0") đ</td>
+                                        <td><span class="erp-badge erp-badge-neutral">@p.CategoryName</span></td>
+                                        <td class="text-center font-monospace fw-bold" style="color:var(--erp-primary);">@p.QuantitySold</td>
+                                        <td class="text-end font-monospace fw-bold" style="color:var(--erp-success);">@p.Revenue.ToString("N0") đ</td>
                                     </tr>
                                     rank++;
                                 }
@@ -239,7 +213,13 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">Chưa có thông tin sản phẩm bán lẻ</td>
+                                    <td colspan="5">
+                                        <div class="erp-empty-state">
+                                            <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
+                                            <div class="erp-empty-state-title">Chưa có dữ liệu</div>
+                                            <div class="erp-empty-state-desc">Chưa có thông tin sản phẩm bán lẻ</div>
+                                        </div>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -248,43 +228,41 @@
             </div>
         </div>
 
-        <!-- Real-time Activity Feed & System Log -->
+        @* Activity Feed *@
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="fw-bold mb-1"><i class="bi bi-activity text-danger me-2"></i>Activity Feed (Nhật Ký HĐ)</h5>
-                        <p class="text-muted small mb-0">Các sự kiện & thao tác gần nhất trong hệ thống</p>
-                    </div>
-                    <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log &rarr;</a>
+            <div class="erp-table-wrapper h-100">
+                <div class="erp-table-toolbar">
+                    <span class="erp-table-toolbar-title"><i class="bi bi-activity text-danger me-2"></i>Hoạt động gần đây</span>
+                    <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log →</a>
                 </div>
-
-                <div class="list-group list-group-flush" id="activityFeedList" style="max-height: 400px; overflow-y: auto;">
+                <div class="p-3" id="activityFeedList" style="max-height:420px; overflow-y:auto;">
                     @if (Model.RecentActivities != null && Model.RecentActivities.Any())
                     {
                         foreach (var act in Model.RecentActivities)
                         {
-                            <div class="list-group-item px-0 py-3 border-bottom">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div class="d-flex gap-2 align-items-start">
-                                        <div class="rounded-circle p-2 @act.BadgeClass bg-opacity-10 text-dark flex-shrink-0" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
-                                            <i class="bi @act.IconClass"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-semibold text-dark small">@act.Description</div>
-                                            <div class="text-muted" style="font-size: 11px;">
-                                                <i class="bi bi-person me-1"></i>@act.Username • <span class="badge @act.BadgeClass">@act.Action</span>
-                                            </div>
+                            <div class="d-flex justify-content-between align-items-start gap-2 py-3 border-bottom">
+                                <div class="d-flex gap-2 align-items-start">
+                                    <div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
+                                        @(act.Username?.Length > 0 ? act.Username[0].ToString().ToUpper() : "?")
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold small">@act.Description</div>
+                                        <div class="text-muted" style="font-size:11px;">
+                                            @act.Username • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">@act.Action</span>
                                         </div>
                                     </div>
-                                    <span class="text-muted font-monospace" style="font-size: 11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
                                 </div>
+                                <span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
                             </div>
                         }
                     }
                     else
                     {
-                        <div class="text-center py-4 text-muted small">Chưa có nhật ký hoạt động gần đây</div>
+                        <div class="erp-empty-state">
+                            <div class="erp-empty-state-icon"><i class="bi bi-clock-history"></i></div>
+                            <div class="erp-empty-state-title">Chưa có hoạt động</div>
+                            <div class="erp-empty-state-desc">Nhật ký hoạt động sẽ xuất hiện khi có thao tác mới</div>
+                        </div>
                     }
                 </div>
             </div>
@@ -292,130 +270,129 @@
     </div>
 </div>
 
-<!-- 5. CHART.JS INITIALIZATION & SIGNALR DASHBOARD UPDATE LISTENER -->
+@* ═══════ CHART INIT ═══════ *@
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // 1. Line Chart 12 Months Revenue Trend
-        const ctxRev = document.getElementById('revenue12MonthsChart');
-        if (ctxRev) {
-            const labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
-            const dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
+document.addEventListener("DOMContentLoaded", function () {
+    // Lấy màu từ CSS variables cho dark mode
+    var style = getComputedStyle(document.documentElement);
+    var gridColor = style.getPropertyValue('--erp-border-color').trim() || 'rgba(0,0,0,0.05)';
+    var textColor = style.getPropertyValue('--erp-text-muted').trim() || '#64748B';
 
-            new Chart(ctxRev, {
-                type: 'line',
-                data: {
-                    labels: labelsRev,
-                    datasets: [{
-                        label: 'Doanh Thu (VNĐ)',
-                        data: dataRev,
-                        borderColor: '#2563EB',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 4,
-                        pointHoverRadius: 7,
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return ' Doanh thu: ' + context.parsed.y.toLocaleString('vi-VN') + ' đ';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                            ticks: {
-                                callback: function(value) {
-                                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + ' tỷ';
-                                    if (value >= 1000000) return (value / 1000000).toFixed(0) + ' tr';
-                                    return value.toLocaleString('vi-VN');
-                                }
-                            }
-                        },
-                        x: {
-                            grid: { display: false }
+    // Doanh thu 12 tháng
+    var ctxRev = document.getElementById('revenue12MonthsChart');
+    if (ctxRev) {
+        var labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
+        var dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
+        new Chart(ctxRev, {
+            type: 'line',
+            data: {
+                labels: labelsRev,
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: dataRev,
+                    borderColor: '#2563EB',
+                    backgroundColor: 'rgba(37,99,235,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#2563EB',
+                    borderWidth: 2.5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1200, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.9)',
+                        titleFont: { family: "'Be Vietnam Pro'" },
+                        bodyFont: { family: "'Be Vietnam Pro'" },
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            label: function (c) { return ' Doanh thu: ' + c.parsed.y.toLocaleString('vi-VN') + ' đ'; }
                         }
                     }
-                }
-            });
-        }
-
-        // 2. Doughnut Chart Branch Revenue Distribution
-        const ctxBranch = document.getElementById('branchRevenueChart');
-        if (ctxBranch) {
-            const labelsBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
-            const dataBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
-
-            new Chart(ctxBranch, {
-                type: 'doughnut',
-                data: {
-                    labels: labelsBranch.length > 0 ? labelsBranch : ['Trụ sở chính'],
-                    datasets: [{
-                        data: dataBranch.length > 0 ? dataBranch : [1],
-                        backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { boxWidth: 12, padding: 15, font: { size: 12 } }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return ' ' + context.label + ': ' + context.parsed.toLocaleString('vi-VN') + ' đ';
-                                }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor, drawBorder: false },
+                        ticks: {
+                            color: textColor,
+                            font: { family: "'Be Vietnam Pro'", size: 11 },
+                            callback: function (v) {
+                                if (v >= 1e9) return (v / 1e9).toFixed(1) + ' tỷ';
+                                if (v >= 1e6) return (v / 1e6).toFixed(0) + ' tr';
+                                return v.toLocaleString('vi-VN');
                             }
                         }
                     },
-                    cutout: '65%'
+                    x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Be Vietnam Pro'", size: 11 } } }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        // 3. Listen to SignalR Live Events to refresh Activity Feed dynamically
-        if (window.enterpriseSignalRHub) {
-            window.enterpriseSignalRHub.on("ReceiveNotification", function(data) {
-                console.log("Real-time Dashboard Event Received:", data);
-                // Prepend to Activity Feed
-                const feed = document.getElementById("activityFeedList");
-                if (feed) {
-                    const item = document.createElement("div");
-                    item.className = "list-group-item px-0 py-3 border-bottom animate__animated animate__fadeInDown";
-                    item.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div class="d-flex gap-2 align-items-start">
-                                <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
-                                    <i class="bi bi-bell-fill"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold text-dark small">${HRM.escapeHtml(data.title)}</div>
-                                    <div class="text-muted" style="font-size: 11px;">
-                                        ${HRM.escapeHtml(data.content)} • <span class="badge bg-primary">${HRM.escapeHtml(data.type || 'SYSTEM')}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <span class="text-muted font-monospace" style="font-size: 11px;">${data.createdAt || 'Vừa xong'}</span>
-                        </div>
-                    `;
-                    feed.insertBefore(item, feed.firstChild);
-                }
-            });
-        }
-    });
+    // Tỷ trọng chi nhánh
+    var ctxBranch = document.getElementById('branchRevenueChart');
+    if (ctxBranch) {
+        var lb = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
+        var db = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
+        new Chart(ctxBranch, {
+            type: 'doughnut',
+            data: {
+                labels: lb.length > 0 ? lb : ['Trụ sở chính'],
+                datasets: [{
+                    data: db.length > 0 ? db : [1],
+                    backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
+                    borderWidth: 2,
+                    borderColor: style.getPropertyValue('--erp-bg-card').trim() || '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 10, padding: 12, font: { family: "'Be Vietnam Pro'", size: 11 }, color: textColor }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.9)',
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.parsed.toLocaleString('vi-VN') + ' đ'; } }
+                    }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+
+    // SignalR Activity Feed live update
+    if (window.enterpriseSignalRHub) {
+        window.enterpriseSignalRHub.on("ReceiveNotification", function (d) {
+            var feed = document.getElementById("activityFeedList");
+            if (!feed) return;
+            var item = document.createElement("div");
+            item.className = "d-flex justify-content-between align-items-start gap-2 py-3 border-bottom slide-up";
+            item.innerHTML = '<div class="d-flex gap-2 align-items-start">' +
+                '<div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">S</div>' +
+                '<div><div class="fw-semibold small">' + HRM.escapeHtml(d.title) + '</div>' +
+                '<div class="text-muted" style="font-size:11px;">' + HRM.escapeHtml(d.content) +
+                ' • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">' + HRM.escapeHtml(d.type || 'SYSTEM') + '</span></div></div></div>' +
+                '<span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">Vừa xong</span>';
+            feed.insertBefore(item, feed.firstChild);
+        });
+    }
+});
 </script>
+
+@section Scripts {
+    @* Thêm script bổ sung nếu cần *@
+}
