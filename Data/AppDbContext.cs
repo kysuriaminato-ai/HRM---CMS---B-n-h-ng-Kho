@@ -88,13 +88,35 @@ namespace ERP_HRM_CMS.Data
         public DbSet<StocktakingSheet> StocktakingSheets => Set<StocktakingSheet>();
         public DbSet<StocktakingDetail> StocktakingDetails => Set<StocktakingDetail>();
 
-        // Phân hệ HRM Nâng Cao & Tiền Lương (Phiên 4)
+        // Phân hệ HRM Nâng Cao & Tiền Lương
         public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
         public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
         public DbSet<SalarySlip> SalarySlips => Set<SalarySlip>();
         public DbSet<PayrollAllowanceType> PayrollAllowanceTypes => Set<PayrollAllowanceType>();
         public DbSet<EmployeeDependent> EmployeeDependents => Set<EmployeeDependent>();
         public DbSet<SeedHistory> SeedHistories => Set<SeedHistory>();
+
+        // Phân hệ HRM — Tuyển dụng, Đào tạo, KPI (Phiên 4 DB)
+        public DbSet<LeaveType> LeaveTypes => Set<LeaveType>();
+        public DbSet<JobPosting> JobPostings => Set<JobPosting>();
+        public DbSet<Candidate> Candidates => Set<Candidate>();
+        public DbSet<Training> Trainings => Set<Training>();
+        public DbSet<TrainingParticipant> TrainingParticipants => Set<TrainingParticipant>();
+        public DbSet<KpiReview> KpiReviews => Set<KpiReview>();
+        public DbSet<KpiCriteria> KpiCriteriaSet => Set<KpiCriteria>();
+
+        // Phân hệ CMS mở rộng (Phiên 4 DB)
+        public DbSet<Tag> Tags => Set<Tag>();
+        public DbSet<ContentTag> ContentTags => Set<ContentTag>();
+        public DbSet<MediaFile> MediaFiles => Set<MediaFile>();
+        public DbSet<SeoMeta> SeoMetas => Set<SeoMeta>();
+
+        // Phân hệ SCM mở rộng (Phiên 4 DB)
+        public DbSet<Customer> Customers => Set<Customer>();
+        public DbSet<Unit> Units => Set<Unit>();
+        public DbSet<Warehouse> Warehouses => Set<Warehouse>();
+        public DbSet<Invoice> Invoices => Set<Invoice>();
+        public DbSet<Payment> Payments => Set<Payment>();
 
         /// <summary>
         /// Cột thời điểm cần đổi múi giờ: tên kết thúc bằng "At" (CreatedAt, ReadAt...)
@@ -354,6 +376,100 @@ namespace ERP_HRM_CMS.Data
                 .WithMany()
                 .HasForeignKey(s => s.EmployeeId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ═══════════════════════════════════════════════════════════
+            // PHIÊN 4 DB — Entities mới: Fluent API
+            // ═══════════════════════════════════════════════════════════
+
+            // --- HRM: LeaveType ---
+            modelBuilder.Entity<LeaveType>().HasIndex(t => t.Code).IsUnique();
+
+            // --- HRM: JobPosting ---
+            modelBuilder.Entity<JobPosting>().HasIndex(j => j.Code).IsUnique();
+            modelBuilder.Entity<JobPosting>()
+                .HasOne(j => j.Department).WithMany().HasForeignKey(j => j.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<JobPosting>()
+                .HasOne(j => j.Position).WithMany().HasForeignKey(j => j.PositionId).OnDelete(DeleteBehavior.Restrict);
+
+            // --- HRM: Candidate ---
+            modelBuilder.Entity<Candidate>().HasIndex(c => c.Code).IsUnique();
+
+            // --- HRM: Training ---
+            modelBuilder.Entity<Training>().HasIndex(t => t.Code).IsUnique();
+
+            // --- HRM: TrainingParticipant (composite PK) ---
+            modelBuilder.Entity<TrainingParticipant>().HasKey(tp => new { tp.TrainingId, tp.EmployeeId });
+
+            // --- HRM: KpiReview ---
+            modelBuilder.Entity<KpiReview>().HasIndex(k => new { k.EmployeeId, k.PeriodMonth, k.PeriodYear });
+            modelBuilder.Entity<KpiReview>()
+                .HasOne(k => k.Reviewer).WithMany().HasForeignKey(k => k.ReviewerId).OnDelete(DeleteBehavior.Restrict);
+
+            // --- CMS: Tag ---
+            modelBuilder.Entity<Tag>().HasIndex(t => t.Name).IsUnique();
+            modelBuilder.Entity<Tag>().HasIndex(t => t.Slug).IsUnique();
+
+            // --- CMS: ContentTag (composite PK) ---
+            modelBuilder.Entity<ContentTag>().HasKey(ct => new { ct.ContentId, ct.TagId });
+
+            // --- CMS: SeoMeta (unique per entity) ---
+            modelBuilder.Entity<SeoMeta>().HasIndex(s => new { s.EntityType, s.EntityId }).IsUnique();
+
+            // --- SCM: Customer ---
+            modelBuilder.Entity<Customer>().HasIndex(c => c.Code).IsUnique();
+            modelBuilder.Entity<Customer>().HasIndex(c => c.Phone).IsUnique().HasFilter("[Phone] IS NOT NULL");
+
+            // --- SCM: Unit ---
+            modelBuilder.Entity<Unit>().HasIndex(u => u.Code).IsUnique();
+
+            // --- SCM: Warehouse ---
+            modelBuilder.Entity<Warehouse>().HasIndex(w => w.Code).IsUnique();
+            modelBuilder.Entity<Warehouse>()
+                .HasOne(w => w.Manager).WithMany().HasForeignKey(w => w.ManagerId).OnDelete(DeleteBehavior.SetNull);
+
+            // --- SCM: Invoice ---
+            modelBuilder.Entity<Invoice>().HasIndex(i => i.InvoiceCode).IsUnique();
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Order).WithMany().HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.PurchaseOrder).WithMany().HasForeignKey(i => i.PurchaseOrderId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Customer).WithMany().HasForeignKey(i => i.CustomerId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Supplier).WithMany().HasForeignKey(i => i.SupplierId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Creator).WithMany().HasForeignKey(i => i.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+
+            // --- SCM: Payment ---
+            modelBuilder.Entity<Payment>().HasIndex(p => p.PaymentCode).IsUnique();
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Creator).WithMany().HasForeignKey(p => p.CreatedBy).OnDelete(DeleteBehavior.Restrict);
+
+            // --- SCM: DebtRecord → Customer (nullable FK mới) ---
+            modelBuilder.Entity<DebtRecord>()
+                .HasOne(d => d.Customer)
+                .WithMany(c => c.DebtRecords)
+                .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // --- Global Query Filter: Soft Delete cho IAuditable ---
+            // Tự động lọc IsDeleted = false cho tất cả entity implement IAuditable
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(IAuditable).IsAssignableFrom(entityType.ClrType))
+                {
+                    var method = typeof(AppDbContext)
+                        .GetMethod(nameof(SetSoftDeleteFilter), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+                        .MakeGenericMethod(entityType.ClrType);
+                    method.Invoke(null, new object[] { modelBuilder });
+                }
+            }
+        }
+
+        /// <summary>Áp dụng global query filter IsDeleted == false cho entity type T</summary>
+        private static void SetSoftDeleteFilter<T>(ModelBuilder modelBuilder) where T : class, IAuditable
+        {
+            modelBuilder.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

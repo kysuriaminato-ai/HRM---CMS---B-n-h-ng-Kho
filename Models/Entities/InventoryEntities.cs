@@ -33,6 +33,8 @@ namespace ERP_HRM_CMS.Models.Entities
         [Key]
         public int Id { get; set; }
         public int CategoryId { get; set; }
+        /// <summary>FK đến bảng Units (nullable — tương thích dữ liệu cũ dùng chuỗi Unit)</summary>
+        public int? UnitId { get; set; }
         [Required, MaxLength(50)]
         public string SKU { get; set; } = string.Empty;
         [MaxLength(50)]
@@ -55,6 +57,8 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("CategoryId")]
         public virtual Category Category { get; set; } = null!;
+        [ForeignKey("UnitId")]
+        public virtual Unit? UnitEntity { get; set; }
         public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
     }
 
@@ -114,6 +118,8 @@ namespace ERP_HRM_CMS.Models.Entities
         [Required, MaxLength(50)]
         public string OrderCode { get; set; } = string.Empty;
         public int BranchId { get; set; }
+        /// <summary>FK đến bảng Customers (nullable — tương thích đơn hàng cũ chỉ có tên/SĐT)</summary>
+        public int? CustomerId { get; set; }
         [Required, MaxLength(150)]
         public string CustomerName { get; set; } = string.Empty;
         [Required, MaxLength(20)]
@@ -141,6 +147,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual Branch Branch { get; set; } = null!;
         [ForeignKey("CreatedBy")]
         public virtual User? Creator { get; set; }
+        [ForeignKey("CustomerId")]
+        public virtual Customer? Customer { get; set; }
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
     }
 

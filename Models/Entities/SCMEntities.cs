@@ -157,6 +157,9 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int? SupplierId { get; set; }
 
+        /// <summary>FK đến bảng Customers (nullable — công nợ phải thu từ khách hàng)</summary>
+        public int? CustomerId { get; set; }
+
         public long? OrderId { get; set; }
 
         public long? PurchaseOrderId { get; set; }
@@ -185,6 +188,9 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("SupplierId")]
         public virtual Supplier? Supplier { get; set; }
+
+        [ForeignKey("CustomerId")]
+        public virtual Customer? Customer { get; set; }
 
         [ForeignKey("OrderId")]
         public virtual Order? Order { get; set; }

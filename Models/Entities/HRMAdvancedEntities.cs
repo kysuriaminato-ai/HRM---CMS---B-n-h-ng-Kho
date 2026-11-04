@@ -19,9 +19,12 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int EmployeeId { get; set; }
 
+        /// <summary>FK đến bảng LeaveTypes (nullable — tương thích dữ liệu cũ)</summary>
+        public int? LeaveTypeId { get; set; }
+
         [Required, MaxLength(50)]
-        public string RequestType { get; set; } = "ANNUAL_LEAVE"; 
-        // Types: ANNUAL_LEAVE (Nghỉ phép năm), SICK_LEAVE (Nghỉ ốm), LATE_EARLY (Đi muộn/về sớm), 
+        public string RequestType { get; set; } = "ANNUAL_LEAVE";
+        // Types: ANNUAL_LEAVE (Nghỉ phép năm), SICK_LEAVE (Nghỉ ốm), LATE_EARLY (Đi muộn/về sớm),
         // BUSINESS_TRIP (Công tác), UNPAID_LEAVE (Nghỉ không lương), OVERTIME (Làm thêm giờ)
 
         public DateTime FromDate { get; set; }
@@ -60,6 +63,9 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("DirectorId")]
         public virtual User? Director { get; set; }
+
+        [ForeignKey("LeaveTypeId")]
+        public virtual LeaveType? LeaveType { get; set; }
     }
 
     // ==========================================

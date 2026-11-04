@@ -76,6 +76,7 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("AuthorId")]
         public virtual User? Author { get; set; }
+        public virtual ICollection<ContentTag> ContentTags { get; set; } = new List<ContentTag>();
     }
 
     [Table("Banners")]

@@ -1,6 +1,6 @@
 # Tiến độ dự án
 
-Cập nhật lần cuối: 2026-11-04 (cuối phiên 3)
+Cập nhật lần cuối: 2026-11-04 (cuối phiên 4)
 
 ## Phiên 1: phân tích hiện trạng (đã xong)
 
@@ -75,6 +75,70 @@ Yêu cầu: .NET 8 SDK, SQL Server ở `localhost` với Windows Authentication.
 6. Kiểm tra `docs/UI-GUIDE.md` để xem quy ước class.
 
 **Trạng thái git:** tất cả thay đổi phiên 3 chưa commit. Cần áp patch trên máy local.
+
+## Phiên 4: Thiết kế và Triển khai Cơ sở dữ liệu (đã xong)
+
+**Đã làm**
+
+1. **Thiết kế ERD** — 53 bảng chia 4 nhóm:
+   - System (12): Users, Roles, Permissions, UserRoles, RolePermissions, UserPermissions, AuditLogs, Notifications, NotificationReads, LoginAttempts, SiteLayouts, SiteSettings
+   - HRM (18): Companies, Branches, Departments, Positions, Employees, Contracts, LeaveRequests, **LeaveTypes**, PayrollPeriods, SalarySlips, **JobPostings**, **Candidates**, **Trainings**, **TrainingParticipants**, **KpiReviews**, **KpiCriteria**, PayrollSettings, SeedHistory
+   - CMS (7): Contents, Categories, Menus, Banners, **Tags**, **ContentTags**, **Media**, **SeoMeta**
+   - SCM (16): Products, Inventories, InventoryTransactions, Orders, OrderDetails, CartItems, Suppliers, PurchaseOrders, PurchaseOrderDetails, DebtRecords, DebtPayments, StocktakingSheets, StocktakingDetails, **Customers**, **Units**, **Warehouses**, **Invoices**, **Payments**
+   - (**in đậm** = bảng mới phiên 4, tổng 13 bảng mới)
+
+2. **Entity classes** — tạo 4 file entity mới:
+   - `Models/Entities/AuditableEntity.cs` — interface `IAuditable`
+   - `Models/Entities/HRMRecruitmentEntities.cs` — LeaveType, JobPosting, Candidate, Training, TrainingParticipant, KpiReview, KpiCriteria
+   - `Models/Entities/CMSExtendedEntities.cs` — Tag, ContentTag, MediaFile, SeoMeta
+   - `Models/Entities/SCMExtendedEntities.cs` — Customer, Unit, Warehouse, Invoice, Payment
+
+3. **Fluent API** — cập nhật `Data/AppDbContext.cs`:
+   - 16 DbSet mới
+   - Unique index trên Code/Name/Slug
+   - Composite PK cho TrainingParticipant, ContentTag
+   - FK relationships với DeleteBehavior phù hợp
+   - Global query filter cho soft delete (IAuditable)
+
+4. **SQL Migration Script** — `db/scripts/V4_01_NewTables_And_AuditColumns.sql`:
+   - Thêm cột audit (IsDeleted, UpdatedAt, UpdatedBy, CreatedBy) cho 14 bảng hiện có
+   - Tạo 13 bảng mới với PK, FK, indexes
+   - Thêm FK mới: Products.UnitId, Orders.CustomerId, DebtRecords.CustomerId, LeaveRequests.LeaveTypeId
+   - Idempotent (kiểm tra tồn tại trước khi tạo)
+
+5. **Seed Data** — `db/scripts/V4_02_SeedData.sql`:
+   - 1 Company, 3 Branches, 8 Roles, 10 Departments, 10 Positions
+   - 50 Employees (phân bố 3 chi nhánh)
+   - 10 Units, 7 LeaveTypes, 10 Categories, 100 Products
+   - 4 Warehouses, 20 Customers, 8 Tags
+   - Idempotent (kiểm tra tồn tại trước khi INSERT)
+
+6. **Tài liệu**:
+   - `docs/ERD.md` — 4 Mermaid ER diagram
+   - `db/README.md` — hướng dẫn tạo DB, migration, seed, backup
+
+**File đã thay đổi / tạo mới**
+- `Models/Entities/AuditableEntity.cs` — MỚI
+- `Models/Entities/HRMRecruitmentEntities.cs` — MỚI
+- `Models/Entities/CMSExtendedEntities.cs` — MỚI
+- `Models/Entities/SCMExtendedEntities.cs` — MỚI
+- `Models/Entities/HRMAdvancedEntities.cs` — thêm LeaveTypeId FK
+- `Models/Entities/InventoryEntities.cs` — thêm UnitId, CustomerId FK
+- `Models/Entities/SCMEntities.cs` — thêm CustomerId FK
+- `Models/Entities/CMSEntities.cs` — thêm ContentTags collection
+- `Data/AppDbContext.cs` — 16 DbSet mới, Fluent API, soft delete filter
+- `db/scripts/V4_01_NewTables_And_AuditColumns.sql` — MỚI
+- `db/scripts/V4_02_SeedData.sql` — MỚI
+- `db/README.md` — MỚI
+- `docs/ERD.md` — MỚI
+- `docs/PROGRESS.md` — cập nhật
+
+**Cách kiểm tra**
+1. Áp patch lên máy local.
+2. Mở SSMS, chạy `V4_01_NewTables_And_AuditColumns.sql` trên database hiện có.
+3. Chạy `V4_02_SeedData.sql` để có dữ liệu mẫu.
+4. Mở VS 2022, build project (`Ctrl+Shift+B`) để xác nhận entity không lỗi.
+5. Chạy app (`F5`) → kiểm tra Dashboard có dữ liệu từ seed.
 
 ## Nợ kỹ thuật đã ghi nhận
 
