@@ -3,6 +3,9 @@ using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Hubs;
 using ERP_HRM_CMS.Services;
 using ERP_HRM_CMS.Services.Printing;
+using ERP_HRM_CMS.Services.Security;
+using ERP_HRM_CMS.Middleware;
+using ERP_HRM_CMS.Services.Payroll;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -31,6 +34,14 @@ if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
     dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys");
 }
 
+// 0b. AllowedHosts: ngoài Development không được để "*" (chấp nhận mọi Host header)
+var allowedHosts = builder.Configuration["AllowedHosts"];
+if (!builder.Environment.IsDevelopment() && (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Trim() == "*"))
+{
+    throw new InvalidOperationException(
+        "Thiếu hoặc không hợp lệ AllowedHosts. Ngoài Development, đặt biến môi trường AllowedHosts bằng danh sách tên miền cụ thể (không dùng '*').");
+}
+
 // 1. Đăng ký MVC Controllers & Views
 builder.Services.AddControllersWithViews();
 
@@ -48,9 +59,13 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
+// Tham số tính lương (lương cơ sở, tỷ lệ BH, biểu thuế...) đọc từ mục Payroll trong cấu hình
+builder.Services.Configure<PayrollOptions>(builder.Configuration.GetSection(PayrollOptions.SectionName));
 builder.Services.AddScoped<LoginThrottleService>();
 // [OOP - ĐA HÌNH] Đăng ký interface IPrintService; nơi dùng chỉ phụ thuộc vào interface
 builder.Services.AddScoped<IPrintService, PrintService>();
+// Kiểm tra SuperAdmin trực tiếp từ DB cho thao tác nhạy cảm (không chỉ dựa vào claim)
+builder.Services.AddScoped<ISuperAdminService, SuperAdminService>();
 
 // Đăng ký SignalR Real-time
 builder.Services.AddSignalR();
@@ -74,6 +89,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        // Thu hồi phiên ngay khi tài khoản bị khóa, đổi vai trò hoặc đổi mật khẩu (so SecurityStamp với DB)
+        options.Events.OnValidatePrincipal = CookieSecurityStampValidator.ValidateAsync;
         // Development chạy HTTP (cổng 5129) nên giữ SameAsRequest; production bắt buộc HTTPS.
         options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
             ? CookieSecurePolicy.SameAsRequest
@@ -130,6 +147,7 @@ if (args.Contains("--migrate-sensitive-data"))
 }
 
 // Pipeline xử lý Request
+app.UseMiddleware<SecurityHeadersMiddleware>();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

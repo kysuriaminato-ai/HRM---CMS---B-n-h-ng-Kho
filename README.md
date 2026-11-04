@@ -96,6 +96,16 @@ Các nhóm test hiện có:
 - Seed: quyền, tài khoản quản trị và cấu hình site; kiểm tra thiếu `SeedAdmin:Password` (`SeedGuardTests`).
 - Mã hóa CCCD và số tài khoản (`SensitiveDataTests`).
 
+## 5b. Lương và bảo hiểm (Giai đoạn 3)
+
+- Tham số tính lương nằm trong mục `Payroll` của `appsettings.json`: lương cơ sở, giảm trừ bản thân và người phụ thuộc, tỷ lệ BHXH/BHYT/BHTN/TNLĐ-BNN của người lao động và người sử dụng lao động, biểu thuế lũy tiến, trần đóng bảo hiểm, phạt đi muộn, hệ số tăng ca.
+- Mỗi quy định có `Source` (nguồn văn bản) và `EffectiveFrom` (ngày hiệu lực). Kỳ lương dùng phiên bản mới nhất có ngày hiệu lực không sau ngày 01 của tháng. Thiếu phiên bản thì việc tính lương báo lỗi, không dùng số mặc định.
+- Quy định có `NeedsConfirmation: true` là mục TODO: chưa đối chiếu đủ nguồn hoặc đang chờ chính sách công ty. Phiếu lương ghi cảnh báo khi còn TODO.
+- Phụ cấp (`PayrollAllowanceTypes`) có cờ miễn thuế và hạn mức miễn thuế mỗi tháng. Người phụ thuộc (`EmployeeDependents`) có khoảng thời gian được giảm trừ.
+- Công thức nằm trong `Services/Payroll/PayrollCalculator.cs`, không truy cập database, được kiểm thử trong `PayrollCalculatorTests.cs` và `PayrollRuleResolverTests.cs`.
+- Bảng kê trích nộp bảo hiểm phần người sử dụng lao động: `/BangLuong/ExportBangKeBaoHiem/{periodId}`.
+- Kỳ lương đã tính trước khi có Giai đoạn 3 chưa có phần người sử dụng lao động và các cột giảm trừ; cần tính lại kỳ đó.
+
 ## 6. Bảo mật
 
 - Tài khoản mẫu và mật khẩu `123456` chỉ dùng trong phát triển. Trước khi đưa lên môi trường thật, xóa hoặc đổi mật khẩu các tài khoản này.

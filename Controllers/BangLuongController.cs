@@ -142,6 +142,25 @@ namespace ERP_HRM_CMS.Controllers
             return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
+        // 6. XUẤT BẢNG KÊ TRÍCH NỘP BẢO HIỂM (PHẦN NGƯỜI SỬ DỤNG LAO ĐỘNG)
+        [HttpGet]
+        [KiemTraQuyen("hrm.payroll.view")]
+        public async Task<IActionResult> ExportBangKeBaoHiem(int id)
+        {
+            var period = await _context.PayrollPeriods
+                .Include(p => p.SalarySlips)
+                    .ThenInclude(s => s.Employee)
+                        .ThenInclude(e => e.Department)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (period == null) return NotFound();
+
+            var fileBytes = _payrollService.GenerateEmployerInsuranceExcel(period);
+            string fileName = $"BangKeBaoHiem_{period.Month:D2}_{period.Year}_{VietnamTime.Now:yyyyMMddHHmm}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
         private int GetCurrentUserId()
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

@@ -7,5 +7,6 @@ namespace ERP_HRM_CMS.Services
         Task<PayrollPeriod> CalculatePayrollAsync(int month, int year, int standardDays, int? creatorUserId = null);
         Task<bool> SendPayslipsAsync(int payrollPeriodId, int? employeeId = null);
         byte[] GeneratePayrollExcel(PayrollPeriod period);
+        byte[] GenerateEmployerInsuranceExcel(PayrollPeriod period);
     }
 }

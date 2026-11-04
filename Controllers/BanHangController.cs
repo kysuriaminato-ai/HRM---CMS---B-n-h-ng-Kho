@@ -105,7 +105,7 @@ namespace ERP_HRM_CMS.Controllers
 
             var order = new Order
             {
-                OrderCode = $"ORD-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}",
+                OrderCode = MaChungTu.Sinh("ORD"),
                 BranchId = dto.BranchId,
                 CustomerName = dto.CustomerName.Trim(),
                 CustomerPhone = dto.CustomerPhone.Trim(),

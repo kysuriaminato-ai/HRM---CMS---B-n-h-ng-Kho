@@ -14,10 +14,12 @@ namespace ERP_HRM_CMS.Controllers
     public class KhoController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<KhoController> _logger;
 
-        public KhoController(AppDbContext context)
+        public KhoController(AppDbContext context, ILogger<KhoController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         private int CurrentUserId => HttpContext.Session.GetInt32("UserId") ?? 1;
@@ -132,7 +134,7 @@ namespace ERP_HRM_CMS.Controllers
                     }
 
                     // 1. Tạo phiếu giao dịch kho
-                    string transCode = $"PNK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("PNK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -185,7 +187,7 @@ namespace ERP_HRM_CMS.Controllers
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình nhập kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi nhập kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình nhập kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 
@@ -227,7 +229,7 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"PXK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("PXK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -255,7 +257,7 @@ namespace ERP_HRM_CMS.Controllers
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình xuất kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi xuất kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình xuất kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 
@@ -388,7 +390,7 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"DCK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("DCK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     decimal unitCost = fromInventory!.Product.CostPrice;
 
                     // 1. Trừ tồn kho tại chi nhánh xuất & ghi giao dịch OUT
@@ -453,7 +455,7 @@ namespace ERP_HRM_CMS.Controllers
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình điều chuyển kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi điều chuyển kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình điều chuyển kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 

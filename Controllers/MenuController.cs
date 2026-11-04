@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.ViewModels;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -36,25 +37,20 @@ namespace ERP_HRM_CMS.Controllers
         public async Task<IActionResult> Create()
         {
             await PopulateDropdowns();
-            return View(new Menu { Position = "MainNav", OrderIndex = 1, IsActive = true, Target = "_self" });
+            return View(new MenuFormViewModel { Position = "MainNav", OrderIndex = 1, IsActive = true, Target = "_self" });
         }
 
+        // Chỉ nhận các trường trong MenuFormViewModel; Id và trường hệ thống không đến từ client
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("menu.create")]
-        public async Task<IActionResult> Create(Menu menu)
+        public async Task<IActionResult> Create(MenuFormViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // Tự động sinh URL nếu link theo Content
-                if (menu.LinkType == "Content" && menu.ReferenceId.HasValue)
-                {
-                    var content = await _context.Contents.FindAsync(menu.ReferenceId.Value);
-                    if (content != null)
-                    {
-                        menu.CustomUrl = $"/bai-viet/{content.Slug}";
-                    }
-                }
+                var menu = new Menu();
+                model.GhiVaoEntity(menu);
+                await GanUrlTheoBaiVietAsync(menu);
 
                 _context.Menus.Add(menu);
                 await _context.SaveChangesAsync();
@@ -62,8 +58,8 @@ namespace ERP_HRM_CMS.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            await PopulateDropdowns(menu.ParentId, menu.ReferenceId);
-            return View(menu);
+            await PopulateDropdowns(model.ParentId, model.ReferenceId);
+            return View(model);
         }
 
         [HttpGet]
@@ -74,35 +70,33 @@ namespace ERP_HRM_CMS.Controllers
             if (menu == null) return NotFound();
 
             await PopulateDropdowns(menu.ParentId, menu.ReferenceId);
-            return View(menu);
+            // Dùng chung form với Create; form biết đang sửa qua Model.Id
+            return View("Create", MenuFormViewModel.TuEntity(menu));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("menu.edit")]
-        public async Task<IActionResult> Edit(int id, Menu menu)
+        public async Task<IActionResult> Edit(int id, MenuFormViewModel model)
         {
-            if (id != menu.Id) return NotFound();
+            if (id != model.Id) return NotFound();
+
+            // Tải entity từ database rồi mới ghi các trường được phép (không ghi đè CreatedAt...)
+            var menu = await _context.Menus.FindAsync(id);
+            if (menu == null) return NotFound();
 
             if (ModelState.IsValid)
             {
-                if (menu.LinkType == "Content" && menu.ReferenceId.HasValue)
-                {
-                    var content = await _context.Contents.FindAsync(menu.ReferenceId.Value);
-                    if (content != null)
-                    {
-                        menu.CustomUrl = $"/bai-viet/{content.Slug}";
-                    }
-                }
+                model.GhiVaoEntity(menu);
+                await GanUrlTheoBaiVietAsync(menu);
 
-                _context.Update(menu);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Cập nhật Menu thành công!";
                 return RedirectToAction(nameof(Index));
             }
 
-            await PopulateDropdowns(menu.ParentId, menu.ReferenceId);
-            return View(menu);
+            await PopulateDropdowns(model.ParentId, model.ReferenceId);
+            return View("Create", model);
         }
 
         [HttpPost]
@@ -123,6 +117,19 @@ namespace ERP_HRM_CMS.Controllers
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "Đã xóa mục Menu thành công!";
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>Liên kết theo bài viết: URL được sinh từ slug, không nhận từ người dùng.</summary>
+        private async Task GanUrlTheoBaiVietAsync(Menu menu)
+        {
+            if (menu.LinkType == "Content" && menu.ReferenceId.HasValue)
+            {
+                var content = await _context.Contents.FindAsync(menu.ReferenceId.Value);
+                if (content != null)
+                {
+                    menu.CustomUrl = $"/bai-viet/{content.Slug}";
+                }
+            }
         }
 
         private async Task PopulateDropdowns(int? selectedParentId = null, int? selectedRefId = null)

@@ -95,6 +95,9 @@ namespace ERP_HRM_CMS.Models.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalPIT { get; set; } = 0; // Thuế TNCN
 
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalEmployerInsurance { get; set; } = 0; // BHXH, BHYT, BHTN, TNLĐ-BNN phần người sử dụng lao động
+
         public int? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = VietnamTime.Now;
         public DateTime? LockedAt { get; set; }
@@ -172,6 +175,34 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalInsurance { get; set; } = 0; // Tổng BH 10.5%
+
+        // Phần người sử dụng lao động đóng (không trừ vào lương nhân viên, dùng cho bảng kê trích nộp)
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal EmployerSocialInsurance { get; set; } = 0; // BHXH: hưu trí tử tuất 14% + ốm đau thai sản 3%
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal EmployerHealthInsurance { get; set; } = 0; // BHYT 3%
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal EmployerUnemploymentInsurance { get; set; } = 0; // BHTN 1%
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal EmployerAccidentInsurance { get; set; } = 0; // TNLĐ-BNN 0,5%
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalEmployerInsurance { get; set; } = 0; // Tổng phần người sử dụng lao động
+
+        // Giảm trừ thuế TNCN
+        public int DependentCount { get; set; } = 0; // Số người phụ thuộc được giảm trừ trong kỳ
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal PersonalDeduction { get; set; } = 0; // Giảm trừ gia cảnh bản thân
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DependentDeduction { get; set; } = 0; // Giảm trừ người phụ thuộc (đã nhân số người)
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TaxExemptAllowance { get; set; } = 0; // Phụ cấp được miễn thuế (theo hạn mức)
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TaxableIncome { get; set; } = 0; // Thu nhập tính thuế TNCN

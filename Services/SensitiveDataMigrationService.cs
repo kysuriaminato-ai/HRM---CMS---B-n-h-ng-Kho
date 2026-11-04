@@ -3,6 +3,7 @@ using System.Data.Common;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP_HRM_CMS.Services
 {

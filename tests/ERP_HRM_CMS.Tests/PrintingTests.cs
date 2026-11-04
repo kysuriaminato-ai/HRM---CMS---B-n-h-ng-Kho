@@ -1,5 +1,6 @@
 using System.Net;
 using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Services.Printing;
 using Xunit;
 
@@ -15,7 +16,7 @@ namespace ERP_HRM_CMS.Tests
             Month = 10,
             Year = 2026,
             StandardWorkDays = 22,
-            Status = "DRAFT"
+            Status = PayrollPeriodStatus.Draft
         };
 
         private static Employee NhanVienMau(string hoTen = "Nguyễn Văn A", string ma = "NV001") => new Employee

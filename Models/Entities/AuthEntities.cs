@@ -18,6 +18,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public string PasswordSalt { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public bool IsSuperAdmin { get; set; } = false;
+        /// <summary>Đổi giá trị khi thay đổi IsActive, vai trò, IsSuperAdmin hoặc mật khẩu; cookie bị thu hồi nếu lệch.</summary>
+        public Guid SecurityStamp { get; set; } = Guid.NewGuid();
         public DateTime? LastLoginAt { get; set; }
         public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 

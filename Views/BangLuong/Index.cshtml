@@ -11,6 +11,7 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <a href="/BangLuong/ExportExcel/@Model?.Id" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i>Xuất Excel Ngân Hàng</a>
+        <a href="/BangLuong/ExportBangKeBaoHiem/@Model?.Id" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Bảng kê trích nộp BH</a>
         
         <form method="post" asp-action="GuiPhieuLuong" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn gửi thông báo phiếu lương Real-time tới TOÀN BỘ nhân sự?');">
             @Html.AntiForgeryToken()

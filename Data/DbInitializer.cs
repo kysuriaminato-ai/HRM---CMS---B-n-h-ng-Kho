@@ -46,17 +46,21 @@ namespace ERP_HRM_CMS.Data
             }
 
             // Chỉ đánh dấu khi DB đã có bảng Users (DB đang dùng) và chưa có bảng lịch sử migration
-            await context.Database.ExecuteSqlRawAsync(@"
-                IF OBJECT_ID(N'dbo.__EFMigrationsHistory') IS NULL AND OBJECT_ID(N'dbo.Users') IS NOT NULL
-                BEGIN
-                    CREATE TABLE dbo.__EFMigrationsHistory (
-                        MigrationId nvarchar(150) NOT NULL PRIMARY KEY,
-                        ProductVersion nvarchar(32) NOT NULL
-                    );
-                    INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
-                    VALUES (@baseline, N'8.0.0');
-                END;",
-                new Microsoft.Data.SqlClient.SqlParameter("@baseline", baseline));
+            // Database chưa tồn tại (DB mới): bỏ qua bước này, MigrateAsync sẽ tạo database.
+            if (await context.Database.CanConnectAsync())
+            {
+                await context.Database.ExecuteSqlRawAsync(@"
+                    IF OBJECT_ID(N'dbo.__EFMigrationsHistory') IS NULL AND OBJECT_ID(N'dbo.Users') IS NOT NULL
+                    BEGIN
+                        CREATE TABLE dbo.__EFMigrationsHistory (
+                            MigrationId nvarchar(150) NOT NULL PRIMARY KEY,
+                            ProductVersion nvarchar(32) NOT NULL
+                        );
+                        INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                        VALUES (@baseline, N'8.0.0');
+                    END;",
+                    new Microsoft.Data.SqlClient.SqlParameter("@baseline", baseline));
+            }
 
             await context.Database.MigrateAsync();
         }
@@ -70,6 +74,40 @@ namespace ERP_HRM_CMS.Data
             await SeedAuthAndPermissionsAsync(context);
             await SeedAdminAccountsAsync(context, initialAdminPassword);
             await SeedSiteSettingsAsync(context);
+            await SeedPayrollSettingsAsync(context);
+        }
+
+        /// <summary>
+        /// Loại phụ cấp mặc định cho bảng lương. Chỉ thêm khi bảng còn trống, không ghi đè cấu hình đã chỉnh.
+        /// Cờ miễn thuế của cả hai loại đang là TODO: cần kế toán xác nhận trước khi dùng thật.
+        /// </summary>
+        private static async Task SeedPayrollSettingsAsync(AppDbContext context)
+        {
+            if (await context.PayrollAllowanceTypes.AnyAsync()) return;
+
+            context.PayrollAllowanceTypes.AddRange(
+                new PayrollAllowanceType
+                {
+                    Code = "LUNCH",
+                    Name = "Phụ cấp ăn trưa",
+                    DefaultAmount = 730000m,
+                    IsTaxExempt = true,
+                    TaxExemptLimit = 730000m,
+                    SourceNote = "TODO: xác nhận hạn mức miễn thuế tiền ăn giữa ca và điều kiện áp dụng (chưa đối chiếu được nguồn).",
+                    NeedsConfirmation = true
+                },
+                new PayrollAllowanceType
+                {
+                    Code = "FUEL_PHONE",
+                    Name = "Phụ cấp xăng xe, điện thoại",
+                    DefaultAmount = 500000m,
+                    IsTaxExempt = false,
+                    TaxExemptLimit = null,
+                    SourceNote = "TODO: xác nhận có chịu thuế TNCN hay không. Cấu hình cũ coi là miễn thuế; mặc định mới là chịu thuế.",
+                    NeedsConfirmation = true
+                });
+
+            await context.SaveChangesAsync();
         }
 
         /// <summary>SeedDemo: dữ liệu nhân sự, CMS, bán hàng, kho, mua hàng và lương mẫu.</summary>
@@ -124,7 +162,8 @@ namespace ERP_HRM_CMS.Data
                 ("auth", "auth.matrix.view", "Xem ma trận phân quyền"),
                 ("auth", "auth.matrix.update", "Cập nhật ma trận phân quyền"),
                 ("auth", "auth.view", "Xem nhật ký kiểm toán hệ thống"),
-                ("auth", "auth.user.manage", "Quản lý tài khoản: duyệt, tạo, khóa, gán vai trò, đặt lại mật khẩu"),
+                ("auth", "auth.user.manage", "Quản lý tài khoản: duyệt, tạo, khóa, gán vai trò"),
+                ("auth", "auth.user.resetpassword", "Đặt lại mật khẩu tài khoản (tài khoản quản trị tổng chỉ SuperAdmin)"),
 
                 // HRM Nhân viên & Hợp đồng
                 ("hrm_emp", "hrm.employee.view", "Xem danh sách nhân viên & hồ sơ"),
@@ -1201,108 +1240,6 @@ namespace ERP_HRM_CMS.Data
                 };
 
                 context.LeaveRequests.AddRange(leaves);
-                await context.SaveChangesAsync();
-            }
-
-            // 4. Khởi tạo Bảng lương Tháng 10/2026 & Phiếu lương chi tiết (PayrollPeriod & SalarySlips)
-            if (!await context.PayrollPeriods.AnyAsync(p => p.Month == curMonth && p.Year == curYear))
-            {
-                var period = new PayrollPeriod
-                {
-                    Name = $"Bảng lương Kỳ Tháng {curMonth:D2}/{curYear}",
-                    Month = curMonth,
-                    Year = curYear,
-                    StandardWorkDays = 22,
-                    Status = PayrollPeriodStatus.Calculated,
-                    CreatedBy = adminUser.Id,
-                    CreatedAt = VietnamTime.Now
-                };
-
-                decimal totalGross = 0;
-                decimal totalNet = 0;
-                decimal totalIns = 0;
-                decimal totalPit = 0;
-
-                foreach (var emp in allEmployees)
-                {
-                    var contract = emp.Contracts.FirstOrDefault(c => c.Status == "Active");
-                    decimal baseSal = contract?.BasicSalary ?? (emp.Position?.BaseSalary > 0 ? emp.Position.BaseSalary : 12000000m);
-                    decimal insSal = contract?.InsuranceSalary ?? Math.Min(baseSal, 18000000m);
-
-                    decimal actDays = 21.0m;
-                    decimal paidLeaves = (emp.EmployeeCode == "NV001") ? 1.0m : 0m;
-                    decimal otHours = (emp.EmployeeCode == "NV001") ? 2.0m : 0m;
-
-                    decimal dailyRate = baseSal / 22m;
-                    decimal hourlyRate = dailyRate / 8m;
-                    decimal stdSal = Math.Round(dailyRate * (actDays + paidLeaves), 0);
-                    decimal otSal = Math.Round(hourlyRate * 1.5m * otHours, 0);
-
-                    decimal posAllowance = Math.Round(baseSal * (emp.Position?.AllowanceRate ?? 0), 0);
-                    decimal lunch = 730000m;
-                    decimal other = 500000m;
-                    decimal bonus = (emp.Position?.Code == "NV-KD") ? 2500000m : 1000000m;
-
-                    decimal gross = stdSal + otSal + posAllowance + lunch + other + bonus;
-
-                    decimal latePen = (emp.EmployeeCode == "NV002") ? 100000m : 0m;
-                    decimal bhxh = Math.Round(insSal * 0.08m, 0);
-                    decimal bhyt = Math.Round(insSal * 0.015m, 0);
-                    decimal bhtn = Math.Round(insSal * 0.01m, 0);
-                    decimal empIns = bhxh + bhyt + bhtn;
-
-                    decimal nonTax = lunch + other + empIns + 11000000m;
-                    decimal taxBase = Math.Max(0, gross - nonTax);
-                    decimal pit = 0;
-                    if (taxBase > 0)
-                    {
-                        if (taxBase <= 5000000m) pit = taxBase * 0.05m;
-                        else if (taxBase <= 10000000m) pit = (taxBase * 0.10m) - 250000m;
-                        else pit = (taxBase * 0.15m) - 750000m;
-                    }
-
-                    decimal net = gross - empIns - pit - latePen;
-
-                    totalGross += gross;
-                    totalNet += net;
-                    totalIns += empIns;
-                    totalPit += pit;
-
-                    period.SalarySlips.Add(new SalarySlip
-                    {
-                        EmployeeId = emp.Id,
-                        BasicSalary = baseSal,
-                        InsuranceSalary = insSal,
-                        StandardDays = 22,
-                        ActualWorkDays = actDays,
-                        PaidLeaveDays = paidLeaves,
-                        OvertimeHours = otHours,
-                        StandardWorkSalary = stdSal,
-                        OvertimeSalary = otSal,
-                        PositionAllowance = posAllowance,
-                        LunchAllowance = lunch,
-                        OtherAllowance = other,
-                        Bonus = bonus,
-                        GrossSalary = gross,
-                        LatePenalty = latePen,
-                        SocialInsurance = bhxh,
-                        HealthInsurance = bhyt,
-                        UnemploymentInsurance = bhtn,
-                        TotalInsurance = empIns,
-                        TaxableIncome = taxBase,
-                        PersonalIncomeTax = pit,
-                        NetSalary = net,
-                        Status = SalarySlipStatus.Sent,
-                        Note = "Đã tính lương tự động & gửi phiếu lương tới nhân sự."
-                    });
-                }
-
-                period.TotalGrossSalary = totalGross;
-                period.TotalNetSalary = totalNet;
-                period.TotalInsurance = totalIns;
-                period.TotalPIT = totalPit;
-
-                context.PayrollPeriods.Add(period);
                 await context.SaveChangesAsync();
             }
         }

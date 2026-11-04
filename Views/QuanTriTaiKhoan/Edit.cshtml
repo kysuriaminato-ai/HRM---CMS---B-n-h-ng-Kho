@@ -21,3 +21,19 @@
         @await Html.PartialAsync("_TaiKhoanForm", Model)
     </div>
 </div>
+
+<div class="card shadow-sm border-0 mt-4">
+    <div class="card-body p-4" style="max-width: 640px;">
+        <h6 class="fw-bold mb-3">Đặt lại mật khẩu</h6>
+        <form asp-action="ResetPassword" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="matKhauMoi">Mật khẩu mới</label>
+                <input id="matKhauMoi" name="matKhauMoi" type="password" class="form-control" autocomplete="new-password" required />
+                <div class="form-text">Tối thiểu 8 ký tự, gồm cả chữ và số. Mọi phiên đăng nhập cũ của tài khoản sẽ bị thu hồi.</div>
+            </div>
+            <button type="submit" class="btn btn-warning">Đặt lại mật khẩu</button>
+        </form>
+    </div>
+</div>

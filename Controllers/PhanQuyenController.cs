@@ -1,11 +1,13 @@
+using System.Security.Claims;
+using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
-using ERP_HRM_CMS.Models.ViewModels;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -14,10 +16,14 @@ namespace ERP_HRM_CMS.Controllers
     public class PhanQuyenController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly IPermissionService _permissionService;
+        private readonly ISuperAdminService _superAdmin;
 
-        public PhanQuyenController(AppDbContext context)
+        public PhanQuyenController(AppDbContext context, IPermissionService permissionService, ISuperAdminService superAdmin)
         {
             _context = context;
+            _permissionService = permissionService;
+            _superAdmin = superAdmin;
         }
 
         [HttpGet]
@@ -78,24 +84,56 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("auth.matrix.update")]
         public async Task<IActionResult> LuuMaTranQuyenRole([FromBody] CapNhatQuyenRoleDto dto)
         {
-            if (dto.RoleId <= 0) return BadRequest(new { success = false, message = "Vai trò không hợp lệ" });
+            if (dto == null || dto.RoleId <= 0) return LoiJson(400, "Vai trò không hợp lệ");
 
             var role = await _context.Roles.FindAsync(dto.RoleId);
-            if (role == null) return NotFound(new { success = false, message = "Không tìm thấy vai trò" });
+            if (role == null) return LoiJson(404, "Không tìm thấy vai trò");
 
-            // Xóa toàn bộ mapping cũ của Role
-            var oldMappings = _context.RolePermissions.Where(rp => rp.RoleId == dto.RoleId);
-            _context.RolePermissions.RemoveRange(oldMappings);
+            int nguoiThaoTac = CurrentUserId();
+            if (nguoiThaoTac <= 0) return LoiJson(403, PermissionDelegationGuard.ThongBaoKhongDuQuyen);
 
-            // Thêm các quyền được tích chọn
-            if (dto.PermissionIds != null && dto.PermissionIds.Any())
+            bool laSuperAdmin = await _superAdmin.LaSuperAdminAsync(nguoiThaoTac);
+
+            // Chỉ SuperAdmin được sửa vai trò SUPERADMIN
+            if (string.Equals(role.Code, SuperAdminService.MaVaiTroSuperAdmin, StringComparison.OrdinalIgnoreCase)
+                && !laSuperAdmin)
             {
-                var newMappings = dto.PermissionIds.Distinct().Select(pId => new RolePermission
-                {
-                    RoleId = dto.RoleId,
-                    PermissionId = pId
-                });
-                await _context.RolePermissions.AddRangeAsync(newMappings);
+                return LoiJson(403, "Chỉ SuperAdmin mới được sửa quyền của vai trò SUPERADMIN.");
+            }
+
+            var yeuCau = (dto.PermissionIds ?? new List<int>()).Distinct().ToList();
+
+            // Mọi mã quyền gửi lên phải tồn tại
+            int soQuyenHopLe = await _context.Permissions.CountAsync(p => yeuCau.Contains(p.Id));
+            if (soQuyenHopLe != yeuCau.Count) return LoiJson(400, "Có mã quyền không tồn tại.");
+
+            var hienTai = await _context.RolePermissions
+                .Where(rp => rp.RoleId == role.Id)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync();
+
+            // Chỉ kiểm tra các quyền thực sự được thêm hoặc bỏ
+            var idThayDoi = hienTai.Except(yeuCau).Union(yeuCau.Except(hienTai)).ToList();
+            var thayDoi = await _context.Permissions
+                .Where(p => idThayDoi.Contains(p.Id))
+                .Select(p => new { p.Id, p.Code })
+                .ToListAsync();
+
+            var quyenHienCo = await _permissionService.GetEffectivePermissionsAsync(nguoiThaoTac);
+            string? loi = PermissionDelegationGuard.KiemTra(
+                thayDoi.Select(p => (p.Id, p.Code)),
+                new HashSet<string>(quyenHienCo, StringComparer.OrdinalIgnoreCase),
+                laSuperAdmin);
+            if (loi != null) return LoiJson(403, loi);
+
+            var xoa = await _context.RolePermissions
+                .Where(rp => rp.RoleId == role.Id && !yeuCau.Contains(rp.PermissionId))
+                .ToListAsync();
+            _context.RolePermissions.RemoveRange(xoa);
+
+            foreach (int permissionId in yeuCau.Except(hienTai))
+            {
+                _context.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = permissionId });
             }
 
             await _context.SaveChangesAsync();
@@ -167,31 +205,96 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("auth.matrix.update")]
         public async Task<IActionResult> LuuPhanQuyenCaNhan([FromBody] CapNhatQuyenCaNhanDto dto)
         {
-            if (dto.UserId <= 0) return BadRequest(new { success = false, message = "Người dùng không hợp lệ" });
+            if (dto == null || dto.UserId <= 0) return LoiJson(400, "Người dùng không hợp lệ");
 
-            // Xóa các ghi đè cũ của cá nhân
-            var oldAcls = _context.UserPermissions.Where(up => up.UserId == dto.UserId);
-            _context.UserPermissions.RemoveRange(oldAcls);
+            var gui = dto.Overrides ?? new List<UserPermissionItemDto>();
+            var idGui = gui.Select(o => o.PermissionId).ToList();
+            if (idGui.Distinct().Count() != idGui.Count) return LoiJson(400, "Dữ liệu quyền bị trùng.");
 
-            if (dto.Overrides != null && dto.Overrides.Any())
+            bool tonTai = await _context.Users.AsNoTracking().AnyAsync(u => u.Id == dto.UserId);
+            if (!tonTai) return LoiJson(404, "Không tìm thấy người dùng");
+
+            int nguoiThaoTac = CurrentUserId();
+            if (nguoiThaoTac <= 0) return LoiJson(403, PermissionDelegationGuard.ThongBaoKhongDuQuyen);
+
+            bool laSuperAdmin = await _superAdmin.LaSuperAdminAsync(nguoiThaoTac);
+
+            // Tài khoản quản trị tổng chỉ SuperAdmin được thay đổi quyền
+            if (!laSuperAdmin && await _superAdmin.LaTaiKhoanQuanTriTongAsync(dto.UserId))
             {
-                foreach (var item in dto.Overrides)
+                return LoiJson(403, "Chỉ SuperAdmin mới được thay đổi quyền của tài khoản quản trị tổng.");
+            }
+
+            int soQuyenHopLe = await _context.Permissions.CountAsync(p => idGui.Contains(p.Id));
+            if (soQuyenHopLe != idGui.Count) return LoiJson(400, "Có mã quyền không tồn tại.");
+
+            var cu = await _context.UserPermissions.Where(up => up.UserId == dto.UserId).ToListAsync();
+            var cuMap = cu.ToDictionary(up => up.PermissionId, up => up.IsGranted);
+            var moiMap = gui.Where(o => o.State.HasValue).ToDictionary(o => o.PermissionId, o => o.State!.Value);
+
+            // Chỉ xét các quyền có trạng thái thay đổi (được cấp riêng, bị chặn riêng, hoặc bỏ ghi đè)
+            var idThayDoi = new List<int>();
+            foreach (int id in cuMap.Keys.Union(moiMap.Keys))
+            {
+                bool coCu = cuMap.TryGetValue(id, out bool trangThaiCu);
+                bool coMoi = moiMap.TryGetValue(id, out bool trangThaiMoi);
+                if (coCu != coMoi || (coCu && trangThaiCu != trangThaiMoi))
                 {
-                    if (item.State.HasValue)
+                    idThayDoi.Add(id);
+                }
+            }
+
+            var thayDoi = await _context.Permissions
+                .Where(p => idThayDoi.Contains(p.Id))
+                .Select(p => new { p.Id, p.Code })
+                .ToListAsync();
+
+            var quyenHienCo = await _permissionService.GetEffectivePermissionsAsync(nguoiThaoTac);
+            string? loi = PermissionDelegationGuard.KiemTra(
+                thayDoi.Select(p => (p.Id, p.Code)),
+                new HashSet<string>(quyenHienCo, StringComparer.OrdinalIgnoreCase),
+                laSuperAdmin);
+            if (loi != null) return LoiJson(403, loi);
+
+            var thoiDiem = VietnamTime.Now;
+            foreach (int id in idThayDoi)
+            {
+                var dong = cu.FirstOrDefault(up => up.PermissionId == id);
+                bool coMoi = moiMap.TryGetValue(id, out bool trangThaiMoi);
+
+                if (dong != null && coMoi)
+                {
+                    dong.IsGranted = trangThaiMoi;
+                    dong.AssignedAt = thoiDiem;
+                }
+                else if (dong != null)
+                {
+                    _context.UserPermissions.Remove(dong);
+                }
+                else if (coMoi)
+                {
+                    _context.UserPermissions.Add(new UserPermission
                     {
-                        _context.UserPermissions.Add(new UserPermission
-                        {
-                            UserId = dto.UserId,
-                            PermissionId = item.PermissionId,
-                            IsGranted = item.State.Value,
-                            AssignedAt = VietnamTime.Now
-                        });
-                    }
+                        UserId = dto.UserId,
+                        PermissionId = id,
+                        IsGranted = trangThaiMoi,
+                        AssignedAt = thoiDiem
+                    });
                 }
             }
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = "Cập nhật ngoại lệ phân quyền cá nhân thành công!" });
+        }
+
+        private int CurrentUserId()
+        {
+            return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+        }
+
+        private IActionResult LoiJson(int statusCode, string message)
+        {
+            return StatusCode(statusCode, new { success = false, message });
         }
     }
 }
