@@ -1,6 +1,6 @@
 # Tiến độ dự án
 
-Cập nhật lần cuối: 2026-11-04 (cuối phiên 1)
+Cập nhật lần cuối: 2026-11-04 (cuối phiên 3)
 
 ## Phiên 1: phân tích hiện trạng (đã xong)
 
@@ -44,6 +44,37 @@ Yêu cầu: .NET 8 SDK, SQL Server ở `localhost` với Windows Authentication.
 1. Chạy `dotnet build` và `dotnet test` để có mốc cơ sở.
 2. Sửa các P0 nhóm bảo mật khẩn cấp: P0-02, P0-03, P0-04, P0-07, P0-13.
 4. Các quyết định cần người dùng xác nhận: xem mục 14 của `docs/ANALYSIS.md`.
+
+## Phiên 3: Theme Admin, Layout và Hiệu ứng (đã xong)
+
+**Đã làm**
+- Đổi font sang **Be Vietnam Pro** (hỗ trợ tiếng Việt) trong `enterprise-theme.css`.
+- Viết lại `Views/Shared/_Layout.cshtml`: sidebar thu gọn + topbar + breadcrumb + dark mode.
+- Tạo `wwwroot/css/admin-components.css` (~500 dòng): sidebar, topbar, stat card, data table, floating label form, button loading, confirm modal, toast, badges, tabs, skeleton, empty state, responsive.
+- Tạo `wwwroot/css/admin-animations.css` (~260 dòng): fade-in, slide-up, stagger, hover-lift, ripple, scroll reveal, chart animation, toast animation, pulse, `prefers-reduced-motion` support.
+- Tạo `wwwroot/js/admin-ui.js` (~310 dòng): sidebar toggle (localStorage), active highlight, ripple effect, count-up animation (IntersectionObserver), scroll reveal, toast auto-dismiss, `ERP.btnLoading()`, `ERP.confirm()`, `ERP.toast()`.
+- Cập nhật `Views/Home/Index.cshtml` (Dashboard): 6 stat cards với count-up, stagger animation, chart container, data table, activity feed, empty state, tất cả dùng component class mới.
+- Viết `docs/UI-GUIDE.md`: bảng màu, font, layout, component, animation, JS API, file structure, responsive, quy ước đặt tên, accessibility.
+
+**File đã thay đổi**
+- `wwwroot/css/enterprise-theme.css` — đổi font
+- `Views/Shared/_Layout.cshtml` — viết lại hoàn toàn
+- `wwwroot/css/admin-components.css` — MỚI
+- `wwwroot/css/admin-animations.css` — MỚI
+- `wwwroot/js/admin-ui.js` — MỚI
+- `Views/Home/Index.cshtml` — cập nhật dùng component class
+- `docs/UI-GUIDE.md` — MỚI
+- `docs/PROGRESS.md` — cập nhật
+
+**Cách kiểm tra**
+1. Mở dự án trong VS 2022, chạy (`F5` hoặc `dotnet run`).
+2. Đăng nhập → Dashboard: sidebar bên trái, topbar trên cùng, 6 stat card có count-up.
+3. Click nút thu gọn sidebar (góc dưới trái) → sidebar thu lại 68px, tooltip hiện tên menu.
+4. Click nút mặt trăng (topbar) → dark mode, refresh không mất.
+5. Resize trình duyệt < 992px → sidebar ẩn, nút hamburger xuất hiện.
+6. Kiểm tra `docs/UI-GUIDE.md` để xem quy ước class.
+
+**Trạng thái git:** tất cả thay đổi phiên 3 chưa commit. Cần áp patch trên máy local.
 
 ## Nợ kỹ thuật đã ghi nhận
 

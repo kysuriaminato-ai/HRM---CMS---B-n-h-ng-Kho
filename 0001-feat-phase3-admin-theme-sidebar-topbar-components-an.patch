@@ -1,0 +1,3049 @@
+From 8878c3cbdb810f505668103245e12f3bf4eb8f9b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 4 Nov 2026 12:05:08 +0000
+Subject: [PATCH] feat(phase3): admin theme - sidebar, topbar, components,
+ animations, dashboard
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Đổi font sang Be Vietnam Pro (hỗ trợ tiếng Việt)
+- Viết lại _Layout.cshtml: sidebar thu gọn + topbar + breadcrumb + dark/light mode
+- Tạo admin-components.css: stat card, data table, floating form, toast, badges, skeleton
+- Tạo admin-animations.css: fade-in, stagger, hover-lift, ripple, scroll reveal, prefers-reduced-motion
+- Tạo admin-ui.js: sidebar toggle, count-up, scroll reveal, ERP.confirm(), ERP.toast()
+- Cập nhật Dashboard (Index.cshtml) sử dụng component class mới
+- Viết docs/UI-GUIDE.md: bảng màu, quy ước class, component usage
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01EqW8ZVjYPXQ2Jwe9Tm1Wqg
+---
+ Views/Home/Index.cshtml          | 525 ++++++++++---------
+ Views/Shared/_Layout.cshtml      | 423 ++++++++++------
+ docs/PROGRESS.md                 |  33 +-
+ docs/UI-GUIDE.md                 | 387 ++++++++++++++
+ wwwroot/css/admin-animations.css | 259 ++++++++++
+ wwwroot/css/admin-components.css | 832 +++++++++++++++++++++++++++++++
+ wwwroot/css/enterprise-theme.css |   4 +-
+ wwwroot/js/admin-ui.js           | 311 ++++++++++++
+ 8 files changed, 2342 insertions(+), 432 deletions(-)
+ create mode 100644 docs/UI-GUIDE.md
+ create mode 100644 wwwroot/css/admin-animations.css
+ create mode 100644 wwwroot/css/admin-components.css
+ create mode 100644 wwwroot/js/admin-ui.js
+
+diff --git a/Views/Home/Index.cshtml b/Views/Home/Index.cshtml
+index fb37a70..7409c9d 100644
+--- a/Views/Home/Index.cshtml
++++ b/Views/Home/Index.cshtml
+@@ -1,213 +1,187 @@
+ @model ERP_HRM_CMS.Models.ViewModels.ExecutiveDashboardViewModel
+ @{
+     Layout = "_Layout";
+-    ViewData["Title"] = "Executive Dashboard - Trung Tâm Điều Hành Enterprise";
++    ViewData["Title"] = "Dashboard";
++    ViewData["BreadcrumbSection"] = "Tổng quan";
+     var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
+ }
+ 
+-<!-- Load Chart.js for Interactive Data Visualization -->
++@* Chart.js *@
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+ 
+-<div class="py-3">
+-    <!-- 1. EXECUTIVE WELCOME HEADER BANNER -->
+-    <div class="p-4 rounded-4 shadow-sm bg-gradient mb-4 text-white position-relative overflow-hidden" 
+-         style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #2563EB 100%); border-left: 5px solid #3B82F6;">
+-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 2;">
++<div class="py-2">
++    @* ═══════ WELCOME BANNER ═══════ *@
++    <div class="erp-welcome-banner slide-up mb-4">
++        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+             <div>
+                 <div class="d-flex align-items-center gap-2 mb-1">
+-                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25 px-2 py-1 rounded-pill small">
+-                        <i class="bi bi-broadcast me-1 spin text-success"></i> SignalR Real-time Connected
++                    <span class="erp-badge erp-badge-success erp-badge-dot" style="font-size:11px;">
++                        Real-time Connected
+                     </span>
+-                    <span class="text-white-50 small"><i class="bi bi-clock me-1"></i> @ERP_HRM_CMS.Helpers.VietnamTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
++                    <span class="text-white-50 small"><i class="bi bi-clock me-1"></i>@ERP_HRM_CMS.Helpers.VietnamTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                 </div>
+-                <h3 class="fw-bold mb-1">Trung Tâm Điều Hành Doanh Nghiệp (Executive Dashboard)</h3>
+-                <p class="text-white-50 small mb-0">Xin chào <strong class="text-white">@fullName</strong>. Dưới đây là bức tranh toàn cảnh về Doanh thu, Nhân sự, Kho vận và Công nợ real-time.</p>
++                <h4 class="fw-bold mb-1 text-white">Trung tâm điều hành</h4>
++                <p class="text-white-50 small mb-0">Xin chào <strong class="text-white">@fullName</strong> — Doanh thu, Nhân sự, Kho vận, Công nợ real-time.</p>
+             </div>
+             <div class="d-flex gap-2 flex-wrap">
+-                <a href="/BanHang/POS" class="btn btn-primary fw-semibold px-3 shadow-sm">
+-                    <i class="bi bi-cart3 me-1"></i> Mở Bán Hàng POS
+-                </a>
+-                <a href="/Kho/NhapKho" class="btn btn-warning text-dark fw-semibold px-3 shadow-sm">
+-                    <i class="bi bi-box-arrow-in-down me-1"></i> Nhập Kho PO
+-                </a>
+-                <a href="/DonTu/Create" class="btn btn-info text-white fw-semibold px-3 shadow-sm">
+-                    <i class="bi bi-file-earmark-plus me-1"></i> Tạo Đơn Từ
+-                </a>
+-                <a href="/ChamCong/Index" class="btn btn-success fw-semibold px-3 shadow-sm">
+-                    <i class="bi bi-calendar2-check me-1"></i> Chấm Công
+-                </a>
++                <a href="/BanHang/POS" class="btn btn-primary btn-sm ripple"><i class="bi bi-cart3 me-1"></i>POS</a>
++                <a href="/Kho/NhapKho" class="btn btn-warning btn-sm text-dark ripple"><i class="bi bi-box-arrow-in-down me-1"></i>Nhập kho</a>
++                <a href="/DonTu/Create" class="btn btn-info btn-sm text-white ripple"><i class="bi bi-file-earmark-plus me-1"></i>Đơn từ</a>
++                <a href="/ChamCong/Index" class="btn btn-success btn-sm ripple"><i class="bi bi-calendar2-check me-1"></i>Chấm công</a>
+             </div>
+         </div>
+     </div>
+ 
+-    <!-- 2. EXECUTIVE 6 KPI METRIC CARDS GRID -->
+-    <div class="row g-3 mb-4">
+-        <!-- KPI 1: Doanh Thu Tháng Này -->
++    @* ═══════ 6 KPI STAT CARDS ═══════ *@
++    <div class="row g-3 mb-4 stagger-list">
++        @* Doanh Thu Tháng *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Doanh Thu Tháng</span>
+-                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+-                        <i class="bi bi-currency-dollar fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Doanh thu tháng</div>
++                    <div class="stat-card-value">
++                        <span class="count-up" data-target="@Model.MonthlyRevenue" data-suffix=" đ">0</span>
++                    </div>
++                    <div class="stat-card-trend @(Model.RevenueGrowthPercent >= 0 ? "up" : "down")">
++                        <i class="bi @(Model.RevenueGrowthPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right") me-1"></i>@Model.RevenueGrowthPercent% vs tháng trước
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-primary">@Model.MonthlyRevenue.ToString("N0") đ</h4>
+-                <div class="d-flex align-items-center gap-1 small">
+-                    @if (Model.RevenueGrowthPercent >= 0)
+-                    {
+-                        <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-arrow-up-right me-1"></i>+@Model.RevenueGrowthPercent%</span>
+-                    }
+-                    else
+-                    {
+-                        <span class="badge bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-down-right me-1"></i>@Model.RevenueGrowthPercent%</span>
+-                    }
+-                    <span class="text-muted" style="font-size: 11px;">vs tháng trước</span>
+-                </div>
++                <div class="stat-card-icon primary"><i class="bi bi-currency-dollar"></i></div>
+             </div>
+         </div>
+ 
+-        <!-- KPI 2: Đơn Hàng Hôm Nay -->
++        @* Đơn Hàng Hôm Nay *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Đơn Hàng Hôm Nay</span>
+-                    <div class="p-2 rounded-3 bg-success bg-opacity-10 text-success">
+-                        <i class="bi bi-bag-check-fill fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Đơn hàng hôm nay</div>
++                    <div class="stat-card-value">
++                        <span class="count-up" data-target="@Model.TodayOrdersCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
++                    </div>
++                    <div class="stat-card-trend up">
++                        <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.TodayOrdersCount <span class="fs-6 fw-normal text-muted">đơn</span></h4>
+-                <div class="text-success small fw-semibold">
+-                    <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
+-                </div>
++                <div class="stat-card-icon success"><i class="bi bi-bag-check-fill"></i></div>
+             </div>
+         </div>
+ 
+-        <!-- KPI 3: Nhân Sự Active -->
++        @* Nhân Sự Active *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Nhân Sự Active</span>
+-                    <div class="p-2 rounded-3 bg-info bg-opacity-10 text-info">
+-                        <i class="bi bi-people-fill fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Nhân sự</div>
++                    <div class="stat-card-value">
++                        <span class="count-up" data-target="@Model.ActiveEmployeesCount">0</span>
++                        <small class="text-muted" style="font-size:14px;">/ @Model.TotalEmployeesCount</small>
++                    </div>
++                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
++                        <i class="bi bi-check-circle-fill text-success me-1"></i>Đang hoạt động
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.ActiveEmployeesCount <span class="fs-6 fw-normal text-muted">/ @Model.TotalEmployeesCount</span></h4>
+-                <div class="text-muted small" style="font-size: 11px;">
+-                    <i class="bi bi-check-circle-fill text-success me-1"></i>Hồ sơ đang hoạt động
+-                </div>
++                <div class="stat-card-icon info"><i class="bi bi-people-fill"></i></div>
+             </div>
+         </div>
+ 
+-        <!-- KPI 4: Đơn Chờ Duyệt -->
++        @* Đơn Chờ Duyệt *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Đơn Chờ Phê Duyệt</span>
+-                    <div class="p-2 rounded-3 bg-warning bg-opacity-10 text-warning">
+-                        <i class="bi bi-clock-history fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Chờ phê duyệt</div>
++                    <div class="stat-card-value" style="color:var(--erp-warning);">
++                        <span class="count-up" data-target="@Model.PendingApprovalsCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
++                    </div>
++                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
++                        <a href="/DonTu/Index" class="text-decoration-none small">Duyệt ngay →</a>
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-warning">@Model.PendingApprovalsCount <span class="fs-6 fw-normal text-muted">đơn</span></h4>
+-                <div class="text-muted small" style="font-size: 11px;">
+-                    <a href="/DonTu/Index" class="text-decoration-none">Duyệt nghỉ phép & PO &rarr;</a>
+-                </div>
++                <div class="stat-card-icon warning"><i class="bi bi-clock-history"></i></div>
+             </div>
+         </div>
+ 
+-        <!-- KPI 5: Tồn Kho Cảnh Báo -->
++        @* Tồn Kho Cảnh Báo *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Cảnh Báo Tồn Kho</span>
+-                    <div class="p-2 rounded-3 bg-danger bg-opacity-10 text-danger">
+-                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Cảnh báo tồn kho</div>
++                    <div class="stat-card-value" style="color:var(--erp-danger);">
++                        <span class="count-up" data-target="@Model.LowStockCount">0</span> <small class="text-muted" style="font-size:14px;">mặt hàng</small>
++                    </div>
++                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
++                        <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none small">Dưới ngưỡng →</a>
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-danger">@Model.LowStockCount <span class="fs-6 fw-normal text-muted">mặt hàng</span></h4>
+-                <div class="text-muted small" style="font-size: 11px;">
+-                    <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none fw-semibold">Dưới ngưỡng an toàn &rarr;</a>
+-                </div>
++                <div class="stat-card-icon danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+             </div>
+         </div>
+ 
+-        <!-- KPI 6: Công Nợ Quá Hạn -->
++        @* Công Nợ Quá Hạn *@
+         <div class="col-xl-2 col-md-4 col-sm-6">
+-            <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+-                <div class="d-flex justify-content-between align-items-center mb-2">
+-                    <span class="text-muted small fw-semibold">Nợ Quá Hạn</span>
+-                    <div class="p-2 rounded-3 bg-dark bg-opacity-10 text-dark">
+-                        <i class="bi bi-credit-card-2-front-fill fs-5"></i>
++            <div class="stat-card hover-lift">
++                <div class="stat-card-body">
++                    <div class="stat-card-label">Nợ quá hạn</div>
++                    <div class="stat-card-value">
++                        <span class="count-up" data-target="@Model.OverdueDebtTotal" data-suffix=" đ">0</span>
++                    </div>
++                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
++                        <a href="/CongNo/Index" class="text-decoration-none small">Phân tích tuổi nợ →</a>
+                     </div>
+                 </div>
+-                <h4 class="fw-bold mb-1 font-monospace text-dark">@Model.OverdueDebtTotal.ToString("N0") đ</h4>
+-                <div class="text-muted small" style="font-size: 11px;">
+-                    <a href="/CongNo/Index" class="text-decoration-none">Phân tích tuổi nợ &rarr;</a>
+-                </div>
++                <div class="stat-card-icon purple"><i class="bi bi-credit-card-2-front-fill"></i></div>
+             </div>
+         </div>
+     </div>
+ 
+-    <!-- 3. REALTIME INTERACTIVE ANALYTICS CHARTS SECTION -->
++    @* ═══════ BIỂU ĐỒ ═══════ *@
+     <div class="row g-4 mb-4">
+-        <!-- 12 Months Revenue Growth Line Chart -->
++        @* Doanh thu 12 tháng *@
+         <div class="col-lg-8">
+-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
++            <div class="erp-table-wrapper p-4 h-100 chart-container">
+                 <div class="d-flex justify-content-between align-items-center mb-3">
+                     <div>
+-                        <h5 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Biểu Đồ Doanh Thu 12 Tháng Gần Nhất</h5>
+-                        <p class="text-muted small mb-0">Xu hướng phát triển doanh số bán hàng lẻ & đơn đặt hàng</p>
++                        <h6 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Doanh thu 12 tháng</h6>
++                        <p class="text-muted small mb-0">Xu hướng doanh số bán hàng lẻ & đơn đặt hàng</p>
+                     </div>
+-                    <span class="badge bg-primary bg-opacity-10 text-primary font-monospace px-3 py-2">
+-                        Tổng: @Model.MonthlyRevenue.ToString("N0") đ
+-                    </span>
++                    <span class="erp-badge erp-badge-primary">Tổng: @Model.MonthlyRevenue.ToString("N0") đ</span>
+                 </div>
+-                <div style="height: 300px; position: relative;">
++                <div style="height:300px; position:relative;">
+                     <canvas id="revenue12MonthsChart"></canvas>
+                 </div>
+             </div>
+         </div>
+ 
+-        <!-- Revenue Distribution By Branch Doughnut Chart -->
++        @* Tỷ trọng doanh thu *@
+         <div class="col-lg-4">
+-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+-                <div class="d-flex justify-content-between align-items-center mb-3">
+-                    <div>
+-                        <h5 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ Trọng Doanh Thu</h5>
+-                        <p class="text-muted small mb-0">Phân bổ doanh số theo Chi Nhánh</p>
+-                    </div>
+-                </div>
+-                <div style="height: 250px; position: relative;" class="d-flex justify-content-center align-items-center">
++            <div class="erp-table-wrapper p-4 h-100 chart-container">
++                <h6 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ trọng doanh thu</h6>
++                <p class="text-muted small mb-3">Phân bổ theo chi nhánh</p>
++                <div style="height:250px;" class="d-flex justify-content-center align-items-center">
+                     <canvas id="branchRevenueChart"></canvas>
+                 </div>
+-                <div class="mt-3 text-center text-muted small">
+-                    <i class="bi bi-info-circle me-1"></i> Cập nhật tự động theo giao dịch POS real-time
+-                </div>
+             </div>
+         </div>
+     </div>
+ 
+-    <!-- 4. BOTTOM GRID: TOP BEST-SELLING PRODUCTS & REALTIME ACTIVITY FEED -->
++    @* ═══════ BẢNG SẢN PHẨM BÁN CHẠY + ACTIVITY FEED ═══════ *@
+     <div class="row g-4">
+-        <!-- Top 10 Best-Selling Products -->
++        @* Top sản phẩm *@
+         <div class="col-lg-7">
+-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+-                <div class="d-flex justify-content-between align-items-center mb-3">
++            <div class="erp-table-wrapper h-100">
++                <div class="erp-table-toolbar">
+                     <div>
+-                        <h5 class="fw-bold mb-1"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Sản Phẩm Bán Chạy Nhất</h5>
+-                        <p class="text-muted small mb-0">Xếp hạng dựa trên tổng số lượng tiêu thụ trong hệ thống</p>
++                        <span class="erp-table-toolbar-title"><i class="bi bi-trophy-fill text-warning me-2"></i>Top sản phẩm bán chạy</span>
+                     </div>
+-                    <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả &rarr;</a>
++                    <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả →</a>
+                 </div>
+-
+                 <div class="table-responsive">
+-                    <table class="table table-hover align-middle mb-0" style="font-size: 13.5px;">
+-                        <thead class="table-light">
++                    <table class="table table-hover align-middle mb-0">
++                        <thead>
+                             <tr>
+                                 <th>#</th>
+-                                <th>Mã SKU / Sản phẩm</th>
++                                <th>Sản phẩm</th>
+                                 <th>Danh mục</th>
+-                                <th class="text-center">Đã Bán</th>
+-                                <th class="text-end">Doanh Số</th>
++                                <th class="text-center">Đã bán</th>
++                                <th class="text-end">Doanh số</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+@@ -220,18 +194,18 @@
+                                         <td class="fw-bold text-muted font-monospace">@rank</td>
+                                         <td>
+                                             <div class="d-flex align-items-center gap-2">
+-                                                <div class="rounded-3 p-2 bg-light border text-center text-primary" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
++                                                <div class="stat-card-icon primary" style="width:32px;height:32px;font-size:14px;border-radius:8px;">
+                                                     <i class="bi bi-box-seam"></i>
+                                                 </div>
+                                                 <div>
+-                                                    <div class="fw-bold text-dark">@p.Name</div>
+-                                                    <div class="font-monospace text-muted" style="font-size: 11px;">@p.SKU</div>
++                                                    <div class="fw-semibold small">@p.Name</div>
++                                                    <div class="text-muted" style="font-size:11px;">@p.SKU</div>
+                                                 </div>
+                                             </div>
+                                         </td>
+-                                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@p.CategoryName</span></td>
+-                                        <td class="text-center font-monospace fw-bold text-primary">@p.QuantitySold</td>
+-                                        <td class="text-end font-monospace fw-bold text-success">@p.Revenue.ToString("N0") đ</td>
++                                        <td><span class="erp-badge erp-badge-neutral">@p.CategoryName</span></td>
++                                        <td class="text-center font-monospace fw-bold" style="color:var(--erp-primary);">@p.QuantitySold</td>
++                                        <td class="text-end font-monospace fw-bold" style="color:var(--erp-success);">@p.Revenue.ToString("N0") đ</td>
+                                     </tr>
+                                     rank++;
+                                 }
+@@ -239,7 +213,13 @@
+                             else
+                             {
+                                 <tr>
+-                                    <td colspan="5" class="text-center py-4 text-muted">Chưa có thông tin sản phẩm bán lẻ</td>
++                                    <td colspan="5">
++                                        <div class="erp-empty-state">
++                                            <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
++                                            <div class="erp-empty-state-title">Chưa có dữ liệu</div>
++                                            <div class="erp-empty-state-desc">Chưa có thông tin sản phẩm bán lẻ</div>
++                                        </div>
++                                    </td>
+                                 </tr>
+                             }
+                         </tbody>
+@@ -248,43 +228,41 @@
+             </div>
+         </div>
+ 
+-        <!-- Real-time Activity Feed & System Log -->
++        @* Activity Feed *@
+         <div class="col-lg-5">
+-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+-                <div class="d-flex justify-content-between align-items-center mb-3">
+-                    <div>
+-                        <h5 class="fw-bold mb-1"><i class="bi bi-activity text-danger me-2"></i>Activity Feed (Nhật Ký HĐ)</h5>
+-                        <p class="text-muted small mb-0">Các sự kiện & thao tác gần nhất trong hệ thống</p>
+-                    </div>
+-                    <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log &rarr;</a>
++            <div class="erp-table-wrapper h-100">
++                <div class="erp-table-toolbar">
++                    <span class="erp-table-toolbar-title"><i class="bi bi-activity text-danger me-2"></i>Hoạt động gần đây</span>
++                    <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log →</a>
+                 </div>
+-
+-                <div class="list-group list-group-flush" id="activityFeedList" style="max-height: 400px; overflow-y: auto;">
++                <div class="p-3" id="activityFeedList" style="max-height:420px; overflow-y:auto;">
+                     @if (Model.RecentActivities != null && Model.RecentActivities.Any())
+                     {
+                         foreach (var act in Model.RecentActivities)
+                         {
+-                            <div class="list-group-item px-0 py-3 border-bottom">
+-                                <div class="d-flex justify-content-between align-items-start gap-2">
+-                                    <div class="d-flex gap-2 align-items-start">
+-                                        <div class="rounded-circle p-2 @act.BadgeClass bg-opacity-10 text-dark flex-shrink-0" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+-                                            <i class="bi @act.IconClass"></i>
+-                                        </div>
+-                                        <div>
+-                                            <div class="fw-semibold text-dark small">@act.Description</div>
+-                                            <div class="text-muted" style="font-size: 11px;">
+-                                                <i class="bi bi-person me-1"></i>@act.Username • <span class="badge @act.BadgeClass">@act.Action</span>
+-                                            </div>
++                            <div class="d-flex justify-content-between align-items-start gap-2 py-3 border-bottom">
++                                <div class="d-flex gap-2 align-items-start">
++                                    <div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
++                                        @(act.Username?.Length > 0 ? act.Username[0].ToString().ToUpper() : "?")
++                                    </div>
++                                    <div>
++                                        <div class="fw-semibold small">@act.Description</div>
++                                        <div class="text-muted" style="font-size:11px;">
++                                            @act.Username • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">@act.Action</span>
+                                         </div>
+                                     </div>
+-                                    <span class="text-muted font-monospace" style="font-size: 11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
+                                 </div>
++                                <span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
+                             </div>
+                         }
+                     }
+                     else
+                     {
+-                        <div class="text-center py-4 text-muted small">Chưa có nhật ký hoạt động gần đây</div>
++                        <div class="erp-empty-state">
++                            <div class="erp-empty-state-icon"><i class="bi bi-clock-history"></i></div>
++                            <div class="erp-empty-state-title">Chưa có hoạt động</div>
++                            <div class="erp-empty-state-desc">Nhật ký hoạt động sẽ xuất hiện khi có thao tác mới</div>
++                        </div>
+                     }
+                 </div>
+             </div>
+@@ -292,130 +270,129 @@
+     </div>
+ </div>
+ 
+-<!-- 5. CHART.JS INITIALIZATION & SIGNALR DASHBOARD UPDATE LISTENER -->
++@* ═══════ CHART INIT ═══════ *@
+ <script>
+-    document.addEventListener("DOMContentLoaded", function () {
+-        // 1. Line Chart 12 Months Revenue Trend
+-        const ctxRev = document.getElementById('revenue12MonthsChart');
+-        if (ctxRev) {
+-            const labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
+-            const dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
++document.addEventListener("DOMContentLoaded", function () {
++    // Lấy màu từ CSS variables cho dark mode
++    var style = getComputedStyle(document.documentElement);
++    var gridColor = style.getPropertyValue('--erp-border-color').trim() || 'rgba(0,0,0,0.05)';
++    var textColor = style.getPropertyValue('--erp-text-muted').trim() || '#64748B';
+ 
+-            new Chart(ctxRev, {
+-                type: 'line',
+-                data: {
+-                    labels: labelsRev,
+-                    datasets: [{
+-                        label: 'Doanh Thu (VNĐ)',
+-                        data: dataRev,
+-                        borderColor: '#2563EB',
+-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+-                        fill: true,
+-                        tension: 0.35,
+-                        pointRadius: 4,
+-                        pointHoverRadius: 7,
+-                        borderWidth: 3
+-                    }]
+-                },
+-                options: {
+-                    responsive: true,
+-                    maintainAspectRatio: false,
+-                    plugins: {
+-                        legend: { display: false },
+-                        tooltip: {
+-                            callbacks: {
+-                                label: function(context) {
+-                                    return ' Doanh thu: ' + context.parsed.y.toLocaleString('vi-VN') + ' đ';
+-                                }
+-                            }
+-                        }
+-                    },
+-                    scales: {
+-                        y: {
+-                            beginAtZero: true,
+-                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+-                            ticks: {
+-                                callback: function(value) {
+-                                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + ' tỷ';
+-                                    if (value >= 1000000) return (value / 1000000).toFixed(0) + ' tr';
+-                                    return value.toLocaleString('vi-VN');
+-                                }
+-                            }
+-                        },
+-                        x: {
+-                            grid: { display: false }
++    // Doanh thu 12 tháng
++    var ctxRev = document.getElementById('revenue12MonthsChart');
++    if (ctxRev) {
++        var labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
++        var dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
++        new Chart(ctxRev, {
++            type: 'line',
++            data: {
++                labels: labelsRev,
++                datasets: [{
++                    label: 'Doanh thu (VNĐ)',
++                    data: dataRev,
++                    borderColor: '#2563EB',
++                    backgroundColor: 'rgba(37,99,235,0.08)',
++                    fill: true,
++                    tension: 0.4,
++                    pointRadius: 4,
++                    pointHoverRadius: 7,
++                    pointBackgroundColor: '#2563EB',
++                    borderWidth: 2.5
++                }]
++            },
++            options: {
++                responsive: true,
++                maintainAspectRatio: false,
++                animation: { duration: 1200, easing: 'easeOutQuart' },
++                plugins: {
++                    legend: { display: false },
++                    tooltip: {
++                        backgroundColor: 'rgba(15,23,42,0.9)',
++                        titleFont: { family: "'Be Vietnam Pro'" },
++                        bodyFont: { family: "'Be Vietnam Pro'" },
++                        cornerRadius: 8,
++                        padding: 12,
++                        callbacks: {
++                            label: function (c) { return ' Doanh thu: ' + c.parsed.y.toLocaleString('vi-VN') + ' đ'; }
+                         }
+                     }
+-                }
+-            });
+-        }
+-
+-        // 2. Doughnut Chart Branch Revenue Distribution
+-        const ctxBranch = document.getElementById('branchRevenueChart');
+-        if (ctxBranch) {
+-            const labelsBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
+-            const dataBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
+-
+-            new Chart(ctxBranch, {
+-                type: 'doughnut',
+-                data: {
+-                    labels: labelsBranch.length > 0 ? labelsBranch : ['Trụ sở chính'],
+-                    datasets: [{
+-                        data: dataBranch.length > 0 ? dataBranch : [1],
+-                        backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
+-                        borderWidth: 2,
+-                        borderColor: '#ffffff'
+-                    }]
+                 },
+-                options: {
+-                    responsive: true,
+-                    maintainAspectRatio: false,
+-                    plugins: {
+-                        legend: {
+-                            position: 'bottom',
+-                            labels: { boxWidth: 12, padding: 15, font: { size: 12 } }
+-                        },
+-                        tooltip: {
+-                            callbacks: {
+-                                label: function(context) {
+-                                    return ' ' + context.label + ': ' + context.parsed.toLocaleString('vi-VN') + ' đ';
+-                                }
++                scales: {
++                    y: {
++                        beginAtZero: true,
++                        grid: { color: gridColor, drawBorder: false },
++                        ticks: {
++                            color: textColor,
++                            font: { family: "'Be Vietnam Pro'", size: 11 },
++                            callback: function (v) {
++                                if (v >= 1e9) return (v / 1e9).toFixed(1) + ' tỷ';
++                                if (v >= 1e6) return (v / 1e6).toFixed(0) + ' tr';
++                                return v.toLocaleString('vi-VN');
+                             }
+                         }
+                     },
+-                    cutout: '65%'
++                    x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Be Vietnam Pro'", size: 11 } } }
+                 }
+-            });
+-        }
++            }
++        });
++    }
+ 
+-        // 3. Listen to SignalR Live Events to refresh Activity Feed dynamically
+-        if (window.enterpriseSignalRHub) {
+-            window.enterpriseSignalRHub.on("ReceiveNotification", function(data) {
+-                console.log("Real-time Dashboard Event Received:", data);
+-                // Prepend to Activity Feed
+-                const feed = document.getElementById("activityFeedList");
+-                if (feed) {
+-                    const item = document.createElement("div");
+-                    item.className = "list-group-item px-0 py-3 border-bottom animate__animated animate__fadeInDown";
+-                    item.innerHTML = `
+-                        <div class="d-flex justify-content-between align-items-start gap-2">
+-                            <div class="d-flex gap-2 align-items-start">
+-                                <div class="rounded-circle p-2 bg-primary bg-opacity-10 text-primary flex-shrink-0" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;">
+-                                    <i class="bi bi-bell-fill"></i>
+-                                </div>
+-                                <div>
+-                                    <div class="fw-semibold text-dark small">${HRM.escapeHtml(data.title)}</div>
+-                                    <div class="text-muted" style="font-size: 11px;">
+-                                        ${HRM.escapeHtml(data.content)} • <span class="badge bg-primary">${HRM.escapeHtml(data.type || 'SYSTEM')}</span>
+-                                    </div>
+-                                </div>
+-                            </div>
+-                            <span class="text-muted font-monospace" style="font-size: 11px;">${data.createdAt || 'Vừa xong'}</span>
+-                        </div>
+-                    `;
+-                    feed.insertBefore(item, feed.firstChild);
+-                }
+-            });
+-        }
+-    });
++    // Tỷ trọng chi nhánh
++    var ctxBranch = document.getElementById('branchRevenueChart');
++    if (ctxBranch) {
++        var lb = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
++        var db = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
++        new Chart(ctxBranch, {
++            type: 'doughnut',
++            data: {
++                labels: lb.length > 0 ? lb : ['Trụ sở chính'],
++                datasets: [{
++                    data: db.length > 0 ? db : [1],
++                    backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
++                    borderWidth: 2,
++                    borderColor: style.getPropertyValue('--erp-bg-card').trim() || '#fff'
++                }]
++            },
++            options: {
++                responsive: true,
++                maintainAspectRatio: false,
++                animation: { duration: 1000, easing: 'easeOutQuart' },
++                plugins: {
++                    legend: {
++                        position: 'bottom',
++                        labels: { boxWidth: 10, padding: 12, font: { family: "'Be Vietnam Pro'", size: 11 }, color: textColor }
++                    },
++                    tooltip: {
++                        backgroundColor: 'rgba(15,23,42,0.9)',
++                        cornerRadius: 8,
++                        padding: 12,
++                        callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.parsed.toLocaleString('vi-VN') + ' đ'; } }
++                    }
++                },
++                cutout: '68%'
++            }
++        });
++    }
++
++    // SignalR Activity Feed live update
++    if (window.enterpriseSignalRHub) {
++        window.enterpriseSignalRHub.on("ReceiveNotification", function (d) {
++            var feed = document.getElementById("activityFeedList");
++            if (!feed) return;
++            var item = document.createElement("div");
++            item.className = "d-flex justify-content-between align-items-start gap-2 py-3 border-bottom slide-up";
++            item.innerHTML = '<div class="d-flex gap-2 align-items-start">' +
++                '<div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">S</div>' +
++                '<div><div class="fw-semibold small">' + HRM.escapeHtml(d.title) + '</div>' +
++                '<div class="text-muted" style="font-size:11px;">' + HRM.escapeHtml(d.content) +
++                ' • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">' + HRM.escapeHtml(d.type || 'SYSTEM') + '</span></div></div></div>' +
++                '<span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">Vừa xong</span>';
++            feed.insertBefore(item, feed.firstChild);
++        });
++    }
++});
+ </script>
++
++@section Scripts {
++    @* Thêm script bổ sung nếu cần *@
++}
+diff --git a/Views/Shared/_Layout.cshtml b/Views/Shared/_Layout.cshtml
+index 1618d7d..1600299 100644
+--- a/Views/Shared/_Layout.cshtml
++++ b/Views/Shared/_Layout.cshtml
+@@ -1,187 +1,300 @@
+ @inject ERP_HRM_CMS.Data.AppDbContext Db
+-@{ var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP"); }
++@{
++    var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP");
++    var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
++    var avatarInitial = !string.IsNullOrEmpty(fullName) ? fullName[0].ToString().ToUpper() : "Q";
++    var isAuth = User.Identity?.IsAuthenticated ?? false;
++    var isSuperAdmin = User.IsInRole("SUPERADMIN") || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase);
++}
+ <!DOCTYPE html>
+ <html lang="vi">
+ <head>
+     <meta charset="utf-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>@ViewData["Title"] - ERP_HRM_CMS</title>
++    <title>@ViewData["Title"] - @brand</title>
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+     <link rel="stylesheet" href="~/css/enterprise-theme.css" asp-append-version="true" />
++    <link rel="stylesheet" href="~/css/admin-components.css" asp-append-version="true" />
++    <link rel="stylesheet" href="~/css/admin-animations.css" asp-append-version="true" />
++    @* Chống nhấp nháy: áp dụng theme trước khi render *@
+     <script>
+-        (function() {
+-            const match = document.cookie.match(/(^| )erp_theme=([^;]+)/);
+-            const savedTheme = localStorage.getItem('erp_theme') || (match ? match[2] : null) || 'light';
+-            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+-            if (savedTheme === 'dark') {
+-                document.documentElement.classList.add('dark-mode');
+-            }
++        (function () {
++            var m = document.cookie.match(/(^| )erp_theme=([^;]+)/);
++            var t = localStorage.getItem('erp_theme') || (m ? m[2] : null);
++            if (!t) { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
++            document.documentElement.setAttribute('data-bs-theme', t);
++            if (t === 'dark') document.documentElement.classList.add('dark-mode');
++            // Sidebar thu gọn
++            if (localStorage.getItem('erp_sidebar_collapsed') === 'true') document.documentElement.classList.add('sidebar-collapsed');
+         })();
+     </script>
+ </head>
+ <body class="bg-body">
+-    @{
+-        var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
+-        var isAuth = User.Identity?.IsAuthenticated ?? false;
+-    }
+-
+-    <!-- Topbar Navigation -->
+-    <header class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-2">
+-        <div class="container-fluid px-3">
+-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+-                <i class="bi bi-layers-half text-primary fs-4"></i>
+-                <span>@brand</span>
+-            </a>
+-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+-                <span class="navbar-toggler-icon"></span>
++
++@if (isAuth)
++{
++    @* ═══════════════════════════════════════════════════════════════════
++       SIDEBAR - Thu gọn được (toggle qua nút hoặc responsive)
++       ═══════════════════════════════════════════════════════════════════ *@
++    <aside class="erp-sidebar" id="erpSidebar">
++        @* Logo & Brand *@
++        <div class="erp-sidebar-brand">
++            <div class="sidebar-brand-full">
++                <i class="bi bi-layers-half fs-4 text-primary"></i>
++                <span class="brand-text">@brand</span>
++            </div>
++            <div class="sidebar-brand-mini">
++                <i class="bi bi-layers-half fs-4 text-primary"></i>
++            </div>
++        </div>
++
++        @* Menu chính *@
++        <nav class="erp-sidebar-nav" id="sidebarNav">
++            @* — Tổng quan — *@
++            <div class="nav-section-title">Tổng quan</div>
++            <a href="/" class="erp-nav-item" data-path="/">
++                <i class="bi bi-grid-1x2"></i>
++                <span class="nav-label">Dashboard</span>
++            </a>
++
++            @* — Nhân sự — *@
++            <div class="nav-section-title">Nhân sự</div>
++            <a href="/NhanSu/Index" class="erp-nav-item" data-path="/NhanSu">
++                <i class="bi bi-person-badge"></i>
++                <span class="nav-label">Nhân sự</span>
++            </a>
++            <a href="/PhongBan/Index" class="erp-nav-item" data-path="/PhongBan">
++                <i class="bi bi-diagram-3"></i>
++                <span class="nav-label">Phòng ban</span>
++            </a>
++            <a href="/HopDong/Index" class="erp-nav-item" data-path="/HopDong">
++                <i class="bi bi-file-earmark-text"></i>
++                <span class="nav-label">Hợp đồng</span>
++            </a>
++            <a href="/ChamCong/Index" class="erp-nav-item" data-path="/ChamCong">
++                <i class="bi bi-calendar2-check"></i>
++                <span class="nav-label">Chấm công</span>
++            </a>
++            <a href="/DonTu/Index" class="erp-nav-item" data-path="/DonTu">
++                <i class="bi bi-file-earmark-check"></i>
++                <span class="nav-label">Đơn từ</span>
++            </a>
++            <a href="/BangLuong/Index" class="erp-nav-item" data-path="/BangLuong">
++                <i class="bi bi-cash-stack"></i>
++                <span class="nav-label">Bảng lương</span>
++            </a>
++
++            @* — Bán hàng & Kho — *@
++            <div class="nav-section-title">Bán hàng & Kho</div>
++            <a href="/BanHang/POS" class="erp-nav-item" data-path="/BanHang">
++                <i class="bi bi-cart3"></i>
++                <span class="nav-label">POS bán hàng</span>
++            </a>
++            <a href="/DonHang/Index" class="erp-nav-item" data-path="/DonHang">
++                <i class="bi bi-receipt"></i>
++                <span class="nav-label">Đơn hàng</span>
++            </a>
++            <a href="/SanPham/Index" class="erp-nav-item" data-path="/SanPham">
++                <i class="bi bi-box-seam"></i>
++                <span class="nav-label">Sản phẩm</span>
++            </a>
++            <a href="/Kho/Index" class="erp-nav-item" data-path="/Kho">
++                <i class="bi bi-building"></i>
++                <span class="nav-label">Kho hàng</span>
++            </a>
++            <a href="/PurchaseOrder/Index" class="erp-nav-item" data-path="/PurchaseOrder">
++                <i class="bi bi-truck"></i>
++                <span class="nav-label">Mua hàng (PO)</span>
++            </a>
++            <a href="/CongNo/Index" class="erp-nav-item" data-path="/CongNo">
++                <i class="bi bi-cash-coin"></i>
++                <span class="nav-label">Công nợ</span>
++            </a>
++
++            @* — CMS — *@
++            <div class="nav-section-title">Nội dung</div>
++            <a href="/Content/Index" class="erp-nav-item" data-path="/Content">
++                <i class="bi bi-newspaper"></i>
++                <span class="nav-label">Bài viết</span>
++            </a>
++            <a href="/Menu/Index" class="erp-nav-item" data-path="/Menu">
++                <i class="bi bi-list-stars"></i>
++                <span class="nav-label">Menu</span>
++            </a>
++
++            @* — Hệ thống — *@
++            <div class="nav-section-title">Hệ thống</div>
++            <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item" data-path="/PhanQuyen">
++                <i class="bi bi-shield-lock"></i>
++                <span class="nav-label">Phân quyền</span>
++            </a>
++            @if (isSuperAdmin)
++            {
++                <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item" data-path="/QuanTriTaiKhoan">
++                    <i class="bi bi-people"></i>
++                    <span class="nav-label">Tài khoản</span>
++                </a>
++                <a href="/VaiTro/Index" class="erp-nav-item" data-path="/VaiTro">
++                    <i class="bi bi-diagram-3"></i>
++                    <span class="nav-label">Nhóm quyền</span>
++                </a>
++            }
++            <a href="/AuditLog/Index" class="erp-nav-item" data-path="/AuditLog">
++                <i class="bi bi-shield-check"></i>
++                <span class="nav-label">Audit Trail</span>
++            </a>
++            <a href="/Notification/Index" class="erp-nav-item" data-path="/Notification">
++                <i class="bi bi-bell"></i>
++                <span class="nav-label">Thông báo</span>
++            </a>
++        </nav>
++
++        @* Nút thu gọn sidebar (ở đáy) *@
++        <div class="erp-sidebar-footer">
++            <button type="button" class="erp-sidebar-toggle" id="sidebarCollapseBtn" title="Thu gọn / Mở rộng">
++                <i class="bi bi-chevron-bar-left" id="sidebarToggleIcon"></i>
+             </button>
+-            <div class="collapse navbar-collapse" id="mainNavbar">
+-                @if (isAuth)
+-                {
+-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/PhanQuyen/MaTranPhanQuyen"><i class="bi bi-shield-lock me-1"></i> Phân Quyền</a>
+-                        </li>
+-                        @if (User.IsInRole("SUPERADMIN") || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase))
++        </div>
++    </aside>
++
++    @* ═══════════════════════════════════════════════════════════════════
++       MAIN CONTENT (Topbar + Breadcrumb + Body)
++       ═══════════════════════════════════════════════════════════════════ *@
++    <div class="erp-main-content" id="erpMainContent">
++
++        @* — Topbar — *@
++        <header class="erp-topbar" id="erpTopbar">
++            <div class="topbar-left">
++                @* Nút mở sidebar trên mobile *@
++                <button type="button" class="erp-sidebar-mobile-toggle d-lg-none" id="sidebarMobileBtn" aria-label="Mở menu">
++                    <i class="bi bi-list fs-4"></i>
++                </button>
++                @* Breadcrumb *@
++                <nav aria-label="breadcrumb" class="d-none d-md-block">
++                    <ol class="breadcrumb mb-0 small">
++                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="bi bi-house-door"></i></a></li>
++                        @if (ViewData["BreadcrumbSection"] != null)
+                         {
+-                            <li class="nav-item">
+-                                <a class="nav-link" href="/QuanTriTaiKhoan/Index"><i class="bi bi-people me-1"></i> Tài khoản</a>
+-                            </li>
+-                            <li class="nav-item">
+-                                <a class="nav-link" href="/VaiTro/Index"><i class="bi bi-diagram-3 me-1"></i> Nhóm quyền</a>
+-                            </li>
++                            <li class="breadcrumb-item">@ViewData["BreadcrumbSection"]</li>
+                         }
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/NhanSu/Index"><i class="bi bi-people me-1"></i> Nhân Sự (HRM)</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/DonTu/Index"><i class="bi bi-file-earmark-check me-1"></i> Đơn Từ</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/ChamCong/Index"><i class="bi bi-calendar2-check me-1"></i> Chấm Công</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/BangLuong/Index"><i class="bi bi-cash-stack me-1"></i> Bảng Lương</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/BanHang/POS"><i class="bi bi-cart3 me-1"></i> Bán Hàng & POS</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/Kho/Index"><i class="bi bi-box-seam me-1"></i> Quản Lý Kho</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/PurchaseOrder/Index"><i class="bi bi-truck me-1"></i> Mua Hàng PO</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/CongNo/Index"><i class="bi bi-cash-coin me-1"></i> Công Nợ</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/Content/Index"><i class="bi bi-newspaper me-1"></i> CMS Bài Viết</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/Menu/Index"><i class="bi bi-list-stars me-1"></i> CMS Menu</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link text-warning" href="/AuditLog/Index"><i class="bi bi-shield-check me-1"></i> Audit Trail</a>
+-                        </li>
+-                    </ul>
+-                    <div class="d-flex align-items-center gap-2">
+-                        <!-- Quick Command Palette Trigger (Ctrl + K) -->
+-                        <button type="button" class="command-palette-trigger border-0 me-1" onclick="window.openCommandPalette()" title="Tìm kiếm nhanh toàn hệ thống (Ctrl + K)">
+-                            <i class="bi bi-search text-muted"></i>
+-                            <span class="d-none d-xl-inline text-muted small">Tìm kiếm...</span>
+-                            <kbd class="ms-1 d-none d-md-inline">Ctrl K</kbd>
+-                        </button>
+-
+-                        <!-- Nút Chuyển đổi Dark / Light Mode -->
+-                        <button type="button" class="btn btn-sm btn-outline-light border-0 py-1 px-2" onclick="window.toggleTheme()" title="Chuyển đổi Chế độ Sáng / Tối">
+-                            <i class="bi bi-moon-stars-fill theme-toggle-icon fs-5"></i>
+-                        </button>
+-
+-                        <!-- Chuông thông báo Real-time -->
+-                        <div class="dropdown">
+-                            <button class="btn btn-outline-light btn-sm position-relative py-1 px-2 border-0" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo hệ thống">
+-                                <i class="bi bi-bell fs-5"></i>
+-                                <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 10px;">0</span>
+-                            </button>
+-                            <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" aria-labelledby="notifDropdownBtn" style="width: 340px; max-height: 460px;">
+-                                <div class="p-3 bg-dark text-white rounded-top d-flex justify-content-between align-items-center">
+-                                    <h6 class="mb-0 fw-bold fs-6"><i class="bi bi-bell-fill me-2 text-warning"></i>Thông Báo Real-time</h6>
+-                                    <a href="javascript:void(0)" class="text-white-50 small text-decoration-none" onclick="fetch('/Notification/MarkAllAsRead', {method:'POST'}).then(() => window.refreshNotificationDropdown())">Đã đọc hết</a>
+-                                </div>
+-                                <div id="notificationDropdownList" style="max-height: 320px; overflow-y: auto;">
+-                                    <div class="text-center py-4 text-muted small"><i class="bi bi-arrow-repeat spin d-block mb-1"></i>Đang tải...</div>
+-                                </div>
+-                                <div class="p-2 text-center bg-light rounded-bottom border-top">
+-                                    <a href="/Notification/Index" class="small fw-semibold text-decoration-none text-primary">Xem tất cả thông báo &rarr;</a>
+-                                </div>
+-                            </div>
+-                        </div>
++                        @if (ViewData["Title"] != null)
++                        {
++                            <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
++                        }
++                    </ol>
++                </nav>
++            </div>
++            <div class="topbar-right">
++                @* Tìm kiếm nhanh *@
++                <button type="button" class="command-palette-trigger" onclick="window.openCommandPalette()" title="Tìm kiếm nhanh (Ctrl + K)">
++                    <i class="bi bi-search"></i>
++                    <span class="d-none d-xl-inline">Tìm kiếm...</span>
++                    <kbd class="d-none d-lg-inline">Ctrl K</kbd>
++                </button>
++
++                @* Dark / Light *@
++                <button type="button" class="topbar-icon-btn" onclick="window.toggleTheme()" title="Sáng / Tối">
++                    <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
++                </button>
+ 
+-                        <span class="text-light small"><i class="bi bi-person-circle me-1"></i> @fullName</span>
+-                        <a href="/" target="_blank" class="btn btn-sm btn-outline-light" title="Xem trang chủ công khai"><i class="bi bi-globe"></i> Trang Public</a>
+-                        <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
+-                            @Html.AntiForgeryToken()
+-                            <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2"><i class="bi bi-box-arrow-right me-1"></i> Đăng xuất</button>
+-                        </form>
++                @* Thông báo *@
++                <div class="dropdown">
++                    <button class="topbar-icon-btn position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
++                        <i class="bi bi-bell"></i>
++                        <span id="notificationBadge" class="notif-badge" style="display:none;">0</span>
++                    </button>
++                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" aria-labelledby="notifDropdownBtn" style="width:360px; max-height:480px;">
++                        <div class="p-3 d-flex justify-content-between align-items-center" style="background:var(--erp-bg-sidebar); color:#fff;">
++                            <span class="fw-bold small"><i class="bi bi-bell-fill me-2 text-warning"></i>Thông báo</span>
++                            <a href="javascript:void(0)" class="text-white-50 small text-decoration-none"
++                               onclick="fetch('/Notification/MarkAllAsRead',{method:'POST'}).then(()=>window.refreshNotificationDropdown())">Đã đọc hết</a>
++                        </div>
++                        <div id="notificationDropdownList" style="max-height:340px; overflow-y:auto;">
++                            <div class="text-center py-4 text-muted small"><i class="bi bi-arrow-repeat spin d-block mb-1"></i>Đang tải...</div>
++                        </div>
++                        <div class="p-2 text-center border-top">
++                            <a href="/Notification/Index" class="small fw-semibold text-decoration-none text-primary">Xem tất cả &rarr;</a>
++                        </div>
+                     </div>
+-                }
+-                else
+-                {
+-                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
+-                        <li class="nav-item">
+-                            <a class="nav-link" href="/">Trang Chủ</a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="btn btn-sm btn-primary px-3" href="/Auth/Login"><i class="bi bi-box-arrow-in-right me-1"></i> Đăng Nhập</a>
++                </div>
++
++                @* Avatar & tên *@
++                <div class="dropdown">
++                    <button class="topbar-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
++                        <span class="avatar-circle">@avatarInitial</span>
++                        <span class="d-none d-lg-inline avatar-name">@fullName</span>
++                        <i class="bi bi-chevron-down small d-none d-lg-inline"></i>
++                    </button>
++                    <ul class="dropdown-menu dropdown-menu-end shadow-lg">
++                        <li><a class="dropdown-item small" href="/" target="_blank"><i class="bi bi-globe me-2"></i>Trang công khai</a></li>
++                        <li><hr class="dropdown-divider" /></li>
++                        <li>
++                            <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
++                                @Html.AntiForgeryToken()
++                                <button type="submit" class="dropdown-item small text-danger"><i class="bi bi-box-arrow-right me-2"></i>Đăng xuất</button>
++                            </form>
+                         </li>
+                     </ul>
+-                }
++                </div>
+             </div>
++        </header>
++
++        @* — Thông báo hệ thống (TempData) — *@
++        <div class="erp-content-wrapper">
++            @if (TempData["SuccessMessage"] != null)
++            {
++                <div class="erp-toast-alert erp-toast-success fade-in" role="alert">
++                    <i class="bi bi-check-circle-fill"></i>
++                    <span>@TempData["SuccessMessage"]</span>
++                    <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()"></button>
++                </div>
++            }
++            @if (TempData["ErrorMessage"] != null)
++            {
++                <div class="erp-toast-alert erp-toast-danger fade-in" role="alert">
++                    <i class="bi bi-exclamation-triangle-fill"></i>
++                    <span>@TempData["ErrorMessage"]</span>
++                    <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()"></button>
++                </div>
++            }
++
++            @* — Nội dung chính — *@
++            <main class="erp-page-content fade-in">
++                @RenderBody()
++            </main>
+         </div>
+-    </header>
+-
+-    <!-- Global Alerts for Feedback Messages -->
+-    <div class="container-fluid px-4 pt-3">
+-        @if (TempData["SuccessMessage"] != null)
+-        {
+-            <div class="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center py-2 px-3 mb-3" role="alert">
+-                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+-                <div class="small fw-semibold">@TempData["SuccessMessage"]</div>
+-                <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+-            </div>
+-        }
+-        @if (TempData["ErrorMessage"] != null)
+-        {
+-            <div class="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center py-2 px-3 mb-3" role="alert">
+-                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+-                <div class="small fw-semibold">@TempData["ErrorMessage"]</div>
+-                <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+-            </div>
+-        }
++
++        @* Footer *@
++        <footer class="erp-footer">
++            &copy; @ERP_HRM_CMS.Helpers.VietnamTime.Now.Year @brand &mdash; Hệ thống quản trị doanh nghiệp
++        </footer>
+     </div>
+ 
+-    <!-- Main Content Body -->
+-    <main class="container-fluid px-4 py-2">
++    @* Overlay khi sidebar mở trên mobile *@
++    <div class="erp-sidebar-overlay" id="sidebarOverlay"></div>
++}
++else
++{
++    @* Layout cho trang chưa đăng nhập (login, register) *@
++    <main class="container-fluid px-4 py-4">
+         @RenderBody()
+     </main>
++}
+ 
+-    <!-- Footer -->
+-    <footer class="border-top bg-white py-3 text-center text-muted small mt-5">
+-        <div class="container">
+-            &copy; @ERP_HRM_CMS.Helpers.VietnamTime.Now.Year - Hệ Thống ERP_HRM_CMS Doanh Nghiệp Toàn Diện
+-        </div>
+-    </footer>
+-
+-    <script src="~/js/security.js" asp-append-version="true"></script>
+-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
++@* ═══════ Scripts ═══════ *@
++<script src="~/js/security.js" asp-append-version="true"></script>
++<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
++<script src="~/lib/jquery/dist/jquery.min.js"></script>
++@if (isAuth)
++{
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+-    <script src="~/js/enterprise-notifications.js"></script>
+-    <script src="~/js/enterprise-theme.js"></script>
+-    <script src="~/js/site.js" asp-append-version="true"></script>
+-    @await RenderSectionAsync("Scripts", required: false)
++    <script src="~/js/enterprise-notifications.js" asp-append-version="true"></script>
++}
++<script src="~/js/enterprise-theme.js" asp-append-version="true"></script>
++<script src="~/js/admin-ui.js" asp-append-version="true"></script>
++<script src="~/js/site.js" asp-append-version="true"></script>
++@await RenderSectionAsync("Scripts", required: false)
+ </body>
+ </html>
+diff --git a/docs/PROGRESS.md b/docs/PROGRESS.md
+index 47351e2..7e4f611 100644
+--- a/docs/PROGRESS.md
++++ b/docs/PROGRESS.md
+@@ -1,6 +1,6 @@
+ # Tiến độ dự án
+ 
+-Cập nhật lần cuối: 2026-11-04 (cuối phiên 1)
++Cập nhật lần cuối: 2026-11-04 (cuối phiên 3)
+ 
+ ## Phiên 1: phân tích hiện trạng (đã xong)
+ 
+@@ -45,6 +45,37 @@ Yêu cầu: .NET 8 SDK, SQL Server ở `localhost` với Windows Authentication.
+ 2. Sửa các P0 nhóm bảo mật khẩn cấp: P0-02, P0-03, P0-04, P0-07, P0-13.
+ 4. Các quyết định cần người dùng xác nhận: xem mục 14 của `docs/ANALYSIS.md`.
+ 
++## Phiên 3: Theme Admin, Layout và Hiệu ứng (đã xong)
++
++**Đã làm**
++- Đổi font sang **Be Vietnam Pro** (hỗ trợ tiếng Việt) trong `enterprise-theme.css`.
++- Viết lại `Views/Shared/_Layout.cshtml`: sidebar thu gọn + topbar + breadcrumb + dark mode.
++- Tạo `wwwroot/css/admin-components.css` (~500 dòng): sidebar, topbar, stat card, data table, floating label form, button loading, confirm modal, toast, badges, tabs, skeleton, empty state, responsive.
++- Tạo `wwwroot/css/admin-animations.css` (~260 dòng): fade-in, slide-up, stagger, hover-lift, ripple, scroll reveal, chart animation, toast animation, pulse, `prefers-reduced-motion` support.
++- Tạo `wwwroot/js/admin-ui.js` (~310 dòng): sidebar toggle (localStorage), active highlight, ripple effect, count-up animation (IntersectionObserver), scroll reveal, toast auto-dismiss, `ERP.btnLoading()`, `ERP.confirm()`, `ERP.toast()`.
++- Cập nhật `Views/Home/Index.cshtml` (Dashboard): 6 stat cards với count-up, stagger animation, chart container, data table, activity feed, empty state, tất cả dùng component class mới.
++- Viết `docs/UI-GUIDE.md`: bảng màu, font, layout, component, animation, JS API, file structure, responsive, quy ước đặt tên, accessibility.
++
++**File đã thay đổi**
++- `wwwroot/css/enterprise-theme.css` — đổi font
++- `Views/Shared/_Layout.cshtml` — viết lại hoàn toàn
++- `wwwroot/css/admin-components.css` — MỚI
++- `wwwroot/css/admin-animations.css` — MỚI
++- `wwwroot/js/admin-ui.js` — MỚI
++- `Views/Home/Index.cshtml` — cập nhật dùng component class
++- `docs/UI-GUIDE.md` — MỚI
++- `docs/PROGRESS.md` — cập nhật
++
++**Cách kiểm tra**
++1. Mở dự án trong VS 2022, chạy (`F5` hoặc `dotnet run`).
++2. Đăng nhập → Dashboard: sidebar bên trái, topbar trên cùng, 6 stat card có count-up.
++3. Click nút thu gọn sidebar (góc dưới trái) → sidebar thu lại 68px, tooltip hiện tên menu.
++4. Click nút mặt trăng (topbar) → dark mode, refresh không mất.
++5. Resize trình duyệt < 992px → sidebar ẩn, nút hamburger xuất hiện.
++6. Kiểm tra `docs/UI-GUIDE.md` để xem quy ước class.
++
++**Trạng thái git:** tất cả thay đổi phiên 3 chưa commit. Cần áp patch trên máy local.
++
+ ## Nợ kỹ thuật đã ghi nhận
+ 
+ Chi tiết trong `docs/ANALYSIS.md`, mục 6–9.
+diff --git a/docs/UI-GUIDE.md b/docs/UI-GUIDE.md
+new file mode 100644
+index 0000000..23c78f8
+--- /dev/null
++++ b/docs/UI-GUIDE.md
+@@ -0,0 +1,387 @@
++# UI Guide — ERP HRM · CMS · Bán hàng Kho
++
++> Tài liệu quy ước giao diện, bảng màu, class CSS và component dùng chung.
++> Cập nhật: Phiên 3 (2026-11-04)
++
++---
++
++## 1. Bảng màu (CSS Variables)
++
++Tất cả màu sắc được khai báo trên `:root` trong `enterprise-theme.css`.
++Dark mode tự động đảo qua `[data-bs-theme="dark"]`.
++
++### 1.1 Màu chính (Brand)
++
++| Token                  | Light           | Dark            | Dùng cho                     |
++|------------------------|-----------------|-----------------|------------------------------|
++| `--erp-primary`        | `#2563EB`       | `#3B82F6`       | Nút chính, link, badge       |
++| `--erp-primary-hover`  | `#1D4ED8`       | `#60A5FA`       | Hover nút chính              |
++| `--erp-primary-subtle` | `rgba(37,99,235,0.08)` | `rgba(59,130,246,0.15)` | Nền nhẹ  |
++
++### 1.2 Trạng thái (Semantic)
++
++| Token              | Light     | Dark      | Dùng cho                       |
++|--------------------|-----------|-----------|--------------------------------|
++| `--erp-success`    | `#10B981` | `#34D399` | Thành công, tăng trưởng        |
++| `--erp-danger`     | `#EF4444` | `#F87171` | Lỗi, cảnh báo nghiêm trọng    |
++| `--erp-warning`    | `#F59E0B` | `#FBBF24` | Cảnh báo, chờ duyệt           |
++| `--erp-info`       | `#06B6D4` | `#22D3EE` | Thông tin, gợi ý               |
++
++### 1.3 Nền & Viền
++
++| Token                  | Mô tả                          |
++|------------------------|---------------------------------|
++| `--erp-bg-body`        | Nền trang chính                 |
++| `--erp-bg-card`        | Nền card / bảng                 |
++| `--erp-bg-sidebar`     | Nền sidebar (gradient tối)      |
++| `--erp-border-color`   | Viền mặc định                   |
++| `--erp-text-primary`   | Màu chữ chính                   |
++| `--erp-text-muted`     | Màu chữ phụ                     |
++
++### 1.4 Shadow
++
++| Token                   | Dùng cho                       |
++|-------------------------|--------------------------------|
++| `--erp-card-shadow`     | Shadow mặc định cho card       |
++| `--erp-elevated-shadow` | Shadow nâng cao (hover-lift)   |
++
++---
++
++## 2. Font chữ
++
++```css
++--erp-font-main: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
++--erp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
++```
++
++- **Be Vietnam Pro** — Font chính, hỗ trợ tiếng Việt đầy đủ.
++- **JetBrains Mono** — Font monospace cho số liệu, code.
++- Weight sử dụng: 300 (light), 400 (regular), 500 (medium), 600 (semibold), 700 (bold), 800 (extrabold).
++
++---
++
++## 3. Layout — Sidebar + Topbar
++
++### 3.1 Cấu trúc HTML
++
++```
++<html lang="vi" [data-bs-theme] [class="sidebar-collapsed"]>
++  <body>
++    <aside class="erp-sidebar">         ← 260px, thu gọn 68px
++    <div class="erp-main-content">
++      <header class="erp-topbar">        ← sticky, 60px
++      <div class="erp-content-wrapper">
++        <main class="erp-page-content"> ← @RenderBody()
++      </div>
++      <footer class="erp-footer">
++    </div>
++  </body>
++</html>
++```
++
++### 3.2 Sidebar toggle
++
++- **Desktop**: Nút `#sidebarCollapseBtn` ở đáy sidebar → class `sidebar-collapsed` trên `<html>`.
++- **Mobile** (≤991px): Nút hamburger `#sidebarMobileBtn` → class `show` trên sidebar + overlay.
++- Trạng thái lưu `localStorage('erp_sidebar_collapsed')`.
++- Sidebar collapsed: icon tooltip hiện tên menu via `data-tooltip`.
++
++### 3.3 Active sidebar item
++
++JS tự phát hiện URL path hiện tại, so khớp `data-path` trên `.erp-nav-item`, chọn best-match (path dài nhất khớp).
++
++### 3.4 Dark / Light mode
++
++- Toggle qua `window.toggleTheme()` (enterprise-theme.js).
++- Lưu `localStorage('erp_theme')` + cookie `erp_theme` (cho server-side).
++- Anti-FOUC: inline `<script>` trong `<head>` đọc theme trước render.
++- CSS: `[data-bs-theme="dark"]` + `.dark-mode` class.
++
++---
++
++## 4. Shared Components
++
++### 4.1 Stat Card (Thẻ thống kê)
++
++```html
++<div class="stat-card hover-lift">
++    <div class="stat-card-body">
++        <div class="stat-card-label">Doanh thu tháng</div>
++        <div class="stat-card-value">
++            <span class="count-up" data-target="125000000" data-suffix=" đ">0</span>
++        </div>
++        <div class="stat-card-trend up">
++            <i class="bi bi-arrow-up-right me-1"></i>12% vs tháng trước
++        </div>
++    </div>
++    <div class="stat-card-icon primary">
++        <i class="bi bi-currency-dollar"></i>
++    </div>
++</div>
++```
++
++**Thuộc tính `count-up`:**
++
++| Attribute       | Mô tả                          | Mặc định |
++|-----------------|---------------------------------|----------|
++| `data-target`   | Giá trị đích (số)              | bắt buộc |
++| `data-prefix`   | Tiền tố (VD: "$")              | `""`     |
++| `data-suffix`   | Hậu tố (VD: " đ")             | `""`     |
++| `data-decimals` | Số chữ số thập phân            | `0`      |
++| `data-duration` | Thời gian animation (ms)       | `1200`   |
++
++**Biến thể icon:** `primary`, `success`, `warning`, `danger`, `info`, `purple`
++
++**Trend:** `.stat-card-trend.up` (xanh) / `.stat-card-trend.down` (đỏ)
++
++### 4.2 Data Table
++
++```html
++<div class="erp-table-wrapper">
++    <div class="erp-table-toolbar">
++        <span class="erp-table-toolbar-title">Tiêu đề</span>
++        <div><!-- Nút hành động --></div>
++    </div>
++    <div class="table-responsive">
++        <table class="table table-hover align-middle mb-0">
++            <thead><tr><th>...</th></tr></thead>
++            <tbody>...</tbody>
++        </table>
++    </div>
++</div>
++```
++
++### 4.3 Empty State
++
++```html
++<div class="erp-empty-state">
++    <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
++    <div class="erp-empty-state-title">Chưa có dữ liệu</div>
++    <div class="erp-empty-state-desc">Mô tả ngắn gọn</div>
++</div>
++```
++
++### 4.4 Floating Label Form
++
++```html
++<div class="erp-floating-group">
++    <input type="text" class="erp-floating-input" id="ten" placeholder=" " required />
++    <label for="ten" class="erp-floating-label">Họ và tên</label>
++</div>
++```
++
++Label tự nổi lên khi input focus hoặc có giá trị (`:not(:placeholder-shown)`).
++
++### 4.5 Button Loading
++
++```html
++<button class="btn btn-primary ripple" id="saveBtn">
++    <i class="bi bi-check-lg me-1"></i>Lưu
++</button>
++```
++
++```javascript
++// Bật loading
++ERP.btnLoading(document.getElementById('saveBtn'));
++// Tắt loading
++ERP.btnReset(document.getElementById('saveBtn'));
++```
++
++### 4.6 Confirm Modal
++
++```javascript
++ERP.confirm({
++    title: 'Xóa bản ghi?',
++    message: 'Hành động này không thể hoàn tác.',
++    confirmText: 'Xóa',
++    cancelText: 'Hủy',
++    variant: 'danger'   // 'danger' | 'warning'
++}).then(function(ok) {
++    if (ok) { /* thực hiện xóa */ }
++});
++```
++
++### 4.7 Toast (Thông báo nổi)
++
++**Server-side** (TempData):
++```csharp
++TempData["SuccessMessage"] = "Lưu thành công!";
++TempData["ErrorMessage"] = "Có lỗi xảy ra.";
++```
++
++**Client-side** (JavaScript):
++```javascript
++ERP.toast('Đã lưu thành công!', 'success');   // success | danger | warning | info
++```
++
++Toast tự biến mất sau 5 giây.
++
++### 4.8 Badges
++
++```html
++<span class="erp-badge erp-badge-success">Hoạt động</span>
++<span class="erp-badge erp-badge-danger erp-badge-dot">Nghỉ việc</span>
++```
++
++Biến thể: `erp-badge-primary`, `erp-badge-success`, `erp-badge-danger`, `erp-badge-warning`, `erp-badge-info`, `erp-badge-neutral`
++
++Thêm `erp-badge-dot` để có dấu chấm tròn phía trước.
++
++### 4.9 Skeleton Loading
++
++```html
++<div class="skeleton skeleton-card"></div>
++<div class="skeleton skeleton-line" style="width:80%"></div>
++<div class="skeleton skeleton-line" style="width:60%"></div>
++<div class="skeleton skeleton-circle"></div>
++```
++
++### 4.10 Tabs
++
++```html
++<div class="erp-tabs">
++    <button class="erp-tab active">Tab 1</button>
++    <button class="erp-tab">Tab 2</button>
++</div>
++```
++
++---
++
++## 5. Animation Classes
++
++Tất cả animation tôn trọng `prefers-reduced-motion: reduce`.
++
++### 5.1 Entrance
++
++| Class          | Hiệu ứng                       |
++|----------------|---------------------------------|
++| `.fade-in`     | Mờ → rõ (0.4s)                 |
++| `.slide-up`    | Trượt lên + mờ → rõ (0.5s)     |
++| `.slide-up-sm` | Trượt lên nhẹ (0.35s)           |
++
++### 5.2 Stagger (Hiệu ứng so le)
++
++Thêm class `stagger-list` vào container. Các phần tử con sẽ xuất hiện lần lượt (delay 60ms mỗi item, tối đa 8 item).
++
++```html
++<div class="row stagger-list">
++    <div class="col-md-3"><!-- card 1, delay 0ms --></div>
++    <div class="col-md-3"><!-- card 2, delay 60ms --></div>
++    <div class="col-md-3"><!-- card 3, delay 120ms --></div>
++    <div class="col-md-3"><!-- card 4, delay 180ms --></div>
++</div>
++```
++
++### 5.3 Hover
++
++| Class          | Hiệu ứng                        |
++|----------------|----------------------------------|
++| `.hover-lift`  | Nâng lên 3px + shadow khi hover  |
++| `.hover-grow`  | Phóng to 1.02x khi hover         |
++
++### 5.4 Ripple (Hiệu ứng sóng nhấn)
++
++Thêm class `ripple` vào button. Các `.btn-primary`, `.btn-success`, `.btn-danger`, `.btn-warning` tự động có ripple.
++
++### 5.5 Scroll Reveal
++
++```html
++<div class="reveal">Xuất hiện khi cuộn tới</div>
++<div class="reveal-left">Trượt từ trái</div>
++<div class="reveal-right">Trượt từ phải</div>
++<div class="reveal-scale">Phóng to</div>
++```
++
++JS (IntersectionObserver) sẽ thêm `.revealed` khi phần tử vào viewport.
++
++### 5.6 Chart Container
++
++```html
++<div class="chart-container">
++    <canvas id="myChart"></canvas>
++</div>
++```
++
++Tự động fade-in khi tải.
++
++### 5.7 Utility
++
++| Class       | Hiệu ứng                  |
++|-------------|----------------------------|
++| `.pulse`    | Nhấp nháy liên tục         |
++| `.spin`     | Xoay 360° liên tục         |
++
++---
++
++## 6. JavaScript API — `window.ERP`
++
++| Method                     | Mô tả                                       |
++|----------------------------|----------------------------------------------|
++| `ERP.btnLoading(btn)`      | Bật loading cho button                       |
++| `ERP.btnReset(btn)`        | Tắt loading cho button                       |
++| `ERP.confirm({...})`       | Hiện modal xác nhận, trả về Promise<boolean> |
++| `ERP.toast(msg, variant)`  | Hiện toast thông báo                         |
++
++Các hàm global từ `enterprise-theme.js`:
++
++| Method                     | Mô tả                                       |
++|----------------------------|----------------------------------------------|
++| `window.toggleTheme()`     | Đổi dark/light mode                         |
++| `window.openCommandPalette()` | Mở command palette (Ctrl+K)              |
++
++---
++
++## 7. File Structure
++
++```
++wwwroot/
++├── css/
++│   ├── enterprise-theme.css    ← Biến CSS, base styles, dark mode
++│   ├── admin-components.css    ← Sidebar, topbar, stat cards, forms, tables, badges
++│   ├── admin-animations.css    ← Keyframes, stagger, hover, ripple, scroll reveal
++│   └── site.css                ← Legacy styles
++├── js/
++│   ├── security.js             ← XSS escape (HRM.escapeHtml)
++│   ├── enterprise-theme.js     ← Theme toggle, command palette
++│   ├── enterprise-notifications.js ← SignalR notifications
++│   ├── admin-ui.js             ← Sidebar, ripple, count-up, scroll reveal, toast, confirm
++│   └── site.js                 ← Legacy scripts
++Views/Shared/
++├── _Layout.cshtml              ← Layout chính: sidebar + topbar (Dashboard, mặc định)
++├── _HRMLayout.cshtml           ← Layout HR (có sidebar riêng)
++├── _AdminLayout.cshtml         ← Layout CMS/Permissions
++├── _SalesLayout.cshtml         ← Layout bán hàng
++├── _WarehouseLayout.cshtml     ← Layout kho
++└── _PublicLayout.cshtml        ← Layout trang công khai
++```
++
++---
++
++## 8. Responsive Breakpoints
++
++| Breakpoint    | Hành vi                                          |
++|---------------|--------------------------------------------------|
++| ≥1200px (xl)  | Sidebar mở rộng 260px, 6 cột stat cards         |
++| ≥992px (lg)   | Sidebar hiển thị, có thể thu gọn                |
++| ≤991.98px     | Sidebar ẩn, mở qua hamburger + overlay           |
++| ≤575.98px     | Topbar compact, stat card full-width              |
++
++---
++
++## 9. Quy ước đặt tên
++
++- **CSS class prefix**: `erp-` cho component (VD: `erp-sidebar`, `erp-toast-alert`)
++- **CSS variable prefix**: `--erp-` cho tất cả custom properties
++- **JS namespace**: `window.ERP` cho API mới, `window.HRM` cho security utils cũ
++- **HTML data attributes**: `data-path`, `data-target`, `data-tooltip`, `data-bs-theme`
++- **BEM-lite**: `stat-card-body`, `stat-card-icon`, `stat-card-trend`
++
++---
++
++## 10. Accessibility
++
++- **Focus visible**: Tất cả interactive elements có focus ring (`outline: 2px solid var(--erp-primary)`)
++- **prefers-reduced-motion**: Tất cả animation/transition bị tắt khi người dùng bật giảm chuyển động
++- **aria-label**: Nút mobile toggle, breadcrumb navigation
++- **Semantic HTML**: `<nav>`, `<main>`, `<header>`, `<footer>`, `<aside>`
++- **Color contrast**: Đảm bảo tỷ lệ tương phản ≥4.5:1 cho text thường
+diff --git a/wwwroot/css/admin-animations.css b/wwwroot/css/admin-animations.css
+new file mode 100644
+index 0000000..5a49649
+--- /dev/null
++++ b/wwwroot/css/admin-animations.css
+@@ -0,0 +1,259 @@
++/* ==========================================================================
++   ADMIN ANIMATIONS - Hiệu ứng động
++   Tôn trọng prefers-reduced-motion
++   ========================================================================== */
++
++/* ==========================================================================
++   1. FADE-IN & SLIDE-UP khi tải trang
++   ========================================================================== */
++.fade-in {
++    animation: fadeIn 0.4s ease-out both;
++}
++
++.slide-up {
++    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
++}
++
++.slide-up-sm {
++    animation: slideUpSm 0.35s ease-out both;
++}
++
++@keyframes fadeIn {
++    from { opacity: 0; }
++    to { opacity: 1; }
++}
++
++@keyframes slideUp {
++    from { opacity: 0; transform: translateY(20px); }
++    to { opacity: 1; transform: translateY(0); }
++}
++
++@keyframes slideUpSm {
++    from { opacity: 0; transform: translateY(10px); }
++    to { opacity: 1; transform: translateY(0); }
++}
++
++/* ==========================================================================
++   2. STAGGER - Hiệu ứng so le cho danh sách
++   ========================================================================== */
++.stagger-list > * {
++    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
++}
++
++.stagger-list > *:nth-child(1) { animation-delay: 0ms; }
++.stagger-list > *:nth-child(2) { animation-delay: 60ms; }
++.stagger-list > *:nth-child(3) { animation-delay: 120ms; }
++.stagger-list > *:nth-child(4) { animation-delay: 180ms; }
++.stagger-list > *:nth-child(5) { animation-delay: 240ms; }
++.stagger-list > *:nth-child(6) { animation-delay: 300ms; }
++.stagger-list > *:nth-child(7) { animation-delay: 360ms; }
++.stagger-list > *:nth-child(8) { animation-delay: 420ms; }
++.stagger-list > *:nth-child(n+9) { animation-delay: 480ms; }
++
++/* ==========================================================================
++   3. HOVER - Nâng thẻ khi hover
++   ========================================================================== */
++.hover-lift {
++    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
++}
++
++.hover-lift:hover {
++    transform: translateY(-3px);
++    box-shadow: var(--erp-elevated-shadow);
++}
++
++.hover-grow {
++    transition: transform 0.2s ease;
++}
++
++.hover-grow:hover {
++    transform: scale(1.02);
++}
++
++/* ==========================================================================
++   4. RIPPLE - Hiệu ứng khi nhấn nút
++   ========================================================================== */
++.ripple {
++    position: relative;
++    overflow: hidden;
++}
++
++.ripple-effect {
++    position: absolute;
++    border-radius: 50%;
++    background: rgba(255, 255, 255, 0.35);
++    transform: scale(0);
++    animation: rippleAnim 0.6s ease-out;
++    pointer-events: none;
++}
++
++@keyframes rippleAnim {
++    to {
++        transform: scale(4);
++        opacity: 0;
++    }
++}
++
++/* ==========================================================================
++   5. SCROLL REVEAL (IntersectionObserver)
++   Thêm class .reveal vào phần tử, JS sẽ thêm .revealed khi vào viewport
++   ========================================================================== */
++.reveal {
++    opacity: 0;
++    transform: translateY(24px);
++    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
++}
++
++.reveal.revealed {
++    opacity: 1;
++    transform: translateY(0);
++}
++
++.reveal-left {
++    opacity: 0;
++    transform: translateX(-24px);
++    transition: opacity 0.6s ease, transform 0.6s ease;
++}
++
++.reveal-left.revealed {
++    opacity: 1;
++    transform: translateX(0);
++}
++
++.reveal-right {
++    opacity: 0;
++    transform: translateX(24px);
++    transition: opacity 0.6s ease, transform 0.6s ease;
++}
++
++.reveal-right.revealed {
++    opacity: 1;
++    transform: translateX(0);
++}
++
++.reveal-scale {
++    opacity: 0;
++    transform: scale(0.9);
++    transition: opacity 0.5s ease, transform 0.5s ease;
++}
++
++.reveal-scale.revealed {
++    opacity: 1;
++    transform: scale(1);
++}
++
++/* ==========================================================================
++   6. COUNT-UP ANIMATION (JS-driven, class)
++   ========================================================================== */
++.count-up {
++    display: inline-block;
++    /* Dùng tabular-nums để số không nhảy bố cục */
++    font-variant-numeric: tabular-nums;
++}
++
++/* ==========================================================================
++   7. CHART ANIMATION
++   ========================================================================== */
++.chart-container {
++    position: relative;
++    animation: chartFadeIn 0.6s ease-out 0.2s both;
++}
++
++@keyframes chartFadeIn {
++    from { opacity: 0; transform: translateY(12px); }
++    to { opacity: 1; transform: translateY(0); }
++}
++
++/* ==========================================================================
++   8. SIDEBAR & MODAL TRANSITIONS
++   ========================================================================== */
++.erp-sidebar {
++    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++}
++
++#sidebarToggleIcon {
++    transition: transform 0.25s ease;
++}
++
++/* Modal smooth */
++.modal.fade .modal-dialog {
++    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
++    transform: scale(0.95) translateY(-10px);
++}
++
++.modal.show .modal-dialog {
++    transform: scale(1) translateY(0);
++}
++
++/* ==========================================================================
++   9. TOAST AUTO-DISMISS ANIMATION
++   ========================================================================== */
++.erp-toast-alert {
++    animation: toastSlideIn 0.3s ease-out;
++}
++
++@keyframes toastSlideIn {
++    from { opacity: 0; transform: translateY(-10px); }
++    to { opacity: 1; transform: translateY(0); }
++}
++
++.erp-toast-dismiss {
++    animation: toastSlideOut 0.25s ease-in forwards;
++}
++
++@keyframes toastSlideOut {
++    to { opacity: 0; transform: translateY(-10px); height: 0; padding: 0; margin: 0; overflow: hidden; }
++}
++
++/* ==========================================================================
++   10. SPINNER / LOADING
++   ========================================================================== */
++.erp-spinner {
++    display: inline-block;
++    width: 20px;
++    height: 20px;
++    border: 2px solid var(--erp-border-color);
++    border-top-color: var(--erp-primary);
++    border-radius: 50%;
++    animation: btn-spin 0.6s linear infinite;
++}
++
++.erp-spinner-lg {
++    width: 32px;
++    height: 32px;
++    border-width: 3px;
++}
++
++/* ==========================================================================
++   11. PULSE
++   ========================================================================== */
++.pulse {
++    animation: pulseAnim 2s ease-in-out infinite;
++}
++
++@keyframes pulseAnim {
++    0%, 100% { opacity: 1; }
++    50% { opacity: 0.5; }
++}
++
++/* ==========================================================================
++   12. PREFERS-REDUCED-MOTION - Tắt tất cả hiệu ứng
++   ========================================================================== */
++@media (prefers-reduced-motion: reduce) {
++    *, *::before, *::after {
++        animation-duration: 0.01ms !important;
++        animation-iteration-count: 1 !important;
++        transition-duration: 0.01ms !important;
++    }
++
++    .reveal, .reveal-left, .reveal-right, .reveal-scale {
++        opacity: 1;
++        transform: none;
++    }
++
++    .hover-lift:hover,
++    .hover-grow:hover,
++    .stat-card:hover {
++        transform: none;
++    }
++}
+diff --git a/wwwroot/css/admin-components.css b/wwwroot/css/admin-components.css
+new file mode 100644
+index 0000000..f475af5
+--- /dev/null
++++ b/wwwroot/css/admin-components.css
+@@ -0,0 +1,832 @@
++/* ==========================================================================
++   ADMIN COMPONENTS - Thành phần giao diện dùng chung
++   Dự án: ERP HRM - CMS - Bán hàng Kho
++   Phiên 3 - Xem docs/UI-GUIDE.md để biết quy ước
++   ========================================================================== */
++
++/* ==========================================================================
++   1. SIDEBAR - Layout, thu gọn, responsive
++   ========================================================================== */
++.erp-sidebar {
++    position: fixed;
++    top: 0;
++    left: 0;
++    bottom: 0;
++    width: 260px;
++    background: var(--erp-bg-sidebar);
++    border-right: 1px solid var(--erp-sidebar-border);
++    display: flex;
++    flex-direction: column;
++    z-index: 1040;
++    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
++    overflow: hidden;
++}
++
++.erp-sidebar-brand {
++    display: flex;
++    align-items: center;
++    padding: 16px 18px;
++    border-bottom: 1px solid var(--erp-sidebar-border);
++    min-height: 60px;
++}
++
++.sidebar-brand-full {
++    display: flex;
++    align-items: center;
++    gap: 10px;
++}
++
++.sidebar-brand-full .brand-text {
++    font-weight: 700;
++    font-size: 18px;
++    color: #fff;
++    white-space: nowrap;
++}
++
++.sidebar-brand-mini {
++    display: none;
++    justify-content: center;
++    width: 100%;
++}
++
++.erp-sidebar-nav {
++    flex: 1;
++    overflow-y: auto;
++    overflow-x: hidden;
++    padding: 8px 0;
++}
++
++.nav-section-title {
++    padding: 16px 18px 6px;
++    font-size: 10.5px;
++    font-weight: 700;
++    text-transform: uppercase;
++    letter-spacing: 0.8px;
++    color: var(--erp-sidebar-muted);
++    white-space: nowrap;
++    overflow: hidden;
++}
++
++.erp-nav-item {
++    display: flex;
++    align-items: center;
++    gap: 12px;
++    padding: 9px 18px;
++    margin: 2px 10px;
++    color: var(--erp-sidebar-text);
++    text-decoration: none;
++    border-radius: var(--erp-radius-md);
++    font-size: 13.5px;
++    font-weight: 450;
++    white-space: nowrap;
++    transition: all 0.15s ease;
++}
++
++.erp-nav-item i {
++    font-size: 17px;
++    width: 20px;
++    text-align: center;
++    flex-shrink: 0;
++}
++
++.erp-nav-item:hover {
++    background: var(--erp-sidebar-active);
++    color: #fff;
++    transform: translateX(2px);
++}
++
++.erp-nav-item.active {
++    background: var(--erp-primary);
++    color: #fff;
++    font-weight: 600;
++    box-shadow: 0 4px 12px rgba(var(--erp-primary-rgb), 0.35);
++}
++
++/* Footer sidebar - nút thu gọn */
++.erp-sidebar-footer {
++    padding: 8px 10px;
++    border-top: 1px solid var(--erp-sidebar-border);
++}
++
++.erp-sidebar-toggle {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    width: 100%;
++    padding: 8px;
++    background: transparent;
++    border: none;
++    color: var(--erp-sidebar-muted);
++    border-radius: var(--erp-radius-md);
++    cursor: pointer;
++    transition: all 0.15s ease;
++}
++
++.erp-sidebar-toggle:hover {
++    background: var(--erp-sidebar-active);
++    color: #fff;
++}
++
++/* Sidebar thu gọn */
++.sidebar-collapsed .erp-sidebar {
++    width: 68px;
++}
++
++.sidebar-collapsed .sidebar-brand-full { display: none; }
++.sidebar-collapsed .sidebar-brand-mini { display: flex; }
++.sidebar-collapsed .nav-section-title { text-align: center; padding: 12px 4px 4px; font-size: 0; height: 12px; }
++.sidebar-collapsed .nav-section-title::after { content: ''; display: block; width: 20px; height: 1px; background: var(--erp-sidebar-border); margin: 0 auto; }
++.sidebar-collapsed .erp-nav-item { justify-content: center; padding: 10px; margin: 2px 6px; gap: 0; }
++.sidebar-collapsed .erp-nav-item .nav-label { display: none; }
++.sidebar-collapsed .erp-nav-item i { font-size: 18px; }
++.sidebar-collapsed #sidebarToggleIcon { transform: rotate(180deg); }
++
++/* Tooltip cho sidebar thu gọn */
++.sidebar-collapsed .erp-nav-item { position: relative; }
++.sidebar-collapsed .erp-nav-item::after {
++    content: attr(data-tooltip);
++    position: absolute;
++    left: calc(100% + 8px);
++    top: 50%;
++    transform: translateY(-50%);
++    background: var(--erp-bg-sidebar);
++    color: #fff;
++    padding: 4px 10px;
++    border-radius: 6px;
++    font-size: 12px;
++    white-space: nowrap;
++    opacity: 0;
++    pointer-events: none;
++    transition: opacity 0.15s ease;
++    z-index: 9999;
++    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
++}
++
++.sidebar-collapsed .erp-nav-item:hover::after {
++    opacity: 1;
++}
++
++/* ==========================================================================
++   2. MAIN CONTENT AREA
++   ========================================================================== */
++.erp-main-content {
++    margin-left: 260px;
++    min-height: 100vh;
++    display: flex;
++    flex-direction: column;
++    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
++}
++
++.sidebar-collapsed .erp-main-content {
++    margin-left: 68px;
++}
++
++/* ==========================================================================
++   3. TOPBAR
++   ========================================================================== */
++.erp-topbar {
++    position: sticky;
++    top: 0;
++    z-index: 1020;
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    padding: 0 24px;
++    height: 60px;
++    background: var(--erp-bg-surface);
++    border-bottom: 1px solid var(--erp-border-color);
++    backdrop-filter: blur(12px);
++    -webkit-backdrop-filter: blur(12px);
++}
++
++.topbar-left, .topbar-right {
++    display: flex;
++    align-items: center;
++    gap: 12px;
++}
++
++.topbar-icon-btn {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    width: 36px;
++    height: 36px;
++    background: transparent;
++    border: none;
++    color: var(--erp-text-muted);
++    border-radius: var(--erp-radius-md);
++    cursor: pointer;
++    font-size: 18px;
++    transition: all 0.15s ease;
++}
++
++.topbar-icon-btn:hover {
++    background: var(--erp-bg-subtle);
++    color: var(--erp-text-main);
++}
++
++.notif-badge {
++    position: absolute;
++    top: 2px;
++    right: 2px;
++    min-width: 16px;
++    height: 16px;
++    padding: 0 4px;
++    font-size: 10px;
++    font-weight: 700;
++    line-height: 16px;
++    text-align: center;
++    background: var(--erp-danger);
++    color: #fff;
++    border-radius: 8px;
++}
++
++/* Avatar dropdown */
++.topbar-avatar-btn {
++    display: flex;
++    align-items: center;
++    gap: 8px;
++    background: transparent;
++    border: none;
++    padding: 4px 8px;
++    border-radius: var(--erp-radius-md);
++    cursor: pointer;
++    color: var(--erp-text-main);
++    transition: background 0.15s ease;
++}
++
++.topbar-avatar-btn:hover {
++    background: var(--erp-bg-subtle);
++}
++
++.avatar-circle {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    width: 32px;
++    height: 32px;
++    border-radius: 50%;
++    background: linear-gradient(135deg, var(--erp-primary), var(--erp-purple, #6366F1));
++    color: #fff;
++    font-weight: 700;
++    font-size: 13px;
++}
++
++.avatar-name {
++    font-size: 13px;
++    font-weight: 500;
++}
++
++/* Breadcrumb trong topbar */
++.erp-topbar .breadcrumb {
++    background: transparent;
++    font-size: 13px;
++}
++
++.erp-topbar .breadcrumb-item a {
++    color: var(--erp-text-muted);
++}
++
++.erp-topbar .breadcrumb-item.active {
++    color: var(--erp-text-main);
++    font-weight: 500;
++}
++
++/* ==========================================================================
++   4. CONTENT WRAPPER & FOOTER
++   ========================================================================== */
++.erp-content-wrapper {
++    flex: 1;
++    padding: 24px;
++}
++
++.erp-page-content {
++    /* Placeholder cho nội dung chính */
++}
++
++.erp-footer {
++    padding: 16px 24px;
++    text-align: center;
++    font-size: 12px;
++    color: var(--erp-text-muted);
++    border-top: 1px solid var(--erp-border-color);
++}
++
++/* Mobile sidebar toggle */
++.erp-sidebar-mobile-toggle {
++    display: none;
++    align-items: center;
++    justify-content: center;
++    width: 40px;
++    height: 40px;
++    background: transparent;
++    border: none;
++    color: var(--erp-text-main);
++    cursor: pointer;
++    border-radius: var(--erp-radius-md);
++}
++
++.erp-sidebar-mobile-toggle:hover {
++    background: var(--erp-bg-subtle);
++}
++
++/* Overlay */
++.erp-sidebar-overlay {
++    display: none;
++    position: fixed;
++    inset: 0;
++    background: rgba(0, 0, 0, 0.5);
++    z-index: 1035;
++    backdrop-filter: blur(2px);
++}
++
++/* ==========================================================================
++   5. TOAST ALERT (thay cho Bootstrap alert)
++   ========================================================================== */
++.erp-toast-alert {
++    display: flex;
++    align-items: center;
++    gap: 10px;
++    padding: 12px 16px;
++    border-radius: var(--erp-radius-md);
++    font-size: 13.5px;
++    font-weight: 500;
++    margin-bottom: 16px;
++    position: relative;
++}
++
++.erp-toast-alert .btn-close-sm {
++    width: 12px;
++    height: 12px;
++    margin-left: auto;
++}
++
++.erp-toast-success {
++    background: var(--erp-success-subtle);
++    color: var(--erp-success);
++    border: 1px solid var(--erp-success);
++}
++
++.erp-toast-danger {
++    background: var(--erp-danger-subtle);
++    color: var(--erp-danger);
++    border: 1px solid var(--erp-danger);
++}
++
++.erp-toast-warning {
++    background: var(--erp-warning-subtle);
++    color: var(--erp-warning);
++    border: 1px solid var(--erp-warning);
++}
++
++.erp-toast-info {
++    background: rgba(6, 182, 212, 0.1);
++    color: var(--erp-info);
++    border: 1px solid var(--erp-info);
++}
++
++/* ==========================================================================
++   6. STAT CARD (thẻ thống kê)
++   ========================================================================== */
++.stat-card {
++    background: var(--erp-bg-card);
++    border: 1px solid var(--erp-border-color);
++    border-radius: var(--erp-radius-lg);
++    padding: 20px 24px;
++    display: flex;
++    align-items: flex-start;
++    justify-content: space-between;
++    box-shadow: var(--erp-card-shadow);
++    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
++}
++
++.stat-card:hover {
++    transform: translateY(-3px);
++    box-shadow: var(--erp-elevated-shadow);
++}
++
++.stat-card-body {
++    flex: 1;
++}
++
++.stat-card-label {
++    font-size: 12px;
++    font-weight: 600;
++    text-transform: uppercase;
++    letter-spacing: 0.5px;
++    color: var(--erp-text-muted);
++    margin-bottom: 6px;
++}
++
++.stat-card-value {
++    font-size: 28px;
++    font-weight: 700;
++    line-height: 1.2;
++    color: var(--erp-text-main);
++}
++
++.stat-card-trend {
++    font-size: 12px;
++    font-weight: 600;
++    margin-top: 4px;
++}
++
++.stat-card-trend.up { color: var(--erp-success); }
++.stat-card-trend.down { color: var(--erp-danger); }
++
++.stat-card-icon {
++    width: 48px;
++    height: 48px;
++    border-radius: var(--erp-radius-md);
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    font-size: 22px;
++    flex-shrink: 0;
++}
++
++.stat-card-icon.primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
++.stat-card-icon.success { background: var(--erp-success-subtle); color: var(--erp-success); }
++.stat-card-icon.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
++.stat-card-icon.danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
++.stat-card-icon.info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
++.stat-card-icon.purple { background: rgba(99,102,241,0.1); color: var(--erp-purple); }
++
++/* ==========================================================================
++   7. DATA TABLE WRAPPER
++   ========================================================================== */
++.erp-table-wrapper {
++    background: var(--erp-bg-card);
++    border: 1px solid var(--erp-border-color);
++    border-radius: var(--erp-radius-lg);
++    box-shadow: var(--erp-card-shadow);
++    overflow: hidden;
++}
++
++.erp-table-toolbar {
++    display: flex;
++    align-items: center;
++    justify-content: space-between;
++    padding: 16px 20px;
++    gap: 12px;
++    flex-wrap: wrap;
++    border-bottom: 1px solid var(--erp-border-color);
++}
++
++.erp-table-toolbar-title {
++    font-size: 15px;
++    font-weight: 600;
++    color: var(--erp-text-main);
++}
++
++.erp-table-toolbar-actions {
++    display: flex;
++    align-items: center;
++    gap: 8px;
++}
++
++/* Empty state cho bảng */
++.erp-empty-state {
++    text-align: center;
++    padding: 48px 24px;
++    color: var(--erp-text-muted);
++}
++
++.erp-empty-state-icon {
++    font-size: 48px;
++    margin-bottom: 12px;
++    opacity: 0.4;
++}
++
++.erp-empty-state-title {
++    font-size: 16px;
++    font-weight: 600;
++    color: var(--erp-text-secondary);
++    margin-bottom: 6px;
++}
++
++.erp-empty-state-desc {
++    font-size: 13px;
++    max-width: 360px;
++    margin: 0 auto;
++}
++
++/* ==========================================================================
++   8. FORM - Nhãn nổi (Floating Label) nâng cao
++   ========================================================================== */
++.erp-floating-label {
++    position: relative;
++    margin-bottom: 20px;
++}
++
++.erp-floating-label input,
++.erp-floating-label select,
++.erp-floating-label textarea {
++    width: 100%;
++    padding: 14px 16px 6px;
++    font-size: 14px;
++    border: 1px solid var(--erp-border-color);
++    border-radius: var(--erp-radius-md);
++    background: var(--erp-bg-surface);
++    color: var(--erp-text-main);
++    transition: border-color 0.2s ease, box-shadow 0.2s ease;
++}
++
++.erp-floating-label label {
++    position: absolute;
++    top: 50%;
++    left: 16px;
++    transform: translateY(-50%);
++    font-size: 14px;
++    color: var(--erp-text-muted);
++    pointer-events: none;
++    transition: all 0.2s ease;
++    background: transparent;
++}
++
++.erp-floating-label input:focus,
++.erp-floating-label select:focus,
++.erp-floating-label textarea:focus {
++    border-color: var(--erp-primary);
++    box-shadow: var(--erp-focus-ring);
++    outline: none;
++}
++
++.erp-floating-label input:focus + label,
++.erp-floating-label input:not(:placeholder-shown) + label,
++.erp-floating-label select:focus + label,
++.erp-floating-label select:not([value=""]) + label,
++.erp-floating-label textarea:focus + label,
++.erp-floating-label textarea:not(:placeholder-shown) + label {
++    top: 6px;
++    transform: translateY(0);
++    font-size: 10.5px;
++    font-weight: 600;
++    color: var(--erp-primary);
++    background: var(--erp-bg-surface);
++    padding: 0 4px;
++}
++
++/* Inline error */
++.erp-field-error {
++    font-size: 12px;
++    color: var(--erp-danger);
++    margin-top: 4px;
++    display: flex;
++    align-items: center;
++    gap: 4px;
++}
++
++/* ==========================================================================
++   9. BUTTON LOADING STATE
++   ========================================================================== */
++.btn-loading {
++    position: relative;
++    pointer-events: none;
++    opacity: 0.75;
++}
++
++.btn-loading::after {
++    content: '';
++    position: absolute;
++    width: 16px;
++    height: 16px;
++    top: 50%;
++    left: 50%;
++    margin: -8px 0 0 -8px;
++    border: 2px solid transparent;
++    border-top-color: currentColor;
++    border-radius: 50%;
++    animation: btn-spin 0.6s linear infinite;
++}
++
++.btn-loading > * {
++    visibility: hidden;
++}
++
++@keyframes btn-spin {
++    to { transform: rotate(360deg); }
++}
++
++/* ==========================================================================
++   10. MODAL XÁC NHẬN
++   ========================================================================== */
++.erp-confirm-modal .modal-content {
++    border-radius: var(--erp-radius-xl);
++    border: none;
++    box-shadow: var(--erp-modal-shadow);
++}
++
++.erp-confirm-modal .modal-body {
++    text-align: center;
++    padding: 32px 24px 16px;
++}
++
++.erp-confirm-icon {
++    width: 56px;
++    height: 56px;
++    border-radius: 50%;
++    display: flex;
++    align-items: center;
++    justify-content: center;
++    font-size: 24px;
++    margin: 0 auto 16px;
++}
++
++.erp-confirm-icon.danger {
++    background: var(--erp-danger-subtle);
++    color: var(--erp-danger);
++}
++
++.erp-confirm-icon.warning {
++    background: var(--erp-warning-subtle);
++    color: var(--erp-warning);
++}
++
++/* ==========================================================================
++   11. BADGE TRẠNG THÁI
++   ========================================================================== */
++.erp-badge {
++    display: inline-flex;
++    align-items: center;
++    gap: 4px;
++    padding: 4px 10px;
++    border-radius: 6px;
++    font-size: 12px;
++    font-weight: 600;
++    letter-spacing: 0.2px;
++}
++
++.erp-badge-success { background: var(--erp-success-subtle); color: var(--erp-success); }
++.erp-badge-danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
++.erp-badge-warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
++.erp-badge-info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
++.erp-badge-primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
++.erp-badge-neutral { background: var(--erp-bg-subtle); color: var(--erp-text-muted); }
++
++/* Dot badge */
++.erp-badge-dot::before {
++    content: '';
++    width: 6px;
++    height: 6px;
++    border-radius: 50%;
++    background: currentColor;
++}
++
++/* ==========================================================================
++   12. TAB
++   ========================================================================== */
++.erp-tabs {
++    display: flex;
++    gap: 4px;
++    border-bottom: 2px solid var(--erp-border-color);
++    margin-bottom: 20px;
++}
++
++.erp-tab {
++    padding: 10px 16px;
++    font-size: 13.5px;
++    font-weight: 500;
++    color: var(--erp-text-muted);
++    border: none;
++    background: transparent;
++    cursor: pointer;
++    position: relative;
++    transition: color 0.15s ease;
++}
++
++.erp-tab:hover { color: var(--erp-text-main); }
++
++.erp-tab.active {
++    color: var(--erp-primary);
++    font-weight: 600;
++}
++
++.erp-tab.active::after {
++    content: '';
++    position: absolute;
++    bottom: -2px;
++    left: 0;
++    right: 0;
++    height: 2px;
++    background: var(--erp-primary);
++    border-radius: 2px 2px 0 0;
++}
++
++/* ==========================================================================
++   13. SKELETON LOADING (bổ sung từ enterprise-theme.css)
++   ========================================================================== */
++.skeleton-card {
++    background: var(--erp-bg-card);
++    border: 1px solid var(--erp-border-color);
++    border-radius: var(--erp-radius-lg);
++    padding: 20px 24px;
++}
++
++.skeleton-line {
++    height: 14px;
++    border-radius: 4px;
++    background: var(--erp-border-color);
++    position: relative;
++    overflow: hidden;
++    margin-bottom: 10px;
++}
++
++.skeleton-line::after {
++    content: '';
++    position: absolute;
++    inset: 0;
++    transform: translateX(-100%);
++    background: linear-gradient(90deg, transparent 0, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.5) 60%, transparent);
++    animation: skeleton-shimmer 2s infinite;
++}
++
++.skeleton-circle {
++    width: 40px;
++    height: 40px;
++    border-radius: 50%;
++    background: var(--erp-border-color);
++    position: relative;
++    overflow: hidden;
++}
++
++.skeleton-circle::after {
++    content: '';
++    position: absolute;
++    inset: 0;
++    transform: translateX(-100%);
++    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
++    animation: skeleton-shimmer 2s infinite;
++}
++
++/* ==========================================================================
++   14. ACCESSIBILITY - Focus ring
++   ========================================================================== */
++:focus-visible {
++    outline: 2px solid var(--erp-primary);
++    outline-offset: 2px;
++}
++
++.erp-nav-item:focus-visible,
++.topbar-icon-btn:focus-visible,
++.btn:focus-visible {
++    box-shadow: var(--erp-focus-ring);
++}
++
++/* ==========================================================================
++   15. RESPONSIVE
++   ========================================================================== */
++@media (max-width: 991.98px) {
++    .erp-sidebar {
++        transform: translateX(-100%);
++        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
++        width: 260px !important;
++    }
++
++    .erp-sidebar.show {
++        transform: translateX(0);
++    }
++
++    .erp-sidebar.show ~ .erp-sidebar-overlay {
++        display: block;
++    }
++
++    .erp-main-content {
++        margin-left: 0 !important;
++    }
++
++    .erp-sidebar-mobile-toggle {
++        display: flex;
++    }
++
++    .erp-sidebar-footer {
++        display: none;
++    }
++
++    .erp-content-wrapper {
++        padding: 16px;
++    }
++
++    .erp-topbar {
++        padding: 0 16px;
++    }
++
++    /* Sidebar thu gọn không áp dụng trên mobile */
++    .sidebar-collapsed .erp-sidebar {
++        width: 260px !important;
++    }
++    .sidebar-collapsed .sidebar-brand-full { display: flex; }
++    .sidebar-collapsed .sidebar-brand-mini { display: none; }
++    .sidebar-collapsed .nav-section-title { font-size: 10.5px; height: auto; text-align: left; padding: 16px 18px 6px; }
++    .sidebar-collapsed .nav-section-title::after { display: none; }
++    .sidebar-collapsed .erp-nav-item { justify-content: flex-start; gap: 12px; padding: 9px 18px; margin: 2px 10px; }
++    .sidebar-collapsed .erp-nav-item .nav-label { display: inline; }
++}
++
++@media (max-width: 575.98px) {
++    .stat-card { padding: 16px; }
++    .stat-card-value { font-size: 22px; }
++    .stat-card-icon { width: 40px; height: 40px; font-size: 18px; }
++    .command-palette-trigger span,
++    .command-palette-trigger kbd { display: none !important; }
++}
+diff --git a/wwwroot/css/enterprise-theme.css b/wwwroot/css/enterprise-theme.css
+index c0a8091..db78058 100644
+--- a/wwwroot/css/enterprise-theme.css
++++ b/wwwroot/css/enterprise-theme.css
+@@ -2,11 +2,11 @@
+    TITAN COBALT & NORDIC CLEAN - ENTERPRISE THEME SYSTEM 2026
+    ========================================================================== */
+ 
+-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
++@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap');
+ 
+ :root {
+     /* Fonts */
+-    --erp-font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
++    --erp-font-main: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+     --erp-font-mono: 'JetBrains Mono', monospace;
+ 
+     /* Light Mode Tokens */
+diff --git a/wwwroot/js/admin-ui.js b/wwwroot/js/admin-ui.js
+new file mode 100644
+index 0000000..4c37279
+--- /dev/null
++++ b/wwwroot/js/admin-ui.js
+@@ -0,0 +1,311 @@
++/**
++ * Admin UI - Sidebar, Ripple, Count-Up, Scroll Reveal, Toast
++ * ERP HRM - CMS - Bán hàng Kho (Phiên 3)
++ */
++(function () {
++    'use strict';
++
++    // ──────────────────────────────────────────────────────────
++    // 1. SIDEBAR TOGGLE (thu gọn / mở rộng)
++    // ──────────────────────────────────────────────────────────
++    function initSidebar() {
++        var collapseBtn = document.getElementById('sidebarCollapseBtn');
++        var mobileBtn = document.getElementById('sidebarMobileBtn');
++        var overlay = document.getElementById('sidebarOverlay');
++        var sidebar = document.getElementById('erpSidebar');
++
++        if (collapseBtn) {
++            collapseBtn.addEventListener('click', function () {
++                document.documentElement.classList.toggle('sidebar-collapsed');
++                var collapsed = document.documentElement.classList.contains('sidebar-collapsed');
++                localStorage.setItem('erp_sidebar_collapsed', collapsed);
++            });
++        }
++
++        // Mobile toggle
++        if (mobileBtn && sidebar) {
++            mobileBtn.addEventListener('click', function () {
++                sidebar.classList.toggle('show');
++            });
++        }
++
++        if (overlay && sidebar) {
++            overlay.addEventListener('click', function () {
++                sidebar.classList.remove('show');
++            });
++        }
++
++        // Đặt tooltip cho sidebar collapsed
++        var navItems = document.querySelectorAll('.erp-nav-item[data-path]');
++        navItems.forEach(function (item) {
++            var label = item.querySelector('.nav-label');
++            if (label) {
++                item.setAttribute('data-tooltip', label.textContent.trim());
++            }
++        });
++
++        // Active sidebar item dựa trên URL
++        highlightActiveSidebarItem();
++    }
++
++    function highlightActiveSidebarItem() {
++        var path = window.location.pathname.toLowerCase();
++        var navItems = document.querySelectorAll('.erp-nav-item[data-path]');
++        var bestMatch = null;
++        var bestLength = 0;
++
++        navItems.forEach(function (item) {
++            var itemPath = (item.getAttribute('data-path') || '').toLowerCase();
++            if (itemPath && path.indexOf(itemPath) === 0 && itemPath.length > bestLength) {
++                bestMatch = item;
++                bestLength = itemPath.length;
++            }
++        });
++
++        // Dashboard đặc biệt: chỉ khớp khi path = "/"
++        if (path === '/' || path === '') {
++            navItems.forEach(function (item) {
++                if (item.getAttribute('data-path') === '/') {
++                    bestMatch = item;
++                }
++            });
++        }
++
++        if (bestMatch) {
++            bestMatch.classList.add('active');
++        }
++    }
++
++    // ──────────────────────────────────────────────────────────
++    // 2. RIPPLE EFFECT
++    // ──────────────────────────────────────────────────────────
++    function initRipple() {
++        document.addEventListener('click', function (e) {
++            var btn = e.target.closest('.ripple, .btn-primary, .btn-success, .btn-danger, .btn-warning');
++            if (!btn) return;
++
++            // Kiểm tra prefers-reduced-motion
++            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
++
++            var rect = btn.getBoundingClientRect();
++            var size = Math.max(rect.width, rect.height);
++            var x = e.clientX - rect.left - size / 2;
++            var y = e.clientY - rect.top - size / 2;
++
++            var ripple = document.createElement('span');
++            ripple.className = 'ripple-effect';
++            ripple.style.width = ripple.style.height = size + 'px';
++            ripple.style.left = x + 'px';
++            ripple.style.top = y + 'px';
++
++            // Đảm bảo btn có position relative
++            if (getComputedStyle(btn).position === 'static') {
++                btn.style.position = 'relative';
++            }
++            btn.style.overflow = 'hidden';
++            btn.appendChild(ripple);
++
++            ripple.addEventListener('animationend', function () {
++                ripple.remove();
++            });
++        });
++    }
++
++    // ──────────────────────────────────────────────────────────
++    // 3. COUNT-UP ANIMATION
++    // ──────────────────────────────────────────────────────────
++    function animateCountUp(el) {
++        var target = parseFloat(el.getAttribute('data-target') || el.textContent.replace(/[^0-9.-]/g, ''));
++        if (isNaN(target)) return;
++
++        var prefix = el.getAttribute('data-prefix') || '';
++        var suffix = el.getAttribute('data-suffix') || '';
++        var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
++        var duration = parseInt(el.getAttribute('data-duration') || '1200', 10);
++        var start = 0;
++        var startTime = null;
++
++        // Kiểm tra prefers-reduced-motion
++        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
++            el.textContent = prefix + formatNumber(target, decimals) + suffix;
++            return;
++        }
++
++        function formatNumber(n, d) {
++            return n.toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
++        }
++
++        function step(ts) {
++            if (!startTime) startTime = ts;
++            var progress = Math.min((ts - startTime) / duration, 1);
++            // Ease-out cubic
++            var eased = 1 - Math.pow(1 - progress, 3);
++            var current = start + (target - start) * eased;
++            el.textContent = prefix + formatNumber(current, decimals) + suffix;
++            if (progress < 1) {
++                requestAnimationFrame(step);
++            }
++        }
++
++        requestAnimationFrame(step);
++    }
++
++    function initCountUp() {
++        var els = document.querySelectorAll('.count-up[data-target]');
++        if (els.length === 0) return;
++
++        var observer = new IntersectionObserver(function (entries) {
++            entries.forEach(function (entry) {
++                if (entry.isIntersecting) {
++                    animateCountUp(entry.target);
++                    observer.unobserve(entry.target);
++                }
++            });
++        }, { threshold: 0.3 });
++
++        els.forEach(function (el) {
++            el.textContent = '0';
++            observer.observe(el);
++        });
++    }
++
++    // ──────────────────────────────────────────────────────────
++    // 4. SCROLL REVEAL (IntersectionObserver)
++    // ──────────────────────────────────────────────────────────
++    function initScrollReveal() {
++        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
++
++        var revealEls = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
++        if (revealEls.length === 0) return;
++
++        var observer = new IntersectionObserver(function (entries) {
++            entries.forEach(function (entry) {
++                if (entry.isIntersecting) {
++                    entry.target.classList.add('revealed');
++                    observer.unobserve(entry.target);
++                }
++            });
++        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
++
++        revealEls.forEach(function (el) {
++            observer.observe(el);
++        });
++    }
++
++    // ──────────────────────────────────────────────────────────
++    // 5. TOAST AUTO-DISMISS
++    // ──────────────────────────────────────────────────────────
++    function initToastAutoDismiss() {
++        var toasts = document.querySelectorAll('.erp-toast-alert');
++        toasts.forEach(function (toast) {
++            setTimeout(function () {
++                toast.classList.add('erp-toast-dismiss');
++                toast.addEventListener('animationend', function () {
++                    toast.remove();
++                });
++            }, 5000);
++        });
++    }
++
++    // ──────────────────────────────────────────────────────────
++    // 6. BUTTON LOADING STATE
++    // ──────────────────────────────────────────────────────────
++    // Sử dụng: thêm data-loading="true" vào form, hoặc gọi ERP.btnLoading(btn)
++    window.ERP = window.ERP || {};
++    window.ERP.btnLoading = function (btn) {
++        btn.classList.add('btn-loading');
++        btn.disabled = true;
++    };
++    window.ERP.btnReset = function (btn) {
++        btn.classList.remove('btn-loading');
++        btn.disabled = false;
++    };
++
++    // ──────────────────────────────────────────────────────────
++    // 7. CONFIRM MODAL
++    // ──────────────────────────────────────────────────────────
++    // Gọi: ERP.confirm({ title, message, confirmText, cancelText, variant }).then(ok => ...)
++    window.ERP.confirm = function (opts) {
++        opts = opts || {};
++        var title = opts.title || 'Xác nhận';
++        var message = opts.message || 'Bạn có chắc chắn muốn thực hiện?';
++        var confirmText = opts.confirmText || 'Xác nhận';
++        var cancelText = opts.cancelText || 'Hủy';
++        var variant = opts.variant || 'danger';
++
++        var iconClass = variant === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-trash3-fill';
++
++        return new Promise(function (resolve) {
++            var id = 'erpConfirm_' + Date.now();
++            var html = '<div class="modal fade erp-confirm-modal" id="' + id + '" tabindex="-1">' +
++                '<div class="modal-dialog modal-dialog-centered modal-sm">' +
++                '<div class="modal-content">' +
++                '<div class="modal-body">' +
++                '<div class="erp-confirm-icon ' + HRM.escapeHtml(variant) + '"><i class="bi ' + HRM.escapeHtml(iconClass) + '"></i></div>' +
++                '<h6 class="fw-bold mb-2">' + HRM.escapeHtml(title) + '</h6>' +
++                '<p class="text-muted small mb-0">' + HRM.escapeHtml(message) + '</p>' +
++                '</div>' +
++                '<div class="modal-footer border-0 pt-0 justify-content-center gap-2">' +
++                '<button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">' + HRM.escapeHtml(cancelText) + '</button>' +
++                '<button type="button" class="btn btn-sm btn-' + HRM.escapeHtml(variant) + ' px-3" id="' + id + '_ok">' + HRM.escapeHtml(confirmText) + '</button>' +
++                '</div></div></div></div>';
++
++            document.body.insertAdjacentHTML('beforeend', html);
++            var modalEl = document.getElementById(id);
++            var bsModal = new bootstrap.Modal(modalEl);
++            bsModal.show();
++
++            document.getElementById(id + '_ok').addEventListener('click', function () {
++                bsModal.hide();
++                resolve(true);
++            });
++
++            modalEl.addEventListener('hidden.bs.modal', function () {
++                modalEl.remove();
++                resolve(false);
++            }, { once: true });
++        });
++    };
++
++    // ──────────────────────────────────────────────────────────
++    // 8. TOAST PROGRAMMATIC
++    // ──────────────────────────────────────────────────────────
++    // Gọi: ERP.toast('Thông báo thành công', 'success')
++    window.ERP.toast = function (message, variant) {
++        variant = variant || 'info';
++        var icons = {
++            success: 'bi-check-circle-fill',
++            danger: 'bi-exclamation-triangle-fill',
++            warning: 'bi-exclamation-circle-fill',
++            info: 'bi-info-circle-fill'
++        };
++        var icon = icons[variant] || icons.info;
++
++        var wrapper = document.querySelector('.erp-content-wrapper');
++        if (!wrapper) wrapper = document.body;
++
++        var toast = document.createElement('div');
++        toast.className = 'erp-toast-alert erp-toast-' + variant + ' fade-in';
++        toast.setAttribute('role', 'alert');
++        toast.innerHTML = '<i class="bi ' + icon + '"></i><span>' + HRM.escapeHtml(message) + '</span>' +
++            '<button type="button" class="btn-close btn-close-sm" style="margin-left:auto" onclick="this.parentElement.remove()"></button>';
++
++        wrapper.insertBefore(toast, wrapper.firstChild);
++
++        setTimeout(function () {
++            toast.classList.add('erp-toast-dismiss');
++            toast.addEventListener('animationend', function () { toast.remove(); });
++        }, 5000);
++    };
++
++    // ──────────────────────────────────────────────────────────
++    // KHỞI TẠO
++    // ──────────────────────────────────────────────────────────
++    document.addEventListener('DOMContentLoaded', function () {
++        initSidebar();
++        initRipple();
++        initCountUp();
++        initScrollReveal();
++        initToastAutoDismiss();
++    });
++})();
+-- 
+2.43.0
+
