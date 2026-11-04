@@ -28,7 +28,7 @@
                                 @foreach (var sub in menu.SubMenus)
                                 {
                                     <li>
-                                        <a class="dropdown-item py-2 small fw-medium" href="@sub.CustomUrl" target="@sub.Target">
+                                        <a class="dropdown-item py-2 small fw-medium" href="@SafeHref(sub.CustomUrl)" target="@sub.Target" rel="@RelFor(sub.Target)">
                                             @if (!string.IsNullOrEmpty(sub.IconClass))
                                             {
                                                 <i class="@sub.IconClass me-1"></i>
@@ -43,7 +43,7 @@
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-semibold px-3" href="@menu.CustomUrl" target="@menu.Target">
+                            <a class="nav-link text-dark fw-semibold px-3" href="@SafeHref(menu.CustomUrl)" target="@menu.Target" rel="@RelFor(menu.Target)">
                                 @if (!string.IsNullOrEmpty(menu.IconClass))
                                 {
                                     <i class="@menu.IconClass me-1"></i>
@@ -57,3 +57,13 @@
         </div>
     </div>
 </nav>
+
+@functions {
+    // URL không an toàn (javascript:, data:...) được thay bằng "#" ngay khi render
+    private static string SafeHref(string? url) =>
+        string.IsNullOrWhiteSpace(url) ? "#" : (ERP_HRM_CMS.Helpers.UrlAnToan.LaHopLe(url) ? url : "#");
+
+    // Liên kết mở tab mới: chống tabnabbing
+    private static string? RelFor(string? target) =>
+        string.Equals(target, "_blank", StringComparison.OrdinalIgnoreCase) ? "noopener noreferrer" : null;
+}

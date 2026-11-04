@@ -1,10 +1,12 @@
-﻿using ERP_HRM_CMS.Helpers;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
+using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.ViewModels;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -34,26 +36,32 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("content.create")]
         public IActionResult Create()
         {
-            return View(new Content { Status = "Published" });
+            return View(new ContentFormViewModel { Status = "Published" });
         }
 
+        // Chỉ nhận các trường trong ContentFormViewModel; AuthorId lấy từ claim đăng nhập
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("content.create")]
-        public async Task<IActionResult> Create(Content content)
+        public async Task<IActionResult> Create(ContentFormViewModel model)
         {
             if (ModelState.IsValid)
             {
-                content.AuthorId = HttpContext.Session.GetInt32("UserId");
-                content.CreatedAt = VietnamTime.Now;
-                content.UpdatedAt = VietnamTime.Now;
+                var now = VietnamTime.Now;
+                var content = new Content
+                {
+                    AuthorId = CurrentUserId(),
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+                model.GhiVaoEntity(content);
 
                 _context.Contents.Add(content);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "Đã xuất bản bài viết thành công!";
                 return RedirectToAction(nameof(Index));
             }
-            return View(content);
+            return View(model);
         }
 
         [HttpGet]
@@ -62,20 +70,24 @@ namespace ERP_HRM_CMS.Controllers
         {
             var content = await _context.Contents.FindAsync(id);
             if (content == null) return NotFound();
-            return View(content);
+            return View(ContentFormViewModel.TuEntity(content));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("content.edit")]
-        public async Task<IActionResult> Edit(int id, Content content)
+        public async Task<IActionResult> Edit(int id, ContentFormViewModel model)
         {
-            if (id != content.Id) return NotFound();
+            if (id != model.Id) return NotFound();
+
+            // Tải entity từ database; không ghi đè Id, AuthorId, CreatedAt
+            var content = await _context.Contents.FindAsync(id);
+            if (content == null) return NotFound();
 
             if (ModelState.IsValid)
             {
+                model.GhiVaoEntity(content);
                 content.UpdatedAt = VietnamTime.Now;
-                _context.Update(content);
 
                 // Anti-Broken Link: Nếu bài viết bị chuyển sang Draft/Archived, vô hiệu hóa Menu liên quan
                 if (content.Status != "Published")
@@ -98,7 +110,7 @@ namespace ERP_HRM_CMS.Controllers
                 TempData["SuccessMessage"] = "Cập nhật bài viết thành công!";
                 return RedirectToAction(nameof(Index));
             }
-            return View(content);
+            return View(model);
         }
 
         // Xóa bài viết với cơ chế Anti-Broken Link
@@ -133,6 +145,11 @@ namespace ERP_HRM_CMS.Controllers
                 : "Đã xóa bài viết thành công!";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        private int? CurrentUserId()
+        {
+            return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : (int?)null;
         }
     }
 }

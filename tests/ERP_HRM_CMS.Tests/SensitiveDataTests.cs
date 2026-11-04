@@ -22,7 +22,7 @@ namespace ERP_HRM_CMS.Tests
         {
             var converter = NewConverter();
 
-            string? stored = converter.ConvertToProvider("012345678901");
+            string? stored = (string?)converter.ConvertToProvider("012345678901");
 
             Assert.NotNull(stored);
             Assert.StartsWith(ProtectedStringConverter.Prefix, stored);

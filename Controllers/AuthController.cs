@@ -10,6 +10,7 @@ using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services;
+using ERP_HRM_CMS.Services.Security;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -17,13 +18,18 @@ namespace ERP_HRM_CMS.Controllers
     [AllowAnonymous]
     public class AuthController : Controller
     {
+        private const string ThongBaoDangKyChung =
+            "Đã nhận yêu cầu đăng ký. Nếu tên đăng nhập chưa được sử dụng, tài khoản sẽ chờ quản trị viên duyệt.";
+
         private readonly AppDbContext _context;
         private readonly LoginThrottleService _loginThrottle;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDbContext context, LoginThrottleService loginThrottle)
+        public AuthController(AppDbContext context, LoginThrottleService loginThrottle, ILogger<AuthController> logger)
         {
             _context = context;
             _loginThrottle = loginThrottle;
+            _logger = logger;
         }
 
         private string ClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -99,7 +105,9 @@ namespace ERP_HRM_CMS.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim("FullName", user.Employee?.FullName ?? user.Username),
-                new Claim("IsSuperAdmin", user.IsSuperAdmin.ToString())
+                new Claim("IsSuperAdmin", user.IsSuperAdmin.ToString()),
+                // Cookie mang SecurityStamp; khi lệch với DB, phiên bị thu hồi (xem CookieSecurityStampValidator)
+                new Claim(CookieSecurityStampValidator.ClaimSecurityStamp, user.SecurityStamp.ToString())
             };
             claims.AddRange(roleCodes.Select(rc => new Claim(ClaimTypes.Role, rc)));
 
@@ -147,14 +155,7 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
-            string tenDangNhap = model.Username.Trim();
-
-            if (await _context.Users.AnyAsync(u => u.Username == tenDangNhap))
-            {
-                ModelState.AddModelError(nameof(model.Username), "Tên đăng nhập đã tồn tại.");
-                return View(model);
-            }
-
+            // Kiểm tra mật khẩu trước, không phụ thuộc tên đăng nhập đã tồn tại hay chưa
             string? loiMatKhau = MatKhauHelper.KiemTraDoManh(model.Password);
             if (loiMatKhau != null)
             {
@@ -162,22 +163,42 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
-            // Tài khoản đăng ký mới chưa có vai trò và chưa được kích hoạt: chờ quản trị viên duyệt
-            string salt = MatKhauHelper.GenerateSalt();
-            var user = new User
+            // Mọi trường hợp đều trả cùng một thông báo (kể cả tên đã tồn tại) để không dò được tên đăng nhập
+            string tenDangNhap = model.Username.Trim();
+
+            if (!await _context.Users.AnyAsync(u => u.Username == tenDangNhap))
             {
-                Username = tenDangNhap,
-                PasswordSalt = salt,
-                PasswordHash = MatKhauHelper.HashPassword(model.Password, salt),
-                IsActive = false,
-                IsSuperAdmin = false,
-                CreatedAt = VietnamTime.Now
-            };
+                // Tài khoản đăng ký mới chưa có vai trò và chưa được kích hoạt: chờ quản trị viên duyệt
+                string salt = MatKhauHelper.GenerateSalt();
+                var user = new User
+                {
+                    Username = tenDangNhap,
+                    PasswordSalt = salt,
+                    PasswordHash = MatKhauHelper.HashPassword(model.Password, salt),
+                    IsActive = false,
+                    IsSuperAdmin = false,
+                    CreatedAt = VietnamTime.Now
+                };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+                _context.Users.Add(user);
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    // Nếu tên đã được đăng ký đồng thời, vẫn trả thông báo chung; lỗi khác thì ném tiếp
+                    if (!await _context.Users.AnyAsync(u => u.Username == tenDangNhap))
+                    {
+                        _logger.LogError(ex, "Không thể lưu yêu cầu đăng ký.");
+                        throw;
+                    }
 
-            TempData["ThongBao"] = "Đăng ký thành công. Tài khoản đang chờ quản trị viên duyệt.";
+                    _logger.LogWarning(ex, "Đăng ký trùng tên đăng nhập khi lưu đồng thời.");
+                }
+            }
+
+            TempData["ThongBao"] = ThongBaoDangKyChung;
             return RedirectToAction(nameof(Login));
         }
 

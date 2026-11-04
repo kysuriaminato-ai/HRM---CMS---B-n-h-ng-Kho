@@ -1,4 +1,5 @@
 using ERP_HRM_CMS.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERP_HRM_CMS.Helpers
 {

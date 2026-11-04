@@ -70,7 +70,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(new Contract
             {
                 EmployeeId = employeeId ?? 0,
-                ContractNumber = $"HDLD-{VietnamTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
+                ContractNumber = MaChungTu.Sinh("HDLD"),
                 StartDate = VietnamTime.Today,
                 SignDate = VietnamTime.Today,
                 ContractType = "Xác định thời hạn 1 năm",

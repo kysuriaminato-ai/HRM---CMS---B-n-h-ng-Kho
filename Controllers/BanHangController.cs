@@ -7,6 +7,7 @@ using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services;
+using ERP_HRM_CMS.Services.Kho;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -93,7 +94,7 @@ namespace ERP_HRM_CMS.Controllers
             // Real-time Validation: Đối chiếu lại tồn kho lần cuối
             foreach (var item in cart.Items)
             {
-                var inv = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
+                var inv = await _context.Inventories.AsNoTracking().FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
                 if (inv == null || inv.StockQuantity < item.Quantity)
                 {
                     TempData["ErrorMessage"] = $"Lỗi tồn kho: Sản phẩm '{item.ProductName}' chỉ còn {inv?.StockQuantity ?? 0} {item.Unit} khả dụng!";
@@ -105,7 +106,7 @@ namespace ERP_HRM_CMS.Controllers
 
             var order = new Order
             {
-                OrderCode = $"ORD-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}",
+                OrderCode = MaChungTu.Sinh("ORD"),
                 BranchId = dto.BranchId,
                 CustomerName = dto.CustomerName.Trim(),
                 CustomerPhone = dto.CustomerPhone.Trim(),
@@ -138,9 +139,11 @@ namespace ERP_HRM_CMS.Controllers
                         UnitPrice = item.UnitPrice
                     });
 
-                    var inv = await _context.Inventories.FirstAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
-                    inv.StockQuantity -= item.Quantity;
-                    inv.UpdatedAt = VietnamTime.Now;
+                    // Trừ tồn bằng UPDATE có điều kiện; nếu giao dịch khác vừa bán hết thì hủy toàn bộ đơn
+                    if (!await InventoryStockService.TruTonAsync(_context, dto.BranchId, item.ProductId, item.Quantity, VietnamTime.Now))
+                    {
+                        throw new TonKhoKhongDuException($"Sản phẩm '{item.ProductName}' vừa hết hàng tại chi nhánh. Đơn hàng chưa được lập.");
+                    }
 
                     // Ghi nhận phiếu xuất kho tự động
                     _context.InventoryTransactions.Add(new InventoryTransaction
@@ -162,6 +165,12 @@ namespace ERP_HRM_CMS.Controllers
 
                 await dbTransaction.CommitAsync();
             }
+            catch (TonKhoKhongDuException ex)
+            {
+                await dbTransaction.RollbackAsync();
+                TempData["ErrorMessage"] = ex.Message;
+                return RedirectToAction(nameof(POS), new { branchId = dto.BranchId });
+            }
             catch (Exception)
             {
                 await dbTransaction.RollbackAsync();
@@ -180,7 +189,7 @@ namespace ERP_HRM_CMS.Controllers
             // Kiểm tra và cảnh báo nếu có mặt hàng nào chạm ngưỡng tồn kho tối thiểu
             foreach (var item in cart.Items)
             {
-                var inv = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
+                var inv = await _context.Inventories.AsNoTracking().FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.BranchId == dto.BranchId);
                 if (inv != null && inv.StockQuantity <= inv.MinStockAlert)
                 {
                     await _notificationService.SendToRoleAsync(

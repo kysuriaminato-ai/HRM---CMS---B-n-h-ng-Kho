@@ -92,6 +92,9 @@ namespace ERP_HRM_CMS.Data
         public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
         public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
         public DbSet<SalarySlip> SalarySlips => Set<SalarySlip>();
+        public DbSet<PayrollAllowanceType> PayrollAllowanceTypes => Set<PayrollAllowanceType>();
+        public DbSet<EmployeeDependent> EmployeeDependents => Set<EmployeeDependent>();
+        public DbSet<SeedHistory> SeedHistories => Set<SeedHistory>();
 
         /// <summary>
         /// Cột thời điểm cần đổi múi giờ: tên kết thúc bằng "At" (CreatedAt, ReadAt...)
@@ -176,9 +179,11 @@ namespace ERP_HRM_CMS.Data
 
             // Indexes duy nhất (Unique Constraints) bảo vệ tính toàn vẹn dữ liệu
             modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+            // Bản ghi cũ (trước khi có SecurityStamp) nhận giá trị ngẫu nhiên khi migration thêm cột
+            modelBuilder.Entity<User>().Property(u => u.SecurityStamp).HasDefaultValueSql("NEWID()");
 
             // Mỗi nhân viên tối đa một tài khoản; nhiều tài khoản chưa gắn nhân viên (EmployeeId NULL) vẫn được phép.
-            // Khớp với script Database/SQL_fix_users_employeeid_unique.sql (cùng tên IX_Users_EmployeeId).
+            // Khớp với script Database/Legacy/SQL_fix_users_employeeid_unique.sql (cùng tên IX_Users_EmployeeId).
             modelBuilder.Entity<User>().HasIndex(u => u.EmployeeId).IsUnique().HasFilter("[EmployeeId] IS NOT NULL");
 
             modelBuilder.Entity<NotificationRead>().HasKey(r => new { r.NotificationId, r.UserId });
@@ -199,6 +204,8 @@ namespace ERP_HRM_CMS.Data
             modelBuilder.Entity<Employee>().HasIndex(e => e.Email).IsUnique();
             modelBuilder.Entity<Contract>().HasIndex(c => c.ContractNumber).IsUnique();
             modelBuilder.Entity<Shift>().HasIndex(s => s.Code).IsUnique();
+            modelBuilder.Entity<PayrollAllowanceType>().HasIndex(t => t.Code).IsUnique();
+            modelBuilder.Entity<EmployeeDependent>().HasIndex(d => new { d.EmployeeId, d.FromDate });
 
             modelBuilder.Entity<Category>().HasIndex(c => c.Code).IsUnique();
             modelBuilder.Entity<Category>().HasIndex(c => c.Slug).IsUnique();
@@ -214,6 +221,20 @@ namespace ERP_HRM_CMS.Data
 
             modelBuilder.Entity<LeaveRequest>().HasIndex(l => l.RequestCode).IsUnique();
             modelBuilder.Entity<PayrollPeriod>().HasIndex(p => new { p.Month, p.Year }).IsUnique();
+
+            // Mọi cột decimal phải có kiểu rõ ràng. Cột đã khai báo TypeName (tiền: decimal(18,2), tỷ lệ: decimal(5,2)...)
+            // giữ nguyên; cột nào thiếu kiểu được gán mặc định decimal(18,2) để không phát sinh kiểu ngầm định.
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if ((property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
+                        && property.GetColumnType() == null)
+                    {
+                        property.SetColumnType("decimal(18,2)");
+                    }
+                }
+            }
 
             // 1:1 Quan hệ Employee - User
             modelBuilder.Entity<User>()

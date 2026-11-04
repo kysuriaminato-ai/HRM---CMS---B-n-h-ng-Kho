@@ -85,7 +85,7 @@ namespace ERP_HRM_CMS.Controllers
             ViewBag.Categories = new SelectList(await _context.Categories.ToListAsync(), "Id", "Name");
             return View(new ProductCreateEditViewModel
             {
-                SKU = $"SKU-{VietnamTime.Now:yyyyMMdd}-{new Random().Next(100, 999)}",
+                SKU = MaChungTu.Sinh("SKU"),
                 SalePrice = 100000,
                 CostPrice = 70000,
                 InitialStock = 20

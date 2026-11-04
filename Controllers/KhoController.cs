@@ -7,6 +7,7 @@ using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services.Kho;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -14,10 +15,12 @@ namespace ERP_HRM_CMS.Controllers
     public class KhoController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<KhoController> _logger;
 
-        public KhoController(AppDbContext context)
+        public KhoController(AppDbContext context, ILogger<KhoController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         private int CurrentUserId => HttpContext.Session.GetInt32("UserId") ?? 1;
@@ -66,11 +69,8 @@ namespace ERP_HRM_CMS.Controllers
 
             var stockList = await query.OrderBy(x => x.StockQuantity).ToListAsync();
 
-            // Tính toán số liệu KPI toàn chi nhánh
-            var allBranchInventories = await _context.Inventories
-                .Include(i => i.Product)
-                .Where(i => i.BranchId == selectedBranch)
-                .ToListAsync();
+            // KPI toàn chi nhánh được tính trên database (không tải toàn bộ dòng tồn vào bộ nhớ)
+            var tongHop = await InventoryStockService.TongHopTonKhoAsync(_context, selectedBranch);
 
             var today = VietnamTime.Today;
             int todayTransCount = await _context.InventoryTransactions
@@ -78,10 +78,10 @@ namespace ERP_HRM_CMS.Controllers
 
             var vm = new WarehouseDashboardViewModel
             {
-                TotalProducts = allBranchInventories.Count,
+                TotalProducts = tongHop.SoMatHang,
                 TotalBranches = branches.Count,
-                TotalLowStockItems = allBranchInventories.Count(i => i.StockQuantity <= i.MinStockAlert),
-                TotalInventoryAssetValue = allBranchInventories.Sum(i => i.StockQuantity * i.Product.CostPrice),
+                TotalLowStockItems = tongHop.SoMatHangCanhBao,
+                TotalInventoryAssetValue = tongHop.GiaTriTonKho,
                 TodayTransactionCount = todayTransCount,
                 StockList = stockList,
                 Branches = branches,
@@ -132,7 +132,7 @@ namespace ERP_HRM_CMS.Controllers
                     }
 
                     // 1. Tạo phiếu giao dịch kho
-                    string transCode = $"PNK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("PNK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -147,13 +147,12 @@ namespace ERP_HRM_CMS.Controllers
                     };
                     _context.InventoryTransactions.Add(transaction);
 
-                    // 2. Cập nhật tồn kho thực tế
-                    var inventory = await _context.Inventories
-                        .FirstOrDefaultAsync(i => i.ProductId == dto.ProductId && i.BranchId == dto.BranchId);
-
-                    if (inventory == null)
+                    // 2. Cộng tồn bằng UPDATE cộng dồn trên database (không mất cập nhật khi đồng thời).
+                    //    Chưa có dòng tồn thì thêm mới; nếu hai giao dịch cùng thêm, unique index sẽ chặn và hủy giao dịch.
+                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.BranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    if (!daCongTon)
                     {
-                        inventory = new Inventory
+                        _context.Inventories.Add(new Inventory
                         {
                             ProductId = dto.ProductId,
                             BranchId = dto.BranchId,
@@ -161,13 +160,7 @@ namespace ERP_HRM_CMS.Controllers
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
                             UpdatedAt = VietnamTime.Now
-                        };
-                        _context.Inventories.Add(inventory);
-                    }
-                    else
-                    {
-                        inventory.StockQuantity += dto.Quantity;
-                        inventory.UpdatedAt = VietnamTime.Now;
+                        });
                     }
 
                     // 3. Cập nhật giá vốn bình quân nếu có đơn giá mới
@@ -185,7 +178,7 @@ namespace ERP_HRM_CMS.Controllers
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình nhập kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi nhập kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình nhập kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 
@@ -213,7 +206,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> XuatKho(StockTransactionCreateDto dto)
         {
+            // Kiểm tra sơ bộ để hiện thông báo; việc trừ tồn thật sự được kiểm tra lại trong transaction bên dưới
             var inventory = await _context.Inventories
+                .AsNoTracking()
                 .Include(i => i.Product)
                 .FirstOrDefaultAsync(i => i.ProductId == dto.ProductId && i.BranchId == dto.BranchId);
 
@@ -227,7 +222,17 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"PXK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    // Trừ tồn bằng UPDATE có điều kiện (StockQuantity >= số xuất). Không đủ thì hủy toàn bộ transaction.
+                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.BranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    if (!duDeTru)
+                    {
+                        await dbTransaction.RollbackAsync();
+                        ModelState.AddModelError("Quantity", "Tồn kho vừa thay đổi và không còn đủ để xuất. Vui lòng kiểm tra lại.");
+                        await LoadDropdowns(dto.BranchId);
+                        return View(dto);
+                    }
+
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("PXK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
@@ -242,20 +247,16 @@ namespace ERP_HRM_CMS.Controllers
                     };
                     _context.InventoryTransactions.Add(transaction);
 
-                    // Trừ số lượng tồn kho
-                    inventory!.StockQuantity -= dto.Quantity;
-                    inventory.UpdatedAt = VietnamTime.Now;
-
                     await _context.SaveChangesAsync();
                     await dbTransaction.CommitAsync();
 
-                    TempData["SuccessMessage"] = $"Lập phiếu xuất kho {transCode} thành công! Đã trừ {dto.Quantity} {inventory.Product.Unit}.";
+                    TempData["SuccessMessage"] = $"Lập phiếu xuất kho {transCode} thành công! Đã trừ {dto.Quantity} {inventory!.Product.Unit}.";
                     return RedirectToAction(nameof(Index), new { branchId = dto.BranchId });
                 }
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình xuất kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi xuất kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình xuất kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 
@@ -375,6 +376,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var fromInventory = await _context.Inventories
+                .AsNoTracking()
                 .Include(i => i.Product)
                 .FirstOrDefaultAsync(i => i.ProductId == dto.ProductId && i.BranchId == dto.FromBranchId);
 
@@ -388,12 +390,22 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    string transCode = $"DCK-{VietnamTime.Now:yyyyMMddHHmmss}-{new Random().Next(100, 999)}";
+                    string transCode = await MaChungTu.SinhDuyNhatAsync("DCK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     decimal unitCost = fromInventory!.Product.CostPrice;
 
-                    // 1. Trừ tồn kho tại chi nhánh xuất & ghi giao dịch OUT
-                    fromInventory.StockQuantity -= dto.Quantity;
-                    fromInventory.UpdatedAt = VietnamTime.Now;
+                    // 1. Trừ tồn chi nhánh xuất bằng UPDATE có điều kiện; không đủ thì hủy toàn bộ điều chuyển
+                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.FromBranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    if (!duDeTru)
+                    {
+                        await dbTransaction.RollbackAsync();
+                        ModelState.AddModelError("Quantity", "Tồn kho chi nhánh xuất vừa thay đổi và không còn đủ. Vui lòng kiểm tra lại.");
+                        var branchesLoi = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+                        var productsLoi = await _context.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
+                        ViewBag.FromBranches = new SelectList(branchesLoi, "Id", "Name", dto.FromBranchId);
+                        ViewBag.ToBranches = new SelectList(branchesLoi, "Id", "Name", dto.ToBranchId);
+                        ViewBag.Products = new SelectList(productsLoi, "Id", "Name", dto.ProductId);
+                        return View(dto);
+                    }
 
                     _context.InventoryTransactions.Add(new InventoryTransaction
                     {
@@ -409,12 +421,11 @@ namespace ERP_HRM_CMS.Controllers
                     });
 
                     // 2. Cộng tồn kho tại chi nhánh nhận & ghi giao dịch IN
-                    var toInventory = await _context.Inventories
-                        .FirstOrDefaultAsync(i => i.ProductId == dto.ProductId && i.BranchId == dto.ToBranchId);
-
-                    if (toInventory == null)
+                    // Cộng tồn chi nhánh nhận bằng UPDATE cộng dồn; chưa có dòng tồn thì thêm mới
+                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.ToBranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    if (!daCongTon)
                     {
-                        toInventory = new Inventory
+                        _context.Inventories.Add(new Inventory
                         {
                             ProductId = dto.ProductId,
                             BranchId = dto.ToBranchId,
@@ -422,13 +433,7 @@ namespace ERP_HRM_CMS.Controllers
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
                             UpdatedAt = VietnamTime.Now
-                        };
-                        _context.Inventories.Add(toInventory);
-                    }
-                    else
-                    {
-                        toInventory.StockQuantity += dto.Quantity;
-                        toInventory.UpdatedAt = VietnamTime.Now;
+                        });
                     }
 
                     _context.InventoryTransactions.Add(new InventoryTransaction
@@ -453,7 +458,7 @@ namespace ERP_HRM_CMS.Controllers
                 catch (Exception ex)
                 {
                     await dbTransaction.RollbackAsync();
-                    TempData["ErrorMessage"] = "Lỗi trong quá trình điều chuyển kho: " + ex.Message;
+                    _logger.LogError(ex, "Lỗi khi điều chuyển kho."); TempData["ErrorMessage"] = "Đã xảy ra lỗi trong quá trình điều chuyển kho. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                 }
             }
 
@@ -536,6 +541,9 @@ namespace ERP_HRM_CMS.Controllers
                 CreatedAt = VietnamTime.Now
             };
 
+            // Cả phiên kiểm kê nằm trong một transaction: nếu tồn đổi giữa chừng thì hủy toàn bộ phiên
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
+
             int totalSys = 0;
             int totalAct = 0;
             int totalDiff = 0;
@@ -548,6 +556,7 @@ namespace ERP_HRM_CMS.Controllers
                 string reason = (reasons != null && i < reasons.Length) ? reasons[i] : "";
 
                 var inv = await _context.Inventories
+                    .AsNoTracking()
                     .Include(x => x.Product)
                     .FirstOrDefaultAsync(x => x.BranchId == branchId && x.ProductId == pid);
 
@@ -576,8 +585,14 @@ namespace ERP_HRM_CMS.Controllers
                     // Nếu có chênh lệch -> Cập nhật tồn kho và ghi nhận thẻ kho
                     if (diffQty != 0)
                     {
-                        inv.StockQuantity = actQty;
-                        inv.UpdatedAt = VietnamTime.Now;
+                        // Chỉ ghi khi tồn vẫn bằng số đã đọc; nếu đã đổi (giao dịch khác) thì hủy phiên kiểm kê
+                        bool daCapNhat = await InventoryStockService.DatTonTuyetDoiAsync(_context, branchId, pid, sysQty, actQty, VietnamTime.Now);
+                        if (!daCapNhat)
+                        {
+                            await dbTransaction.RollbackAsync();
+                            TempData["ErrorMessage"] = $"Tồn kho sản phẩm #{pid} vừa thay đổi trong lúc kiểm kê. Chưa lưu phiếu nào; vui lòng kiểm kê lại.";
+                            return RedirectToAction(nameof(KiemKe), new { branchId });
+                        }
 
                         _context.InventoryTransactions.Add(new InventoryTransaction
                         {
@@ -602,6 +617,7 @@ namespace ERP_HRM_CMS.Controllers
 
             _context.StocktakingSheets.Add(sheet);
             await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
 
             TempData["SuccessMessage"] = $"Cân bằng kho thành công theo phiếu {sheet.Code}! Đã cập nhật chính xác số lượng tồn thực tế.";
             return RedirectToAction(nameof(KiemKe), new { branchId });
