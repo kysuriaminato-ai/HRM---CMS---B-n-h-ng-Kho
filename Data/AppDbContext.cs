@@ -88,6 +88,13 @@ namespace ERP_HRM_CMS.Data
         public DbSet<StocktakingSheet> StocktakingSheets => Set<StocktakingSheet>();
         public DbSet<StocktakingDetail> StocktakingDetails => Set<StocktakingDetail>();
 
+        // Phiên 5: Hồ sơ nhân viên mở rộng
+        public DbSet<EmployeeRelative> EmployeeRelatives => Set<EmployeeRelative>();
+        public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
+        public DbSet<EmployeeCertificate> EmployeeCertificates => Set<EmployeeCertificate>();
+        public DbSet<EmployeeDocument> EmployeeDocuments => Set<EmployeeDocument>();
+        public DbSet<EmployeeChangeHistory> EmployeeChangeHistories => Set<EmployeeChangeHistory>();
+
         // Phân hệ HRM Nâng Cao & Tiền Lương
         public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
         public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
@@ -376,6 +383,50 @@ namespace ERP_HRM_CMS.Data
                 .WithMany()
                 .HasForeignKey(s => s.EmployeeId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // ═══════════════════════════════════════════════════════════
+            // PHIÊN 5 — Hồ sơ nhân viên mở rộng
+            // ═══════════════════════════════════════════════════════════
+
+            // Department: cây đệ quy (self-referencing)
+            modelBuilder.Entity<Department>()
+                .HasOne(d => d.Parent)
+                .WithMany(d => d.Children)
+                .HasForeignKey(d => d.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // EmployeeRelative
+            modelBuilder.Entity<EmployeeRelative>()
+                .HasOne(r => r.Employee).WithMany(e => e.Relatives)
+                .HasForeignKey(r => r.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+
+            // EmployeeSkill
+            modelBuilder.Entity<EmployeeSkill>()
+                .HasOne(s => s.Employee).WithMany(e => e.Skills)
+                .HasForeignKey(s => s.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+
+            // EmployeeCertificate
+            modelBuilder.Entity<EmployeeCertificate>()
+                .HasOne(c => c.Employee).WithMany(e => e.Certificates)
+                .HasForeignKey(c => c.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+
+            // EmployeeDocument
+            modelBuilder.Entity<EmployeeDocument>()
+                .HasOne(d => d.Employee).WithMany(e => e.Documents)
+                .HasForeignKey(d => d.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<EmployeeDocument>()
+                .HasOne(d => d.Uploader).WithMany()
+                .HasForeignKey(d => d.UploadedBy).OnDelete(DeleteBehavior.Restrict);
+
+            // EmployeeChangeHistory
+            modelBuilder.Entity<EmployeeChangeHistory>()
+                .HasOne(h => h.Employee).WithMany(e => e.ChangeHistories)
+                .HasForeignKey(h => h.EmployeeId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<EmployeeChangeHistory>()
+                .HasOne(h => h.ChangedByUser).WithMany()
+                .HasForeignKey(h => h.ChangedBy).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<EmployeeChangeHistory>()
+                .HasIndex(h => new { h.EmployeeId, h.ChangeType, h.EffectiveDate });
 
             // ═══════════════════════════════════════════════════════════
             // PHIÊN 4 DB — Entities mới: Fluent API

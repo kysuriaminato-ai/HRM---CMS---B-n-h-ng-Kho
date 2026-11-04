@@ -1,46 +1,117 @@
-﻿@model List<ERP_HRM_CMS.Models.Entities.Department>
+﻿@model List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto>
 @{
     Layout = "_HRMLayout";
     ViewData["Title"] = "Cơ Cấu Tổ Chức & Phòng Ban";
     var branches = ViewBag.Branches as List<ERP_HRM_CMS.Models.Entities.Branch>;
     var positions = ViewBag.Positions as List<ERP_HRM_CMS.Models.Entities.Position>;
+    var flatDepts = ViewBag.FlatDepartments as List<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>;
+}
+
+@* Hàm helper hiển thị cây đệ quy *@
+@functions {
+    void RenderTree(List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto> nodes, int level)
+    {
+        foreach (var node in nodes)
+        {
+            <tr class="@(node.IsActive ? "" : "text-muted")">
+                <td>
+                    <code>@node.Code</code>
+                </td>
+                <td>
+                    <span style="padding-left: @(level * 24)px;">
+                        @if (level > 0)
+                        {
+                            <span class="text-muted me-1">└─</span>
+                        }
+                        @if (node.Children.Any())
+                        {
+                            <i class="bi bi-diagram-3 me-1 text-secondary"></i>
+                        }
+                        <span class="fw-bold">@node.Name</span>
+                    </span>
+                </td>
+                <td class="small text-secondary">@node.BranchName</td>
+                <td class="text-center">
+                    <span class="badge bg-light text-dark border">@node.EmployeeCount</span>
+                </td>
+                <td class="text-center">
+                    @if (node.IsActive)
+                    {
+                        <span class="badge bg-success-subtle text-success">Hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border">Ngừng</span>
+                    }
+                </td>
+                <td class="text-end">
+                    <form asp-action="ToggleActive" asp-route-id="@node.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-erp-outline py-0 px-2" title="@(node.IsActive ? "Ngừng hoạt động" : "Kích hoạt")">
+                            <i class="bi @(node.IsActive ? "bi-pause" : "bi-play")"></i>
+                        </button>
+                    </form>
+                    <form asp-action="XoaPhongBan" asp-route-id="@node.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa phòng ban này?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-erp-outline py-0 px-2 text-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            @if (node.Children.Any())
+            {
+                RenderTree(node.Children, level + 1);
+            }
+        }
+    }
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h4 class="fw-bold mb-1">Cơ Cấu Tổ Chức & Chức Danh</h4>
-        <p class="text-secondary small mb-0">Quản trị sơ đồ chi nhánh, phòng ban và bảng chức vụ toàn doanh nghiệp</p>
+        <p class="text-secondary small mb-0">Quản trị sơ đồ chi nhánh, phòng ban (dạng cây) và bảng chức vụ toàn doanh nghiệp</p>
     </div>
 </div>
 
 <div class="row g-4">
-    <!-- Cột 1: Danh sách phòng ban -->
+    <!-- Cột 1: Cây phòng ban -->
     <div class="col-lg-7">
         <div class="erp-card mb-4">
             <div class="erp-card-header d-flex justify-content-between align-items-center">
-                <span>Danh Sách Phòng Ban</span>
+                <span><i class="bi bi-diagram-3 me-1"></i> Sơ Đồ Phòng Ban</span>
                 <button class="btn btn-sm btn-erp-black" data-bs-toggle="collapse" data-bs-target="#formDept">
                     <i class="bi bi-plus-lg me-1"></i> Thêm Phòng Ban
                 </button>
             </div>
 
-            <!-- Form thêm phòng ban ẩn -->
+            <!-- Form thêm phòng ban -->
             <div class="collapse p-3 bg-light border-bottom" id="formDept">
                 <form asp-action="TaoPhongBan" method="post" class="row g-2">
                     @Html.AntiForgeryToken()
-                    <div class="col-md-4">
-                        <input type="text" name="Code" class="form-control form-control-sm" placeholder="Mã PB (VD: HRM)" required />
+                    <div class="col-md-3">
+                        <input type="text" name="Code" class="form-control form-control-sm" placeholder="Mã PB (*)" required />
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <input type="text" name="Name" class="form-control form-control-sm" placeholder="Tên phòng ban (*)" required />
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <select name="BranchId" class="form-select form-select-sm" required>
                             @if (branches != null)
                             {
                                 foreach (var b in branches)
                                 {
                                     <option value="@b.Id">@b.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="ParentId" class="form-select form-select-sm">
+                            <option value="">-- PB cấp trên (gốc) --</option>
+                            @if (flatDepts != null)
+                            {
+                                foreach (var fd in flatDepts.Where(x => x.IsActive))
+                                {
+                                    <option value="@fd.Id">@fd.DisplayName</option>
                                 }
                             }
                         </select>
@@ -55,36 +126,23 @@
                 <table class="table erp-table mb-0 align-middle">
                     <thead>
                         <tr>
-                            <th>Mã PB</th>
+                            <th style="width:100px;">Mã PB</th>
                             <th>Tên Phòng Ban</th>
                             <th>Chi Nhánh</th>
-                            <th class="text-center">Số Nhân Viên</th>
-                            <th class="text-end">Thao Tác</th>
+                            <th class="text-center" style="width:80px;">NV</th>
+                            <th class="text-center" style="width:90px;">T.Thái</th>
+                            <th class="text-end" style="width:100px;">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var d in Model)
-                        {
-                            <tr>
-                                <td><code>@d.Code</code></td>
-                                <td class="fw-bold">@d.Name</td>
-                                <td class="small text-secondary">@d.Branch?.Name</td>
-                                <td class="text-center"><span class="badge bg-light text-dark border">@d.Employees.Count</span></td>
-                                <td class="text-end">
-                                    <form asp-action="XoaPhongBan" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa phòng ban này?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-erp-outline py-0 px-2 text-danger"><i class="bi bi-trash"></i></button>
-                                    </form>
-                                </td>
-                            </tr>
-                        }
+                        @{ RenderTree(Model, 0); }
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Cột 2: Bảng chức vụ / Vị trí -->
+    <!-- Cột 2: Bảng chức vụ -->
     <div class="col-lg-5">
         <div class="erp-card mb-4">
             <div class="erp-card-header d-flex justify-content-between align-items-center">
@@ -94,7 +152,6 @@
                 </button>
             </div>
 
-            <!-- Form thêm chức vụ ẩn -->
             <div class="collapse p-3 bg-light border-bottom" id="formPos">
                 <form asp-action="TaoChucVu" method="post" class="row g-2">
                     @Html.AntiForgeryToken()

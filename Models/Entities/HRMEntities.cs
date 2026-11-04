@@ -67,6 +67,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual Branch Branch { get; set; } = null!;
         [ForeignKey("ParentId")]
         public virtual Department? Parent { get; set; }
+        public virtual ICollection<Department> Children { get; set; } = new List<Department>();
         public virtual ICollection<Employee> Employees { get; set; } = new List<Employee>();
     }
 
@@ -123,6 +124,13 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual EmployeeDetail? EmployeeDetail { get; set; }
         public virtual ICollection<Contract> Contracts { get; set; } = new List<Contract>();
         public virtual ICollection<AttendanceDaily> AttendanceDailies { get; set; } = new List<AttendanceDaily>();
+
+        // Phiên 5: Hồ sơ mở rộng
+        public virtual ICollection<EmployeeRelative> Relatives { get; set; } = new List<EmployeeRelative>();
+        public virtual ICollection<EmployeeSkill> Skills { get; set; } = new List<EmployeeSkill>();
+        public virtual ICollection<EmployeeCertificate> Certificates { get; set; } = new List<EmployeeCertificate>();
+        public virtual ICollection<EmployeeDocument> Documents { get; set; } = new List<EmployeeDocument>();
+        public virtual ICollection<EmployeeChangeHistory> ChangeHistories { get; set; } = new List<EmployeeChangeHistory>();
     }
 
     [Table("EmployeeDetails")]

@@ -1,157 +1,596 @@
-﻿@model ERP_HRM_CMS.Models.Entities.Employee
+﻿@model ERP_HRM_CMS.Services.HRM.EmployeeDetailDto
 @{
     Layout = "_HRMLayout";
-    ViewData["Title"] = "Hồ Sơ: " + Model.FullName;
-    var userAcc = ViewBag.UserAccount as ERP_HRM_CMS.Models.Entities.User;
-    var attendances = ViewBag.RecentAttendance as List<ERP_HRM_CMS.Models.Entities.AttendanceDaily>;
+    ViewData["Title"] = "Hồ Sơ: " + Model.Employee.FullName;
+    var activeTab = ViewBag.ActiveTab as string ?? "info";
+    var emp = Model.Employee;
+    var detail = Model.Detail;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h4 class="fw-bold mb-1">@Model.FullName</h4>
-        <p class="text-secondary small mb-0">Mã NV: <code>@Model.EmployeeCode</code> | Phòng ban: <strong>@Model.Department?.Name</strong></p>
+        <h4 class="fw-bold mb-1">@emp.FullName</h4>
+        <p class="text-secondary small mb-0">
+            Mã NV: <code>@emp.EmployeeCode</code> | Phòng ban: <strong>@emp.Department?.Name</strong> | Chức vụ: <strong>@emp.Position?.Name</strong>
+        </p>
     </div>
     <div class="d-flex gap-2">
-        <a href="/NhanSu/Edit/@Model.Id" class="btn btn-sm btn-erp-outline"><i class="bi bi-pencil me-1"></i> Sửa Hồ Sơ</a>
-        <a href="/HopDong/Create?employeeId=@Model.Id" class="btn btn-sm btn-erp-black"><i class="bi bi-file-earmark-plus me-1"></i> Lập Hợp Đồng</a>
+        <a asp-action="Index" class="btn btn-sm btn-erp-outline"><i class="bi bi-arrow-left me-1"></i> Danh sách</a>
+        <a asp-action="Edit" asp-route-id="@emp.Id" class="btn btn-sm btn-erp-outline"><i class="bi bi-pencil me-1"></i> Sửa Hồ Sơ</a>
+        <a href="/HopDong/Create?employeeId=@emp.Id" class="btn btn-sm btn-erp-black"><i class="bi bi-file-earmark-plus me-1"></i> Lập Hợp Đồng</a>
     </div>
 </div>
 
 <div class="row g-4">
-    <div class="col-lg-4">
-        <!-- Thông tin vắn tắt & Tài khoản -->
-        <div class="erp-card p-4 mb-4 text-center">
-            <div class="mb-3">
-                <i class="bi bi-person-circle display-4 text-dark"></i>
+    <!-- Cột trái: Thông tin vắn tắt -->
+    <div class="col-lg-3">
+        <div class="erp-card p-4 text-center mb-3">
+            <div class="mb-3 position-relative d-inline-block">
+                @if (!string.IsNullOrEmpty(emp.AvatarUrl))
+                {
+                    <img src="@emp.AvatarUrl" alt="Avatar" class="rounded-circle border" width="100" height="100" style="object-fit: cover;" id="avatarImg" />
+                }
+                else
+                {
+                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center mx-auto" style="width:100px;height:100px;" id="avatarPlaceholder">
+                        <i class="bi bi-person-circle display-4 text-secondary"></i>
+                    </div>
+                }
+                <!-- Nút upload avatar -->
+                <button type="button" class="btn btn-sm btn-light border rounded-circle position-absolute bottom-0 end-0" onclick="document.getElementById('avatarInput').click()" title="Đổi ảnh đại diện">
+                    <i class="bi bi-camera-fill small"></i>
+                </button>
+                <form id="avatarForm" style="display:none;">
+                    @Html.AntiForgeryToken()
+                    <input type="file" id="avatarInput" accept=".jpg,.jpeg,.png,.webp" onchange="uploadAvatar(@emp.Id)" />
+                </form>
             </div>
-            <h5 class="fw-bold mb-1">@Model.FullName</h5>
-            <span class="badge bg-light text-dark border mb-3">@Model.Position?.Name</span>
-            <div class="text-start small border-top pt-3">
-                <p class="mb-2"><strong>Email:</strong> @Model.Email</p>
-                <p class="mb-2"><strong>Điện thoại:</strong> @(Model.Phone ?? "Chưa cập nhật")</p>
-                <p class="mb-2"><strong>Ngày sinh:</strong> @(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</p>
-                <p class="mb-0"><strong>Ngày vào làm:</strong> @Model.HireDate.ToString("dd/MM/yyyy")</p>
+            <h5 class="fw-bold mb-1">@emp.FullName</h5>
+            <span class="badge bg-light text-dark border mb-2">@emp.Position?.Name</span>
+            <div>
+                @switch (emp.Status)
+                {
+                    case "Active":
+                        <span class="badge bg-success-subtle text-success">Đang làm việc</span>
+                        break;
+                    case "Probation":
+                        <span class="badge bg-primary-subtle text-primary">Thử việc</span>
+                        break;
+                    case "OnLeave":
+                        <span class="badge bg-warning-subtle text-warning">Nghỉ phép</span>
+                        break;
+                    default:
+                        <span class="badge bg-light text-muted border">Đã nghỉ việc</span>
+                        break;
+                }
             </div>
         </div>
 
-        <div class="erp-card p-3 mb-4">
-            <h6 class="fw-bold mb-2 small text-uppercase">Tài Khoản Đăng Nhập</h6>
-            @if (userAcc != null)
+        <div class="erp-card p-3 mb-3">
+            <div class="small">
+                <p class="mb-2"><i class="bi bi-envelope me-2 text-muted"></i>@emp.Email</p>
+                <p class="mb-2"><i class="bi bi-telephone me-2 text-muted"></i>@(emp.Phone ?? "Chưa cập nhật")</p>
+                <p class="mb-2"><i class="bi bi-calendar-event me-2 text-muted"></i>Ngày sinh: @(emp.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</p>
+                <p class="mb-2"><i class="bi bi-gender-ambiguous me-2 text-muted"></i>Giới tính: @(emp.Gender ?? "-")</p>
+                <p class="mb-0"><i class="bi bi-calendar-check me-2 text-muted"></i>Vào làm: @emp.HireDate.ToString("dd/MM/yyyy")</p>
+            </div>
+        </div>
+
+        <!-- Tài khoản đăng nhập -->
+        <div class="erp-card p-3">
+            <h6 class="fw-bold mb-2 small text-uppercase">Tài Khoản Hệ Thống</h6>
+            @if (Model.UserAccount != null)
             {
                 <div class="d-flex align-items-center justify-content-between p-2 bg-light rounded border">
                     <div>
-                        <div class="fw-bold small"><code>@userAcc.Username</code></div>
+                        <div class="fw-bold small"><code>@Model.UserAccount.Username</code></div>
                         <span class="badge bg-success-subtle text-success" style="font-size: 10px;">Hoạt động</span>
                     </div>
-                    <span class="text-muted small">ID: #@userAcc.Id</span>
+                    <span class="text-muted small">ID: #@Model.UserAccount.Id</span>
                 </div>
             }
             else
             {
-                <p class="text-muted small mb-3">Nhân viên này chưa được cấp tài khoản phần mềm.</p>
-                <form asp-action="CapTaiKhoanNhanh" method="post" class="d-flex gap-2">
+                <p class="text-muted small mb-2">Chưa có tài khoản.</p>
+                <form asp-action="CapTaiKhoanNhanh" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="employeeId" value="@Model.Id" />
-                    <input type="password" name="rawPassword" class="form-control form-control-sm" placeholder="Mật khẩu (mặc định 123456)" />
-                    <button type="submit" class="btn btn-sm btn-erp-black text-nowrap">Cấp tài khoản</button>
+                    <input type="hidden" name="employeeId" value="@emp.Id" />
+                    <div class="input-group input-group-sm">
+                        <input type="password" name="rawPassword" class="form-control" placeholder="Mật khẩu" />
+                        <button type="submit" class="btn btn-erp-black">Cấp TK</button>
+                    </div>
                 </form>
             }
         </div>
     </div>
 
-    <div class="col-lg-8">
-        <!-- Thông tin chi tiết mở rộng -->
-        <div class="erp-card mb-4">
-            <div class="erp-card-header">Chi Tiết Nhân Thân & Pháp Lý</div>
-            <div class="p-4 small">
-                <div class="row g-3">
-                    <div class="col-md-6"><strong>Số CCCD:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(Model.IdentityCard) ?? "-")</div>
-                    <div class="col-md-6"><strong>Mã số thuế:</strong> @(Model.EmployeeDetail?.TaxIdentificationNumber ?? "-")</div>
-                    <div class="col-md-6"><strong>Địa chỉ thường trú:</strong> @(Model.EmployeeDetail?.PermanentAddress ?? "-")</div>
-                    <div class="col-md-6"><strong>Địa chỉ hiện tại:</strong> @(Model.EmployeeDetail?.CurrentAddress ?? "-")</div>
-                    <div class="col-md-6"><strong>Tài khoản ngân hàng:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(Model.EmployeeDetail?.BankAccountNumber) ?? "-") (@(Model.EmployeeDetail?.BankName))</div>
-                    <div class="col-md-6"><strong>Liên hệ khẩn cấp:</strong> @(Model.EmployeeDetail?.EmergencyContactName ?? "-") - @(Model.EmployeeDetail?.EmergencyContactPhone ?? "-")</div>
+    <!-- Cột phải: Tabs -->
+    <div class="col-lg-9">
+        <ul class="nav nav-tabs mb-0" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "info" ? "active" : "")" href="@Url.Action("Details", new { id = emp.Id, tab = "info" })">
+                    <i class="bi bi-person-vcard me-1"></i> Thông Tin
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "contracts" ? "active" : "")" href="@Url.Action("Details", new { id = emp.Id, tab = "contracts" })">
+                    <i class="bi bi-file-earmark-text me-1"></i> Hợp Đồng
+                    <span class="badge bg-secondary ms-1">@Model.Contracts.Count</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "history" ? "active" : "")" href="@Url.Action("Details", new { id = emp.Id, tab = "history" })">
+                    <i class="bi bi-clock-history me-1"></i> Lịch Sử
+                    <span class="badge bg-secondary ms-1">@Model.ChangeHistories.Count</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "documents" ? "active" : "")" href="@Url.Action("Details", new { id = emp.Id, tab = "documents" })">
+                    <i class="bi bi-folder me-1"></i> Tài Liệu
+                    <span class="badge bg-secondary ms-1">@Model.Documents.Count</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="erp-card border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            <!-- TAB: Thông tin -->
+            @if (activeTab == "info")
+            {
+                <div class="p-4">
+                    <!-- Thông tin chi tiết -->
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px;">Thông Tin Nhân Thân & Pháp Lý</h6>
+                    <div class="row g-3 mb-4 small">
+                        <div class="col-md-6"><strong>Số CCCD:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(emp.IdentityCard) ?? "-")</div>
+                        <div class="col-md-6"><strong>Mã số thuế:</strong> @(detail?.TaxIdentificationNumber ?? "-")</div>
+                        <div class="col-md-6"><strong>Số BHXH:</strong> @(detail?.SocialInsuranceNumber ?? "-")</div>
+                        <div class="col-md-6"><strong>Trình độ:</strong> @(detail?.EducationLevel ?? "-")</div>
+                        <div class="col-md-6"><strong>Địa chỉ thường trú:</strong> @(detail?.PermanentAddress ?? "-")</div>
+                        <div class="col-md-6"><strong>Địa chỉ hiện tại:</strong> @(detail?.CurrentAddress ?? "-")</div>
+                        <div class="col-md-6"><strong>Ngân hàng:</strong> @(ERP_HRM_CMS.Helpers.SensitiveDataMasker.Mask(detail?.BankAccountNumber) ?? "-") (@(detail?.BankName ?? "-"))</div>
+                        <div class="col-md-6"><strong>Liên hệ khẩn cấp:</strong> @(detail?.EmergencyContactName ?? "-") - @(detail?.EmergencyContactPhone ?? "-")</div>
+                    </div>
+
+                    <!-- Người thân -->
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary d-flex justify-content-between" style="font-size: 12px;">
+                        <span>Người Thân / Phụ Thuộc</span>
+                        <button class="btn btn-sm btn-erp-outline py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#formRelative">
+                            <i class="bi bi-plus"></i> Thêm
+                        </button>
+                    </h6>
+                    <div class="collapse mb-3" id="formRelative">
+                        <form asp-action="AddRelative" method="post" class="row g-2 p-3 bg-light rounded border mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="EmployeeId" value="@emp.Id" />
+                            <div class="col-md-3">
+                                <input name="FullName" class="form-control form-control-sm" placeholder="Họ tên (*)" required />
+                            </div>
+                            <div class="col-md-2">
+                                <select name="Relationship" class="form-select form-select-sm">
+                                    <option>Vợ/Chồng</option><option>Con</option><option>Cha</option><option>Mẹ</option><option>Anh/Chị/Em</option><option>Khác</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input name="Phone" class="form-control form-control-sm" placeholder="SĐT" />
+                            </div>
+                            <div class="col-md-2">
+                                <input name="DateOfBirth" type="date" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check form-switch mt-2">
+                                    <input name="IsDependant" type="checkbox" value="true" class="form-check-input" />
+                                    <label class="form-check-label small">Người phụ thuộc</label>
+                                </div>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-sm btn-erp-black w-100">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                    @if (Model.Relatives.Any())
+                    {
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm small mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Họ tên</th><th>Quan hệ</th><th>SĐT</th><th>Ngày sinh</th><th>Phụ thuộc</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in Model.Relatives)
+                                    {
+                                        <tr>
+                                            <td>@r.FullName</td>
+                                            <td>@r.Relationship</td>
+                                            <td>@(r.Phone ?? "-")</td>
+                                            <td>@(r.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                            <td>@(r.IsDependant ? "Có" : "Không")</td>
+                                            <td class="text-end">
+                                                <form asp-action="RemoveRelative" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <input type="hidden" name="employeeId" value="@emp.Id" />
+                                                    <button type="submit" class="btn btn-sm text-danger p-0" onclick="return confirm('Xóa người thân này?')"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-4">Chưa có thông tin người thân.</p>
+                    }
+
+                    <!-- Kỹ năng -->
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary d-flex justify-content-between" style="font-size: 12px;">
+                        <span>Kỹ Năng</span>
+                        <button class="btn btn-sm btn-erp-outline py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#formSkill">
+                            <i class="bi bi-plus"></i> Thêm
+                        </button>
+                    </h6>
+                    <div class="collapse mb-3" id="formSkill">
+                        <form asp-action="AddSkill" method="post" class="row g-2 p-3 bg-light rounded border mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="EmployeeId" value="@emp.Id" />
+                            <div class="col-md-4">
+                                <input name="SkillName" class="form-control form-control-sm" placeholder="Tên kỹ năng (*)" required />
+                            </div>
+                            <div class="col-md-3">
+                                <select name="Level" class="form-select form-select-sm">
+                                    <option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>Expert</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <input name="Note" class="form-control form-control-sm" placeholder="Ghi chú" />
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-sm btn-erp-black w-100">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                    @if (Model.Skills.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-2 mb-4">
+                            @foreach (var s in Model.Skills)
+                            {
+                                <div class="badge bg-light text-dark border p-2 d-flex align-items-center gap-1">
+                                    <span>@s.SkillName</span>
+                                    <span class="badge bg-dark">@s.Level</span>
+                                    <form asp-action="RemoveSkill" method="post" class="d-inline ms-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@s.Id" />
+                                        <input type="hidden" name="employeeId" value="@emp.Id" />
+                                        <button type="submit" class="btn-close" style="font-size: 8px;" onclick="return confirm('Xóa?')"></button>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-4">Chưa có kỹ năng.</p>
+                    }
+
+                    <!-- Chứng chỉ -->
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary d-flex justify-content-between" style="font-size: 12px;">
+                        <span>Chứng Chỉ / Bằng Cấp</span>
+                        <button class="btn btn-sm btn-erp-outline py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#formCert">
+                            <i class="bi bi-plus"></i> Thêm
+                        </button>
+                    </h6>
+                    <div class="collapse mb-3" id="formCert">
+                        <form asp-action="AddCertificate" method="post" class="row g-2 p-3 bg-light rounded border mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="EmployeeId" value="@emp.Id" />
+                            <div class="col-md-3">
+                                <input name="CertificateName" class="form-control form-control-sm" placeholder="Tên chứng chỉ (*)" required />
+                            </div>
+                            <div class="col-md-3">
+                                <input name="IssuedBy" class="form-control form-control-sm" placeholder="Nơi cấp" />
+                            </div>
+                            <div class="col-md-2">
+                                <input name="IssuedDate" type="date" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <input name="ExpiryDate" type="date" class="form-control form-control-sm" />
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-erp-black w-100">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                    @if (Model.Certificates.Any())
+                    {
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm small mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Chứng chỉ</th><th>Nơi cấp</th><th>Ngày cấp</th><th>Hạn</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.Certificates)
+                                    {
+                                        <tr>
+                                            <td>@c.CertificateName</td>
+                                            <td>@(c.IssuedBy ?? "-")</td>
+                                            <td>@(c.IssuedDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                            <td>
+                                                @if (c.ExpiryDate.HasValue)
+                                                {
+                                                    var daysLeft = (c.ExpiryDate.Value - DateTime.Today).Days;
+                                                    if (daysLeft < 0)
+                                                    {
+                                                        <span class="text-danger">Hết hạn</span>
+                                                    }
+                                                    else if (daysLeft < 30)
+                                                    {
+                                                        <span class="text-warning">@c.ExpiryDate.Value.ToString("dd/MM/yyyy") (@daysLeft ngày)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @c.ExpiryDate.Value.ToString("dd/MM/yyyy")
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span>Không thời hạn</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <form asp-action="RemoveCertificate" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@c.Id" />
+                                                    <input type="hidden" name="employeeId" value="@emp.Id" />
+                                                    <button type="submit" class="btn btn-sm text-danger p-0" onclick="return confirm('Xóa?')"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-4">Chưa có chứng chỉ.</p>
+                    }
+
+                    <!-- Chấm công gần nhất -->
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px;">Chấm Công 7 Ngày Gần Nhất</h6>
+                    @if (Model.RecentAttendance.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm small mb-0 text-center">
+                                <thead class="table-light">
+                                    <tr><th>Ngày</th><th>Ca</th><th>Giờ vào</th><th>Giờ ra</th><th>Đi muộn</th><th>Số giờ</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var a in Model.RecentAttendance)
+                                    {
+                                        <tr>
+                                            <td>@a.WorkDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@a.Shift?.Name</td>
+                                            <td>@(a.FirstInTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                            <td>@(a.LastOutTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                            <td>@(a.LateMinutes > 0 ? $"{a.LateMinutes} phút" : "-")</td>
+                                            <td><strong>@a.WorkHourCount.ToString("0.#")h</strong></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small">Chưa có dữ liệu chấm công.</p>
+                    }
                 </div>
-            </div>
-        </div>
+            }
 
-        <!-- Hợp đồng của nhân viên -->
-        <div class="erp-card mb-4">
-            <div class="erp-card-header d-flex justify-content-between align-items-center">
-                <span>Lịch Sử Hợp Đồng Lao Động</span>
-                <span class="badge bg-dark">@Model.Contracts.Count bản ghi</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table erp-table mb-0 small">
-                    <thead>
-                        <tr>
-                            <th>Số HĐ</th>
-                            <th>Loại Hợp Đồng</th>
-                            <th>Thời Hạn</th>
-                            <th>Lương Cơ Bản</th>
-                            <th>Trạng Thái</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.Contracts.Any())
-                        {
-                            foreach (var c in Model.Contracts)
+            <!-- TAB: Hợp đồng -->
+            @if (activeTab == "contracts")
+            {
+                <div class="p-4">
+                    @if (Model.ActiveContract != null)
+                    {
+                        <div class="alert alert-success small mb-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Hợp đồng hiện tại: <strong>@Model.ActiveContract.ContractNumber</strong> — @Model.ActiveContract.ContractType
+                            @if (Model.ActiveContract.EndDate.HasValue)
                             {
-                                <tr>
-                                    <td><code>@c.ContractNumber</code></td>
-                                    <td>@c.ContractType</td>
-                                    <td>@c.StartDate.ToString("dd/MM/yyyy") - @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
-                                    <td>@c.BasicSalary.ToString("N0") đ</td>
-                                    <td><span class="badge bg-light text-dark border">@c.Status</span></td>
-                                </tr>
+                                var days = (Model.ActiveContract.EndDate.Value - DateTime.Today).Days;
+                                if (days <= 30 && days >= 0)
+                                {
+                                    <span class="badge bg-warning text-dark ms-2">Còn @days ngày</span>
+                                }
                             }
-                        }
-                        else
-                        {
-                            <tr><td colspan="5" class="text-center text-muted py-3">Chưa có hợp đồng nào được ký kết.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                        </div>
+                    }
 
-        <!-- Chấm công gần nhất -->
-        <div class="erp-card">
-            <div class="erp-card-header">Chấm Công 7 Ngày Gần Nhất</div>
-            <div class="table-responsive">
-                <table class="table erp-table mb-0 small text-center">
-                    <thead>
-                        <tr>
-                            <th>Ngày Làm Việc</th>
-                            <th>Ca</th>
-                            <th>Giờ Vào</th>
-                            <th>Giờ Ra</th>
-                            <th>Đi Muộn</th>
-                            <th>Số Giờ Làm</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (attendances != null && attendances.Any())
-                        {
-                            foreach (var a in attendances)
-                            {
+                    <div class="table-responsive">
+                        <table class="table erp-table mb-0 small">
+                            <thead>
                                 <tr>
-                                    <td>@a.WorkDate.ToString("dd/MM/yyyy")</td>
-                                    <td>@a.Shift?.Name</td>
-                                    <td>@(a.FirstInTime?.ToString(@"hh\:mm") ?? "-")</td>
-                                    <td>@(a.LastOutTime?.ToString(@"hh\:mm") ?? "-")</td>
-                                    <td>@(a.LateMinutes > 0 ? $"{a.LateMinutes} phút" : "-")</td>
-                                    <td><strong>@a.WorkHourCount.ToString("0.#")h</strong></td>
+                                    <th>Số HĐ</th><th>Loại</th><th>Thời hạn</th><th>Lương cơ bản</th><th>Trạng thái</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Contracts.Any())
+                                {
+                                    foreach (var c in Model.Contracts)
+                                    {
+                                        <tr>
+                                            <td><code>@c.ContractNumber</code></td>
+                                            <td>@c.ContractType</td>
+                                            <td>@c.StartDate.ToString("dd/MM/yyyy") — @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                                            <td>@c.BasicSalary.ToString("N0") đ</td>
+                                            <td>
+                                                @if (c.Status == "Active")
+                                                {
+                                                    <span class="badge bg-success-subtle text-success">Hiệu lực</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-light text-muted border">@c.Status</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="5" class="text-center text-muted py-3">Chưa có hợp đồng nào.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <!-- TAB: Lịch sử thay đổi -->
+            @if (activeTab == "history")
+            {
+                <div class="p-4">
+                    @if (Model.ChangeHistories.Any())
+                    {
+                        <div class="position-relative ps-4">
+                            @foreach (var h in Model.ChangeHistories.OrderByDescending(x => x.EffectiveDate))
+                            {
+                                <div class="mb-3 position-relative" style="padding-left: 20px;">
+                                    <div class="position-absolute start-0 top-0" style="width: 12px; height: 12px; border-radius: 50%; background: var(--erp-dark, #1a1a2e); border: 2px solid white; z-index: 1;"></div>
+                                    <div class="small">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>
+                                                @switch (h.ChangeType)
+                                                {
+                                                    case "Department": <text>Chuyển phòng ban</text> break;
+                                                    case "Position": <text>Thay đổi chức vụ</text> break;
+                                                    case "Salary": <text>Điều chỉnh lương</text> break;
+                                                    case "Status": <text>Thay đổi trạng thái</text> break;
+                                                    default: @h.ChangeType break;
+                                                }
+                                            </strong>
+                                            <span class="text-muted">@h.EffectiveDate.ToString("dd/MM/yyyy")</span>
+                                        </div>
+                                        <div class="text-muted">
+                                            <span class="text-danger">@(h.OldValue ?? "-")</span>
+                                            <i class="bi bi-arrow-right mx-1"></i>
+                                            <span class="text-success">@(h.NewValue ?? "-")</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(h.Reason))
+                                        {
+                                            <div class="text-muted fst-italic">Lý do: @h.Reason</div>
+                                        }
+                                    </div>
+                                </div>
                             }
-                        }
-                        else
-                        {
-                            <tr><td colspan="6" class="text-center text-muted py-3">Chưa có dữ liệu chấm công.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-4">Chưa có lịch sử thay đổi.</p>
+                    }
+                </div>
+            }
+
+            <!-- TAB: Tài liệu -->
+            @if (activeTab == "documents")
+            {
+                <div class="p-4">
+                    <!-- Form upload -->
+                    <form asp-action="UploadDocument" method="post" enctype="multipart/form-data" class="row g-2 mb-4 p-3 bg-light rounded border">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="employeeId" value="@emp.Id" />
+                        <div class="col-md-3">
+                            <input name="documentName" class="form-control form-control-sm" placeholder="Tên tài liệu (*)" required />
+                        </div>
+                        <div class="col-md-2">
+                            <select name="documentType" class="form-select form-select-sm">
+                                <option>CCCD/CMND</option><option>Bằng cấp</option><option>Hợp đồng</option><option>Chứng chỉ</option><option>Quyết định</option><option>Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input name="documentFile" type="file" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-erp-black w-100"><i class="bi bi-upload me-1"></i> Upload</button>
+                        </div>
+                    </form>
+
+                    @if (Model.Documents.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm small mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Tên tài liệu</th><th>Loại</th><th>Dung lượng</th><th>Ngày upload</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var d in Model.Documents)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a href="@d.FileUrl" target="_blank" class="text-decoration-none">
+                                                    <i class="bi bi-file-earmark me-1"></i>@d.DocumentName
+                                                </a>
+                                            </td>
+                                            <td><span class="badge bg-light text-dark border">@d.DocumentType</span></td>
+                                            <td>@((d.FileSize / 1024.0).ToString("N0")) KB</td>
+                                            <td>@d.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="text-end">
+                                                <a href="@d.FileUrl" target="_blank" class="btn btn-sm btn-erp-outline py-0 px-1" title="Tải xuống"><i class="bi bi-download"></i></a>
+                                                <form asp-action="RemoveDocument" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@d.Id" />
+                                                    <input type="hidden" name="employeeId" value="@emp.Id" />
+                                                    <button type="submit" class="btn btn-sm text-danger p-0 ms-1" onclick="return confirm('Xóa tài liệu này?')"><i class="bi bi-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-4">Chưa có tài liệu đính kèm.</p>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Upload avatar qua AJAX
+        function uploadAvatar(employeeId) {
+            const fileInput = document.getElementById('avatarInput');
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('employeeId', employeeId);
+            formData.append('avatarFile', fileInput.files[0]);
+            // Lấy antiforgery token
+            const token = document.querySelector('#avatarForm input[name="__RequestVerificationToken"]').value;
+            formData.append('__RequestVerificationToken', token);
+
+            fetch('@Url.Action("UploadAvatar")', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật ảnh trên trang
+                        const img = document.getElementById('avatarImg');
+                        const placeholder = document.getElementById('avatarPlaceholder');
+                        if (img) {
+                            img.src = data.url + '?t=' + Date.now();
+                        } else if (placeholder) {
+                            placeholder.outerHTML = `<img src="${data.url}" alt="Avatar" class="rounded-circle border" width="100" height="100" style="object-fit:cover;" id="avatarImg" />`;
+                        }
+                    } else {
+                        alert(data.error || 'Lỗi upload ảnh.');
+                    }
+                })
+                .catch(() => alert('Lỗi kết nối.'));
+        }
+    </script>
+}

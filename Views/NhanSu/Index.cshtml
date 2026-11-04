@@ -1,7 +1,12 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.EmployeeListViewModel
+﻿@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>
 @{
     Layout = "_HRMLayout";
     ViewData["Title"] = "Danh Sách Hồ Sơ Nhân Sự";
+    var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.EmployeeFilterDto;
+    int totalActive = ViewBag.TotalActive ?? 0;
+    int totalProbation = ViewBag.TotalProbation ?? 0;
+    int totalOnLeave = ViewBag.TotalOnLeave ?? 0;
+    int totalResigned = ViewBag.TotalResigned ?? 0;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -9,36 +14,50 @@
         <h4 class="fw-bold mb-1">Quản Trị Hồ Sơ Nhân Sự</h4>
         <p class="text-secondary small mb-0">Tra cứu, cập nhật thông tin và cấp tài khoản làm việc nội bộ</p>
     </div>
-    <a href="/NhanSu/Create" class="btn btn-erp-black">
-        <i class="bi bi-person-plus-fill me-1"></i> Tiếp Nhận Nhân Sự Mới
-    </a>
+    <div class="d-flex gap-2">
+        <a asp-action="Dashboard" class="btn btn-erp-outline">
+            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+        </a>
+        <a asp-action="Create" class="btn btn-erp-black">
+            <i class="bi bi-person-plus-fill me-1"></i> Tiếp Nhận Nhân Sự Mới
+        </a>
+    </div>
 </div>
 
 <!-- Thống kê trạng thái -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="erp-card p-3 d-flex align-items-center justify-content-between">
             <div>
-                <span class="text-secondary small fw-semibold">Đang Hoạt Động</span>
-                <h3 class="fw-bold m-0 text-dark">@Model.TotalActive</h3>
+                <span class="text-secondary small fw-semibold">Đang Làm Việc</span>
+                <h3 class="fw-bold m-0 text-success">@totalActive</h3>
             </div>
-            <i class="bi bi-person-check fs-2 text-dark"></i>
+            <i class="bi bi-person-check fs-2 text-success"></i>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="erp-card p-3 d-flex align-items-center justify-content-between">
             <div>
-                <span class="text-secondary small fw-semibold">Đang Nghỉ Phép / Tạm Hoãn</span>
-                <h3 class="fw-bold m-0 text-secondary">@Model.TotalOnLeave</h3>
+                <span class="text-secondary small fw-semibold">Thử Việc</span>
+                <h3 class="fw-bold m-0 text-primary">@totalProbation</h3>
             </div>
-            <i class="bi bi-pause-circle fs-2 text-secondary"></i>
+            <i class="bi bi-person-badge fs-2 text-primary"></i>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="erp-card p-3 d-flex align-items-center justify-content-between">
             <div>
-                <span class="text-secondary small fw-semibold">Đã Thôi Việc</span>
-                <h3 class="fw-bold m-0 text-muted">@Model.TotalResigned</h3>
+                <span class="text-secondary small fw-semibold">Nghỉ Phép</span>
+                <h3 class="fw-bold m-0 text-warning">@totalOnLeave</h3>
+            </div>
+            <i class="bi bi-pause-circle fs-2 text-warning"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="erp-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-secondary small fw-semibold">Đã Nghỉ Việc</span>
+                <h3 class="fw-bold m-0 text-muted">@totalResigned</h3>
             </div>
             <i class="bi bi-person-x fs-2 text-muted"></i>
         </div>
@@ -47,31 +66,47 @@
 
 <!-- Bộ lọc tìm kiếm -->
 <div class="erp-card p-3 mb-4">
-    <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-4">
-            <input type="text" name="keyword" value="@Model.Keyword" class="form-control form-control-sm" placeholder="Tìm theo tên, mã NV, email hoặc SĐT..." />
-        </div>
+    <form method="get" class="row g-2 align-items-end">
         <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Tìm kiếm</label>
+            <input type="text" name="keyword" value="@filter?.Keyword" class="form-control form-control-sm" placeholder="Tên, mã NV, email, SĐT..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Phòng ban</label>
             <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
-                <option value="">-- Tất cả phòng ban --</option>
+                <option value="">-- Tất cả --</option>
             </select>
         </div>
         <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Chức vụ</label>
             <select name="positionId" class="form-select form-select-sm" asp-items="ViewBag.Positions">
-                <option value="">-- Tất cả chức vụ --</option>
+                <option value="">-- Tất cả --</option>
             </select>
         </div>
         <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Trạng thái</label>
             <select name="status" class="form-select form-select-sm">
-                <option value="">-- Trạng thái --</option>
-                <option value="Active" selected="@(Model.Status == "Active")">Đang làm việc</option>
-                <option value="OnLeave" selected="@(Model.Status == "OnLeave")">Nghỉ phép</option>
-                <option value="Resigned" selected="@(Model.Status == "Resigned")">Đã nghỉ việc</option>
+                <option value="">-- Tất cả --</option>
+                <option value="Active" selected="@(filter?.Status == "Active")">Đang làm việc</option>
+                <option value="Probation" selected="@(filter?.Status == "Probation")">Thử việc</option>
+                <option value="OnLeave" selected="@(filter?.Status == "OnLeave")">Nghỉ phép</option>
+                <option value="Resigned" selected="@(filter?.Status == "Resigned")">Đã nghỉ việc</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">Sắp xếp</label>
+            <select name="sortBy" class="form-select form-select-sm">
+                <option value="HireDate" selected="@(filter?.SortBy == "HireDate")">Ngày vào làm</option>
+                <option value="FullName" selected="@(filter?.SortBy == "FullName")">Họ tên</option>
+                <option value="EmployeeCode" selected="@(filter?.SortBy == "EmployeeCode")">Mã NV</option>
+                <option value="Department" selected="@(filter?.SortBy == "Department")">Phòng ban</option>
             </select>
         </div>
         <div class="col-md-1">
-            <button type="submit" class="btn btn-sm btn-erp-black w-100"><i class="bi bi-search"></i></button>
+            <button type="submit" class="btn btn-sm btn-erp-black w-100"><i class="bi bi-search"></i> Lọc</button>
         </div>
+        <input type="hidden" name="sortDesc" value="@filter?.SortDesc.ToString().ToLower()" />
+        <input type="hidden" name="pageSize" value="@filter?.PageSize" />
     </form>
 </div>
 
@@ -81,6 +116,7 @@
         <table class="table erp-table mb-0 align-middle">
             <thead>
                 <tr>
+                    <th style="width: 60px;"></th>
                     <th style="width: 100px;">Mã NV</th>
                     <th>Họ Và Tên</th>
                     <th>Phòng Ban</th>
@@ -92,39 +128,54 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Model.Employees.Any())
+                @if (Model.Any())
                 {
-                    foreach (var e in Model.Employees)
+                    foreach (var e in Model)
                     {
                         <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(e.AvatarUrl))
+                                {
+                                    <img src="@e.AvatarUrl" alt="" class="rounded-circle" width="36" height="36" style="object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </div>
+                                }
+                            </td>
                             <td><code>@e.EmployeeCode</code></td>
                             <td>
-                                <a href="/NhanSu/Details/@e.Id" class="fw-bold text-dark text-decoration-none">@e.FullName</a>
+                                <a asp-action="Details" asp-route-id="@e.Id" class="fw-bold text-dark text-decoration-none">@e.FullName</a>
                             </td>
-                            <td>@e.Department?.Name</td>
-                            <td><span class="badge bg-light text-dark border">@e.Position?.Name</span></td>
+                            <td class="small">@e.DepartmentName</td>
+                            <td><span class="badge bg-light text-dark border">@e.PositionName</span></td>
                             <td class="small">
                                 <div><i class="bi bi-envelope me-1"></i>@e.Email</div>
                                 <div><i class="bi bi-telephone me-1"></i>@(e.Phone ?? "-")</div>
                             </td>
                             <td class="small text-secondary">@e.HireDate.ToString("dd/MM/yyyy")</td>
                             <td class="text-center">
-                                @if (e.Status == "Active")
+                                @switch (e.Status)
                                 {
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Làm việc</span>
-                                }
-                                else if (e.Status == "OnLeave")
-                                {
-                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Nghỉ phép</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-light text-muted border">Thôi việc</span>
+                                    case "Active":
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Đang làm</span>
+                                        break;
+                                    case "Probation":
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Thử việc</span>
+                                        break;
+                                    case "OnLeave":
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Nghỉ phép</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-light text-muted border">Nghỉ việc</span>
+                                        break;
                                 }
                             </td>
                             <td class="text-end">
-                                <a href="/NhanSu/Details/@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Xem hồ sơ"><i class="bi bi-eye"></i></a>
-                                <a href="/NhanSu/Edit/@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Sửa thông tin"><i class="bi bi-pencil"></i></a>
+                                <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Xem hồ sơ"><i class="bi bi-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Sửa"><i class="bi bi-pencil"></i></a>
                             </td>
                         </tr>
                     }
@@ -132,10 +183,48 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">Không tìm thấy bản ghi nhân viên nào phù hợp.</td>
+                        <td colspan="9" class="text-center py-4 text-muted">Không tìm thấy bản ghi nhân viên nào phù hợp.</td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
+
+    <!-- Phân trang -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <span class="small text-muted">
+                Hiển thị @((Model.PageIndex - 1) * Model.PageSize + 1)–@Math.Min(Model.PageIndex * Model.PageSize, Model.TotalCount) / @Model.TotalCount nhân viên
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = Model.PageIndex - 1, pageSize = filter?.PageSize })">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    }
+
+                    @for (int i = Math.Max(1, Model.PageIndex - 2); i <= Math.Min(Model.TotalPages, Model.PageIndex + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = i, pageSize = filter?.PageSize })">@i</a>
+                        </li>
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = Model.PageIndex + 1, pageSize = filter?.PageSize })">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
 </div>

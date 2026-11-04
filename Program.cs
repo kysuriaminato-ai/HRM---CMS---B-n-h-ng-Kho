@@ -5,6 +5,7 @@ using ERP_HRM_CMS.Services;
 using ERP_HRM_CMS.Services.Printing;
 using ERP_HRM_CMS.Services.Security;
 using ERP_HRM_CMS.Middleware;
+using ERP_HRM_CMS.Services.HRM;
 using ERP_HRM_CMS.Services.Payroll;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -62,6 +63,9 @@ builder.Services.AddScoped<IPayrollService, PayrollService>();
 // Tham số tính lương (lương cơ sở, tỷ lệ BH, biểu thuế...) đọc từ mục Payroll trong cấu hình
 builder.Services.Configure<PayrollOptions>(builder.Configuration.GetSection(PayrollOptions.SectionName));
 builder.Services.AddScoped<LoginThrottleService>();
+// Phiên 5: Services HRM
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 // [OOP - ĐA HÌNH] Đăng ký interface IPrintService; nơi dùng chỉ phụ thuộc vào interface
 builder.Services.AddScoped<IPrintService, PrintService>();
 // Kiểm tra SuperAdmin trực tiếp từ DB cho thao tác nhạy cảm (không chỉ dựa vào claim)

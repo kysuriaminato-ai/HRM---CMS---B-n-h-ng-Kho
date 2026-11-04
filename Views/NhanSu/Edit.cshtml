@@ -1,0 +1,175 @@
+@model ERP_HRM_CMS.Models.ViewModels.EmployeeCreateEditViewModel
+@{
+    Layout = "_HRMLayout";
+    ViewData["Title"] = "Chỉnh Sửa Hồ Sơ: " + Model.FullName;
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="erp-card">
+            <div class="erp-card-header d-flex justify-content-between align-items-center">
+                <span>Chỉnh Sửa Hồ Sơ — @Model.FullName (<code>@Model.EmployeeCode</code>)</span>
+                <div class="d-flex gap-2">
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-sm btn-erp-outline">Xem hồ sơ</a>
+                    <a asp-action="Index" class="btn btn-sm btn-erp-outline">Danh sách</a>
+                </div>
+            </div>
+            <form asp-action="Edit" method="post" class="p-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">I. Thông Tin Cơ Bản</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label asp-for="EmployeeCode" class="form-label small fw-semibold">Mã Nhân Viên (*)</label>
+                        <input asp-for="EmployeeCode" class="form-control form-control-sm" required />
+                        <span asp-validation-for="EmployeeCode" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-5">
+                        <label asp-for="FullName" class="form-label small fw-semibold">Họ Và Tên (*)</label>
+                        <input asp-for="FullName" class="form-control form-control-sm" required />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="Gender" class="form-label small fw-semibold">Giới Tính</label>
+                        <select asp-for="Gender" class="form-select form-select-sm">
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="DateOfBirth" class="form-label small fw-semibold">Ngày Sinh</label>
+                        <input asp-for="DateOfBirth" type="date" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="DepartmentId" class="form-label small fw-semibold">Phòng Ban (*)</label>
+                        <select asp-for="DepartmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments" required>
+                            <option value="">-- Chọn --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="PositionId" class="form-label small fw-semibold">Chức Vụ (*)</label>
+                        <select asp-for="PositionId" class="form-select form-select-sm" asp-items="ViewBag.Positions" required>
+                            <option value="">-- Chọn --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="Status" class="form-label small fw-semibold">Trạng Thái</label>
+                        <select asp-for="Status" class="form-select form-select-sm">
+                            <option value="Active">Đang làm</option>
+                            <option value="Probation">Thử việc</option>
+                            <option value="OnLeave">Nghỉ phép</option>
+                            <option value="Resigned">Đã nghỉ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label asp-for="HireDate" class="form-label small fw-semibold">Ngày Vào Làm</label>
+                        <input asp-for="HireDate" type="date" class="form-control form-control-sm" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Email" class="form-label small fw-semibold">Email (*)</label>
+                        <input asp-for="Email" type="email" class="form-control form-control-sm" required />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Phone" class="form-label small fw-semibold">Số Điện Thoại</label>
+                        <input asp-for="Phone" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="IdentityCard" class="form-label small fw-semibold">Số CCCD / CMND</label>
+                        <input asp-for="IdentityCard" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">II. Chi Tiết Lý Lịch & Ngân Hàng</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label asp-for="CurrentAddress" class="form-label small fw-semibold">Địa Chỉ Hiện Tại</label>
+                        <input asp-for="CurrentAddress" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="PermanentAddress" class="form-label small fw-semibold">Địa Chỉ Thường Trú</label>
+                        <input asp-for="PermanentAddress" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="BankAccountNumber" class="form-label small fw-semibold">Số Tài Khoản</label>
+                        <input asp-for="BankAccountNumber" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="BankName" class="form-label small fw-semibold">Ngân Hàng</label>
+                        <input asp-for="BankName" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="BankBranch" class="form-label small fw-semibold">Chi Nhánh NH</label>
+                        <input asp-for="BankBranch" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="TaxIdentificationNumber" class="form-label small fw-semibold">Mã Số Thuế</label>
+                        <input asp-for="TaxIdentificationNumber" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="SocialInsuranceNumber" class="form-label small fw-semibold">Số BHXH</label>
+                        <input asp-for="SocialInsuranceNumber" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="EducationLevel" class="form-label small fw-semibold">Trình Độ Học Vấn</label>
+                        <input asp-for="EducationLevel" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="EmergencyContactName" class="form-label small fw-semibold">Liên Hệ Khẩn Cấp</label>
+                        <input asp-for="EmergencyContactName" class="form-control form-control-sm" placeholder="Họ tên" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="EmergencyContactPhone" class="form-label small fw-semibold">SĐT Khẩn Cấp</label>
+                        <input asp-for="EmergencyContactPhone" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                @if (!Model.HasUserAccount)
+                {
+                    <h6 class="fw-bold text-uppercase pb-2 border-bottom text-secondary" style="font-size: 12px; letter-spacing: 0.5px;">III. Cấp Quyền Đăng Nhập</h6>
+                    <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input asp-for="CreateUserAccount" class="form-check-input" type="checkbox" id="chkCreateAccount" onchange="toggleAccountFields(this.checked)" />
+                                <label asp-for="CreateUserAccount" class="form-check-label fw-bold small text-dark">Tạo tài khoản truy cập</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 acc-field" style="display:none;">
+                            <label asp-for="Username" class="form-label small fw-semibold">Tên đăng nhập</label>
+                            <input asp-for="Username" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-6 acc-field" style="display:none;">
+                            <label asp-for="DefaultPassword" class="form-label small fw-semibold">Mật khẩu</label>
+                            <input asp-for="DefaultPassword" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info small py-2 mb-4">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Nhân viên đã có tài khoản: <code>@Model.Username</code>
+                    </div>
+                }
+
+                <div class="text-end">
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-erp-outline me-2">Hủy</a>
+                    <button type="submit" class="btn btn-erp-black px-4"><i class="bi bi-check-lg me-1"></i> Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleAccountFields(isChecked) {
+            document.querySelectorAll('.acc-field').forEach(el => el.style.display = isChecked ? 'block' : 'none');
+        }
+    </script>
+}

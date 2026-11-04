@@ -1,6 +1,6 @@
 # Tiến độ dự án
 
-Cập nhật lần cuối: 2026-11-04 (cuối phiên 4)
+Cập nhật lần cuối: 2026-11-04 (phiên 5 — đang tiến hành)
 
 ## Phiên 1: phân tích hiện trạng (đã xong)
 
@@ -139,6 +139,90 @@ Yêu cầu: .NET 8 SDK, SQL Server ở `localhost` với Windows Authentication.
 3. Chạy `V4_02_SeedData.sql` để có dữ liệu mẫu.
 4. Mở VS 2022, build project (`Ctrl+Shift+B`) để xác nhận entity không lỗi.
 5. Chạy app (`F5`) → kiểm tra Dashboard có dữ liệu từ seed.
+
+## Phiên 5: Module Nhân Sự — Hồ Sơ & Tổ Chức (đang tiến hành)
+
+**Mục tiêu**: Xây dựng module HR hoàn chỉnh gồm: quản lý hồ sơ nhân viên nâng cao, cơ cấu tổ chức dạng cây, hợp đồng lao động, lịch sử thay đổi, dashboard HR, phân quyền, unit test.
+
+### Đã hoàn thành
+
+1. **5 Entity mới** — `Models/Entities/HRMProfileEntities.cs`:
+   - `EmployeeRelative` — người thân / phụ thuộc
+   - `EmployeeSkill` — kỹ năng (Beginner → Expert)
+   - `EmployeeCertificate` — chứng chỉ / bằng cấp (có hạn)
+   - `EmployeeDocument` — tài liệu đính kèm (upload file)
+   - `EmployeeChangeHistory` — lịch sử thay đổi (Department, Position, Salary, Status)
+
+2. **Cập nhật Entity gốc** — `Models/Entities/HRMEntities.cs`:
+   - `Department` thêm `Children` navigation (cây đệ quy)
+   - `Employee` thêm 5 navigation collections mới
+
+3. **Cập nhật DbContext** — `Data/AppDbContext.cs`:
+   - 5 DbSet mới
+   - Fluent API: self-referencing Department, cascade/restrict delete, composite index
+
+4. **Service Layer**:
+   - `IEmployeeService` + `EmployeeService` — CRUD, phân trang, hồ sơ mở rộng, dashboard, avatar upload, change tracking
+   - `IDepartmentService` + `DepartmentService` — cây đệ quy, flat list, toggle active, move
+   - `PaginatedList<T>` — phân trang server-side dùng chung
+
+5. **Controllers** (refactored với Service Injection):
+   - `NhanSuController` — inject IEmployeeService, IDepartmentService; phân trang, lọc, sắp xếp; AJAX upload avatar; CRUD người thân, kỹ năng, chứng chỉ, tài liệu; Dashboard HR
+   - `PhongBanController` — inject IDepartmentService; cây đệ quy; toggle active; thêm/sửa/xóa phòng ban
+
+6. **Razor Views**:
+   - `Views/NhanSu/Index.cshtml` — danh sách nhân viên có phân trang, lọc, sắp xếp, avatar
+   - `Views/NhanSu/Details.cshtml` — trang chi tiết với 4 tabs: Thông tin, Hợp đồng, Lịch sử, Tài liệu; upload avatar AJAX; quản lý người thân, kỹ năng, chứng chỉ, tài liệu
+   - `Views/NhanSu/Create.cshtml` — giữ nguyên (đã tương thích)
+   - `Views/NhanSu/Edit.cshtml` — MỚI, form chỉnh sửa đầy đủ, cấp tài khoản
+   - `Views/NhanSu/Dashboard.cshtml` — MỚI, thống kê tổng quan + Chart.js (phòng ban, giới tính, trạng thái), NV mới, HĐ sắp hết hạn
+   - `Views/PhongBan/Index.cshtml` — cây phòng ban đệ quy, toggle active, chọn parent
+
+7. **SQL Migration** — `db/scripts/V5_01_ProfileTables.sql`:
+   - 5 bảng mới: EmployeeRelatives, EmployeeSkills, EmployeeCertificates, EmployeeDocuments, EmployeeChangeHistories
+   - Thêm cột ParentId vào Departments (nếu chưa có)
+   - FK, indexes, idempotent
+
+8. **Đăng ký DI** — `Program.cs`:
+   - `IEmployeeService` → `EmployeeService`
+   - `IDepartmentService` → `DepartmentService`
+
+### Chưa hoàn thành
+
+- [ ] Excel import/export nhân viên (template + báo lỗi từng dòng)
+- [ ] PDF export hồ sơ nhân viên
+- [ ] Phân quyền chi tiết (HR can edit; Employee can only view/edit own info)
+- [ ] Unit test cho EmployeeService
+- [ ] Integration test cho flow tạo nhân viên
+
+**File đã thay đổi / tạo mới (Phiên 5)**
+- `Models/Entities/HRMProfileEntities.cs` — MỚI
+- `Models/Entities/HRMEntities.cs` — thêm navigation properties
+- `Data/AppDbContext.cs` — thêm 5 DbSet + Fluent API
+- `Models/ViewModels/PaginatedList.cs` — MỚI
+- `Services/HRM/IEmployeeService.cs` — MỚI
+- `Services/HRM/EmployeeService.cs` — MỚI
+- `Services/HRM/IDepartmentService.cs` — MỚI
+- `Services/HRM/DepartmentService.cs` — MỚI
+- `Controllers/NhanSuController.cs` — refactored
+- `Controllers/PhongBanController.cs` — refactored
+- `Views/NhanSu/Index.cshtml` — cập nhật (PaginatedList)
+- `Views/NhanSu/Details.cshtml` — viết lại (tabs, profile mở rộng)
+- `Views/NhanSu/Edit.cshtml` — MỚI
+- `Views/NhanSu/Dashboard.cshtml` — MỚI
+- `Views/PhongBan/Index.cshtml` — cập nhật (cây đệ quy)
+- `db/scripts/V5_01_ProfileTables.sql` — MỚI
+- `Program.cs` — thêm DI registration
+- `docs/PROGRESS.md` — cập nhật
+
+**Cách kiểm tra**
+1. Áp patch lên máy local.
+2. Chạy `db/scripts/V5_01_ProfileTables.sql` trên SSMS.
+3. Build project (`Ctrl+Shift+B`).
+4. Chạy app → vào `/NhanSu` kiểm tra danh sách có phân trang.
+5. Click vào nhân viên → kiểm tra tabs Details (Thông tin, Hợp đồng, Lịch sử, Tài liệu).
+6. Vào `/NhanSu/Dashboard` → kiểm tra biểu đồ Chart.js.
+7. Vào `/PhongBan` → kiểm tra cây phòng ban đệ quy.
 
 ## Nợ kỹ thuật đã ghi nhận
 
