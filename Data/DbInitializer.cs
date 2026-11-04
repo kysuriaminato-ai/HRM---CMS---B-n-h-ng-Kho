@@ -269,50 +269,88 @@ namespace ERP_HRM_CMS.Data
             }
             await context.SaveChangesAsync();
 
-            // Gán quyền cho các Roles
+            // Gán quyền mặc định theo vai trò: mỗi cặp (vai trò, quyền) chỉ được xét một lần (xem SeedHistory)
+            await GanQuyenMacDinhMotLanAsync(context);
+        }
+
+        /// <summary>
+        /// Quy tắc quyền mặc định theo vai trò. Quyền mới thêm vào quy tắc sẽ được gán đúng một lần ở lần khởi động sau.
+        /// </summary>
+        private static List<(string RoleCode, Func<Permission, bool> Chon)> QuyTacQuyenMacDinh() => new()
+        {
+            // SUPERADMIN có toàn bộ quyền
+            ("SUPERADMIN", _ => true),
+            // HR_MANAGER có các quyền nhân sự và chấm công
+            ("HR_MANAGER", p => p.Code.StartsWith("hrm.")),
+            // SALES_STAFF có quyền bán hàng, xem sản phẩm, đơn hàng
+            ("SALES_STAFF", p => p.Code == "order.pos" || p.Code == "order.view" || p.Code == "product.view"),
+            // SALES_DIRECTOR (Giám đốc Kinh doanh): quản trị đơn hàng, xem sản phẩm, báo cáo bán hàng
+            ("SALES_DIRECTOR", p => p.Code.StartsWith("order.") || p.Code == "product.view" || p.Code == "report.sales"),
+            // EMPLOYEE chỉ có quyền tự phục vụ
+            ("EMPLOYEE", p => p.Code == "hrm.self.service"),
+            // WAREHOUSE_STAFF có quyền xem và nhập xuất kho
+            ("WAREHOUSE_STAFF", p => p.Code.StartsWith("inventory.") || p.Code == "product.view"),
+            ("ADMIN_MENU", p => p.Code.StartsWith("menu.") || p.Code == "product.view"),
+            ("ADMIN_CONTENT", p => p.Code.StartsWith("content.") || p.Code == "layout.manage"),
+            // Mỗi admin nhóm chỉ nhận đúng nhóm mã quyền theo tiền tố
+            ("ADMIN_SANPHAM", p => p.Code.StartsWith("product.") || p.Code == "inventory.view"),
+            ("ADMIN_DONHANG", p => p.Code.StartsWith("order.") || p.Code == "debt.view" || p.Code == "report.sales"),
+            ("ADMIN_NHANVIEN", p => p.Code.StartsWith("hrm.employee.") || p.Code.StartsWith("hrm.attendance.") || p.Code.StartsWith("hrm.leave.")),
+            ("ADMIN_BANGLUONG", p => p.Code.StartsWith("hrm.payroll.") || p.Code == "hrm.employee.view"),
+            ("ADMIN_KHO", p => p.Code.StartsWith("inventory.") || p.Code.StartsWith("scm.")),
+        };
+
+        /// <summary>
+        /// Gán quyền mặc định, nhưng không bao giờ khôi phục quyền mà quản trị viên đã gỡ:
+        /// - DB mới (chưa có quyền nào): gán toàn bộ quy tắc và ghi lịch sử.
+        /// - DB đã có từ trước, chưa có lịch sử: chỉ ghi nhận các cặp hiện có, KHÔNG gán lại.
+        ///   Riêng SUPERADMIN nhận các quyền mới chưa thuộc vai trò nào.
+        /// - Lần sau: chỉ gán các cặp (vai trò, quyền) chưa từng được xét (quyền mới của phiên bản mới).
+        /// Hàm này an toàn khi chạy lại nhiều lần.
+        /// </summary>
+        public static async Task GanQuyenMacDinhMotLanAsync(AppDbContext context)
+        {
+            const string tienTo = "QUYEN:";
+
             var allPerms = await context.Permissions.ToListAsync();
             var allRoles = await context.Roles.ToListAsync();
+            var daXet = (await context.SeedHistories.Select(h => h.SeedKey).ToListAsync()).ToHashSet(StringComparer.Ordinal);
 
-            async Task AssignPermissionsToRole(string roleCode, Func<Permission, bool> predicate)
+            bool chuaCoLichSu = !daXet.Any(k => k.StartsWith(tienTo, StringComparison.Ordinal));
+            bool dbDaCoQuyen = await context.RolePermissions.AnyAsync();
+            var permDaCoVaiTro = (await context.RolePermissions.Select(rp => rp.PermissionId).Distinct().ToListAsync()).ToHashSet();
+
+            foreach (var (roleCode, chon) in QuyTacQuyenMacDinh())
             {
                 var role = allRoles.FirstOrDefault(r => string.Equals(r.Code, roleCode, StringComparison.OrdinalIgnoreCase));
-                if (role == null) return;
-                var targetPerms = allPerms.Where(predicate).ToList();
-                foreach (var p in targetPerms)
+                if (role == null) continue;
+
+                foreach (var perm in allPerms.Where(chon))
                 {
-                    if (!await context.RolePermissions.AnyAsync(rp => rp.RoleId == role.Id && rp.PermissionId == p.Id))
+                    string key = $"{tienTo}{role.Code.ToUpperInvariant()}:{perm.Code}";
+                    if (daXet.Contains(key)) continue; // đã xét trước đây: không gán lại dù quản trị viên đã gỡ
+
+                    bool gan;
+                    if (chuaCoLichSu && dbDaCoQuyen)
                     {
-                        context.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = p.Id });
+                        // DB có sẵn: chỉ SUPERADMIN nhận quyền mới chưa thuộc vai trò nào
+                        gan = string.Equals(role.Code, "SUPERADMIN", StringComparison.OrdinalIgnoreCase)
+                              && !permDaCoVaiTro.Contains(perm.Id);
                     }
+                    else
+                    {
+                        gan = true; // DB mới, hoặc quyền mới của phiên bản sau
+                    }
+
+                    if (gan && !await context.RolePermissions.AnyAsync(rp => rp.RoleId == role.Id && rp.PermissionId == perm.Id))
+                    {
+                        context.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = perm.Id });
+                    }
+
+                    context.SeedHistories.Add(new SeedHistory { SeedKey = key });
+                    daXet.Add(key);
                 }
             }
-
-            // SUPERADMIN có toàn bộ quyền
-            await AssignPermissionsToRole("SUPERADMIN", _ => true);
-
-            // HR_MANAGER có các quyền nhân sự và chấm công
-            await AssignPermissionsToRole("HR_MANAGER", p => p.Code.StartsWith("hrm."));
-
-            // SALES_STAFF có quyền bán hàng, xem sản phẩm, đơn hàng
-            await AssignPermissionsToRole("SALES_STAFF", p => p.Code == "order.pos" || p.Code == "order.view" || p.Code == "product.view");
-
-            // SALES_DIRECTOR (Giám đốc Kinh doanh) thay vai trò alias SaleDirector: quản trị đơn hàng, xem sản phẩm, báo cáo bán hàng
-            await AssignPermissionsToRole("SALES_DIRECTOR", p => p.Code.StartsWith("order.") || p.Code == "product.view" || p.Code == "report.sales");
-
-            // EMPLOYEE chỉ có quyền tự phục vụ; không có quyền xem danh sách toàn công ty
-            await AssignPermissionsToRole("EMPLOYEE", p => p.Code == "hrm.self.service");
-
-            // WAREHOUSE_STAFF có quyền xem và nhập xuất kho
-            await AssignPermissionsToRole("WAREHOUSE_STAFF", p => p.Code.StartsWith("inventory.") || p.Code == "product.view");
-            await AssignPermissionsToRole("ADMIN_MENU", p => p.Code.StartsWith("menu.") || p.Code == "product.view");
-            await AssignPermissionsToRole("ADMIN_CONTENT", p => p.Code.StartsWith("content.") || p.Code == "layout.manage");
-
-            // [OOP - ĐÓNG GÓI QUYỀN] Mỗi admin nhóm chỉ nhận đúng nhóm mã quyền theo tiền tố
-            await AssignPermissionsToRole("ADMIN_SANPHAM", p => p.Code.StartsWith("product.") || p.Code == "inventory.view");
-            await AssignPermissionsToRole("ADMIN_DONHANG", p => p.Code.StartsWith("order.") || p.Code == "debt.view" || p.Code == "report.sales");
-            await AssignPermissionsToRole("ADMIN_NHANVIEN", p => p.Code.StartsWith("hrm.employee.") || p.Code.StartsWith("hrm.attendance.") || p.Code.StartsWith("hrm.leave."));
-            await AssignPermissionsToRole("ADMIN_BANGLUONG", p => p.Code.StartsWith("hrm.payroll.") || p.Code == "hrm.employee.view");
-            await AssignPermissionsToRole("ADMIN_KHO", p => p.Code.StartsWith("inventory.") || p.Code.StartsWith("scm."));
 
             await context.SaveChangesAsync();
         }

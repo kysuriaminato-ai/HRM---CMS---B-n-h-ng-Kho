@@ -341,27 +341,27 @@ namespace ERP_HRM_CMS.Services
                 ws.Cell(rowIdx, 5).Value = slip.Employee.Position?.Name ?? "-";
                 ws.Cell(rowIdx, 6).Value = $"{slip.Employee.EmployeeDetail?.BankAccountNumber} ({slip.Employee.EmployeeDetail?.BankName})";
                 
-                ws.Cell(rowIdx, 7).Value = (double)slip.BasicSalary;
+                ws.Cell(rowIdx, 7).Value = slip.BasicSalary;
                 ws.Cell(rowIdx, 8).Value = slip.StandardDays;
-                ws.Cell(rowIdx, 9).Value = (double)slip.ActualWorkDays;
-                ws.Cell(rowIdx, 10).Value = (double)slip.PaidLeaveDays;
-                ws.Cell(rowIdx, 11).Value = (double)slip.OvertimeHours;
+                ws.Cell(rowIdx, 9).Value = slip.ActualWorkDays;
+                ws.Cell(rowIdx, 10).Value = slip.PaidLeaveDays;
+                ws.Cell(rowIdx, 11).Value = slip.OvertimeHours;
 
-                ws.Cell(rowIdx, 12).Value = (double)slip.StandardWorkSalary;
-                ws.Cell(rowIdx, 13).Value = (double)slip.OvertimeSalary;
-                ws.Cell(rowIdx, 14).Value = (double)slip.PositionAllowance;
-                ws.Cell(rowIdx, 15).Value = (double)slip.LunchAllowance;
-                ws.Cell(rowIdx, 16).Value = (double)slip.OtherAllowance;
-                ws.Cell(rowIdx, 17).Value = (double)slip.Bonus;
-                ws.Cell(rowIdx, 18).Value = (double)slip.GrossSalary;
+                ws.Cell(rowIdx, 12).Value = slip.StandardWorkSalary;
+                ws.Cell(rowIdx, 13).Value = slip.OvertimeSalary;
+                ws.Cell(rowIdx, 14).Value = slip.PositionAllowance;
+                ws.Cell(rowIdx, 15).Value = slip.LunchAllowance;
+                ws.Cell(rowIdx, 16).Value = slip.OtherAllowance;
+                ws.Cell(rowIdx, 17).Value = slip.Bonus;
+                ws.Cell(rowIdx, 18).Value = slip.GrossSalary;
 
-                ws.Cell(rowIdx, 19).Value = (double)slip.SocialInsurance;
-                ws.Cell(rowIdx, 20).Value = (double)slip.HealthInsurance;
-                ws.Cell(rowIdx, 21).Value = (double)slip.UnemploymentInsurance;
-                ws.Cell(rowIdx, 22).Value = (double)slip.TotalInsurance;
-                ws.Cell(rowIdx, 23).Value = (double)slip.LatePenalty;
-                ws.Cell(rowIdx, 24).Value = (double)slip.PersonalIncomeTax;
-                ws.Cell(rowIdx, 25).Value = (double)slip.NetSalary;
+                ws.Cell(rowIdx, 19).Value = slip.SocialInsurance;
+                ws.Cell(rowIdx, 20).Value = slip.HealthInsurance;
+                ws.Cell(rowIdx, 21).Value = slip.UnemploymentInsurance;
+                ws.Cell(rowIdx, 22).Value = slip.TotalInsurance;
+                ws.Cell(rowIdx, 23).Value = slip.LatePenalty;
+                ws.Cell(rowIdx, 24).Value = slip.PersonalIncomeTax;
+                ws.Cell(rowIdx, 25).Value = slip.NetSalary;
                 ws.Cell(rowIdx, 26).Value = WorkflowStatusCodes.ToCode(WorkflowStatusCodes.SalarySlip, slip.Status);
                 ws.Cell(rowIdx, 27).Value = "";
 
@@ -469,14 +469,14 @@ namespace ERP_HRM_CMS.Services
                 ws.Cell(rowIdx, 2).Value = slip.Employee.EmployeeCode;
                 ws.Cell(rowIdx, 3).Value = slip.Employee.FullName;
                 ws.Cell(rowIdx, 4).Value = slip.Employee.Department?.Name ?? "-";
-                ws.Cell(rowIdx, 5).Value = (double)slip.InsuranceSalary;
-                ws.Cell(rowIdx, 6).Value = (double)slip.EmployerSocialInsurance;
-                ws.Cell(rowIdx, 7).Value = (double)slip.EmployerHealthInsurance;
-                ws.Cell(rowIdx, 8).Value = (double)slip.EmployerUnemploymentInsurance;
-                ws.Cell(rowIdx, 9).Value = (double)slip.EmployerAccidentInsurance;
-                ws.Cell(rowIdx, 10).Value = (double)totalEmployer;
-                ws.Cell(rowIdx, 11).Value = (double)totalEmployee;
-                ws.Cell(rowIdx, 12).Value = (double)(totalEmployer + totalEmployee);
+                ws.Cell(rowIdx, 5).Value = slip.InsuranceSalary;
+                ws.Cell(rowIdx, 6).Value = slip.EmployerSocialInsurance;
+                ws.Cell(rowIdx, 7).Value = slip.EmployerHealthInsurance;
+                ws.Cell(rowIdx, 8).Value = slip.EmployerUnemploymentInsurance;
+                ws.Cell(rowIdx, 9).Value = slip.EmployerAccidentInsurance;
+                ws.Cell(rowIdx, 10).Value = totalEmployer;
+                ws.Cell(rowIdx, 11).Value = totalEmployee;
+                ws.Cell(rowIdx, 12).Value = (totalEmployer + totalEmployee);
 
                 for (int col = 5; col <= 12; col++)
                 {
@@ -499,14 +499,14 @@ namespace ERP_HRM_CMS.Services
 
             // Dòng tổng cộng: tính sẵn bằng số liệu từng dòng để không phụ thuộc công thức trong Excel
             ws.Cell(rowIdx, 3).Value = "TỔNG CỘNG";
-            ws.Cell(rowIdx, 5).Value = (double)sumBase;
-            ws.Cell(rowIdx, 6).Value = (double)sumSocial;
-            ws.Cell(rowIdx, 7).Value = (double)sumHealth;
-            ws.Cell(rowIdx, 8).Value = (double)sumUnemp;
-            ws.Cell(rowIdx, 9).Value = (double)sumAccident;
-            ws.Cell(rowIdx, 10).Value = (double)sumEr;
-            ws.Cell(rowIdx, 11).Value = (double)sumEe;
-            ws.Cell(rowIdx, 12).Value = (double)sumAll;
+            ws.Cell(rowIdx, 5).Value = sumBase;
+            ws.Cell(rowIdx, 6).Value = sumSocial;
+            ws.Cell(rowIdx, 7).Value = sumHealth;
+            ws.Cell(rowIdx, 8).Value = sumUnemp;
+            ws.Cell(rowIdx, 9).Value = sumAccident;
+            ws.Cell(rowIdx, 10).Value = sumEr;
+            ws.Cell(rowIdx, 11).Value = sumEe;
+            ws.Cell(rowIdx, 12).Value = sumAll;
             ws.Row(rowIdx).Style.Font.Bold = true;
             ws.Row(rowIdx).Style.Fill.BackgroundColor = XLColor.FromHtml("#F1F5F9");
             for (int col = 5; col <= 12; col++)

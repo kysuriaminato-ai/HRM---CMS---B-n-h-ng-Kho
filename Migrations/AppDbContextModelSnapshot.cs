@@ -1827,6 +1827,20 @@ namespace ERP_HRM_CMS.Migrations
                     b.ToTable("SalarySlips");
                 });
 
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.SeedHistory", b =>
+                {
+                    b.Property<string>("SeedKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("SeedKey");
+
+                    b.ToTable("SeedHistories");
+                });
+
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Shift", b =>
                 {
                     b.Property<int>("Id")
