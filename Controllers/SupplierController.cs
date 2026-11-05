@@ -1,10 +1,10 @@
+using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -99,6 +99,7 @@ namespace ERP_HRM_CMS.Controllers
 
         // 4. API LẤY CHI TIẾT NCC (AJAX)
         [HttpGet]
+        [KiemTraQuyen("scm.supplier.view,scm.po.manage")]
         public async Task<IActionResult> GetSupplier(int id)
         {
             var supplier = await _context.Suppliers

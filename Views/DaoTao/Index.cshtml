@@ -1,0 +1,149 @@
+@model IEnumerable<ERP_HRM_CMS.Models.ViewModels.TrainingDto>
+@{
+    ViewData["Title"] = "Quản Lý Đào Tạo & Phát Triển Năng Lực Nội Bộ (LMS)";
+    ViewData["Module"] = "hrm_training";
+    ViewData["BreadcrumbSection"] = "Đào tạo & Phát triển";
+}
+
+<erp-page-header title="Hệ Thống Đào Tạo Nội Bộ (LMS)"
+                 subtitle="Quản lý khóa đào tạo kỹ năng, sát hạch cấp chứng chỉ nội bộ và tự động nâng cấp ma trận kỹ năng nhân sự"
+                 icon="bi-mortarboard"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đào tạo nội bộ">
+    <a href="/DaoTao/TaoMoi" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-plus-circle me-1"></i> Mở khóa đào tạo mới
+    </a>
+</erp-page-header>
+
+<!-- Bộ lọc tìm kiếm -->
+<erp-filter-bar method="get">
+    <div class="col-md-6">
+        <label class="form-label small fw-semibold mb-1">Tìm kiếm khóa học</label>
+        <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control form-control-sm" placeholder="Mã khóa học, Tên chuyên đề, Giảng viên..." />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Trạng thái khóa</label>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Planned" selected="@(ViewBag.Status == "Planned")">Dự kiến (Planned)</option>
+            <option value="InProgress" selected="@(ViewBag.Status == "InProgress")">Đang diễn ra (InProgress)</option>
+            <option value="Completed" selected="@(ViewBag.Status == "Completed")">Đã hoàn thành (Completed)</option>
+            <option value="Cancelled" selected="@(ViewBag.Status == "Cancelled")">Đã hủy (Cancelled)</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+        <a href="/DaoTao/Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+</erp-filter-bar>
+
+<!-- Thống kê tổng quan -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Tổng Số Khóa Đào Tạo" value="@(Model?.Count() ?? 0)" icon="bi-journal-bookmark" variant="primary" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đang Diễn Ra" value="@(Model?.Count(c => c.Status == "InProgress") ?? 0)" icon="bi-clock-history" variant="info" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Tổng Lượt Học Viên" value="@(Model?.Sum(c => c.ParticipantCount) ?? 0)" icon="bi-people-fill" variant="success" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đã Tốt Nghiệp / Đạt" value="@(Model?.Sum(c => c.PassedCount) ?? 0)" icon="bi-award" variant="warning" />
+    </div>
+</div>
+
+<!-- Bảng danh sách khóa đào tạo -->
+<div class="card erp-card mb-4">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="fw-bold">
+            <i class="bi bi-table me-2 text-primary"></i>Danh Mục Khóa Học &amp; Chuyên Đề Đào Tạo
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th>Khóa Đào Tạo</th>
+                    <th>Giảng Viên / Đơn Vị</th>
+                    <th>Thời Gian Diễn Ra</th>
+                    <th class="text-end">Ngân Sách</th>
+                    <th class="text-center">Học Viên</th>
+                    <th class="text-center">Tỷ Lệ Đạt</th>
+                    <th class="text-center">Trạng Thái</th>
+                    <th class="text-end" style="width: 170px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int stt = 1;
+                    foreach (var c in Model)
+                    {
+                        double passRate = c.ParticipantCount > 0 ? (c.PassedCount * 100.0 / c.ParticipantCount) : 0;
+                        <tr>
+                            <td>@(stt++)</td>
+                            <td>
+                                <div>
+                                    <a href="/DaoTao/HocVien/@c.Id" class="fw-bold text-decoration-none text-primary">@c.Title</a>
+                                    <div class="small text-muted font-monospace">@c.Code</div>
+                                </div>
+                            </td>
+                            <td>@(c.TrainerName ?? "Nội bộ công ty")</td>
+                            <td class="small">
+                                <div class="tabular-nums">@c.StartDate.ToString("dd/MM/yyyy") - @(c.EndDate.HasValue ? c.EndDate.Value.ToString("dd/MM/yyyy") : "---")</div>
+                            </td>
+                            <td class="text-end tabular-nums">@c.Budget.ToString("N0") đ</td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary-subtle text-secondary tabular-nums">@c.ParticipantCount NV</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <span class="small tabular-nums fw-semibold">@passRate.ToString("F0")%</span>
+                                    <span class="text-muted" style="font-size: 11px;">(@c.PassedCount/@c.ParticipantCount)</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (c.Status == "Completed")
+                                {
+                                    <span class="badge bg-success-subtle text-success border"><i class="bi bi-check-circle"></i> Hoàn thành</span>
+                                }
+                                else if (c.Status == "InProgress")
+                                {
+                                    <span class="badge bg-info-subtle text-info border"><i class="bi bi-play-circle"></i> Đang học</span>
+                                }
+                                else if (c.Status == "Cancelled")
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border">Đã hủy</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-secondary border">Dự kiến</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/DaoTao/HocVien/@c.Id" class="btn btn-outline-primary" title="Danh sách học viên & Chấm điểm">
+                                        <i class="bi bi-people me-1"></i> Học viên
+                                    </a>
+                                    <a href="/DaoTao/ChinhSua/@c.Id" class="btn btn-outline-secondary" title="Sửa thông tin">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-mortarboard fs-3 d-block mb-2"></i>
+                            Chưa có khóa đào tạo nào trong hệ thống.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

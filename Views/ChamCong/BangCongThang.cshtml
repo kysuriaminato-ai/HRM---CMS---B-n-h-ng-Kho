@@ -1,78 +1,431 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.MonthlyTimesheetViewModel
+@model ERP_HRM_CMS.Models.ViewModels.MonthlyTimesheetViewModel
 @{
-    Layout = "_HRMLayout";
-    ViewData["Title"] = $"Bảng Chấm Công Tháng {Model.Month}/{Model.Year}";
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = $"Bảng chấm công tháng {Model.Month}/{Model.Year}";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+    bool isPeriodLocked = ViewBag.IsPeriodLocked as bool? ?? false;
+    var locks = ViewBag.Locks as List<ERP_HRM_CMS.Services.HRM.AttendanceLockDto> ?? new();
+    var currentLock = locks.FirstOrDefault(l => l.Month == Model.Month && l.Year == Model.Year && l.IsLocked);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Bảng Tổng Hợp Chấm Công</h4>
-        <p class="text-secondary small mb-0">Tháng @Model.Month Năm @Model.Year | Ma trận theo dõi ngày làm việc thực tế</p>
-    </div>
-    <a href="/ChamCong/Index" class="btn btn-erp-outline btn-sm">
-        <i class="bi bi-clock-history me-1"></i> Về Chấm Công Ngày
+<erp-page-header title="Bảng Tổng Hợp Chấm Công & Shift Matrix"
+                 subtitle="Tháng @Model.Month / @Model.Year &mdash; Ma trận theo dõi ngày công thực tế, đi muộn, làm ngoài giờ và nghỉ phép"
+                 icon="bi-calendar-month-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Chấm công:/ChamCong/Index|Bảng công tháng">
+    @if (isPeriodLocked)
+    {
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center">
+            <i class="bi bi-lock-fill me-1"></i> BẢNG CÔNG ĐÃ KHÓA
+        </span>
+        <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#unlockModal">
+            <i class="bi bi-unlock me-1"></i> Mở khóa kỳ công
+        </button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#lockModal">
+            <i class="bi bi-lock me-1"></i> Khóa bảng công tháng
+        </button>
+    }
+    <a asp-action="ExportExcel" asp-route-year="@Model.Year" asp-route-month="@Model.Month" asp-route-departmentId="@Model.DepartmentId" class="btn btn-success btn-sm">
+        <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel (A4)
     </a>
-</div>
+    <a asp-action="PhanCa" class="btn btn-primary btn-sm">
+        <i class="bi bi-calendar-week me-1"></i> Phân ca làm việc
+    </a>
+    <a asp-action="Heatmap" asp-route-year="@Model.Year" asp-route-month="@Model.Month" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-grid-3x3-gap me-1"></i> Heatmap
+    </a>
+</erp-page-header>
 
-<div class="erp-card p-3 mb-4">
-    <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-2">
-            <select name="month" class="form-select form-select-sm">
-                @for (int m = 1; m <= 12; m++)
-                {
-                    <option value="@m" selected="@(m == Model.Month)">Tháng @m</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-2">
-            <input type="number" name="year" value="@Model.Year" class="form-control form-control-sm" />
-        </div>
-        <div class="col-md-4">
-            <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
-                <option value="">-- Tất cả phòng ban --</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-sm btn-erp-black w-100">Xem Bảng Công</button>
-        </div>
-    </form>
-</div>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-<div class="erp-card">
-    <div class="table-responsive" style="max-height: 600px;">
-        <table class="table table-bordered table-sm erp-table mb-0 text-center" style="font-size: 11.5px;">
-            <thead class="sticky-top bg-light">
+<!-- Bộ lọc tháng & phòng ban -->
+<erp-filter-bar method="get">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Kỳ chấm công (Tháng)</label>
+        <select name="month" class="form-select form-select-sm">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == Model.Month)">Tháng @m / @Model.Year</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Năm</label>
+        <input type="number" name="year" value="@Model.Year" class="form-control form-control-sm tabular-nums" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+            <option value="">-- Toàn bộ phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-funnel-fill me-1"></i> Tải bảng công ma trận
+        </button>
+    </div>
+</erp-filter-bar>
+
+<!-- Shift Matrix Grid Table (Compact Density) -->
+<div class="erp-shift-matrix-wrapper">
+    <div class="erp-shift-matrix-container">
+        <table class="erp-shift-table">
+            <thead>
                 <tr>
-                    <th style="min-width: 80px;">Mã NV</th>
-                    <th style="min-width: 150px;" class="text-start">Họ Và Tên</th>
-                    <th style="min-width: 120px;" class="text-start">Phòng Ban</th>
+                    <th class="col-emp text-start" style="min-width: 90px;">Mã NV</th>
+                    <th class="col-emp text-start" style="min-width: 170px; left: 90px !important;">Họ Và Tên</th>
+                    <th style="min-width: 140px;" class="text-start">Phòng Ban</th>
                     @for (int d = 1; d <= Model.DaysInMonth; d++)
                     {
-                        <th style="width: 28px;">@d</th>
+                        var dayDate = new DateTime(Model.Year, Model.Month, d);
+                        bool isWeekend = dayDate.DayOfWeek == DayOfWeek.Saturday || dayDate.DayOfWeek == DayOfWeek.Sunday;
+                        <th style="width: 36px; min-width: 36px;" class="@(isWeekend ? "shift-weekend" : "") tabular-nums">
+                            <div>@d</div>
+                            <div style="font-size: 9px; font-weight: normal; opacity: 0.8;">
+                                @(dayDate.DayOfWeek switch {
+                                    DayOfWeek.Monday => "T2",
+                                    DayOfWeek.Tuesday => "T3",
+                                    DayOfWeek.Wednesday => "T4",
+                                    DayOfWeek.Thursday => "T5",
+                                    DayOfWeek.Friday => "T6",
+                                    DayOfWeek.Saturday => "T7",
+                                    _ => "CN"
+                                })
+                            </div>
+                        </th>
                     }
-                    <th style="min-width: 60px;">Số Công</th>
-                    <th style="min-width: 60px;">Tổng Giờ</th>
+                    <th style="min-width: 75px;" class="text-center tabular-nums">Số Công</th>
+                    <th style="min-width: 75px;" class="text-center tabular-nums">Tổng Giờ</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var row in Model.Rows)
+                @if (Model.Rows.Any())
+                {
+                    foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td class="col-emp text-start tabular-nums fw-semibold">
+                                <code>@row.EmployeeCode</code>
+                            </td>
+                            <td class="col-emp text-start fw-bold text-nowrap" style="left: 90px !important;">
+                                @row.FullName
+                            </td>
+                            <td class="small text-secondary text-nowrap">@row.DepartmentName</td>
+                            @for (int d = 1; d <= Model.DaysInMonth; d++)
+                            {
+                                var dayDate = new DateTime(Model.Year, Model.Month, d);
+                                bool isWeekend = dayDate.DayOfWeek == DayOfWeek.Saturday || dayDate.DayOfWeek == DayOfWeek.Sunday;
+                                string st = row.DailyStatuses.GetValueOrDefault(d, "-");
+
+                                string cellClass = "";
+                                if (st == "X") cellClass = "shift-ontime";
+                                else if (st.StartsWith("M")) cellClass = "shift-late";
+                                else if (st == "P") cellClass = "shift-leave";
+                                else if (st.Contains("OT")) cellClass = "shift-ot";
+                                else if (st == "KL") cellClass = "shift-absent";
+                                else if (isWeekend) cellClass = "shift-weekend";
+
+                                string tooltip = st switch
+                                {
+                                    "X" => "Đủ công",
+                                    "P" => "Nghỉ phép",
+                                    "KL" => "Nghỉ không lương",
+                                    "CT" => "Đi công tác",
+                                    _ => isWeekend ? "Cuối tuần" : (st.StartsWith("M") ? "Đi muộn/Về sớm" : "Chưa có công")
+                                };
+
+                                <td class="erp-shift-cell @cellClass"
+                                    data-emp-id="@row.EmployeeId"
+                                    data-emp-name="@row.FullName"
+                                    data-date="@dayDate.ToString("yyyy-MM-dd")"
+                                    title="Ngày @d/@Model.Month: @tooltip (Bấm xem chi tiết)"
+                                    style="cursor: pointer;">
+                                    @st
+                                </td>
+                            }
+                            <td class="text-center tabular-nums">
+                                <span class="badge bg-primary-subtle text-primary fw-bold font-monospace">@row.PresentDaysCount</span>
+                            </td>
+                            <td class="text-center tabular-nums fw-bold text-success font-monospace">
+                                @row.TotalWorkHours.ToString("0.#")h
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td><code>@row.EmployeeCode</code></td>
-                        <td class="text-start fw-semibold text-nowrap">@row.FullName</td>
-                        <td class="text-start text-secondary text-nowrap">@row.DepartmentName</td>
-                        @for (int d = 1; d <= Model.DaysInMonth; d++)
-                        {
-                            string st = row.DailyStatuses.GetValueOrDefault(d, "-");
-                            <td class="@(st == "P" ? "bg-light text-dark fw-bold" : (st == "L" ? "bg-warning-subtle text-danger fw-bold" : "text-muted"))">
-                                @st
-                            </td>
-                        }
-                        <td><span class="badge bg-dark">@row.PresentDaysCount</span></td>
-                        <td><strong>@row.TotalWorkHours.ToString("0.#")h</strong></td>
+                        <td colspan="@(Model.DaysInMonth + 5)" class="p-0 border-0">
+                            <erp-empty-state icon="bi-calendar2-x"
+                                             title="Không có dữ liệu chấm công"
+                                             description="Chưa có bản ghi chấm công nào trong tháng @Model.Month/@Model.Year." />
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
+
+    <!-- Shift Legend Bar -->
+    <div class="shift-legend-bar">
+        <span class="fw-bold small me-2"><i class="bi bi-info-circle me-1"></i>Chú giải ký hiệu:</span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-ontime"></span> <strong>X</strong> (Đủ công)
+        </span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-late"></span> <strong>M</strong> (Đi muộn / Về sớm)
+        </span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-leave"></span> <strong>P</strong> (Nghỉ phép năm/ốm)
+        </span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-ot"></span> <strong>OT</strong> (Tăng ca)
+        </span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-absent"></span> <strong>KL</strong> (Không lương / Vắng)
+        </span>
+        <span class="shift-legend-item">
+            <span class="shift-legend-dot shift-weekend"></span> <strong>-</strong> (Cuối tuần)
+        </span>
+    </div>
 </div>
+
+<!-- Drawer chi tiết ngày công khi bấm vào ô -->
+<erp-drawer id="dayDetailDrawer" title="Chi tiết ngày công nhân sự" size="md">
+    <div id="drawerLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="text-muted small mt-2">Đang tải dữ liệu chấm công...</div>
+    </div>
+    <div id="drawerContent" style="display: none;">
+        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded mb-3">
+            <div class="avatar-circle bg-primary text-white fs-4 p-3 rounded-circle">
+                <i class="bi bi-person"></i>
+            </div>
+            <div>
+                <h6 class="mb-0 fw-bold" id="detailEmpName"></h6>
+                <div class="small text-muted" id="detailEmpCode"></div>
+                <div class="badge bg-secondary font-monospace mt-1" id="detailWorkDate"></div>
+            </div>
+        </div>
+
+        <table class="table table-sm table-borderless">
+            <tbody>
+                <tr>
+                    <td class="text-secondary" style="width: 140px;">Ca làm việc:</td>
+                    <td class="fw-bold" id="detailShiftName"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Khung giờ ca:</td>
+                    <td class="font-monospace" id="detailShiftHours"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Giờ vào đầu tiên:</td>
+                    <td class="font-monospace text-primary fw-bold" id="detailFirstIn"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Giờ ra cuối cùng:</td>
+                    <td class="font-monospace text-primary fw-bold" id="detailLastOut"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Trễ / Về sớm:</td>
+                    <td id="detailLateEarly"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Số giờ công:</td>
+                    <td class="tabular-nums fw-bold text-success" id="detailWorkHours"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Tăng ca (OT):</td>
+                    <td class="tabular-nums fw-bold text-warning" id="detailOtHours"></td>
+                </tr>
+                <tr>
+                    <td class="text-secondary">Trạng thái công:</td>
+                    <td id="detailStatus"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div id="detailLeaveBlock" class="alert alert-info py-2 small mb-2" style="display: none;">
+            <i class="bi bi-calendar-check me-1"></i> <span id="detailLeaveText"></span>
+        </div>
+
+        <div id="detailAdjBlock" class="alert alert-warning py-2 small mb-2" style="display: none;">
+            <i class="bi bi-patch-question me-1"></i> <span id="detailAdjText"></span>
+        </div>
+
+        <div id="detailNoteBlock" class="p-2 bg-light rounded small text-muted" style="display: none;">
+            <strong>Ghi chú:</strong> <span id="detailNoteText"></span>
+        </div>
+    </div>
+</erp-drawer>
+
+<!-- Modal Khóa Kỳ Chấm Công -->
+<div class="modal fade" id="lockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="KhoaKyCong" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="year" value="@Model.Year" />
+                <input type="hidden" name="month" value="@Model.Month" />
+                <input type="hidden" name="departmentId" value="@Model.DepartmentId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="bi bi-lock-fill me-2"></i> Khóa bảng công Tháng @Model.Month/@Model.Year
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>Cảnh báo quan trọng:</strong>
+                        Sau khi khóa bảng công, toàn bộ thao tác sửa đổi giờ vào/ra, điểm danh hay duyệt đơn từ lùi ngày vào tháng @Model.Month/@Model.Year sẽ bị hệ thống chặn hoàn toàn để chuẩn bị chuyển giao tính lương.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ghi chú chốt công</label>
+                        <textarea name="note" class="form-control" rows="3" placeholder="Ví dụ: Chốt số liệu công tháng để HR chuyển phòng Kế toán tính lương..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-lock-fill me-1"></i> Xác nhận khóa kỳ công
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Mở Khóa Kỳ Chấm Công -->
+@if (currentLock != null)
+{
+    <div class="modal fade" id="unlockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="MoKhoaKyCong" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="lockId" value="@currentLock.Id" />
+                    <input type="hidden" name="year" value="@Model.Year" />
+                    <input type="hidden" name="month" value="@Model.Month" />
+
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold text-warning text-dark">
+                            <i class="bi bi-unlock-fill me-2"></i> Mở khóa bảng công Tháng @Model.Month/@Model.Year
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info small">
+                            Kỳ công được khóa bởi <strong>@currentLock.LockedByName</strong> vào ngày @currentLock.LockedAt.ToString("dd/MM/yyyy HH:mm").
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Lý do mở khóa <span class="text-danger">*</span></label>
+                            <textarea name="reason" class="form-control" rows="3" placeholder="Bắt buộc nhập lý do mở khóa để ghi vết AuditLog (VD: Điều chỉnh giờ công theo đề xuất phòng ban...)" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-warning text-dark">
+                            <i class="bi bi-unlock-fill me-1"></i> Xác nhận mở khóa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const cells = document.querySelectorAll('.erp-shift-cell[data-emp-id]');
+            cells.forEach(cell => {
+                cell.addEventListener('click', function () {
+                    const empId = this.dataset.empId;
+                    const date = this.dataset.date;
+                    const empName = this.dataset.empName;
+
+                    if (!empId || !date) return;
+
+                    document.getElementById('drawerLoading').style.display = 'block';
+                    document.getElementById('drawerContent').style.display = 'none';
+
+                    // Mở drawer
+                    if (window.ERP && window.ERP.drawer) {
+                        window.ERP.drawer.open('dayDetailDrawer');
+                    } else {
+                        const drawerEl = document.getElementById('dayDetailDrawer');
+                        if (drawerEl) drawerEl.classList.add('open');
+                    }
+
+                    fetch(`/ChamCong/GetDayDetail?employeeId=${empId}&date=${date}`)
+                        .then(r => r.json())
+                        .then(res => {
+                            document.getElementById('drawerLoading').style.display = 'none';
+                            if (res.success && res.data) {
+                                const d = res.data;
+                                document.getElementById('detailEmpName').textContent = d.fullName;
+                                document.getElementById('detailEmpCode').textContent = 'Mã NV: ' + d.employeeCode + ' | ' + d.departmentName;
+                                document.getElementById('detailWorkDate').textContent = date;
+                                document.getElementById('detailShiftName').textContent = d.shiftName;
+                                document.getElementById('detailShiftHours').textContent = d.shiftHours;
+                                document.getElementById('detailFirstIn').textContent = d.firstInTime ? d.firstInTime.substring(0, 5) : '—';
+                                document.getElementById('detailLastOut').textContent = d.lastOutTime ? d.lastOutTime.substring(0, 5) : '—';
+
+                                let lateEarlyText = 'Đúng giờ';
+                                if (d.lateMinutes > 0 || d.earlyMinutes > 0) {
+                                    lateEarlyText = `Muộn: ${d.lateMinutes}p | Về sớm: ${d.earlyMinutes}p`;
+                                }
+                                document.getElementById('detailLateEarly').textContent = lateEarlyText;
+                                document.getElementById('detailWorkHours').textContent = d.workHourCount + ' giờ';
+                                document.getElementById('detailOtHours').textContent = d.overtimeHours + ' giờ';
+                                document.getElementById('detailStatus').textContent = d.attendanceStatus;
+
+                                if (d.relatedLeaveInfo) {
+                                    document.getElementById('detailLeaveText').textContent = d.relatedLeaveInfo;
+                                    document.getElementById('detailLeaveBlock').style.display = 'block';
+                                } else {
+                                    document.getElementById('detailLeaveBlock').style.display = 'none';
+                                }
+
+                                if (d.relatedAdjustmentInfo) {
+                                    document.getElementById('detailAdjText').textContent = d.relatedAdjustmentInfo;
+                                    document.getElementById('detailAdjBlock').style.display = 'block';
+                                } else {
+                                    document.getElementById('detailAdjBlock').style.display = 'none';
+                                }
+
+                                if (d.note) {
+                                    document.getElementById('detailNoteText').textContent = d.note;
+                                    document.getElementById('detailNoteBlock').style.display = 'block';
+                                } else {
+                                    document.getElementById('detailNoteBlock').style.display = 'none';
+                                }
+
+                                document.getElementById('drawerContent').style.display = 'block';
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('drawerLoading').style.display = 'none';
+                            alert('Lỗi tải chi tiết: ' + err);
+                        });
+                });
+            });
+        });
+    </script>
+}

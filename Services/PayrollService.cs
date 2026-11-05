@@ -1,11 +1,18 @@
-using ERP_HRM_CMS.Helpers;
-using ERP_HRM_CMS.Models.Enums;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using ClosedXML.Excel;
-using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
-using Microsoft.Extensions.Options;
+using ERP_HRM_CMS.Models.Enums;
+using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services.Payroll;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP_HRM_CMS.Services
 {
@@ -14,12 +21,18 @@ namespace ERP_HRM_CMS.Services
         private readonly AppDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly IOptions<PayrollOptions> _options;
+        private readonly ILogger<PayrollService> _logger;
 
-        public PayrollService(AppDbContext context, INotificationService notificationService, IOptions<PayrollOptions> options)
+        public PayrollService(
+            AppDbContext context,
+            INotificationService notificationService,
+            IOptions<PayrollOptions> options,
+            ILogger<PayrollService> logger)
         {
             _context = context;
             _notificationService = notificationService;
             _options = options;
+            _logger = logger;
         }
 
         public async Task<PayrollPeriod> CalculatePayrollAsync(int month, int year, int standardDays, int? creatorUserId = null)
@@ -53,6 +66,15 @@ namespace ERP_HRM_CMS.Services
             var startDate = new DateTime(year, month, 1);
             var endDate = new DateTime(year, month, daysInMonth);
 
+            // Kiểm tra cảnh báo nếu kỳ chấm công chưa khóa (AttendanceLock)
+            bool isAttendanceLocked = await _context.AttendanceLocks
+                .AnyAsync(l => l.Month == month && l.Year == year && l.IsLocked && !l.IsDeleted);
+
+            if (!isAttendanceLocked)
+            {
+                _logger.LogWarning("Kỳ lương Tháng {Month}/{Year} đang được tính toán khi kỳ chấm công CHƯA KHÓA (AttendanceLock)!", month, year);
+            }
+
             // Tham số của kỳ: phiên bản có hiệu lực tại ngày 01 của tháng. Thiếu cấu hình thì báo lỗi, không tự đoán.
             var rules = PayrollRuleResolver.Resolve(_options.Value, startDate);
 
@@ -61,7 +83,7 @@ namespace ERP_HRM_CMS.Services
                 .Include(e => e.Position)
                 .Include(e => e.EmployeeDetail)
                 .Include(e => e.Contracts)
-                .Where(e => e.Status == "Active")
+                .Where(e => e.Status == "Active" && !e.IsDeleted)
                 .ToListAsync();
 
             // 2. Chấm công trong tháng
@@ -93,6 +115,16 @@ namespace ERP_HRM_CMS.Services
             var dependentCounts = dependentEmployeeIds
                 .GroupBy(id => id)
                 .ToDictionary(g => g.Key, g => g.Count());
+
+            // 6. Thưởng hiệu suất KPI từ KpiReview đã duyệt của kỳ
+            var kpiReviews = await _context.KpiReviews
+                .Where(k => k.PeriodMonth == month && k.PeriodYear == year && k.Status == "Approved" && !k.IsDeleted)
+                .ToDictionaryAsync(k => k.EmployeeId, k => k);
+
+            // 7. Quyết định nhân sự khen thưởng / kỷ luật có hiệu lực trong tháng
+            var hrDecisionsInMonth = await _context.HrDecisions
+                .Where(d => d.EffectiveDate >= startDate && d.EffectiveDate <= endDate && d.Status == "Issued" && !d.IsDeleted)
+                .ToListAsync();
 
             decimal totalGross = 0;
             decimal totalNet = 0;
@@ -127,10 +159,32 @@ namespace ERP_HRM_CMS.Services
                     .Where(l => l.RequestType == "UNPAID_LEAVE")
                     .Sum(l => l.TotalDays);
 
-                // Phụ cấp chức vụ (chịu thuế) và thưởng
+                // Phụ cấp chức vụ (chịu thuế)
                 decimal posAllowanceRate = emp.Position?.AllowanceRate ?? 0;
                 decimal positionAllowance = PayrollCalculator.Money(baseSalary * posAllowanceRate);
-                decimal bonus = emp.Position?.Code == "NV-KD" ? 2500000m : 1000000m; // TODO: đưa mức thưởng vào cấu hình
+
+                // Thưởng cố định theo vị trí
+                decimal defaultBonus = emp.Position?.Code == "NV-KD" ? 2500000m : 1000000m;
+
+                // Thưởng hiệu suất KPI theo xếp loại
+                decimal kpiBonus = 0;
+                string kpiGrade = "None";
+                if (kpiReviews.TryGetValue(emp.Id, out var kpiRev))
+                {
+                    kpiGrade = kpiRev.Grade ?? "None";
+                    if (kpiGrade == "A+") kpiBonus = Math.Round(baseSalary * 0.20m, 0);
+                    else if (kpiGrade == "A") kpiBonus = Math.Round(baseSalary * 0.10m, 0);
+                    else if (kpiGrade == "B") kpiBonus = Math.Round(baseSalary * 0.05m, 0);
+                }
+
+                // Khen thưởng / Kỷ luật từ Quyết định nhân sự
+                decimal decisionReward = hrDecisionsInMonth
+                    .Where(d => d.EmployeeId == emp.Id && d.DecisionType == "Reward")
+                    .Sum(d => d.Amount);
+
+                decimal decisionDiscipline = hrDecisionsInMonth
+                    .Where(d => d.EmployeeId == emp.Id && d.DecisionType == "Discipline")
+                    .Sum(d => d.Amount);
 
                 int dependentCount = dependentCounts.GetValueOrDefault(emp.Id);
 
@@ -146,7 +200,10 @@ namespace ERP_HRM_CMS.Services
                     TotalLateMinutes = totalLateMinutes,
                     OvertimeHours = overtimeHours,
                     PositionAllowance = positionAllowance,
-                    Bonus = bonus,
+                    Bonus = defaultBonus,
+                    KpiBonus = kpiBonus,
+                    DecisionReward = decisionReward,
+                    DecisionDiscipline = decisionDiscipline,
                     DependentCount = dependentCount,
                     Allowances = allowanceLines
                 };
@@ -186,9 +243,19 @@ namespace ERP_HRM_CMS.Services
                 slip.PositionAllowance = positionAllowance;
                 slip.LunchAllowance = lunchAllowance;
                 slip.OtherAllowance = otherAllowance;
-                slip.Bonus = bonus;
+                slip.Bonus = result.TotalBonus;
                 slip.GrossSalary = result.Gross;
                 slip.LatePenalty = result.LatePenalty;
+
+                // Ghi chú giải trình KPI & QĐ
+                if (kpiBonus > 0 || decisionReward > 0 || decisionDiscipline > 0)
+                {
+                    slip.Note = $"KPI: {kpiBonus:N0}đ ({kpiGrade}) | Thưởng QĐ: {decisionReward:N0}đ | Phạt: {decisionDiscipline:N0}đ";
+                }
+                else
+                {
+                    slip.Note = BuildSlipNote(standardDays, rules);
+                }
 
                 // Phần người lao động đóng (trừ vào lương)
                 slip.SocialInsurance = result.EmployeeSocial;
@@ -203,7 +270,7 @@ namespace ERP_HRM_CMS.Services
                 slip.EmployerAccidentInsurance = result.EmployerAccident;
                 slip.TotalEmployerInsurance = result.EmployerTotal;
 
-                // Thuế TNCN
+                // Giảm trừ và thuế
                 slip.DependentCount = dependentCount;
                 slip.PersonalDeduction = result.PersonalDeduction;
                 slip.DependentDeduction = result.DependentDeduction;
@@ -211,9 +278,6 @@ namespace ERP_HRM_CMS.Services
                 slip.TaxableIncome = result.TaxableIncome;
                 slip.PersonalIncomeTax = result.PersonalIncomeTax;
                 slip.NetSalary = result.NetSalary;
-
-                slip.Status = SalarySlipStatus.Draft;
-                slip.Note = BuildSlipNote(standardDays, rules);
             }
 
             period.TotalGrossSalary = totalGross;
@@ -226,7 +290,6 @@ namespace ERP_HRM_CMS.Services
             return period;
         }
 
-        /// <summary>Ghi chú phiếu lương: công chuẩn và cảnh báo nếu còn quy định chưa xác nhận.</summary>
         private static string BuildSlipNote(int standardDays, PayrollRules rules)
         {
             var note = $"Đã tính tự động theo công chuẩn {standardDays} ngày.";
@@ -313,7 +376,7 @@ namespace ERP_HRM_CMS.Services
                 "STT", "Mã NV", "Họ và Tên", "Phòng Ban", "Chức Vụ", "Số TK Ngân Hàng",
                 "Lương Hợp Đồng", "Công Chuẩn", "Công Thực", "Phép Hưởng Lương", "Giờ OT",
                 "Lương Ngày Công", "Tiền OT (150%)", "Phụ Cấp Chức Vụ", "Phụ Cấp Ăn Trưa", "Phụ Cấp Khác",
-                "Thưởng Hiệu Suất", "TỔNG THU NHẬP (GROSS)", "BHXH (8%)", "BHYT (1.5%)", "BHTN (1%)",
+                "Thưởng Hiệu Suất / KPI", "TỔNG THU NHẬP (GROSS)", "BHXH (8%)", "BHYT (1.5%)", "BHTN (1%)",
                 "TỔNG BẢO HIỂM", "Phạt Đi Muộn", "Thuế TNCN", "THỰC LĨNH (NET)", "Trạng Thái", "Ký Nhận"
             };
 
@@ -415,34 +478,34 @@ namespace ERP_HRM_CMS.Services
             return stream.ToArray();
         }
 
-        /// <summary>
-        /// Bảng kê trích nộp bảo hiểm phần người sử dụng lao động, kèm phần người lao động để đối chiếu.
-        /// </summary>
         public byte[] GenerateEmployerInsuranceExcel(PayrollPeriod period)
         {
             using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add($"BHXH_T{period.Month}_{period.Year}");
+            var ws = workbook.Worksheets.Add("Trích_nộp_bảo_hiểm");
 
-            ws.Cell(1, 1).Value = "BẢNG KÊ TRÍCH NỘP BẢO HIỂM XÃ HỘI, Y TẾ, THẤT NGHIỆP, TNLĐ-BNN";
+            ws.Cell(1, 1).Value = "TẬP ĐOÀN CÔNG NGHỆ TIÊN PHONG - ERP ENTERPRISE";
             ws.Cell(1, 1).Style.Font.Bold = true;
             ws.Cell(1, 1).Style.Font.FontSize = 14;
             ws.Cell(1, 1).Style.Font.FontColor = XLColor.FromHtml("#1E293B");
 
-            ws.Cell(2, 1).Value = $"Kỳ lương: tháng {period.Month:D2}/{period.Year} | Phần người sử dụng lao động đóng, kèm phần người lao động để đối chiếu";
-            ws.Cell(2, 1).Style.Font.Italic = true;
-            ws.Cell(2, 1).Style.Font.FontColor = XLColor.Gray;
+            ws.Cell(2, 1).Value = $"BẢNG KÊ TRÍCH NỘP BẢO HIỂM (BHXH, BHYT, BHTN, BHTNLĐ-BNN) - KỲ THÁNG {period.Month:D2}/{period.Year}";
+            ws.Cell(2, 1).Style.Font.Bold = true;
+            ws.Cell(2, 1).Style.Font.FontSize = 12;
+            ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#2563EB");
 
-            ws.Cell(3, 1).Value = $"Xuất ngày: {VietnamTime.Now:dd/MM/yyyy HH:mm}";
+            ws.Cell(3, 1).Value = $"Công chuẩn: {period.StandardWorkDays} ngày | Xuất ngày: {VietnamTime.Now:dd/MM/yyyy HH:mm}";
+            ws.Cell(3, 1).Style.Font.Italic = true;
+            ws.Cell(3, 1).Style.Font.FontSize = 10;
             ws.Cell(3, 1).Style.Font.FontColor = XLColor.Gray;
 
-            string[] headers =
+            string[] headers = new[]
             {
-                "STT", "Mã NV", "Họ và Tên", "Phòng Ban", "Lương Đóng BH",
-                "BHXH NSDLĐ (Hưu trí, tử tuất, ốm đau, thai sản)", "BHYT NSDLĐ", "BHTN NSDLĐ", "TNLĐ-BNN NSDLĐ",
-                "Tổng NSDLĐ", "Tổng NLĐ", "Tổng trích nộp"
+                "STT", "Mã NV", "Họ và Tên", "Phòng Ban", "Lương đóng BH",
+                "BHXH NSDLĐ (17%)", "BHYT NSDLĐ (3%)", "BHTN NSDLĐ (1%)", "TNLĐ-BNN (0.5%)",
+                "TỔNG NSDLĐ (21.5%)", "TỔNG NLĐ (10.5%)", "TỔNG CỘNG TRÍCH NỘP (32%)"
             };
 
-            const int startRow = 5;
+            int startRow = 5;
             for (int col = 0; col < headers.Length; col++)
             {
                 var cell = ws.Cell(startRow, col + 1);
@@ -452,13 +515,19 @@ namespace ERP_HRM_CMS.Services
                 cell.Style.Font.FontColor = XLColor.White;
                 cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                cell.Style.Alignment.WrapText = true;
             }
-            ws.Row(startRow).Height = 42;
+            ws.Row(startRow).Height = 28;
 
             int rowIdx = startRow + 1;
             int stt = 1;
-            decimal sumBase = 0, sumSocial = 0, sumHealth = 0, sumUnemp = 0, sumAccident = 0, sumEr = 0, sumEe = 0, sumAll = 0;
+            decimal sumBase = 0;
+            decimal sumSocial = 0;
+            decimal sumHealth = 0;
+            decimal sumUnemp = 0;
+            decimal sumAccident = 0;
+            decimal sumEr = 0;
+            decimal sumEe = 0;
+            decimal sumAll = 0;
 
             foreach (var slip in period.SalarySlips.OrderBy(s => s.Employee.EmployeeCode))
             {
@@ -476,7 +545,7 @@ namespace ERP_HRM_CMS.Services
                 ws.Cell(rowIdx, 9).Value = slip.EmployerAccidentInsurance;
                 ws.Cell(rowIdx, 10).Value = totalEmployer;
                 ws.Cell(rowIdx, 11).Value = totalEmployee;
-                ws.Cell(rowIdx, 12).Value = (totalEmployer + totalEmployee);
+                ws.Cell(rowIdx, 12).Value = totalEmployer + totalEmployee;
 
                 for (int col = 5; col <= 12; col++)
                 {
@@ -484,6 +553,8 @@ namespace ERP_HRM_CMS.Services
                 }
                 ws.Cell(rowIdx, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 ws.Cell(rowIdx, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(rowIdx, 10).Style.Font.Bold = true;
+                ws.Cell(rowIdx, 12).Style.Font.Bold = true;
 
                 sumBase += slip.InsuranceSalary;
                 sumSocial += slip.EmployerSocialInsurance;
@@ -497,7 +568,6 @@ namespace ERP_HRM_CMS.Services
                 rowIdx++;
             }
 
-            // Dòng tổng cộng: tính sẵn bằng số liệu từng dòng để không phụ thuộc công thức trong Excel
             ws.Cell(rowIdx, 3).Value = "TỔNG CỘNG";
             ws.Cell(rowIdx, 5).Value = sumBase;
             ws.Cell(rowIdx, 6).Value = sumSocial;
@@ -523,6 +593,111 @@ namespace ERP_HRM_CMS.Services
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
+        }
+
+        public byte[] GenerateBankTransferExcel(PayrollPeriod period)
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add("UyNhiemChi");
+
+            // Header Banner
+            ws.Cell(1, 1).Value = "LỆNH CHUYỂN TIỀN LƯƠNG TẬP TRUNG (ỦY NHIỆM CHI NGÂN HÀNG)";
+            ws.Cell(1, 1).Style.Font.Bold = true;
+            ws.Cell(1, 1).Style.Font.FontSize = 14;
+            ws.Cell(1, 1).Style.Font.FontColor = XLColor.FromHtml("#1E293B");
+
+            ws.Cell(2, 1).Value = $"Kỳ tính lương: Tháng {period.Month:D2}/{period.Year} | Tên kỳ: {period.Name}";
+            ws.Cell(2, 1).Style.Font.Italic = true;
+            ws.Cell(2, 1).Style.Font.FontColor = XLColor.FromHtml("#64748B");
+
+            string[] headers = new[]
+            {
+                "STT", "Mã Nhân Viên", "Họ và Tên", "Phòng Ban", "Ngân Hàng", "Số Tài Khoản",
+                "Số Tiền Chuyển Khoản (VND)", "Nội Dung Chuyển Khoản", "Ghi Chú"
+            };
+
+            int startRow = 4;
+            for (int col = 0; col < headers.Length; col++)
+            {
+                var cell = ws.Cell(startRow, col + 1);
+                cell.Value = headers[col];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#0F172A");
+                cell.Style.Font.FontColor = XLColor.White;
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            }
+            ws.Row(startRow).Height = 26;
+
+            int rowIdx = startRow + 1;
+            int stt = 1;
+            decimal totalTransfer = 0;
+
+            foreach (var slip in period.SalarySlips.Where(s => s.NetSalary > 0).OrderBy(s => s.Employee.EmployeeCode))
+            {
+                ws.Cell(rowIdx, 1).Value = stt++;
+                ws.Cell(rowIdx, 2).Value = slip.Employee.EmployeeCode;
+                ws.Cell(rowIdx, 3).Value = slip.Employee.FullName;
+                ws.Cell(rowIdx, 4).Value = slip.Employee.Department?.Name ?? "-";
+                ws.Cell(rowIdx, 5).Value = slip.Employee.EmployeeDetail?.BankName ?? "-";
+                ws.Cell(rowIdx, 6).Value = slip.Employee.EmployeeDetail?.BankAccountNumber ?? "-";
+                ws.Cell(rowIdx, 7).Value = slip.NetSalary;
+                ws.Cell(rowIdx, 8).Value = $"Thanh toan luong T{period.Month:D2}/{period.Year} - {slip.Employee.FullName}";
+                ws.Cell(rowIdx, 9).Value = "Hop le";
+
+                ws.Cell(rowIdx, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(rowIdx, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(rowIdx, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(rowIdx, 7).Style.NumberFormat.Format = "#,##0";
+                ws.Cell(rowIdx, 7).Style.Font.Bold = true;
+
+                totalTransfer += slip.NetSalary;
+                rowIdx++;
+            }
+
+            // Dòng tổng cộng
+            ws.Cell(rowIdx, 3).Value = "TỔNG CỘNG CHUYỂN KHOẢN";
+            ws.Cell(rowIdx, 3).Style.Font.Bold = true;
+            ws.Cell(rowIdx, 7).Value = totalTransfer;
+            ws.Cell(rowIdx, 7).Style.NumberFormat.Format = "#,##0";
+            ws.Row(rowIdx).Style.Font.Bold = true;
+            ws.Row(rowIdx).Style.Fill.BackgroundColor = XLColor.FromHtml("#F1F5F9");
+
+            var tableRange = ws.Range(startRow, 1, rowIdx, headers.Length);
+            tableRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            tableRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            ws.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            return stream.ToArray();
+        }
+
+        public async Task<PayrollComparisonDto> GetPayrollComparisonAsync(int month, int year)
+        {
+            var current = await _context.PayrollPeriods
+                .Include(p => p.SalarySlips)
+                .FirstOrDefaultAsync(p => p.Month == month && p.Year == year);
+
+            int prevMonth = month == 1 ? 12 : month - 1;
+            int prevYear = month == 1 ? year - 1 : year;
+
+            var previous = await _context.PayrollPeriods
+                .Include(p => p.SalarySlips)
+                .FirstOrDefaultAsync(p => p.Month == prevMonth && p.Year == prevYear);
+
+            return new PayrollComparisonDto
+            {
+                CurrentMonth = month,
+                CurrentYear = year,
+                CurrentTotalNet = current?.SalarySlips.Sum(s => s.NetSalary) ?? 0,
+                CurrentTotalGross = current?.SalarySlips.Sum(s => s.GrossSalary) ?? 0,
+                CurrentHeadcount = current?.SalarySlips.Count ?? 0,
+                PreviousTotalNet = previous?.SalarySlips.Sum(s => s.NetSalary) ?? 0,
+                PreviousTotalGross = previous?.SalarySlips.Sum(s => s.GrossSalary) ?? 0,
+                PreviousHeadcount = previous?.SalarySlips.Count ?? 0
+            };
         }
     }
 }

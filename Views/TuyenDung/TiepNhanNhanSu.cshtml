@@ -1,0 +1,150 @@
+@model ERP_HRM_CMS.Models.ViewModels.ConvertCandidateToEmployeeDto
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Tiếp Nhận Nhân Sự Mới (Golden Path)";
+    var candidate = (ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto)ViewBag.Candidate;
+}
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill mb-2">
+                <i class="bi bi-stars me-1"></i> Quy Trình Golden Path
+            </span>
+            <h4 class="fw-bold mb-1"><i class="bi bi-person-check-fill me-2 text-success"></i>Tiếp Nhận Ứng Viên Trúng Tuyển Thành Nhân Viên</h4>
+            <p class="text-muted small mb-0">Hệ thống sẽ tự động tạo hồ sơ nhân viên mới (thử việc), khởi tạo hợp đồng thử việc dự thảo và sinh danh mục Onboarding 4 bước.</p>
+        </div>
+        <a href="/TuyenDung/Kanban" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại Pipeline
+        </a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <div asp-validation-summary="All" class="text-danger small mb-0"></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form method="post" action="/TuyenDung/TiepNhanNhanSu/@Model.CandidateId">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="CandidateId" />
+
+        <div class="row g-4">
+            <!-- Left: Candidate Details & Conversion Form -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-bounding-box me-2 text-primary"></i>Thông Tin Hồ Sơ Nhân Viên Mới</h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" asp-for="FullName" class="form-control" required />
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email làm việc <span class="text-danger">*</span></label>
+                            <input type="email" asp-for="Email" class="form-control" required />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số điện thoại liên hệ <span class="text-danger">*</span></label>
+                            <input type="tel" asp-for="Phone" class="form-control" required />
+                            <span asp-validation-for="Phone" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ngày nhận việc (Hire Date) <span class="text-danger">*</span></label>
+                            <input type="date" asp-for="HireDate" class="form-control" required />
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Phòng ban tiếp nhận <span class="text-danger">*</span></label>
+                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.Departments" required>
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Vị trí chức danh <span class="text-danger">*</span></label>
+                            <select asp-for="PositionId" class="form-select" asp-items="ViewBag.Positions" required>
+                                <option value="">-- Chọn vị trí --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-file-earmark-text me-2 text-primary"></i>Điều Khoản Thử Việc & Hợp Đồng Dự Thảo</h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Thời gian thử việc (Tháng)</label>
+                            <input type="number" asp-for="ProbationMonths" class="form-control" min="1" max="6" />
+                            <span class="form-text small">Mặc định 02 tháng theo quy định Bộ luật Lao động Việt Nam.</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mức lương thử việc (VNĐ/tháng)</label>
+                            <input type="number" asp-for="BaseSalary" class="form-control" min="1000000" step="500000" />
+                            <span class="form-text small">Tối thiểu bằng 85% mức lương chính thức.</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chuyên viên HR phụ trách Onboarding</label>
+                        <select asp-for="AssignedHrUserId" class="form-select" asp-items="ViewBag.Employees">
+                            <option value="">-- Chọn chuyên viên HR phụ trách --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Golden Path Summary Checklist -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-light">
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Quy Trình Tự Động Kích Hoạt</h6>
+                    <ul class="list-unstyled mb-4 small">
+                        <li class="mb-3 d-flex align-items-start">
+                            <i class="bi bi-check-circle-fill text-success fs-5 me-2 mt-n1"></i>
+                            <div>
+                                <strong>1. Tạo Hồ Sơ Nhân Viên Mới</strong>
+                                <div class="text-muted">Mã số NV tự động sinh, trạng thái thử việc (Probation).</div>
+                            </div>
+                        </li>
+                        <li class="mb-3 d-flex align-items-start">
+                            <i class="bi bi-check-circle-fill text-success fs-5 me-2 mt-n1"></i>
+                            <div>
+                                <strong>2. Khởi Tạo Hợp Đồng Thử Việc</strong>
+                                <div class="text-muted">Hợp đồng trạng thái Draft, liên kết trực tiếp với mã nhân viên.</div>
+                            </div>
+                        </li>
+                        <li class="mb-3 d-flex align-items-start">
+                            <i class="bi bi-check-circle-fill text-success fs-5 me-2 mt-n1"></i>
+                            <div>
+                                <strong>3. Sinh Checklist Hội Nhập (Onboarding)</strong>
+                                <div class="text-muted">Cấp email, bàn giao laptop/tài sản, đào tạo nội quy và giao việc tuần 1.</div>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <i class="bi bi-check-circle-fill text-success fs-5 me-2 mt-n1"></i>
+                            <div>
+                                <strong>4. Cập Nhật Trạng Thái Ứng Viên</strong>
+                                <div class="text-muted">Chuyển thẻ ứng viên sang cột Trúng tuyển (Hired).</div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold py-3 shadow-sm rounded-pill">
+                        <i class="bi bi-check-all me-1"></i> Xác Nhận & Tiếp Nhận
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+

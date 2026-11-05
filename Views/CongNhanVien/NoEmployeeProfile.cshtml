@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Cổng Tự Phục Vụ Nhân Viên (ESS)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="erp-card text-center p-5 shadow-sm">
+                <div class="mb-4">
+                    <div class="avatar-lg bg-warning-subtle text-warning mx-auto rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-exclamation fs-1"></i>
+                    </div>
+                </div>
+                <h3 class="fw-bold mb-2">Chưa Liên Kết Hồ Sơ Nhân Viên</h3>
+                <p class="text-muted mb-4">
+                    @(ViewBag.ErrorMessage ?? "Tài khoản đăng nhập của bạn hiện tại chưa được liên kết với hồ sơ nhân viên trong hệ thống. Cổng tự phục vụ (ESS) chỉ dành cho người dùng đã có mã nhân viên.")
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="/" class="erp-btn erp-btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Về Trang Chủ
+                    </a>
+                    <a href="mailto:hr@company.com" class="erp-btn erp-btn-primary">
+                        <i class="bi bi-envelope me-2"></i>Liên Hệ Bộ Phận HR
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

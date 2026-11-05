@@ -1,0 +1,11 @@
+@model ERP_HRM_CMS.Models.ErrorViewModel
+@{
+    Layout = null;
+    var vm = Model ?? new ERP_HRM_CMS.Models.ErrorViewModel();
+    vm.StatusCode = 403;
+    vm.Variant ??= "danger";
+    vm.IconClass ??= "bi-shield-lock-fill";
+    vm.Title ??= "Truy cập bị từ chối";
+}
+<partial name="~/Views/Shared/UI/_ErrorDocument.cshtml" model="vm" />
+

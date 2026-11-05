@@ -1,0 +1,298 @@
+@model ERP_HRM_CMS.Models.ViewModels.KpiReviewDto
+@{
+    ViewData["Title"] = $"Phiếu Đánh Giá KPI - {Model.EmployeeName} (Kỳ {Model.PeriodMonth}/{Model.PeriodYear})";
+    ViewData["Module"] = "hrm_kpi";
+    ViewData["BreadcrumbSection"] = "Hiệu suất & Năng lực";
+}
+
+<erp-page-header title="Chi Tiết Đánh Giá Hiệu Suất KPI"
+                 subtitle="Phiếu đánh giá hiệu suất, đối soát tự chấm - quản lý trực tiếp và ma trận radar năng lực"
+                 icon="bi-trophy"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đánh giá KPI:/DanhGiaKpi/Index|Chi tiết">
+    <a href="/DanhGiaKpi/Index?month=@Model.PeriodMonth&year=@Model.PeriodYear" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Quay lại
+    </a>
+    <a href="/DanhGiaKpi/NineBox?month=@Model.PeriodMonth&year=@Model.PeriodYear" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-grid-3x3-gap-fill me-1"></i> Xem trên Ma Trận 9-Box
+    </a>
+</erp-page-header>
+
+<!-- Thẻ tóm tắt thông tin nhân sự và kết quả xếp loại -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card erp-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="avatar-lg rounded-circle bg-primary-subtle text-primary fw-bold fs-3 me-3 d-flex align-items-center justify-content-center" style="width:54px;height:54px;">
+                        @(string.IsNullOrEmpty(Model.EmployeeName) ? "E" : Model.EmployeeName.Substring(0, 1))
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold">@Model.EmployeeName</h4>
+                        <div class="text-muted small">
+                            <span class="font-monospace">@Model.EmployeeCode</span> &bull; @Model.DepartmentName &bull; Kỳ đánh giá: <strong class="text-dark">Tháng @Model.PeriodMonth/@Model.PeriodYear</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 pt-2 border-top">
+                    <div class="col-md-4">
+                        <span class="text-muted small d-block">Quản lý trực tiếp:</span>
+                        <strong>@(Model.ReviewerName ?? "Chưa phân công")</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted small d-block">Trạng thái phiếu:</span>
+                        @if (Model.Status == "Approved")
+                        {
+                            <span class="badge bg-success"><i class="bi bi-check-all"></i> Đã phê duyệt</span>
+                        }
+                        else if (Model.Status == "Submitted")
+                        {
+                            <span class="badge bg-info text-white"><i class="bi bi-send"></i> Chờ cấp trên duyệt</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-secondary border">Bản nháp</span>
+                        }
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted small d-block">Mức thưởng KPI C&amp;B:</span>
+                        @if (Model.Grade == "A+")
+                        {
+                            <span class="badge bg-danger fs-6">+20% Lương cơ bản</span>
+                        }
+                        else if (Model.Grade == "A")
+                        {
+                            <span class="badge bg-success fs-6">+10% Lương cơ bản</span>
+                        }
+                        else if (Model.Grade == "B")
+                        {
+                            <span class="badge bg-primary fs-6">+5% Lương cơ bản</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">0%</span>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.OverallComment))
+                {
+                    <div class="mt-3 p-3 bg-light rounded border">
+                        <div class="fw-semibold small text-muted mb-1"><i class="bi bi-chat-left-quote me-1"></i>Nhận xét tổng thể:</div>
+                        <div class="fst-italic text-dark">@Model.OverallComment</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card erp-card text-center h-100">
+            <div class="card-body p-4 d-flex flex-column justify-content-center">
+                <span class="text-muted small fw-semibold text-uppercase mb-2">Điểm Hiệu Suất Tổng Hợp</span>
+                <div class="display-4 fw-bold text-primary tabular-nums mb-2">
+                    @Model.TotalScore.ToString("F1")
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted small me-1">Xếp hạng:</span>
+                    <strong class="fs-5 text-dark">Hạng @Model.Grade</strong>
+                </div>
+                <div class="border-top pt-3">
+                    <div class="small text-muted mb-1">Phân bổ Ma trận Nhân tài:</div>
+                    <span class="badge bg-primary-subtle text-primary border fs-6">@Model.NineBoxCategory</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Biểu đồ Radar Năng lực & Hiệu suất -->
+    <div class="col-lg-5">
+        <div class="card erp-card h-100">
+            <div class="card-header bg-transparent fw-bold py-3">
+                <i class="bi bi-pie-chart me-2 text-primary"></i>Biểu Đồ Radar Năng Lực &amp; Tiêu Chí
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center p-3">
+                <canvas id="kpiRadarChart" style="max-height: 320px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng chi tiết các tiêu chí KPI -->
+    <div class="col-lg-7">
+        <div class="card erp-card h-100">
+            <div class="card-header bg-transparent fw-bold py-3 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-check me-2 text-primary"></i>Chi Tiết Điểm Từng Tiêu Chí</span>
+                <span class="badge bg-secondary-subtle text-secondary">@Model.Criteria.Count tiêu chí</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table erp-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tiêu Chí</th>
+                            <th class="text-center" style="width: 80px;">Trọng Số</th>
+                            <th class="text-center" style="width: 90px;">Tự Chấm</th>
+                            <th class="text-center" style="width: 90px;">Quản Lý</th>
+                            <th class="text-center" style="width: 90px;">Điểm Trọng Số</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Criteria)
+                        {
+                            decimal weightedScore = (c.Score * c.Weight) / 100m;
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@c.CriteriaName</div>
+                                    @if (!string.IsNullOrEmpty(c.Comment))
+                                    {
+                                        <div class="small text-muted fst-italic">Minh chứng: @c.Comment</div>
+                                    }
+                                </td>
+                                <td class="text-center tabular-nums fw-semibold">@c.Weight%</td>
+                                <td class="text-center tabular-nums text-secondary">@c.SelfScore.ToString("F0")</td>
+                                <td class="text-center tabular-nums text-info">@c.Score.ToString("F0")</td>
+                                <td class="text-center tabular-nums fw-bold text-primary">@weightedScore.ToString("F1")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Khối tương tác 3 bước quy trình -->
+<div class="card erp-card mb-4">
+    <div class="card-header bg-transparent fw-bold py-3">
+        <i class="bi bi-sliders me-2 text-primary"></i>Quy Trình Đánh Giá &amp; Phê Duyệt 3 Cấp
+    </div>
+    <div class="card-body p-4">
+        <div class="row g-4">
+            <!-- Bước 1: Nhân viên tự chấm điểm -->
+            <div class="col-md-4 border-end">
+                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-1-circle-fill me-1"></i> Bước 1: Nhân Viên Tự Chấm</h6>
+                <form method="post" asp-action="TuDanhGia">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="KpiReviewId" value="@Model.Id" />
+                    @for (int i = 0; i < Model.Criteria.Count; i++)
+                    {
+                        var crit = Model.Criteria[i];
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">@crit.CriteriaName (@crit.Weight%)</label>
+                            <input type="hidden" name="Scores[@i].CriteriaId" value="@crit.Id" />
+                            <input type="number" name="Scores[@i].Score" value="@crit.SelfScore" class="form-control form-control-sm" min="0" max="100" required />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Minh chứng &amp; giải trình cá nhân</label>
+                        <textarea name="EmployeeComment" class="form-control form-control-sm" rows="2" placeholder="Ghi nhận thành tích đạt được..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100" @(Model.Status == "Approved" ? "disabled" : "")>
+                        <i class="bi bi-save me-1"></i> Lưu tự đánh giá
+                    </button>
+                </form>
+            </div>
+
+            <!-- Bước 2: Quản lý đánh giá & Tiềm năng -->
+            <div class="col-md-4 border-end">
+                <h6 class="fw-bold text-info mb-3"><i class="bi bi-2-circle-fill me-1"></i> Bước 2: Quản Lý Đánh Giá</h6>
+                <form method="post" asp-action="QuanLyDanhGia">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="KpiReviewId" value="@Model.Id" />
+                    @for (int i = 0; i < Model.Criteria.Count; i++)
+                    {
+                        var crit = Model.Criteria[i];
+                        <div class="mb-2">
+                            <label class="form-label small mb-1">@crit.CriteriaName (@crit.Weight%)</label>
+                            <input type="hidden" name="Scores[@i].CriteriaId" value="@crit.Id" />
+                            <input type="number" name="Scores[@i].Score" value="@crit.Score" class="form-control form-control-sm" min="0" max="100" required />
+                        </div>
+                    }
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Điểm Tiềm năng (Phục vụ 9-Box Matrix: 1-100)</label>
+                        <input type="number" name="PotentialScore" value="@Model.PotentialScore" class="form-control form-control-sm" min="1" max="100" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Nhận xét của quản lý</label>
+                        <textarea name="ManagerComment" class="form-control form-control-sm" rows="2" placeholder="Đánh giá ưu nhược điểm...">@Model.OverallComment</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-info text-white btn-sm w-100" @(Model.Status == "Approved" ? "disabled" : "")>
+                        <i class="bi bi-check-lg me-1"></i> Quản lý chốt điểm
+                    </button>
+                </form>
+            </div>
+
+            <!-- Bước 3: Ban Giám Đốc Phê duyệt -->
+            <div class="col-md-4">
+                <h6 class="fw-bold text-success mb-3"><i class="bi bi-3-circle-fill me-1"></i> Bước 3: Phê Duyệt Cấp Cao</h6>
+                <form method="post" asp-action="PheDuyet">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="KpiReviewId" value="@Model.Id" />
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Xếp loại sau cùng</label>
+                        <select name="Grade" class="form-select form-select-sm">
+                            <option value="A+" selected="@(Model.Grade == "A+")">A+ (Xuất sắc - Thưởng 20%)</option>
+                            <option value="A" selected="@(Model.Grade == "A")">A (Tốt - Thưởng 10%)</option>
+                            <option value="B" selected="@(Model.Grade == "B")">B (Đạt - Thưởng 5%)</option>
+                            <option value="C" selected="@(Model.Grade == "C")">C (Cần cải thiện)</option>
+                            <option value="D" selected="@(Model.Grade == "D")">D (Không đạt)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Ý kiến phê duyệt</label>
+                        <textarea name="DirectorComment" class="form-control form-control-sm" rows="2" placeholder="Ghi chú phê duyệt...">@Model.OverallComment</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm w-100" @(Model.Status == "Approved" ? "disabled" : "")>
+                        <i class="bi bi-shield-check me-1"></i> Phê duyệt &amp; Đồng bộ lương C&amp;B
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('kpiRadarChart').getContext('2d');
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Criteria.Select(c => c.CriteriaName)));
+        const selfScores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Criteria.Select(c => c.SelfScore)));
+        const managerScores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Criteria.Select(c => c.Score)));
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Tự đánh giá',
+                        data: selfScores,
+                        backgroundColor: 'rgba(156, 163, 175, 0.2)',
+                        borderColor: 'rgba(156, 163, 175, 1)',
+                        pointBackgroundColor: 'rgba(156, 163, 175, 1)'
+                    },
+                    {
+                        label: 'Quản lý đánh giá',
+                        data: managerScores,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                }
+            }
+        });
+    });
+</script>
+}

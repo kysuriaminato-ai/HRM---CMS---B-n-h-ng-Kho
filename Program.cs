@@ -1,20 +1,25 @@
+using ERP.Application;
+using ERP.Infrastructure;
+using ERP.Infrastructure.Logging;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Hubs;
-using ERP_HRM_CMS.Services;
-using ERP_HRM_CMS.Services.Printing;
-using ERP_HRM_CMS.Services.Security;
 using ERP_HRM_CMS.Middleware;
+using ERP_HRM_CMS.Services;
 using ERP_HRM_CMS.Services.HRM;
 using ERP_HRM_CMS.Services.Payroll;
+using ERP_HRM_CMS.Services.Printing;
+using ERP_HRM_CMS.Services.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 0. Cấu hình bắt buộc: không có giá trị mặc định ngoài môi trường Development
+// 0. Cấu hình Serilog ghi log có cấu trúc (Console + Rolling File theo ngày kèm CorrelationId)
+builder.AddErpSerilog();
+
+// 0a. Cấu hình bắt buộc: không có giá trị mặc định ngoài môi trường Development
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
@@ -50,25 +55,33 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
     .SetApplicationName("ERP_HRM_CMS");
 
-// 2. Đăng ký Entity Framework Core 8 với SQL Server
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// 2. Đăng ký Clean Architecture: Application Layer & Infrastructure Layer
+// (Bao gồm EF Core SQL Server, IMemoryCache tập trung, CurrentUserService, DataScopeService,
+//  PermissionService, HealthChecks /health, ResponseCompression Brotli/Gzip và ForwardedHeaders)
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration, connectionString);
 
-// 3. Đăng ký HttpContextAccessor và Dependency Injection cho các Services
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IPermissionService, PermissionService>();
+// 3. Đăng ký các Domain/Web Services nghiệp vụ
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
-// Tham số tính lương (lương cơ sở, tỷ lệ BH, biểu thuế...) đọc từ mục Payroll trong cấu hình
 builder.Services.Configure<PayrollOptions>(builder.Configuration.GetSection(PayrollOptions.SectionName));
 builder.Services.AddScoped<LoginThrottleService>();
-// Phiên 5: Services HRM
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-// [OOP - ĐA HÌNH] Đăng ký interface IPrintService; nơi dùng chỉ phụ thuộc vào interface
+builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<IHrDecisionService, HrDecisionService>();
+builder.Services.AddScoped<IAssetManagementService, AssetManagementService>();
+builder.Services.AddScoped<IShiftScheduleService, ShiftScheduleService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<ILeaveManagementService, LeaveManagementService>();
+builder.Services.AddScoped<ISelfServicePortalService, SelfServicePortalService>();
+builder.Services.AddScoped<IRecruitmentService, RecruitmentService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IPerformanceReviewService, PerformanceReviewService>();
+builder.Services.AddScoped<ITrainingService, TrainingService>();
+builder.Services.AddScoped<IPeopleAnalyticsService, PeopleAnalyticsService>();
 builder.Services.AddScoped<IPrintService, PrintService>();
-// Kiểm tra SuperAdmin trực tiếp từ DB cho thao tác nhạy cảm (không chỉ dựa vào claim)
 builder.Services.AddScoped<ISuperAdminService, SuperAdminService>();
 
 // Đăng ký SignalR Real-time
@@ -101,7 +114,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             : CookieSecurePolicy.Always;
     });
 
-// 6. Cấu hình Session State
+// 6. Cấu hình Session State (chỉ phục vụ giỏ hàng khách vãng lai; danh tính người dùng lấy từ Claims)
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -133,13 +146,11 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Đã xảy ra lỗi trong quá trình khởi tạo dữ liệu (DbInitializer).");
-        // Dừng khởi động: không chạy ứng dụng khi schema/dữ liệu nền bị lỗi
         throw;
     }
 }
 
 // Lệnh một lần: mã hóa lại CCCD và số tài khoản còn ở dạng rõ, rồi thoát (không chạy web server).
-// Ví dụ: dotnet run --project ERP_HRM_CMS.csproj -- --migrate-sensitive-data
 if (args.Contains("--migrate-sensitive-data"))
 {
     using var migrationScope = app.Services.CreateScope();
@@ -150,8 +161,10 @@ if (args.Contains("--migrate-sensitive-data"))
     return;
 }
 
-// Pipeline xử lý Request
+// Pipeline xử lý Request: ForwardedHeaders -> CorrelationId -> Serilog -> ResponseCompression -> SecurityHeaders
+app.UseInfrastructure();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -168,7 +181,9 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMustChangePasswordEnforcement();
 
+app.MapInfrastructureEndpoints();
 app.MapHub<NotificationHub>("/hub/notifications");
 
 app.MapControllerRoute(

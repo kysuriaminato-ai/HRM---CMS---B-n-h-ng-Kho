@@ -4,7 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ERP_HRM_CMS</RootNamespace>
+    <AssemblyName>ERP_HRM_CMS</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="src\ERP.Domain\ERP.Domain.csproj" />
+    <ProjectReference Include="src\ERP.Application\ERP.Application.csproj" />
+    <ProjectReference Include="src\ERP.Infrastructure\ERP.Infrastructure.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.1" />
@@ -15,11 +23,12 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Không biên dịch dự án kiểm thử (tests\) vào ứng dụng chính -->
+  <!-- Loại trừ các dự án con (src\), dự án kiểm thử (tests\) và thư mục log (logs\) khỏi globbing gốc -->
   <ItemGroup>
-    <Compile Remove="tests\**" />
-    <None Remove="tests\**" />
-    <Content Remove="tests\**" />
+    <Compile Remove="src\**;tests\**;logs\**" />
+    <Content Remove="src\**;tests\**;logs\**" />
+    <None Remove="src\**;tests\**;logs\**" />
+    <EmbeddedResource Remove="src\**;tests\**;logs\**" />
   </ItemGroup>
 
 </Project>

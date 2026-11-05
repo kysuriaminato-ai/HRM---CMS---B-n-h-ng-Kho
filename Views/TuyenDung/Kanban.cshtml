@@ -1,0 +1,341 @@
+@model dynamic
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Kanban Pipeline Tuyển Dụng ATS";
+    var jobPostings = (IEnumerable<ERP_HRM_CMS.Models.ViewModels.JobPostingDto>)ViewBag.JobPostings;
+    int? selectedJobId = (int?)ViewBag.SelectedJobId;
+    string? keyword = (string?)ViewBag.Keyword;
+    decimal? minScore = (decimal?)ViewBag.MinScore;
+}
+
+<div class="container-fluid py-3">
+    <!-- Top Header & Filter Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-kanban me-2 text-primary"></i>ATS Kanban Pipeline Ứng Viên</h4>
+            <p class="text-muted small mb-0">Kéo thả ứng viên giữa các giai đoạn tuyển dụng, đặt lịch phỏng vấn và tiếp nhận nhân viên 1-click.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/TuyenDung/Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i> Danh Sách Tin
+            </a>
+            <a href="/TuyenDung/LichPhongVan" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-calendar-check me-1"></i> Lịch Phỏng Vấn
+            </a>
+            <a href="/TuyenDung/Onboarding" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-person-check me-1"></i> Onboarding
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 mb-4">
+        <form method="get" action="/TuyenDung/Kanban" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Tin tuyển dụng</label>
+                <select name="jobPostingId" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tất cả vị trí đang tuyển</option>
+                    @if (jobPostings != null)
+                    {
+                        foreach (var j in jobPostings)
+                        {
+                            <option value="@j.Id" selected="@(selectedJobId == j.Id ? "selected" : null)">@j.Title (@j.Code)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Tìm ứng viên</label>
+                <input type="text" name="keyword" value="@keyword" class="form-control form-control-sm" placeholder="Tên, email, số điện thoại..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Điểm đánh giá tối thiểu</label>
+                <select name="minScore" class="form-select form-select-sm">
+                    <option value="">Tất cả thang điểm</option>
+                    <option value="80" selected="@(minScore == 80 ? "selected" : null)">>= 80 điểm (Xuất sắc)</option>
+                    <option value="60" selected="@(minScore == 60 ? "selected" : null)">>= 60 điểm (Đạt yêu cầu)</option>
+                    <option value="40" selected="@(minScore == 40 ? "selected" : null)">>= 40 điểm (Trung bình)</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-sm btn-primary fw-semibold">
+                    <i class="bi bi-funnel me-1"></i> Lọc Ứng Viên
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Kanban Board 6 Columns -->
+    <div class="row g-3 flex-nowrap overflow-auto pb-4" style="min-height: 70vh;">
+        <!-- Column 1: Applied -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Ứng Tuyển (Applied)",
+            BadgeColor = "primary",
+            Status = "Applied",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Applied,
+            Icon = "bi-inbox"
+        })
+
+        <!-- Column 2: Screening -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Sàng Lọc (Screening)",
+            BadgeColor = "info",
+            Status = "Screening",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Screening,
+            Icon = "bi-filter-circle"
+        })
+
+        <!-- Column 3: Interview -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Phỏng Vấn (Interview)",
+            BadgeColor = "warning",
+            Status = "Interview",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Interview,
+            Icon = "bi-person-video3"
+        })
+
+        <!-- Column 4: Offered -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Đề Xuất (Offered)",
+            BadgeColor = "secondary",
+            Status = "Offered",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Offered,
+            Icon = "bi-envelope-paper"
+        })
+
+        <!-- Column 5: Hired (Golden Path) -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Trúng Tuyển (Hired)",
+            BadgeColor = "success",
+            Status = "Hired",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Hired,
+            Icon = "bi-check2-circle"
+        })
+
+        <!-- Column 6: Rejected -->
+        @await Html.PartialAsync("_KanbanColumnPartial", new {
+            Title = "Không Phù Hợp (Rejected)",
+            BadgeColor = "danger",
+            Status = "Rejected",
+            Candidates = (List<ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto>)Model.Rejected,
+            Icon = "bi-x-circle"
+        })
+    </div>
+</div>
+
+<!-- Modal Đặt Lịch Phỏng Vấn -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="scheduleModalLabel">
+                    <i class="bi bi-calendar-plus text-primary me-2"></i>Lên Lịch Phỏng Vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <input type="hidden" id="schedCandidateId" name="CandidateId" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Ứng viên</label>
+                        <input type="text" id="schedCandidateName" class="form-control form-control-sm bg-light" readonly />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Vòng phỏng vấn</label>
+                            <input type="number" id="schedRoundNumber" name="RoundNumber" class="form-control form-control-sm" value="1" min="1" max="10" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Thời lượng (phút)</label>
+                            <input type="number" id="schedDuration" name="DurationMinutes" class="form-control form-control-sm" value="45" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Tiêu đề lịch phỏng vấn</label>
+                        <input type="text" id="schedTitle" name="Title" class="form-control form-control-sm" value="Phỏng vấn chuyên môn" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Thời gian phỏng vấn</label>
+                            <input type="datetime-local" id="schedScheduledTime" name="ScheduledTime" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Hình thức</label>
+                            <select id="schedInterviewType" name="InterviewType" class="form-select form-select-sm">
+                                <option value="Offline">Trực tiếp (Tại văn phòng)</option>
+                                <option value="Online">Trực tuyến (Google Meet / Teams)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Địa điểm / Link họp trực tuyến</label>
+                        <input type="text" id="schedLocation" name="LocationOrMeetingLink" class="form-control form-control-sm" placeholder="Phòng họp 301 hoặc https://meet.google.com/..." />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Người phỏng vấn (Interviewer)</label>
+                        <select id="schedInterviewer" name="InterviewerUserId" class="form-select form-select-sm" asp-items="ViewBag.Employees">
+                            <option value="">-- Chọn người phỏng vấn --</option>
+                        </select>
+                        <span class="form-text small text-muted">Hệ thống sẽ gửi thông báo SignalR tức thời cho người này.</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-sm btn-primary fw-semibold" onclick="submitSchedule()">
+                    <i class="bi bi-check-lg me-1"></i> Xác Nhận Lịch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offcanvas Drawer Xem Chi Tiết Ứng Viên & Preview CV -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="candidateDrawer" style="width: 550px;" aria-labelledby="candidateDrawerLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="candidateDrawerLabel">
+            <i class="bi bi-person-lines-fill text-primary me-2"></i>Hồ Sơ Ứng Viên
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0" id="candidateDrawerContent">
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2">Đang tải hồ sơ ứng viên...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Drag & Drop Kanban Logic
+    function handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.getAttribute('data-candidate-id'));
+        e.target.classList.add('opacity-50');
+    }
+
+    function handleDragEnd(e) {
+        e.target.classList.remove('opacity-50');
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        const col = e.currentTarget;
+        col.classList.add('border-primary');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('border-primary');
+    }
+
+    async function handleDrop(e, newStatus) {
+        e.preventDefault();
+        const col = e.currentTarget;
+        col.classList.remove('border-primary');
+
+        const candidateId = parseInt(e.dataTransfer.getData('text/plain'));
+        if (!candidateId) return;
+
+        const card = document.querySelector(`[data-candidate-id="${candidateId}"]`);
+        if (!card) return;
+
+        // AJAX update status
+        try {
+            const response = await fetch('/TuyenDung/CapNhatTrangThai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ candidateId: candidateId, newStatus: newStatus })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                // Move card to new column
+                col.querySelector('.kanban-cards').appendChild(card);
+                updateColumnCounters();
+            } else {
+                alert(data.message || 'Lỗi khi cập nhật trạng thái');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối máy chủ khi cập nhật thẻ');
+        }
+    }
+
+    function updateColumnCounters() {
+        document.querySelectorAll('.kanban-column').forEach(col => {
+            const count = col.querySelectorAll('.kanban-card').length;
+            const badge = col.querySelector('.column-count-badge');
+            if (badge) badge.textContent = count;
+        });
+    }
+
+    // Open Interview Modal
+    function openScheduleModal(candId, candName) {
+        document.getElementById('schedCandidateId').value = candId;
+        document.getElementById('schedCandidateName').value = candName;
+        
+        // Default tomorrow 9:00 AM
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        document.getElementById('schedScheduledTime').value = tomorrow.toISOString().slice(0, 16);
+
+        const modal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+        modal.show();
+    }
+
+    async function submitSchedule() {
+        const form = document.getElementById('scheduleForm');
+        const formData = new FormData(form);
+        const payload = {
+            candidateId: parseInt(formData.get('CandidateId')),
+            roundNumber: parseInt(formData.get('RoundNumber')) || 1,
+            durationMinutes: parseInt(formData.get('DurationMinutes')) || 45,
+            title: formData.get('Title'),
+            scheduledTime: formData.get('ScheduledTime'),
+            interviewType: formData.get('InterviewType'),
+            locationOrMeetingLink: formData.get('LocationOrMeetingLink'),
+            interviewerUserId: formData.get('InterviewerUserId') ? parseInt(formData.get('InterviewerUserId')) : null
+        };
+
+        try {
+            const res = await fetch('/TuyenDung/DatLichPhongVan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert(data.message || 'Lỗi khi đặt lịch');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối khi đặt lịch phỏng vấn');
+        }
+    }
+
+    // Open Candidate Detail Drawer
+    async function openCandidateDrawer(candidateId) {
+        const drawer = new bootstrap.Offcanvas(document.getElementById('candidateDrawer'));
+        drawer.show();
+
+        const content = document.getElementById('candidateDrawerContent');
+        content.innerHTML = '<div class="text-center py-5 text-muted"><div class="spinner-border text-primary"></div><div class="mt-2">Đang tải hồ sơ...</div></div>';
+
+        try {
+            const res = await fetch(`/TuyenDung/ChiTietUngVien/${candidateId}`);
+            if (res.ok) {
+                content.innerHTML = await res.text();
+            } else {
+                content.innerHTML = '<div class="alert alert-danger m-3">Không thể tải thông tin ứng viên.</div>';
+            }
+        } catch (err) {
+            content.innerHTML = '<div class="alert alert-danger m-3">Lỗi mạng khi tải hồ sơ.</div>';
+        }
+    }
+</script>
+}
+

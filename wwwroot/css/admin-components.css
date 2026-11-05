@@ -1,45 +1,47 @@
 /* ==========================================================================
-   ADMIN COMPONENTS - Thành phần giao diện dùng chung
-   Dự án: ERP HRM - CMS - Bán hàng Kho
-   Phiên 3 - Xem docs/UI-GUIDE.md để biết quy ước
+   ADMIN COMPONENTS - Bộ thành phần giao diện dùng chung (GIAI ĐOẠN A)
+   Dự án: ERP HRM - CMS - Bán hàng & Kho
+   Mọi giá trị màu/bo góc/khoảng cách/motion tham chiếu token trong enterprise-theme.css
    ========================================================================== */
 
 /* ==========================================================================
-   1. SIDEBAR - Layout, thu gọn, responsive
+   1. SIDEBAR & ACCORDION MENU
    ========================================================================== */
 .erp-sidebar {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 260px;
+    width: var(--erp-sidebar-width);
     background: var(--erp-bg-sidebar);
     border-right: 1px solid var(--erp-sidebar-border);
     display: flex;
     flex-direction: column;
     z-index: 1040;
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width var(--erp-duration-normal) var(--erp-ease-default);
     overflow: hidden;
 }
 
 .erp-sidebar-brand {
     display: flex;
     align-items: center;
-    padding: 16px 18px;
+    padding: 0 18px;
     border-bottom: 1px solid var(--erp-sidebar-border);
-    min-height: 60px;
+    min-height: var(--erp-topbar-height);
 }
 
 .sidebar-brand-full {
     display: flex;
     align-items: center;
     gap: 10px;
+    text-decoration: none;
+    color: var(--erp-on-accent);
 }
 
 .sidebar-brand-full .brand-text {
     font-weight: 700;
-    font-size: 18px;
-    color: #fff;
+    font-size: 17px;
+    color: var(--erp-on-accent);
     white-space: nowrap;
 }
 
@@ -47,17 +49,18 @@
     display: none;
     justify-content: center;
     width: 100%;
+    text-decoration: none;
 }
 
 .erp-sidebar-nav {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px 0;
+    padding: var(--erp-space-2) 0;
 }
 
 .nav-section-title {
-    padding: 16px 18px 6px;
+    padding: 14px 18px 6px;
     font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
@@ -67,11 +70,72 @@
     overflow: hidden;
 }
 
+/* Accordion Group */
+.erp-nav-group {
+    margin-bottom: 2px;
+}
+
+.erp-nav-group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: calc(100% - 20px);
+    margin: 4px 10px 2px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--erp-radius-sm);
+    color: var(--erp-sidebar-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    cursor: pointer;
+    transition: color var(--erp-duration-fast) var(--erp-ease-default),
+                background-color var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.erp-nav-group-toggle:hover {
+    color: var(--erp-on-accent);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.erp-nav-group-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.erp-nav-chevron {
+    font-size: 11px;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-default);
+}
+
+.erp-nav-group.open .erp-nav-chevron {
+    transform: rotate(180deg);
+}
+
+.erp-nav-group-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--erp-duration-normal) var(--erp-ease-default);
+}
+
+.erp-nav-group.open .erp-nav-group-body {
+    grid-template-rows: 1fr;
+}
+
+.erp-nav-group-inner {
+    overflow: hidden;
+}
+
 .erp-nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 9px 18px;
+    padding: 8.5px 16px;
     margin: 2px 10px;
     color: var(--erp-sidebar-text);
     text-decoration: none;
@@ -79,11 +143,13 @@
     font-size: 13.5px;
     font-weight: 450;
     white-space: nowrap;
-    transition: all 0.15s ease;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default),
+                color var(--erp-duration-fast) var(--erp-ease-default),
+                transform var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .erp-nav-item i {
-    font-size: 17px;
+    font-size: 16.5px;
     width: 20px;
     text-align: center;
     flex-shrink: 0;
@@ -91,18 +157,17 @@
 
 .erp-nav-item:hover {
     background: var(--erp-sidebar-active);
-    color: #fff;
+    color: var(--erp-on-accent);
     transform: translateX(2px);
 }
 
 .erp-nav-item.active {
     background: var(--erp-primary);
-    color: #fff;
+    color: var(--erp-on-accent);
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(var(--erp-primary-rgb), 0.35);
 }
 
-/* Footer sidebar - nút thu gọn */
 .erp-sidebar-footer {
     padding: 8px 10px;
     border-top: 1px solid var(--erp-sidebar-border);
@@ -119,30 +184,56 @@
     color: var(--erp-sidebar-muted);
     border-radius: var(--erp-radius-md);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default),
+                color var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .erp-sidebar-toggle:hover {
     background: var(--erp-sidebar-active);
-    color: #fff;
+    color: var(--erp-on-accent);
 }
 
-/* Sidebar thu gọn */
+/* Sidebar thu gọn (Desktop) */
 .sidebar-collapsed .erp-sidebar {
-    width: 68px;
+    width: var(--erp-sidebar-collapsed-width);
 }
 
 .sidebar-collapsed .sidebar-brand-full { display: none; }
 .sidebar-collapsed .sidebar-brand-mini { display: flex; }
-.sidebar-collapsed .nav-section-title { text-align: center; padding: 12px 4px 4px; font-size: 0; height: 12px; }
-.sidebar-collapsed .nav-section-title::after { content: ''; display: block; width: 20px; height: 1px; background: var(--erp-sidebar-border); margin: 0 auto; }
-.sidebar-collapsed .erp-nav-item { justify-content: center; padding: 10px; margin: 2px 6px; gap: 0; }
+.sidebar-collapsed .nav-section-title,
+.sidebar-collapsed .erp-nav-group-toggle {
+    justify-content: center;
+    padding: 8px 4px 4px;
+    margin: 4px auto 2px;
+    font-size: 0;
+    height: 14px;
+    pointer-events: none;
+}
+.sidebar-collapsed .erp-nav-group-label,
+.sidebar-collapsed .erp-nav-chevron { display: none; }
+.sidebar-collapsed .nav-section-title::after,
+.sidebar-collapsed .erp-nav-group-toggle::after {
+    content: '';
+    display: block;
+    width: 22px;
+    height: 1px;
+    background: var(--erp-sidebar-border);
+    margin: 0 auto;
+}
+.sidebar-collapsed .erp-nav-group-body {
+    grid-template-rows: 1fr !important;
+}
+.sidebar-collapsed .erp-nav-item {
+    justify-content: center;
+    padding: 10px;
+    margin: 2px 8px;
+    gap: 0;
+    position: relative;
+}
 .sidebar-collapsed .erp-nav-item .nav-label { display: none; }
 .sidebar-collapsed .erp-nav-item i { font-size: 18px; }
 .sidebar-collapsed #sidebarToggleIcon { transform: rotate(180deg); }
 
-/* Tooltip cho sidebar thu gọn */
-.sidebar-collapsed .erp-nav-item { position: relative; }
 .sidebar-collapsed .erp-nav-item::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -150,16 +241,16 @@
     top: 50%;
     transform: translateY(-50%);
     background: var(--erp-bg-sidebar);
-    color: #fff;
+    color: var(--erp-on-accent);
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--erp-radius-sm);
     font-size: 12px;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--erp-duration-fast) var(--erp-ease-default);
     z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: var(--erp-shadow-md);
 }
 
 .sidebar-collapsed .erp-nav-item:hover::after {
@@ -167,23 +258,20 @@
 }
 
 /* ==========================================================================
-   2. MAIN CONTENT AREA
+   2. MAIN CONTENT, TOPBAR & MODULE PILL
    ========================================================================== */
 .erp-main-content {
-    margin-left: 260px;
+    margin-left: var(--erp-sidebar-width);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: margin-left var(--erp-duration-normal) var(--erp-ease-default);
 }
 
 .sidebar-collapsed .erp-main-content {
-    margin-left: 68px;
+    margin-left: var(--erp-sidebar-collapsed-width);
 }
 
-/* ==========================================================================
-   3. TOPBAR
-   ========================================================================== */
 .erp-topbar {
     position: sticky;
     top: 0;
@@ -191,18 +279,49 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    height: 60px;
+    padding: 0 var(--erp-space-6);
+    height: var(--erp-topbar-height);
     background: var(--erp-bg-surface);
     border-bottom: 1px solid var(--erp-border-color);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 }
 
-.topbar-left, .topbar-right {
+.topbar-left,
+.topbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--erp-space-3);
+}
+
+.erp-module-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--erp-radius-full);
+    background: var(--erp-primary-subtle);
+    color: var(--erp-primary);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    border: 1px solid rgba(var(--erp-primary-rgb), 0.2);
+}
+
+.erp-notif-dropdown {
+    width: 360px;
+    max-height: 480px;
+}
+
+.erp-notif-dropdown-header {
+    background: var(--erp-bg-sidebar);
+    color: var(--erp-on-accent);
+    border-radius: var(--erp-radius-lg) var(--erp-radius-lg) 0 0;
+}
+
+.erp-notif-dropdown-list {
+    max-height: 340px;
+    overflow-y: auto;
 }
 
 .topbar-icon-btn {
@@ -217,7 +336,8 @@
     border-radius: var(--erp-radius-md);
     cursor: pointer;
     font-size: 18px;
-    transition: all 0.15s ease;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default),
+                color var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .topbar-icon-btn:hover {
@@ -226,6 +346,7 @@
 }
 
 .notif-badge {
+    display: none;
     position: absolute;
     top: 2px;
     right: 2px;
@@ -237,11 +358,10 @@
     line-height: 16px;
     text-align: center;
     background: var(--erp-danger);
-    color: #fff;
-    border-radius: 8px;
+    color: var(--erp-on-accent);
+    border-radius: var(--erp-radius-full);
 }
 
-/* Avatar dropdown */
 .topbar-avatar-btn {
     display: flex;
     align-items: center;
@@ -252,7 +372,7 @@
     border-radius: var(--erp-radius-md);
     cursor: pointer;
     color: var(--erp-text-main);
-    transition: background 0.15s ease;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .topbar-avatar-btn:hover {
@@ -266,8 +386,8 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--erp-primary), var(--erp-purple, #6366F1));
-    color: #fff;
+    background: linear-gradient(135deg, var(--erp-primary), var(--erp-purple));
+    color: var(--erp-on-accent);
     font-weight: 700;
     font-size: 13px;
 }
@@ -277,7 +397,6 @@
     font-weight: 500;
 }
 
-/* Breadcrumb trong topbar */
 .erp-topbar .breadcrumb {
     background: transparent;
     font-size: 13px;
@@ -292,27 +411,20 @@
     font-weight: 500;
 }
 
-/* ==========================================================================
-   4. CONTENT WRAPPER & FOOTER
-   ========================================================================== */
 .erp-content-wrapper {
     flex: 1;
-    padding: 24px;
-}
-
-.erp-page-content {
-    /* Placeholder cho nội dung chính */
+    padding: var(--erp-space-6);
 }
 
 .erp-footer {
-    padding: 16px 24px;
+    padding: var(--erp-space-4) var(--erp-space-6);
     text-align: center;
     font-size: 12px;
     color: var(--erp-text-muted);
     border-top: 1px solid var(--erp-border-color);
+    background: var(--erp-bg-surface);
 }
 
-/* Mobile sidebar toggle */
 .erp-sidebar-mobile-toggle {
     display: none;
     align-items: center;
@@ -330,74 +442,106 @@
     background: var(--erp-bg-subtle);
 }
 
-/* Overlay */
 .erp-sidebar-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--erp-bg-overlay);
     z-index: 1035;
     backdrop-filter: blur(2px);
 }
 
 /* ==========================================================================
-   5. TOAST ALERT (thay cho Bootstrap alert)
+   3. PAGE HEADER COMPONENT (Tiêu đề + Breadcrumb + Nút hành động)
    ========================================================================== */
-.erp-toast-alert {
+.erp-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--erp-space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--erp-space-6);
+}
+
+.erp-page-header-main {
+    min-width: 0;
+    flex: 1 1 260px;
+}
+
+.erp-page-breadcrumb {
+    margin-bottom: var(--erp-space-2);
+    font-size: 12.5px;
+}
+
+.erp-page-breadcrumb .breadcrumb {
+    margin-bottom: 0;
+}
+
+.erp-page-breadcrumb .breadcrumb-item a {
+    color: var(--erp-text-muted);
+    text-decoration: none;
+}
+
+.erp-page-breadcrumb .breadcrumb-item a:hover {
+    color: var(--erp-primary);
+}
+
+.erp-page-header-title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: var(--erp-space-3);
+}
+
+.erp-page-header-icon {
+    width: 40px;
+    height: 40px;
     border-radius: var(--erp-radius-md);
+    background: var(--erp-primary-subtle);
+    color: var(--erp-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    flex-shrink: 0;
+}
+
+.erp-page-header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--erp-text-main);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.erp-page-header-subtitle {
     font-size: 13.5px;
-    font-weight: 500;
-    margin-bottom: 16px;
-    position: relative;
+    color: var(--erp-text-muted);
+    margin: 4px 0 0;
 }
 
-.erp-toast-alert .btn-close-sm {
-    width: 12px;
-    height: 12px;
-    margin-left: auto;
-}
-
-.erp-toast-success {
-    background: var(--erp-success-subtle);
-    color: var(--erp-success);
-    border: 1px solid var(--erp-success);
-}
-
-.erp-toast-danger {
-    background: var(--erp-danger-subtle);
-    color: var(--erp-danger);
-    border: 1px solid var(--erp-danger);
-}
-
-.erp-toast-warning {
-    background: var(--erp-warning-subtle);
-    color: var(--erp-warning);
-    border: 1px solid var(--erp-warning);
-}
-
-.erp-toast-info {
-    background: rgba(6, 182, 212, 0.1);
-    color: var(--erp-info);
-    border: 1px solid var(--erp-info);
+.erp-page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+    flex-wrap: wrap;
 }
 
 /* ==========================================================================
-   6. STAT CARD (thẻ thống kê)
+   4. STAT CARD COMPONENT
    ========================================================================== */
 .stat-card {
     background: var(--erp-bg-card);
     border: 1px solid var(--erp-border-color);
     border-radius: var(--erp-radius-lg);
-    padding: 20px 24px;
+    padding: var(--erp-space-5) var(--erp-space-6);
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
+    gap: var(--erp-space-3);
     box-shadow: var(--erp-card-shadow);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out),
+                box-shadow var(--erp-duration-normal) var(--erp-ease-default),
+                border-color var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .stat-card:hover {
@@ -407,11 +551,12 @@
 
 .stat-card-body {
     flex: 1;
+    min-width: 0;
 }
 
 .stat-card-label {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 11.5px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--erp-text-muted);
@@ -419,20 +564,26 @@
 }
 
 .stat-card-value {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     line-height: 1.2;
     color: var(--erp-text-main);
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-card-trend {
     font-size: 12px;
     font-weight: 600;
-    margin-top: 4px;
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--erp-text-muted);
 }
 
-.stat-card-trend.up { color: var(--erp-success); }
-.stat-card-trend.down { color: var(--erp-danger); }
+.stat-card-trend.up      { color: var(--erp-success); }
+.stat-card-trend.down    { color: var(--erp-danger); }
+.stat-card-trend.neutral { color: var(--erp-text-muted); }
 
 .stat-card-icon {
     width: 48px;
@@ -448,14 +599,63 @@
 .stat-card-icon.primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
 .stat-card-icon.success { background: var(--erp-success-subtle); color: var(--erp-success); }
 .stat-card-icon.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
-.stat-card-icon.danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
-.stat-card-icon.info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
-.stat-card-icon.purple { background: rgba(99,102,241,0.1); color: var(--erp-purple); }
+.stat-card-icon.danger  { background: var(--erp-danger-subtle);  color: var(--erp-danger); }
+.stat-card-icon.info    { background: var(--erp-info-subtle);    color: var(--erp-info); }
+.stat-card-icon.purple  { background: var(--erp-purple-subtle);  color: var(--erp-purple); }
 
 /* ==========================================================================
-   7. DATA TABLE WRAPPER
+   5. FILTER BAR & DATA TABLE (Lọc / Sắp xếp / Phân trang AJAX)
    ========================================================================== */
+.erp-filter-bar {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    padding: var(--erp-space-4) var(--erp-space-5);
+    margin-bottom: var(--erp-space-4);
+    box-shadow: var(--erp-card-shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--erp-space-3);
+    flex-wrap: wrap;
+}
+
+.erp-filter-search {
+    position: relative;
+    flex: 1 1 240px;
+    max-width: 360px;
+}
+
+.erp-filter-search i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--erp-text-muted);
+    pointer-events: none;
+}
+
+.erp-filter-search .form-control {
+    padding-left: 36px !important;
+}
+
+.erp-filter-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+}
+
+.erp-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+    margin-left: auto;
+}
+
 .erp-table-wrapper {
+    position: relative;
     background: var(--erp-bg-card);
     border: 1px solid var(--erp-border-color);
     border-radius: var(--erp-radius-lg);
@@ -467,8 +667,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    gap: 12px;
+    padding: var(--erp-space-4) var(--erp-space-5);
+    gap: var(--erp-space-3);
     flex-wrap: wrap;
     border-bottom: 1px solid var(--erp-border-color);
 }
@@ -477,51 +677,221 @@
     font-size: 15px;
     font-weight: 600;
     color: var(--erp-text-main);
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
 }
 
 .erp-table-toolbar-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--erp-space-2);
+    flex-wrap: wrap;
 }
 
-/* Empty state cho bảng */
+/* Sortable Column Header */
+.table thead th[data-sort],
+.erp-th-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default),
+                color var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.table thead th[data-sort]:hover,
+.erp-th-sortable:hover {
+    color: var(--erp-primary) !important;
+}
+
+.erp-sort-indicator {
+    display: inline-flex;
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.45;
+}
+
+.table thead th[data-sort].sort-asc .erp-sort-indicator,
+.table thead th[data-sort].sort-desc .erp-sort-indicator {
+    opacity: 1;
+    color: var(--erp-primary);
+}
+
+/* AJAX Loading Overlay */
+.erp-table-loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(var(--erp-primary-rgb), 0.04);
+    backdrop-filter: blur(1.5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+}
+
+.erp-table-wrapper.is-loading .erp-table-loading-overlay {
+    display: flex;
+}
+
+/* Table Footer & Pagination */
+.erp-table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--erp-space-3);
+    flex-wrap: wrap;
+    padding: var(--erp-space-3) var(--erp-space-5);
+    border-top: 1px solid var(--erp-border-color);
+    background: var(--erp-bg-surface);
+    font-size: 13px;
+    color: var(--erp-text-muted);
+}
+
+.erp-pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.erp-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
+    border-radius: var(--erp-radius-sm);
+    border: 1px solid var(--erp-border-color);
+    background: var(--erp-bg-card);
+    color: var(--erp-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.erp-page-btn:hover:not(:disabled):not(.disabled) {
+    border-color: var(--erp-primary);
+    color: var(--erp-primary);
+    background: var(--erp-primary-subtle);
+}
+
+.erp-page-btn.active {
+    background: var(--erp-primary);
+    border-color: var(--erp-primary);
+    color: var(--erp-on-accent);
+    font-weight: 600;
+}
+
+.erp-page-btn:disabled,
+.erp-page-btn.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   6. EMPTY STATE & SKELETON COMPONENTS
+   ========================================================================== */
 .erp-empty-state {
     text-align: center;
-    padding: 48px 24px;
+    padding: var(--erp-space-10) var(--erp-space-6);
     color: var(--erp-text-muted);
 }
 
 .erp-empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-    opacity: 0.4;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto var(--erp-space-3);
+    border-radius: var(--erp-radius-full);
+    background: var(--erp-bg-subtle);
+    color: var(--erp-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
 }
 
 .erp-empty-state-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--erp-text-secondary);
+    color: var(--erp-text-main);
     margin-bottom: 6px;
 }
 
 .erp-empty-state-desc {
-    font-size: 13px;
-    max-width: 360px;
+    font-size: 13.5px;
+    color: var(--erp-text-muted);
+    max-width: 380px;
     margin: 0 auto;
 }
 
-/* ==========================================================================
-   8. FORM - Nhãn nổi (Floating Label) nâng cao
-   ========================================================================== */
-.erp-floating-label {
+.erp-empty-state-actions {
+    margin-top: var(--erp-space-4);
+}
+
+.skeleton-card {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    padding: var(--erp-space-5) var(--erp-space-6);
+}
+
+.skeleton-line {
+    height: 13px;
+    border-radius: var(--erp-radius-xs);
+    background: var(--erp-border-color);
     position: relative;
-    margin-bottom: 20px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.skeleton-line:last-child {
+    margin-bottom: 0;
+}
+
+.skeleton-line::after,
+.skeleton-circle::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent 0, rgba(255, 255, 255, 0.22) 25%, rgba(255, 255, 255, 0.48) 55%, transparent);
+    animation: skeleton-shimmer 1.8s infinite;
+}
+
+.skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--erp-border-color);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.erp-skeleton-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-3);
+}
+
+/* ==========================================================================
+   7. FLOATING FORM & BUTTON LOADING
+   ========================================================================== */
+.erp-floating-label,
+.erp-floating-group {
+    position: relative;
+    margin-bottom: var(--erp-space-5);
 }
 
 .erp-floating-label input,
 .erp-floating-label select,
-.erp-floating-label textarea {
+.erp-floating-label textarea,
+.erp-floating-input {
     width: 100%;
     padding: 14px 16px 6px;
     font-size: 14px;
@@ -529,7 +899,8 @@
     border-radius: var(--erp-radius-md);
     background: var(--erp-bg-surface);
     color: var(--erp-text-main);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color var(--erp-duration-fast) var(--erp-ease-default),
+                box-shadow var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .erp-floating-label label {
@@ -540,13 +911,14 @@
     font-size: 14px;
     color: var(--erp-text-muted);
     pointer-events: none;
-    transition: all 0.2s ease;
+    transition: all var(--erp-duration-fast) var(--erp-ease-default);
     background: transparent;
 }
 
 .erp-floating-label input:focus,
 .erp-floating-label select:focus,
-.erp-floating-label textarea:focus {
+.erp-floating-label textarea:focus,
+.erp-floating-input:focus {
     border-color: var(--erp-primary);
     box-shadow: var(--erp-focus-ring);
     outline: none;
@@ -557,8 +929,10 @@
 .erp-floating-label select:focus + label,
 .erp-floating-label select:not([value=""]) + label,
 .erp-floating-label textarea:focus + label,
-.erp-floating-label textarea:not(:placeholder-shown) + label {
-    top: 6px;
+.erp-floating-label textarea:not(:placeholder-shown) + label,
+.erp-floating-input:focus + label,
+.erp-floating-input:not(:placeholder-shown) + label {
+    top: 4px;
     transform: translateY(0);
     font-size: 10.5px;
     font-weight: 600;
@@ -567,7 +941,6 @@
     padding: 0 4px;
 }
 
-/* Inline error */
 .erp-field-error {
     font-size: 12px;
     color: var(--erp-danger);
@@ -577,13 +950,10 @@
     gap: 4px;
 }
 
-/* ==========================================================================
-   9. BUTTON LOADING STATE
-   ========================================================================== */
 .btn-loading {
     position: relative;
     pointer-events: none;
-    opacity: 0.75;
+    opacity: 0.78;
 }
 
 .btn-loading::after {
@@ -609,17 +979,17 @@
 }
 
 /* ==========================================================================
-   10. MODAL XÁC NHẬN
+   8. CONFIRM MODAL & DRAWER COMPONENT
    ========================================================================== */
 .erp-confirm-modal .modal-content {
-    border-radius: var(--erp-radius-xl);
-    border: none;
-    box-shadow: var(--erp-modal-shadow);
+    border-radius: var(--erp-radius-xl) !important;
+    border: 1px solid var(--erp-border-color) !important;
+    box-shadow: var(--erp-modal-shadow) !important;
 }
 
 .erp-confirm-modal .modal-body {
     text-align: center;
-    padding: 32px 24px 16px;
+    padding: 28px 24px 16px;
 }
 
 .erp-confirm-icon {
@@ -630,57 +1000,157 @@
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    margin: 0 auto 16px;
+    margin: 0 auto var(--erp-space-4);
 }
 
-.erp-confirm-icon.danger {
-    background: var(--erp-danger-subtle);
-    color: var(--erp-danger);
+.erp-confirm-icon.danger  { background: var(--erp-danger-subtle);  color: var(--erp-danger); }
+.erp-confirm-icon.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
+.erp-confirm-icon.info    { background: var(--erp-info-subtle);    color: var(--erp-info); }
+.erp-confirm-icon.primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
+
+/* Drawer (Slide-over panel) */
+.erp-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--erp-bg-overlay);
+    backdrop-filter: blur(2px);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--erp-duration-normal) var(--erp-ease-default),
+                visibility var(--erp-duration-normal) var(--erp-ease-default);
 }
 
-.erp-confirm-icon.warning {
-    background: var(--erp-warning-subtle);
-    color: var(--erp-warning);
+.erp-drawer-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.erp-drawer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    background: var(--erp-bg-surface);
+    border-left: 1px solid var(--erp-border-color);
+    box-shadow: var(--erp-modal-shadow);
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    max-width: 100vw;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out);
+}
+
+.erp-drawer-end {
+    right: 0;
+    transform: translateX(100%);
+}
+
+.erp-drawer-start {
+    left: 0;
+    border-left: none;
+    border-right: 1px solid var(--erp-border-color);
+    transform: translateX(-100%);
+}
+
+.erp-drawer.show {
+    transform: translateX(0);
+}
+
+.erp-drawer-sm { width: 360px; }
+.erp-drawer-md { width: 480px; }
+.erp-drawer-lg { width: 680px; }
+
+.erp-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--erp-space-3);
+    padding: var(--erp-space-5) var(--erp-space-6);
+    border-bottom: 1px solid var(--erp-border-color);
+}
+
+.erp-drawer-title {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--erp-text-main);
+    margin: 0;
+}
+
+.erp-drawer-subtitle {
+    font-size: 12.5px;
+    color: var(--erp-text-muted);
+    margin: 2px 0 0;
+}
+
+.erp-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--erp-space-6);
+}
+
+.erp-drawer-footer {
+    padding: var(--erp-space-4) var(--erp-space-6);
+    border-top: 1px solid var(--erp-border-color);
+    background: var(--erp-bg-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--erp-space-2);
 }
 
 /* ==========================================================================
-   11. BADGE TRẠNG THÁI
+   9. BADGES & WORKFLOW STATUS BADGES
    ========================================================================== */
 .erp-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--erp-radius-full);
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.15px;
+    line-height: 1.3;
+    white-space: nowrap;
 }
 
 .erp-badge-success { background: var(--erp-success-subtle); color: var(--erp-success); }
-.erp-badge-danger { background: var(--erp-danger-subtle); color: var(--erp-danger); }
+.erp-badge-danger  { background: var(--erp-danger-subtle);  color: var(--erp-danger); }
 .erp-badge-warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
-.erp-badge-info { background: rgba(6,182,212,0.1); color: var(--erp-info); }
+.erp-badge-info    { background: var(--erp-info-subtle);    color: var(--erp-info); }
 .erp-badge-primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
-.erp-badge-neutral { background: var(--erp-bg-subtle); color: var(--erp-text-muted); }
+.erp-badge-purple  { background: var(--erp-purple-subtle);  color: var(--erp-purple); }
+.erp-badge-neutral { background: var(--erp-neutral-subtle); color: var(--erp-neutral); }
 
-/* Dot badge */
 .erp-badge-dot::before {
     content: '';
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: currentColor;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
-   12. TAB
+   10. TABS WITH SLIDING INDICATOR
    ========================================================================== */
+.erp-tabs-container {
+    width: 100%;
+}
+
 .erp-tabs {
+    position: relative;
     display: flex;
+    align-items: center;
     gap: 4px;
-    border-bottom: 2px solid var(--erp-border-color);
-    margin-bottom: 20px;
+    border-bottom: 1px solid var(--erp-border-color);
+    margin-bottom: var(--erp-space-5);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.erp-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .erp-tab {
@@ -692,20 +1162,27 @@
     background: transparent;
     cursor: pointer;
     position: relative;
-    transition: color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: color var(--erp-duration-fast) var(--erp-ease-default);
 }
 
-.erp-tab:hover { color: var(--erp-text-main); }
+.erp-tab:hover {
+    color: var(--erp-text-main);
+}
 
 .erp-tab.active {
     color: var(--erp-primary);
     font-weight: 600;
 }
 
-.erp-tab.active::after {
+/* Fallback static underline if JS indicator isn't mounted */
+.erp-tabs:not(.has-indicator) .erp-tab.active::after {
     content: '';
     position: absolute;
-    bottom: -2px;
+    bottom: -1px;
     left: 0;
     right: 0;
     height: 2px;
@@ -713,54 +1190,533 @@
     border-radius: 2px 2px 0 0;
 }
 
+.erp-tab-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2.5px;
+    width: var(--tab-w, 0px);
+    transform: translateX(var(--tab-x, 0px));
+    background: var(--erp-primary);
+    border-radius: 2px 2px 0 0;
+    pointer-events: none;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out),
+                width var(--erp-duration-normal) var(--erp-ease-out);
+}
+
+.erp-tab-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: var(--erp-radius-full);
+    background: var(--erp-bg-subtle);
+    color: var(--erp-text-secondary);
+}
+
+.erp-tab.active .erp-tab-badge {
+    background: var(--erp-primary-subtle);
+    color: var(--erp-primary);
+}
+
+.erp-tab-panel {
+    display: none;
+}
+
+.erp-tab-panel.active {
+    display: block;
+}
+
 /* ==========================================================================
-   13. SKELETON LOADING (bổ sung từ enterprise-theme.css)
+   11. AVATAR COMPONENT
    ========================================================================== */
-.skeleton-card {
+.erp-avatar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    color: var(--erp-on-accent);
+    background: var(--erp-primary);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.erp-avatar-xs { width: 24px; height: 24px; font-size: 10px; }
+.erp-avatar-sm { width: 32px; height: 32px; font-size: 12px; }
+.erp-avatar-md { width: 40px; height: 40px; font-size: 14px; }
+.erp-avatar-lg { width: 52px; height: 52px; font-size: 18px; }
+.erp-avatar-xl { width: 72px; height: 72px; font-size: 24px; }
+
+.erp-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.erp-avatar-tone-0 { background: var(--erp-module-system); }
+.erp-avatar-tone-1 { background: var(--erp-module-hrm); }
+.erp-avatar-tone-2 { background: var(--erp-module-payroll); }
+.erp-avatar-tone-3 { background: var(--erp-module-sales); }
+.erp-avatar-tone-4 { background: var(--erp-module-warehouse); }
+.erp-avatar-tone-5 { background: var(--erp-module-cms); }
+
+.erp-avatar-status {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 26%;
+    height: 26%;
+    min-width: 8px;
+    min-height: 8px;
+    border-radius: 50%;
+    border: 2px solid var(--erp-bg-card);
+}
+
+.erp-avatar-status.online  { background: var(--erp-success); }
+.erp-avatar-status.busy    { background: var(--erp-danger); }
+.erp-avatar-status.away    { background: var(--erp-warning); }
+.erp-avatar-status.offline { background: var(--erp-neutral); }
+
+/* ==========================================================================
+   12. TIMELINE COMPONENT
+   ========================================================================== */
+.erp-timeline {
+    position: relative;
+    padding-left: 28px;
+    margin: 0;
+    list-style: none;
+}
+
+.erp-timeline::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 10px;
+    width: 2px;
+    background: var(--erp-border-color);
+}
+
+.erp-timeline-item {
+    position: relative;
+    padding-bottom: var(--erp-space-5);
+}
+
+.erp-timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.erp-timeline-marker {
+    position: absolute;
+    left: -28px;
+    top: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--erp-primary-subtle);
+    color: var(--erp-primary);
+    border: 2px solid var(--erp-bg-card);
+    box-shadow: 0 0 0 1px var(--erp-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    z-index: 1;
+}
+
+.erp-timeline-marker.success { background: var(--erp-success-subtle); color: var(--erp-success); }
+.erp-timeline-marker.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
+.erp-timeline-marker.danger  { background: var(--erp-danger-subtle);  color: var(--erp-danger); }
+.erp-timeline-marker.info    { background: var(--erp-info-subtle);    color: var(--erp-info); }
+.erp-timeline-marker.neutral { background: var(--erp-neutral-subtle); color: var(--erp-neutral); }
+
+.erp-timeline-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--erp-space-2);
+    flex-wrap: wrap;
+}
+
+.erp-timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--erp-text-main);
+}
+
+.erp-timeline-time {
+    font-size: 12px;
+    font-family: var(--erp-font-mono);
+    color: var(--erp-text-muted);
+}
+
+.erp-timeline-actor {
+    font-size: 12px;
+    color: var(--erp-text-muted);
+    margin-top: 2px;
+}
+
+.erp-timeline-body {
+    font-size: 13px;
+    color: var(--erp-text-secondary);
+    margin-top: 6px;
+}
+
+/* ==========================================================================
+   13. TOAST STACK & PROGRESS BAR
+   ========================================================================== */
+.erp-toast-container {
+    position: fixed;
+    top: calc(var(--erp-topbar-height) + 12px);
+    right: var(--erp-space-6);
+    z-index: 1085;
+    display: flex;
+    flex-direction: column;
+    gap: var(--erp-space-2);
+    width: min(380px, calc(100vw - 32px));
+    pointer-events: none;
+}
+
+.erp-toast-container > * {
+    pointer-events: auto;
+}
+
+.erp-toast-container .erp-toast-alert {
+    pointer-events: auto;
+    margin-bottom: 0;
+    box-shadow: var(--erp-elevated-shadow);
+}
+
+.erp-toast-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 15px;
+    border-radius: var(--erp-radius-md);
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-bottom: var(--erp-space-4);
+    position: relative;
+    overflow: hidden;
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+}
+
+.erp-toast-alert .btn-close-sm {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+}
+
+.erp-toast-success {
+    background: var(--erp-success-subtle);
+    color: var(--erp-success);
+    border-color: rgba(var(--erp-success-rgb), 0.35);
+}
+
+.erp-toast-danger {
+    background: var(--erp-danger-subtle);
+    color: var(--erp-danger);
+    border-color: rgba(var(--erp-danger-rgb), 0.35);
+}
+
+.erp-toast-warning {
+    background: var(--erp-warning-subtle);
+    color: var(--erp-warning);
+    border-color: rgba(var(--erp-warning-rgb), 0.35);
+}
+
+.erp-toast-info {
+    background: var(--erp-info-subtle);
+    color: var(--erp-info);
+    border-color: rgba(var(--erp-info-rgb), 0.35);
+}
+
+.erp-toast-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: currentColor;
+    opacity: 0.55;
+    transform-origin: left center;
+}
+
+/* ==========================================================================
+   14. ERROR PAGES (403 / 404 / 500 / AccessDenied)
+   ========================================================================== */
+.erp-error-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--erp-space-6);
+    background: radial-gradient(circle at 50% 0%, var(--erp-primary-subtle), transparent 55%),
+                var(--erp-bg-body);
+}
+
+.erp-error-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-2xl);
+    box-shadow: var(--erp-elevated-shadow);
+    padding: var(--erp-space-10) var(--erp-space-8);
+    text-align: center;
+}
+
+.erp-error-icon-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--erp-radius-xl);
+    margin: 0 auto var(--erp-space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+
+.erp-error-icon-wrap.danger  { background: var(--erp-danger-subtle);  color: var(--erp-danger); }
+.erp-error-icon-wrap.warning { background: var(--erp-warning-subtle); color: var(--erp-warning); }
+.erp-error-icon-wrap.primary { background: var(--erp-primary-subtle); color: var(--erp-primary); }
+
+.erp-error-code {
+    font-family: var(--erp-font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: var(--erp-radius-full);
+    background: var(--erp-bg-subtle);
+    color: var(--erp-text-muted);
+    display: inline-block;
+    margin-bottom: var(--erp-space-3);
+}
+
+.erp-error-meta {
+    background: var(--erp-bg-subtle);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-md);
+    padding: var(--erp-space-3) var(--erp-space-4);
+    font-size: 12.5px;
+    color: var(--erp-text-muted);
+    text-align: left;
+    margin-bottom: var(--erp-space-5);
+}
+
+/* ==========================================================================
+   15. MODULE SPECIFIC SEMANTIC HELPERS (Heatmap, RBAC/ACL Matrix, Styleguide)
+   ========================================================================== */
+.heatmap-cell {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto;
+    border-radius: var(--erp-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform var(--erp-duration-fast) var(--erp-ease-default),
+                box-shadow var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.heatmap-cell:hover {
+    transform: scale(1.22);
+    box-shadow: var(--erp-shadow-md);
+    z-index: 5;
+    position: relative;
+}
+
+.heatmap-legend-box {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--erp-radius-xs);
+    display: inline-block;
+}
+
+.heatmap-present { background-color: var(--erp-success) !important; color: var(--erp-on-accent); }
+.heatmap-late    { background-color: var(--erp-warning) !important; color: var(--erp-on-accent); }
+.heatmap-absent  { background-color: var(--erp-danger) !important;  color: var(--erp-on-accent); }
+.heatmap-leave   { background-color: var(--erp-info) !important;    color: var(--erp-on-accent); }
+.heatmap-trip    { background-color: var(--erp-purple) !important;  color: var(--erp-on-accent); }
+.heatmap-off     { background-color: var(--erp-bg-subtle) !important; color: var(--erp-text-muted); }
+.heatmap-future  { background-color: transparent !important; border: 1px dashed var(--erp-border-strong); color: var(--erp-text-muted); }
+
+/* RBAC & ACL Matrix */
+.erp-role-pill {
+    border: 1px solid var(--erp-border-color);
+    color: var(--erp-text-secondary);
+    background: var(--erp-bg-card);
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: var(--erp-radius-md);
+    text-decoration: none;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.erp-role-pill:hover {
+    border-color: var(--erp-primary);
+    color: var(--erp-primary);
+}
+
+.erp-role-pill.active {
+    background: var(--erp-primary);
+    color: var(--erp-on-accent);
+    border-color: var(--erp-primary);
+    font-weight: 600;
+}
+
+.erp-module-group-row td {
+    background-color: var(--erp-bg-subtle) !important;
+    font-weight: 700;
+    color: var(--erp-text-main);
+}
+
+.erp-checkbox-accent {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--erp-primary);
+}
+
+.erp-acl-select {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+.erp-acl-select.state-default {
+    background-color: var(--erp-bg-subtle) !important;
+    color: var(--erp-text-secondary) !important;
+}
+
+.erp-acl-select.state-grant {
+    background-color: var(--erp-success-subtle) !important;
+    color: var(--erp-success) !important;
+    border-color: var(--erp-success) !important;
+}
+
+.erp-acl-select.state-deny {
+    background-color: var(--erp-danger-subtle) !important;
+    color: var(--erp-danger) !important;
+    border-color: var(--erp-danger) !important;
+}
+
+/* Welcome Banner (Executive Dashboard) */
+.erp-welcome-banner {
+    background: linear-gradient(135deg, var(--erp-bg-sidebar) 0%, var(--erp-primary) 140%);
+    border: 1px solid var(--erp-border-sidebar);
+    border-radius: var(--erp-radius-xl);
+    padding: var(--erp-space-6) var(--erp-space-8);
+    box-shadow: var(--erp-shadow-md);
+    color: var(--erp-on-accent);
+}
+
+/* Styleguide Token Showcase Helpers */
+.erp-sg-section {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-xl);
+    padding: var(--erp-space-6);
+    margin-bottom: var(--erp-space-6);
+    box-shadow: var(--erp-card-shadow);
+}
+
+.erp-sg-sticky-bar {
+    position: sticky;
+    top: calc(var(--erp-topbar-height) + var(--erp-space-2));
+    z-index: 20;
     background: var(--erp-bg-card);
     border: 1px solid var(--erp-border-color);
     border-radius: var(--erp-radius-lg);
-    padding: 20px 24px;
+    padding: var(--erp-space-3) var(--erp-space-4);
+    box-shadow: var(--erp-elevated-shadow);
+    margin-bottom: var(--erp-space-6);
 }
 
-.skeleton-line {
+.erp-sg-swatch {
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-md);
+    overflow: hidden;
+    background: var(--erp-bg-surface);
+}
+
+.erp-sg-swatch-color {
+    height: 56px;
+    width: 100%;
+    border-bottom: 1px solid var(--erp-border-color);
+}
+
+.erp-sg-swatch-meta {
+    padding: var(--erp-space-2) var(--erp-space-3);
+    font-size: 12px;
+}
+
+.erp-sg-module-btn {
+    border: 1px solid var(--erp-border-color);
+    background: var(--erp-bg-surface);
+    color: var(--erp-text-secondary);
+    border-radius: var(--erp-radius-full);
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.erp-sg-module-btn:hover {
+    border-color: var(--erp-primary);
+    color: var(--erp-primary);
+}
+
+.erp-sg-module-btn.active {
+    background: var(--erp-primary);
+    border-color: var(--erp-primary);
+    color: var(--erp-on-accent);
+}
+
+.erp-sg-demo-box {
+    background: var(--erp-primary-subtle);
+    border: 1px solid rgba(var(--erp-primary-rgb), 0.35);
+    color: var(--erp-primary);
+    padding: var(--erp-space-4);
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.erp-sg-shadow-box {
+    background: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-md);
+    padding: var(--erp-space-5) var(--erp-space-4);
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--erp-text-main);
+}
+
+.erp-sg-space-bar {
     height: 14px;
-    border-radius: 4px;
-    background: var(--erp-border-color);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
-
-.skeleton-line::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent 0, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.5) 60%, transparent);
-    animation: skeleton-shimmer 2s infinite;
-}
-
-.skeleton-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--erp-border-color);
-    position: relative;
-    overflow: hidden;
-}
-
-.skeleton-circle::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: skeleton-shimmer 2s infinite;
+    background: var(--erp-primary);
+    border-radius: var(--erp-radius-xs);
+    display: inline-block;
 }
 
 /* ==========================================================================
-   14. ACCESSIBILITY - Focus ring
+   16. ACCESSIBILITY & RESPONSIVE
    ========================================================================== */
 :focus-visible {
     outline: 2px solid var(--erp-primary);
@@ -773,14 +1729,11 @@
     box-shadow: var(--erp-focus-ring);
 }
 
-/* ==========================================================================
-   15. RESPONSIVE
-   ========================================================================== */
 @media (max-width: 991.98px) {
     .erp-sidebar {
         transform: translateX(-100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        width: 260px !important;
+        transition: transform var(--erp-duration-normal) var(--erp-ease-default);
+        width: var(--erp-sidebar-width) !important;
     }
 
     .erp-sidebar.show {
@@ -804,29 +1757,47 @@
     }
 
     .erp-content-wrapper {
-        padding: 16px;
+        padding: var(--erp-space-4);
     }
 
     .erp-topbar {
-        padding: 0 16px;
+        padding: 0 var(--erp-space-4);
     }
 
-    /* Sidebar thu gọn không áp dụng trên mobile */
+    /* Trên mobile luôn mở rộng nhãn sidebar đầy đủ */
     .sidebar-collapsed .erp-sidebar {
-        width: 260px !important;
+        width: var(--erp-sidebar-width) !important;
     }
     .sidebar-collapsed .sidebar-brand-full { display: flex; }
     .sidebar-collapsed .sidebar-brand-mini { display: none; }
-    .sidebar-collapsed .nav-section-title { font-size: 10.5px; height: auto; text-align: left; padding: 16px 18px 6px; }
-    .sidebar-collapsed .nav-section-title::after { display: none; }
-    .sidebar-collapsed .erp-nav-item { justify-content: flex-start; gap: 12px; padding: 9px 18px; margin: 2px 10px; }
+    .sidebar-collapsed .erp-nav-group-toggle {
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin: 4px 10px 2px;
+        font-size: 11px;
+        height: auto;
+        pointer-events: auto;
+    }
+    .sidebar-collapsed .erp-nav-group-label,
+    .sidebar-collapsed .erp-nav-chevron { display: inline-flex; }
+    .sidebar-collapsed .erp-nav-group-toggle::after { display: none; }
+    .sidebar-collapsed .erp-nav-item {
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 8.5px 16px;
+        margin: 2px 10px;
+    }
     .sidebar-collapsed .erp-nav-item .nav-label { display: inline; }
+    .sidebar-collapsed .erp-nav-item::after { display: none; }
 }
 
 @media (max-width: 575.98px) {
-    .stat-card { padding: 16px; }
+    .stat-card { padding: var(--erp-space-4); }
     .stat-card-value { font-size: 22px; }
     .stat-card-icon { width: 40px; height: 40px; font-size: 18px; }
     .command-palette-trigger span,
     .command-palette-trigger kbd { display: none !important; }
+    .erp-page-header-title { font-size: 18px; }
+    .erp-filter-search { max-width: 100%; }
+    .erp-error-card { padding: var(--erp-space-6) var(--erp-space-5); }
 }

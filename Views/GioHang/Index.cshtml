@@ -1,6 +1,6 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
+@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
 @{
-    Layout = "_SalesLayout";
+    ViewData["Module"] = "sales";
     ViewData["Title"] = "Giỏ Hàng & Tồn Kho Thực Tế";
     int branchId = ViewBag.CurrentBranchId ?? 1;
 }

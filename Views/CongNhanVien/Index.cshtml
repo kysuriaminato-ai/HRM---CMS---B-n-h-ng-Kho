@@ -1,0 +1,1532 @@
+@model ERP_HRM_CMS.Models.ViewModels.SelfServiceDashboardViewModel
+@{
+    ViewData["Title"] = "Cổng Tự Phục Vụ Nhân Viên (ESS Portal)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var p = Model.Profile;
+    var t = Model.TodayCheckIn;
+    var b = Model.LeaveBalance;
+    var a = Model.AttendanceSummary;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/hrm-workspace.css" />
+    <style>
+        .ess-header-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
+            color: #ffffff;
+            border-radius: var(--erp-radius-lg, 16px);
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(49, 46, 129, 0.4);
+        }
+        .ess-header-card::before {
+            content: "";
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .live-clock-face {
+            font-family: 'JetBrains Mono', Consolas, monospace;
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--erp-primary, #4338ca);
+            line-height: 1;
+        }
+        .bento-card {
+            background: var(--erp-card-bg, #ffffff);
+            border: 1px solid var(--erp-border-color, #e2e8f0);
+            border-radius: var(--erp-radius-lg, 16px);
+            padding: 20px;
+            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(0,0,0,0.08);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .day-cell {
+            min-height: 75px;
+            border-radius: 8px;
+            border: 1px solid var(--erp-border-color, #e2e8f0);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: var(--erp-bg-light, #f8fafc);
+            transition: background 0.15s ease;
+        }
+        .day-cell.today {
+            border: 2px solid var(--erp-primary, #4338ca);
+            background: rgba(67, 56, 202, 0.04);
+        }
+        .day-cell.weekend {
+            background: rgba(241, 245, 249, 0.5);
+            opacity: 0.8;
+        }
+        .status-badge-sm {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .btn-checkin-pulse {
+            position: relative;
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @@keyframes pulse-ring {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.5); }
+            50% { box-shadow: 0 0 0 12px rgba(79, 70, 229, 0); }
+        }
+    </style>
+}
+
+<div class="container-fluid py-3 px-3 px-md-4">
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- 1. PROFILE BANNER & TABS -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="ess-header-card">
+        <div class="row align-items-center g-3">
+            <div class="col-12 col-md-auto text-center text-md-start">
+                <div class="position-relative d-inline-block">
+                    <img src="@(string.IsNullOrEmpty(p.AvatarUrl) ? "/images/default-avatar.png" : p.AvatarUrl)"
+                         alt="@p.FullName"
+                         class="rounded-circle border border-3 border-white shadow"
+                         style="width: 84px; height: 84px; object-fit: cover;"
+                         onerror="this.src='/images/default-avatar.png'" />
+                    <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-1 border border-2 border-white" title="Trạng thái: Đang làm việc">
+                        <span class="visually-hidden">Active</span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-12 col-md text-center text-md-start">
+                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-2 mb-1">
+                    <h3 class="fw-bold mb-0 text-white">@p.FullName</h3>
+                    <span class="badge bg-white text-dark fw-bold px-2 py-1 rounded-pill" style="font-family: 'JetBrains Mono', monospace;">@p.EmployeeCode</span>
+                    <span class="badge bg-indigo-subtle text-indigo px-2 py-1">@p.PositionName</span>
+                </div>
+                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-start gap-3 small text-white-50">
+                    <span><i class="bi bi-building me-1"></i>@p.DepartmentName</span>
+                    <span><i class="bi bi-geo-alt me-1"></i>@p.BranchName</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>Vào làm: @(p.HireDate?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                    <span><i class="bi bi-award me-1"></i>Thâm niên: <strong>@p.SeniorityYears năm</strong></span>
+                </div>
+            </div>
+            <div class="col-12 col-md-auto text-center text-md-end">
+                <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-2">
+                    <button class="erp-btn erp-btn-secondary bg-white text-dark shadow-sm" data-erp-drawer-target="#createLeaveDrawer">
+                        <i class="bi bi-plus-circle me-1 text-primary"></i>Tạo Đơn Mới
+                    </button>
+                    <a href="javascript:void(0)" class="erp-btn erp-btn-secondary bg-white text-dark shadow-sm" onclick="switchEssTab('payslips')">
+                        <i class="bi bi-wallet2 me-1 text-success"></i>Phiếu Lương
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION -->
+        <div class="d-flex flex-nowrap overflow-x-auto gap-2 pt-3 mt-3 border-top border-white-50">
+            <button class="btn btn-sm text-white fw-semibold px-3 py-2 rounded-pill ess-tab-btn @(Model.ActiveTab == "overview" ? "bg-white text-dark shadow" : "btn-outline-light border-0")"
+                    onclick="switchEssTab('overview')">
+                <i class="bi bi-grid-1x2 me-1"></i>Tổng Quan
+            </button>
+            <button class="btn btn-sm text-white fw-semibold px-3 py-2 rounded-pill ess-tab-btn @(Model.ActiveTab == "calendar" ? "bg-white text-dark shadow" : "btn-outline-light border-0")"
+                    onclick="switchEssTab('calendar')">
+                <i class="bi bi-calendar-check me-1"></i>Lịch Chấm Công
+            </button>
+            <button class="btn btn-sm text-white fw-semibold px-3 py-2 rounded-pill ess-tab-btn @(Model.ActiveTab == "requests" ? "bg-white text-dark shadow" : "btn-outline-light border-0")"
+                    onclick="switchEssTab('requests')">
+                <i class="bi bi-file-earmark-text me-1"></i>Đơn Từ Cá Nhân
+            </button>
+            <button class="btn btn-sm text-white fw-semibold px-3 py-2 rounded-pill ess-tab-btn @(Model.ActiveTab == "payslips" ? "bg-white text-dark shadow" : "btn-outline-light border-0")"
+                    onclick="switchEssTab('payslips')">
+                <i class="bi bi-cash-stack me-1"></i>Phiếu Lương Bảo Mật
+            </button>
+            <button class="btn btn-sm text-white fw-semibold px-3 py-2 rounded-pill ess-tab-btn @(Model.ActiveTab == "profile" ? "bg-white text-dark shadow" : "btn-outline-light border-0")"
+                    onclick="switchEssTab('profile')">
+                <i class="bi bi-person-lines-fill me-1"></i>Hồ Sơ &amp; Tài Sản
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 1: TỔNG QUAN (OVERVIEW BENTO WORKSPACE) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-overview" class="ess-tab-pane @(Model.ActiveTab == "overview" ? "" : "d-none")">
+        <div class="row g-3">
+            <!-- WIDGET CHẤM CÔNG TRỰC TUYẾN -->
+            <div class="col-12 col-lg-5">
+                <div class="bento-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-slate-800">
+                            <i class="bi bi-clock-history text-primary me-2"></i>Chấm Công Trực Tuyến
+                        </h5>
+                        <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-1">@t.ShiftName</span>
+                    </div>
+
+                    <div class="text-center py-2">
+                        <div class="text-muted small mb-1">Thời gian thực (Giờ Việt Nam - GMT+7)</div>
+                        <div class="live-clock-face mb-2" id="liveClockFace">--:--:--</div>
+                        <div class="text-secondary small">
+                            Ca làm: <strong>@t.ShiftStartTime.ToString(@"hh\:mm") - @t.ShiftEndTime.ToString(@"hh\:mm")</strong>
+                            (Ân hạn: @t.GracePeriodMinutes phút)
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 my-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Giờ vào (Check-in):</span>
+                            <strong class="num @(t.HasCheckedIn ? "text-success" : "text-muted")">
+                                @(t.HasCheckedIn ? t.CheckInTime?.ToString(@"hh\:mm") : "Chưa thực hiện")
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Giờ ra (Check-out):</span>
+                            <strong class="num @(t.HasCheckedOut ? "text-primary" : "text-muted")">
+                                @(t.HasCheckedOut ? t.CheckOutTime?.ToString(@"hh\:mm") : "Chưa thực hiện")
+                            </strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Trạng thái:</span>
+                            <span class="badge @t.BadgeClass">@t.StatusText</span>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        @if (!t.HasCheckedIn)
+                        {
+                            <button type="button" class="erp-btn erp-btn-primary py-2 fw-bold btn-checkin-pulse" id="btnCheckIn" onclick="handleCheckIn()">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Check-in Ngay
+                            </button>
+                        }
+                        else if (!t.HasCheckedOut)
+                        {
+                            <button type="button" class="erp-btn erp-btn-warning py-2 fw-bold" id="btnCheckOut" onclick="handleCheckOut()">
+                                <i class="bi bi-box-arrow-right me-2"></i>Check-out Kết Thúc Ca
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="erp-btn erp-btn-secondary py-2" disabled>
+                                <i class="bi bi-check2-all text-success me-2"></i>Đã Hoàn Thành Chấm Công Hôm Nay
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUỸ PHÉP NĂM (CIRCULAR PROGRESS RING) -->
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="bento-card text-center d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0">Quỹ Phép Năm @b.Year</h6>
+                            <span class="badge bg-info-subtle text-info">BLLĐ</span>
+                        </div>
+                        <p class="text-muted small mb-2">Số ngày phép năm đã hưởng và số dư</p>
+                    </div>
+
+                    <!-- SVG CIRCLE PROGRESS -->
+                    <div class="position-relative my-2 d-inline-block mx-auto">
+                        @{
+                            decimal rad = 50;
+                            decimal circ = 2 * (decimal)Math.PI * rad;
+                            decimal pct = b.UsedPercent;
+                            decimal offset = circ - (circ * pct / 100);
+                        }
+                        <svg width="130" height="130" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="50" stroke="#e2e8f0" stroke-width="10" fill="transparent" />
+                            <circle class="progress-ring-circle" cx="60" cy="60" r="50"
+                                    stroke="#4338ca" stroke-width="10" stroke-linecap="round" fill="transparent"
+                                    stroke-dasharray="@circ.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)"
+                                    stroke-dashoffset="@offset.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)" />
+                        </svg>
+                        <div class="position-absolute top-50 start-50 translate-middle text-center">
+                            <div class="h4 fw-bold mb-0 text-primary num">@b.RemainingDays.ToString("N1")</div>
+                            <div class="small text-muted" style="font-size: 11px;">Còn lại</div>
+                        </div>
+                    </div>
+
+                    <div class="p-2 bg-light rounded text-start small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Tổng quỹ phép:</span>
+                            <strong>@b.TotalDays.ToString("N1") ngày</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Phép tiêu chuẩn:</span>
+                            <span>@b.StandardDays.ToString("N1")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Thâm niên (+1/5n):</span>
+                            <span class="text-success">+@b.SeniorityBonusDays.ToString("N1")</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Đã sử dụng:</span>
+                            <span class="text-danger">@b.UsedDays.ToString("N1") ngày</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THỐNG KÊ CÔNG THÁNG -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="bento-card d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold mb-0">Công Tháng @a.Month/@a.Year</h6>
+                            <a href="javascript:void(0)" onclick="switchEssTab('calendar')" class="small text-primary">Xem chi tiết &rarr;</a>
+                        </div>
+                        <p class="text-muted small mb-3">Tích lũy ngày công và đi muộn tháng này</p>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <div class="text-muted small" style="font-size: 11px;">Ngày công thực tế</div>
+                                <div class="h4 fw-bold text-success mb-0 num">@a.ActualWorkDays.ToString("N1")</div>
+                                <div class="small text-muted">/ @a.StandardDays chuẩn</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <div class="text-muted small" style="font-size: 11px;">Tăng ca (OT)</div>
+                                <div class="h4 fw-bold text-primary mb-0 num">@a.OvertimeHours.ToString("N1")</div>
+                                <div class="small text-muted">giờ làm thêm</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <div class="text-muted small" style="font-size: 11px;">Số lần đi muộn</div>
+                                <div class="h4 fw-bold text-warning mb-0 num">@a.LateCount</div>
+                                <div class="small text-muted">lần trễ</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <div class="text-muted small" style="font-size: 11px;">Tổng phút trễ</div>
+                                <div class="h4 fw-bold text-danger mb-0 num">@a.TotalLateMinutes</div>
+                                <div class="small text-muted">phút</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="erp-btn erp-btn-secondary btn-sm w-100" data-erp-drawer-target="#adjustmentDrawer">
+                        <i class="bi bi-patch-question me-1"></i>Gửi Giải Trình Quên Chấm Công
+                    </button>
+                </div>
+            </div>
+
+            <!-- DANH SÁCH ĐƠN TỪ GẦN ĐÂY -->
+            <div class="col-12 col-lg-8">
+                <div class="bento-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Đơn Từ Gần Đây</h6>
+                        <a href="javascript:void(0)" onclick="switchEssTab('requests')" class="small text-primary">Xem tất cả &rarr;</a>
+                    </div>
+
+                    @if (!Model.LeaveRequests.Any())
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-inbox fs-2 d-block mb-1 text-muted"></i>
+                            Bạn chưa có đơn từ nào gần đây.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle small mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mã đơn</th>
+                                        <th>Loại đơn</th>
+                                        <th>Thời gian</th>
+                                        <th>Số ngày</th>
+                                        <th>Trạng thái</th>
+                                        <th class="text-end">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in Model.LeaveRequests.Take(5))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold num">@r.RequestCode</td>
+                                            <td>@r.RequestTypeName</td>
+                                            <td>@r.FromDate.ToString("dd/MM") - @r.ToDate.ToString("dd/MM/yyyy")</td>
+                                            <td class="num">@r.TotalDays.ToString("N1")</td>
+                                            <td><span class="badge @r.StatusBadgeClass">@r.StatusName</span></td>
+                                            <td class="text-end">
+                                                @if (r.CanCancel)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2"
+                                                            onclick="cancelRequest(@r.Id, '@r.RequestCode')">
+                                                        <i class="bi bi-x-circle me-1"></i>Hủy đơn
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted small">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- PHIẾU LƯƠNG GẦN ĐÂY -->
+            <div class="col-12 col-lg-4">
+                <div class="bento-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Phiếu Lương Gần Nhất</h6>
+                        <a href="javascript:void(0)" onclick="switchEssTab('payslips')" class="small text-primary">Mở sổ lương &rarr;</a>
+                    </div>
+
+                    @if (!Model.SalarySlips.Any())
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-wallet2 fs-2 d-block mb-1 text-muted"></i>
+                            Chưa có phiếu lương được phát hành.
+                        </div>
+                    }
+                    else
+                    {
+                        var latestSlip = Model.SalarySlips.First();
+                        <div class="p-3 border rounded-3 bg-light mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">@latestSlip.PeriodName</span>
+                                <span class="badge bg-success-subtle text-success">@latestSlip.StatusName</span>
+                            </div>
+                            <div class="small text-muted mb-1">Công thực tế: <strong>@latestSlip.ActualWorkDays.ToString("N1")</strong> / @latestSlip.StandardDays ngày</div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <span class="text-muted small">Thực lĩnh:</span>
+                                @if (Model.IsPayslipUnlocked)
+                                {
+                                    <h5 class="fw-bold text-primary mb-0 num">@latestSlip.NetSalary.ToString("N0") VNĐ</h5>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-lock-fill me-1"></i>Được mã hóa</span>
+                                }
+                            </div>
+                        </div>
+
+                        @if (Model.IsPayslipUnlocked)
+                        {
+                            <div class="d-flex gap-2">
+                                <button class="erp-btn erp-btn-secondary btn-sm flex-grow-1" onclick="viewPayslipDetail(@latestSlip.Id)">
+                                    <i class="bi bi-eye me-1"></i>Xem phân rã
+                                </button>
+                                <a href="/CongNhanVien/InPhieuLuong/@latestSlip.Id" target="_blank" class="erp-btn erp-btn-primary btn-sm">
+                                    <i class="bi bi-printer me-1"></i>In A4
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="erp-btn erp-btn-primary btn-sm w-100" onclick="promptUnlockPayslip()">
+                                <i class="bi bi-shield-lock me-1"></i>Xác Thực Mật Khẩu Để Xem
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 2: LỊCH CHẤM CÔNG CÁ NHÂN & THỐNG KÊ THÁNG -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-calendar" class="ess-tab-pane @(Model.ActiveTab == "calendar" ? "" : "d-none")">
+        <div class="erp-card mb-3 p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="fw-bold mb-0">Lịch Chấm Công Tháng @a.Month/@a.Year</h5>
+                    <div class="btn-group btn-group-sm">
+                        <a href="/CongNhanVien?tab=calendar&year=@(a.Month == 1 ? a.Year - 1 : a.Year)&month=@(a.Month == 1 ? 12 : a.Month - 1)" class="btn btn-outline-secondary">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <a href="/CongNhanVien?tab=calendar&year=@VietnamTime.Today.Year&month=@VietnamTime.Today.Month" class="btn btn-outline-secondary">
+                            Hiện tại
+                        </a>
+                        <a href="/CongNhanVien?tab=calendar&year=@(a.Month == 12 ? a.Year + 1 : a.Year)&month=@(a.Month == 12 ? 1 : a.Month + 1)" class="btn btn-outline-secondary">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- CHÚ THÍCH KÝ HIỆU -->
+                <div class="d-flex flex-wrap gap-2 small">
+                    <span class="badge bg-success-subtle text-success">X: Đủ công</span>
+                    <span class="badge bg-info-subtle text-info">P: Nghỉ phép</span>
+                    <span class="badge bg-warning-subtle text-warning">M: Đi muộn / Về sớm</span>
+                    <span class="badge bg-primary-subtle text-primary">OT: Tăng ca</span>
+                    <span class="badge bg-danger-subtle text-danger">KL: Vắng mặt</span>
+                    <span class="badge bg-secondary-subtle text-secondary">-: Cuối tuần</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- LƯỚI LỊCH CHẤM CÔNG -->
+        <div class="erp-card p-3">
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-7 g-2">
+                @foreach (var d in a.Days)
+                {
+                    bool isToday = d.Date.Date == VietnamTime.Today;
+                    <div class="col">
+                        <div class="day-cell @(isToday ? "today" : "") @(d.IsWeekend ? "weekend" : "")">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold @(isToday ? "text-primary" : "")">@d.Day <small class="text-muted fw-normal">(@d.DayOfWeekName)</small></span>
+                                <span class="status-badge-sm @d.BadgeClass">@d.StatusCode</span>
+                            </div>
+
+                            <div class="text-center my-1" style="font-size: 11px;">
+                                @if (d.FirstInTime.HasValue)
+                                {
+                                    <div class="text-success num"><i class="bi bi-box-arrow-in-right me-1"></i>@d.FirstInTime.Value.ToString(@"hh\:mm")</div>
+                                }
+                                @if (d.LastOutTime.HasValue)
+                                {
+                                    <div class="text-primary num"><i class="bi bi-box-arrow-right me-1"></i>@d.LastOutTime.Value.ToString(@"hh\:mm")</div>
+                                }
+                                @if (!d.FirstInTime.HasValue && !d.LastOutTime.HasValue)
+                                {
+                                    <div class="text-muted">@d.StatusText</div>
+                                }
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-auto" style="font-size: 10px;">
+                                <span class="text-muted num">@(d.WorkHours > 0 ? $"{d.WorkHours:N1}h" : "")</span>
+                                @if (d.CanAdjust)
+                                {
+                                    <button type="button" class="btn btn-link p-0 text-danger text-decoration-none fw-semibold"
+                                            style="font-size: 10px;"
+                                            onclick="openAdjustmentForDate('@d.Date.ToString("yyyy-MM-dd")')">
+                                        <i class="bi bi-pencil-square"></i> Giải trình
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 3: TRUNG TÂM ĐƠN TỪ CÁ NHÂN -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-requests" class="ess-tab-pane @(Model.ActiveTab == "requests" ? "" : "d-none")">
+        <div class="erp-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0">Quản Lý Đơn Từ Của Bạn</h5>
+                    <p class="text-muted small mb-0">Nghỉ phép năm, làm thêm giờ, đi công tác và giải trình chấm công</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="erp-btn erp-btn-secondary" data-erp-drawer-target="#adjustmentDrawer">
+                        <i class="bi bi-patch-question me-1"></i>Đơn Giải Trình
+                    </button>
+                    <button class="erp-btn erp-btn-primary" data-erp-drawer-target="#createLeaveDrawer">
+                        <i class="bi bi-plus-circle me-1"></i>Tạo Đơn Mới
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="erp-card p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Loại đơn</th>
+                            <th>Khoảng thời gian</th>
+                            <th>Số ngày</th>
+                            <th>Lý do</th>
+                            <th>Minh chứng</th>
+                            <th>Trạng thái</th>
+                            <th>Tiến trình phê duyệt</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.LeaveRequests.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    Bạn chưa tạo đơn từ nào trong hệ thống.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var r in Model.LeaveRequests)
+                            {
+                                <tr>
+                                    <td class="fw-bold num">@r.RequestCode</td>
+                                    <td><strong>@r.RequestTypeName</strong></td>
+                                    <td class="small">
+                                        @r.FromDate.ToString("dd/MM/yyyy") - @r.ToDate.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td class="num">@r.TotalDays.ToString("N1")</td>
+                                    <td class="small text-truncate" style="max-width: 180px;" title="@r.Reason">
+                                        @r.Reason
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(r.AttachmentUrl))
+                                        {
+                                            <a href="@r.AttachmentUrl" target="_blank" class="text-primary text-decoration-none">
+                                                <i class="bi bi-paperclip me-1"></i>Xem file
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @r.StatusBadgeClass">@r.StatusName</span>
+                                    </td>
+                                    <td class="small">
+                                        @if (!string.IsNullOrEmpty(r.DirectorName))
+                                        {
+                                            <div><i class="bi bi-check2 text-success me-1"></i>GĐ: @r.DirectorName</div>
+                                        }
+                                        else if (!string.IsNullOrEmpty(r.DepartmentHeadName))
+                                        {
+                                            <div><i class="bi bi-check2 text-info me-1"></i>TP: @r.DepartmentHeadName</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Chờ Trưởng phòng</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (r.CanCancel)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelRequest(@r.Id, '@r.RequestCode')">
+                                                <i class="bi bi-trash me-1"></i>Rút lại đơn
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Đã xử lý</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 4: TRA CỨU PHIẾU LƯƠNG BẢO MẬT (SECURE PAYSLIP VIEWER) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-payslips" class="ess-tab-pane @(Model.ActiveTab == "payslips" ? "" : "d-none")">
+        @if (!Model.IsPayslipUnlocked)
+        {
+            <div class="erp-card p-5 text-center shadow-sm">
+                <div class="avatar-lg bg-indigo-subtle text-primary mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px;">
+                    <i class="bi bi-shield-lock fs-1"></i>
+                </div>
+                <h4 class="fw-bold mb-2">Thông Tin Thu Nhập Được Bảo Vệ</h4>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 480px;">
+                    Nhằm đảm bảo an toàn bí mật tài chính cá nhân và tuân thủ tiêu chuẩn bảo mật ngân hàng,
+                    bạn cần xác thực lại mật khẩu đăng nhập để xem chi tiết số tiền và tải phiếu lương.
+                </p>
+                <button type="button" class="erp-btn erp-btn-primary px-4 py-2 fw-bold" onclick="promptUnlockPayslip()">
+                    <i class="bi bi-key me-2"></i>Xác Thực Mật Khẩu Để Mở Khóa
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success d-flex justify-content-between align-items-center p-3 mb-3 rounded-3 shadow-sm border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-check fs-4 text-success"></i>
+                    <div>
+                        <strong>Phiên mở khóa phiếu lương đang kích hoạt!</strong>
+                        <div class="small text-muted">Có hiệu lực trong 5 phút. Sau 5 phút, hệ thống sẽ tự động khóa lại để bảo vệ thông tin.</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="lockPayslipSession()">
+                    <i class="bi bi-lock me-1"></i>Khóa Ngay
+                </button>
+            </div>
+
+            <div class="erp-card p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Kỳ lương</th>
+                                <th>Tháng / Năm</th>
+                                <th>Công chuẩn</th>
+                                <th>Công thực tế</th>
+                                <th>Thực lĩnh (Net)</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.SalarySlips.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        Chưa có phiếu lương nào được phát hành cho bạn.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var s in Model.SalarySlips)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@s.PeriodName</td>
+                                        <td>Tháng @s.Month/@s.Year</td>
+                                        <td class="num">@s.StandardDays ngày</td>
+                                        <td class="num text-success fw-bold">@s.ActualWorkDays.ToString("N1") ngày</td>
+                                        <td class="num text-primary fw-bold fs-6">@s.NetSalary.ToString("N0") VNĐ</td>
+                                        <td><span class="badge bg-success-subtle text-success">@s.StatusName</span></td>
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-primary" onclick="viewPayslipDetail(@s.Id)">
+                                                    <i class="bi bi-eye me-1"></i>Phân rã thu nhập
+                                                </button>
+                                                <a href="/CongNhanVien/InPhieuLuong/@s.Id" target="_blank" class="btn btn-primary">
+                                                    <i class="bi bi-printer me-1"></i>In A4
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- TAB 5: HỒ SƠ CÁ NHÂN, TÀI SẢN & PHÁT TRIỂN BẢN THÂN -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div id="tab-profile" class="ess-tab-pane @(Model.ActiveTab == "profile" ? "" : "d-none")">
+        <div class="row g-3">
+            <!-- THÔNG TIN ĐỊNH DANH & LIÊN HỆ -->
+            <div class="col-12 col-lg-6">
+                <div class="bento-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Thông Tin Định Danh &amp; Liên Hệ</h6>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editContactModal">
+                            <i class="bi bi-pencil me-1"></i>Cập nhật
+                        </button>
+                    </div>
+
+                    <table class="table table-sm table-borderless small mb-0">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted" style="width: 140px;">Số CCCD/Định danh:</td>
+                                <td class="fw-bold num">@(p.CitizenId ?? "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Mã số thuế TNCN:</td>
+                                <td class="fw-bold num">@(p.TaxCode ?? "Chưa có")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Mã số BHXH:</td>
+                                <td class="fw-bold num">@(p.SocialInsuranceNumber ?? "Chưa có")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Số điện thoại:</td>
+                                <td class="fw-bold num">@(p.Phone ?? "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Email công vụ:</td>
+                                <td class="fw-bold">@(p.Email ?? "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Tài khoản ngân hàng:</td>
+                                <td class="fw-bold num">@(p.BankAccountNumber ?? "Chưa cập nhật") (@(p.BankName ?? ""))</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Địa chỉ hiện tại:</td>
+                                <td>@(p.CurrentAddress ?? "Chưa cập nhật")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Liên hệ khẩn cấp:</td>
+                                <td>@(p.EmergencyContactName ?? "N/A") (@(p.EmergencyContactPhone ?? "N/A"))</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="mt-3 pt-2 border-top">
+                        <button class="btn btn-sm btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#registerDependentModal">
+                            <i class="bi bi-person-plus me-1"></i>Đăng Ký Người Phụ Thuộc (Giảm Trừ Gia Cảnh)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TÀI SẢN / THIẾT BỊ ĐANG GIỮ -->
+            <div class="col-12 col-lg-6">
+                <div class="bento-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-laptop text-primary me-2"></i>Tài Sản Công Ty Bàn Giao</h6>
+
+                    @if (!Model.Assets.Any())
+                    {
+                        <div class="text-center py-4 text-muted small">
+                            Bạn hiện không giữ tài sản/thiết bị nào của công ty.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle small mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mã TS</th>
+                                        <th>Tên thiết bị</th>
+                                        <th>Serial No</th>
+                                        <th>Ngày nhận</th>
+                                        <th>Tình trạng</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ast in Model.Assets)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold num">@ast.AssetCode</td>
+                                            <td>@ast.AssetName</td>
+                                            <td class="num">@(ast.SerialNumber ?? "-")</td>
+                                            <td>@ast.AssignedDate.ToString("dd/MM/yyyy")</td>
+                                            <td><span class="badge bg-success-subtle text-success">@(ast.ConditionOnAssign ?? "Tốt")</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- HỢP ĐỒNG LAO ĐỘNG -->
+            <div class="col-12 col-lg-6">
+                <div class="bento-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-text text-primary me-2"></i>Hợp Đồng Lao Động</h6>
+                    @if (!Model.Contracts.Any())
+                    {
+                        <div class="text-center py-4 text-muted small">Chưa có thông tin hợp đồng.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle small mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Số HĐ</th>
+                                        <th>Loại HĐ</th>
+                                        <th>Hiệu lực</th>
+                                        <th>Lương cơ bản</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.Contracts)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold num">@c.ContractNumber</td>
+                                            <td>@c.ContractType</td>
+                                            <td class="small">@c.StartDate.ToString("dd/MM/yyyy") - @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                                            <td class="num">@c.BasicSalary.ToString("N0")</td>
+                                            <td><span class="badge bg-success-subtle text-success">@c.Status</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- KPI & ĐÀO TẠO PHÁT TRIỂN -->
+            <div class="col-12 col-lg-6">
+                <div class="bento-card">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-mortarboard text-primary me-2"></i>Mục Tiêu KPI &amp; Đào Tạo Nội Bộ</h6>
+                    
+                    <div class="mb-3">
+                        <strong class="small d-block mb-1 text-muted">Đánh giá KPI gần nhất:</strong>
+                        @if (!Model.Kpis.Any())
+                        {
+                            <span class="text-muted small">Chưa có đánh giá KPI.</span>
+                        }
+                        else
+                        {
+                            var latestKpi = Model.Kpis.First();
+                            <div class="p-2 border rounded bg-light d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Tháng @latestKpi.PeriodMonth/@latestKpi.PeriodYear</strong>
+                                    <div class="small text-muted">@latestKpi.OverallComment</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h5 fw-bold mb-0 text-primary num">@latestKpi.TotalScore.ToString("N1")</div>
+                                    <span class="badge bg-primary-subtle text-primary">Hạng @latestKpi.Grade</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div>
+                        <strong class="small d-block mb-1 text-muted">Khóa đào tạo tham gia:</strong>
+                        @if (!Model.Trainings.Any())
+                        {
+                            <span class="text-muted small">Hiện chưa tham gia khóa đào tạo nào.</span>
+                        }
+                        else
+                        {
+                            <ul class="list-unstyled small mb-0">
+                                @foreach (var tr in Model.Trainings)
+                                {
+                                    <li class="mb-2 p-2 border rounded bg-light d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>@tr.Title</strong>
+                                            <div class="text-muted">GV: @tr.TrainerName | @tr.StartDate.ToString("dd/MM/yyyy")</div>
+                                        </div>
+                                        <span class="badge bg-info-subtle text-info">@tr.Status</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- DRAWERS & MODALS HỖ TRỢ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<!-- DRAWER: TẠO ĐƠN TỪ MỚI -->
+<erp-drawer id="createLeaveDrawer" title="Tạo Đơn Từ Cá Nhân" position="right" size="md">
+    <form id="createLeaveForm" onsubmit="submitLeaveRequest(event)">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Loại đơn từ <span class="text-danger">*</span></label>
+            <select name="RequestType" class="form-select form-select-sm" required>
+                <option value="ANNUAL_LEAVE">Nghỉ phép năm (Trừ quỹ phép)</option>
+                <option value="SICK_LEAVE">Nghỉ ốm đau (Hưởng BHXH)</option>
+                <option value="MATERNITY_LEAVE">Nghỉ thai sản</option>
+                <option value="UNPAID_LEAVE">Nghỉ không lương</option>
+                <option value="OVERTIME">Đăng ký làm thêm ngoài giờ (OT)</option>
+                <option value="BUSINESS_TRIP">Đăng ký đi công tác</option>
+            </select>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Từ ngày <span class="text-danger">*</span></label>
+                <input type="date" name="FromDate" class="form-control form-control-sm" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Đến ngày <span class="text-danger">*</span></label>
+                <input type="date" name="ToDate" class="form-control form-control-sm" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Số ngày đăng ký</label>
+            <input type="number" step="0.5" name="TotalDays" class="form-control form-control-sm" value="1.0" min="0.5" />
+            <div class="form-text" style="font-size: 11px;">Mặc định 1.0 ngày (có thể nhập 0.5 ngày nếu nghỉ nửa buổi).</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Lý do chi tiết <span class="text-danger">*</span></label>
+            <textarea name="Reason" class="form-control form-control-sm" rows="3" placeholder="Nhập lý do xin nghỉ hoặc làm thêm..." required></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small fw-semibold">Đính kèm chứng từ / Giấy khám bệnh (Nếu có)</label>
+            <input type="file" name="AttachmentFile" class="form-control form-control-sm" accept="image/*,.pdf" />
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="erp-btn erp-btn-secondary btn-sm" onclick="ERP.drawer.close('createLeaveDrawer')">Hủy</button>
+            <button type="submit" class="erp-btn erp-btn-primary btn-sm">
+                <i class="bi bi-send me-1"></i>Gửi Đơn Từ
+            </button>
+        </div>
+    </form>
+</erp-drawer>
+
+<!-- DRAWER: ĐƠN GIẢI TRÌNH CHẤM CÔNG -->
+<erp-drawer id="adjustmentDrawer" title="Giải Trình Chấm Công" position="right" size="md">
+    <form id="adjustmentForm" onsubmit="submitAdjustmentRequest(event)">
+        @Html.AntiForgeryToken()
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Ngày cần giải trình <span class="text-danger">*</span></label>
+            <input type="date" name="WorkDate" id="adjWorkDate" class="form-control form-control-sm" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Loại sự cố / Lý do <span class="text-danger">*</span></label>
+            <select name="AdjustmentType" class="form-select form-select-sm" required>
+                <option value="MissedCheckIn">Quên quẹt thẻ vào ca (Check-in)</option>
+                <option value="MissedCheckOut">Quên quẹt thẻ ra ca (Check-out)</option>
+                <option value="DeviceError">Thiết bị chấm công bị lỗi</option>
+                <option value="LateDueToClient">Đến muộn do gặp khách hàng khẩn cấp</option>
+            </select>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Giờ vào thực tế</label>
+                <input type="time" name="ActualInTime" class="form-control form-control-sm" value="08:00" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold">Giờ ra thực tế</label>
+                <input type="time" name="ActualOutTime" class="form-control form-control-sm" value="17:30" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-semibold">Lý do giải trình cụ thể <span class="text-danger">*</span></label>
+            <textarea name="Reason" class="form-control form-control-sm" rows="3" placeholder="Mô tả lý do quên quẹt thẻ hoặc giải trình đi muộn..." required></textarea>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small fw-semibold">Ảnh minh chứng (Nếu có)</label>
+            <input type="file" name="AttachmentFile" class="form-control form-control-sm" accept="image/*,.pdf" />
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="erp-btn erp-btn-secondary btn-sm" onclick="ERP.drawer.close('adjustmentDrawer')">Hủy</button>
+            <button type="submit" class="erp-btn erp-btn-primary btn-sm">
+                <i class="bi bi-send me-1"></i>Gửi Giải Trình
+            </button>
+        </div>
+    </form>
+</erp-drawer>
+
+<!-- DRAWER: CHI TIẾT PHÂN RÃ THU NHẬP PHIẾU LƯƠNG -->
+<erp-drawer id="payslipDetailDrawer" title="Chi Tiết Phiếu Lương" position="right" size="lg">
+    <div id="payslipDetailContent" class="p-2">
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="small text-muted mt-2">Đang tải bảng phân rã thu nhập...</div>
+        </div>
+    </div>
+</erp-drawer>
+
+<!-- MODAL: XÁC THỰC MẬT KHẨU MỞ KHÓA PHIẾU LƯƠNG -->
+<div class="modal fade" id="unlockPayslipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock text-primary me-2"></i>Xác Thực Bảo Mật</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="small text-muted mb-3">Nhập mật khẩu tài khoản của bạn để mở khóa xem phiếu lương (phiên hiệu lực 5 phút):</p>
+                <div class="mb-3">
+                    <input type="password" id="unlockPasswordInput" class="form-control" placeholder="Mật khẩu của bạn..." required />
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="submitUnlockPassword()">Xác Thực</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CẬP NHẬT THÔNG TIN LIÊN HỆ -->
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold"><i class="bi bi-pencil me-2"></i>Cập Nhật Thông Tin Liên Hệ</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="submitContactUpdate(event)">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Số điện thoại</label>
+                            <input type="tel" name="Phone" class="form-control form-control-sm" value="@p.Phone" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Email</label>
+                            <input type="email" name="Email" class="form-control form-control-sm" value="@p.Email" />
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Địa chỉ tạm trú hiện tại</label>
+                        <input type="text" name="CurrentAddress" class="form-control form-control-sm" value="@p.CurrentAddress" />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Địa chỉ thường trú</label>
+                        <input type="text" name="PermanentAddress" class="form-control form-control-sm" value="@p.PermanentAddress" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Người liên hệ khẩn cấp</label>
+                            <input type="text" name="EmergencyContactName" class="form-control form-control-sm" value="@p.EmergencyContactName" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">SĐT người khẩn cấp</label>
+                            <input type="tel" name="EmergencyContactPhone" class="form-control form-control-sm" value="@p.EmergencyContactPhone" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: ĐĂNG KÝ NGƯỜI PHỤ THUỘC -->
+<div class="modal fade" id="registerDependentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold"><i class="bi bi-person-plus me-2"></i>Đăng Ký Người Phụ Thuộc (Giảm Trừ Gia Cảnh)</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="submitDependentRegister(event)">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Họ và tên người phụ thuộc <span class="text-danger">*</span></label>
+                        <input type="text" name="FullName" class="form-control form-control-sm" required placeholder="Ví dụ: Nguyễn Văn A" />
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Mối quan hệ <span class="text-danger">*</span></label>
+                            <select name="Relationship" class="form-select form-select-sm" required>
+                                <option value="CON">Con đẻ / Con nuôi</option>
+                                <option value="VO_CHONG">Vợ / Chồng</option>
+                                <option value="BO_DE">Bố đẻ / Bố vợ / Bố chồng</option>
+                                <option value="ME_DE">Mẹ đẻ / Mẹ vợ / Mẹ chồng</option>
+                                <option value="KHAC">Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Ngày sinh</label>
+                            <input type="date" name="DateOfBirth" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Bắt đầu giảm trừ từ <span class="text-danger">*</span></label>
+                            <input type="date" name="FromDate" class="form-control form-control-sm" value="@DateTime.Today.ToString("yyyy-MM-01")" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Số CCCD / Mã định danh</label>
+                            <input type="text" name="IdCardNumber" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-sm btn-primary">Gửi Đăng Ký</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 1. LIVE DIGITAL CLOCK (VIETNAM TIME)
+        function updateLiveClock() {
+            const now = new Date();
+            // Vietnam Time GMT+7
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const vnNow = new Date(utc + (3600000 * 7));
+            const hours = String(vnNow.getHours()).padStart(2, '0');
+            const minutes = String(vnNow.getMinutes()).padStart(2, '0');
+            const seconds = String(vnNow.getSeconds()).padStart(2, '0');
+            const el = document.getElementById('liveClockFace');
+            if (el) el.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+
+        // 2. TAB SWITCHER
+        function switchEssTab(tabKey) {
+            document.querySelectorAll('.ess-tab-pane').forEach(el => el.classList.add('d-none'));
+            document.querySelectorAll('.ess-tab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-dark', 'shadow');
+                el.classList.add('btn-outline-light', 'border-0');
+            });
+
+            const pane = document.getElementById(`tab-${tabKey}`);
+            if (pane) pane.classList.remove('d-none');
+
+            // Find button matching
+            const buttons = document.querySelectorAll('.ess-tab-btn');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('onclick')?.includes(tabKey)) {
+                    btn.classList.add('bg-white', 'text-dark', 'shadow');
+                    btn.classList.remove('btn-outline-light', 'border-0');
+                }
+            });
+
+            // Update URL without reload
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabKey);
+            window.history.replaceState({}, '', url);
+        }
+
+        // 3. WEB CHECK-IN / CHECK-OUT
+        async function handleCheckIn() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            try {
+                const res = await fetch('/CongNhanVien/CheckIn', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    if (window.ERP?.toast) ERP.toast.warning(data.message);
+                    else alert(data.message);
+                }
+            } catch (err) {
+                if (window.ERP?.toast) ERP.toast.error('Lỗi kết nối khi Check-in.');
+            }
+        }
+
+        async function handleCheckOut() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            try {
+                const res = await fetch('/CongNhanVien/CheckOut', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    if (window.ERP?.toast) ERP.toast.warning(data.message);
+                    else alert(data.message);
+                }
+            } catch (err) {
+                if (window.ERP?.toast) ERP.toast.error('Lỗi kết nối khi Check-out.');
+            }
+        }
+
+        // 4. TẠO ĐƠN & HỦY ĐƠN
+        async function submitLeaveRequest(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch('/CongNhanVien/TaoDon', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    if (window.ERP?.drawer) ERP.drawer.close('createLeaveDrawer');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    if (window.ERP?.toast) ERP.toast.error(data.message);
+                    else alert(data.message);
+                }
+            } catch (err) {
+                if (window.ERP?.toast) ERP.toast.error('Có lỗi xảy ra khi gửi đơn.');
+            }
+        }
+
+        async function cancelRequest(id, code) {
+            if (!confirm(`Bạn có chắc chắn muốn rút lại (hủy) đơn ${code}?`)) return;
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('id', id);
+
+            try {
+                const res = await fetch('/CongNhanVien/HuyDon', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    if (window.ERP?.toast) ERP.toast.error(data.message);
+                    else alert(data.message);
+                }
+            } catch (err) {
+                if (window.ERP?.toast) ERP.toast.error('Lỗi khi hủy đơn.');
+            }
+        }
+
+        // 5. GIẢI TRÌNH CHẤM CÔNG
+        function openAdjustmentForDate(dateStr) {
+            const input = document.getElementById('adjWorkDate');
+            if (input) input.value = dateStr;
+            if (window.ERP?.drawer) ERP.drawer.open('adjustmentDrawer');
+        }
+
+        async function submitAdjustmentRequest(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch('/CongNhanVien/GuiGiaiTrinh', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    if (window.ERP?.drawer) ERP.drawer.close('adjustmentDrawer');
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    if (window.ERP?.toast) ERP.toast.error(data.message);
+                    else alert(data.message);
+                }
+            } catch (err) {
+                if (window.ERP?.toast) ERP.toast.error('Có lỗi xảy ra khi gửi giải trình.');
+            }
+        }
+
+        // 6. XÁC THỰC MẬT KHẨU PHIẾU LƯƠNG
+        function promptUnlockPayslip() {
+            const modalEl = document.getElementById('unlockPayslipModal');
+            if (modalEl) {
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                setTimeout(() => document.getElementById('unlockPasswordInput')?.focus(), 400);
+            }
+        }
+
+        async function submitUnlockPassword() {
+            const pwd = document.getElementById('unlockPasswordInput')?.value;
+            if (!pwd) {
+                alert('Vui lòng nhập mật khẩu.');
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            try {
+                const res = await fetch('/CongNhanVien/XacThucMatKhauPhieuLuong', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ password: pwd })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    bootstrap.Modal.getInstance(document.getElementById('unlockPayslipModal'))?.hide();
+                    setTimeout(() => {
+                        const url = new URL(window.location);
+                        url.searchParams.set('tab', 'payslips');
+                        window.location.href = url.toString();
+                    }, 800);
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert('Lỗi xác thực.');
+            }
+        }
+
+        // 7. XEM CHI TIẾT PHÂN RÃ PHIẾU LƯƠNG
+        async function viewPayslipDetail(slipId) {
+            if (window.ERP?.drawer) ERP.drawer.open('payslipDetailDrawer');
+            const container = document.getElementById('payslipDetailContent');
+            if (!container) return;
+
+            try {
+                const res = await fetch(`/CongNhanVien/ChiTietPhieuLuong/${slipId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (res.status === 403) {
+                    promptUnlockPayslip();
+                    if (window.ERP?.drawer) ERP.drawer.close('payslipDetailDrawer');
+                    return;
+                }
+
+                const data = await res.json();
+                if (!data.success) {
+                    container.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    return;
+                }
+
+                const d = data.data;
+                container.innerHTML = `
+                    <div class="mb-3 pb-2 border-bottom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0">${d.periodName}</h5>
+                            <span class="small text-muted">Tháng ${d.month}/${d.year} | Nhân viên: ${d.employeeName}</span>
+                        </div>
+                        <a href="/CongNhanVien/InPhieuLuong/${d.id}" target="_blank" class="erp-btn erp-btn-primary btn-sm">
+                            <i class="bi bi-printer me-1"></i>Bản In A4
+                        </a>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <span class="text-muted" style="font-size:11px;">Công chuẩn</span>
+                                <div class="fw-bold num">${d.standardDays}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <span class="text-muted" style="font-size:11px;">Công thực tế</span>
+                                <div class="fw-bold text-success num">${d.actualWorkDays.toFixed(1)}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded text-center bg-light">
+                                <span class="text-muted" style="font-size:11px;">Giờ tăng ca</span>
+                                <div class="fw-bold text-primary num">${d.overtimeHours.toFixed(1)}h</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary small text-uppercase mb-2">1. Các khoản thu nhập (Gross)</h6>
+                    <table class="table table-sm table-bordered small mb-3">
+                        <tbody>
+                            <tr><td>Lương cơ bản hợp đồng:</td><td class="text-end num">${d.basicSalary.toLocaleString()} đ</td></tr>
+                            <tr><td>Lương theo ngày công thực tế:</td><td class="text-end num fw-bold">${d.standardWorkSalary.toLocaleString()} đ</td></tr>
+                            <tr><td>Tiền làm thêm giờ (OT 150%):</td><td class="text-end num">${d.overtimeSalary.toLocaleString()} đ</td></tr>
+                            <tr><td>Tổng phụ cấp (Chức vụ, ăn trưa, đi lại):</td><td class="text-end num">${d.totalAllowance.toLocaleString()} đ</td></tr>
+                            <tr><td>Thưởng hiệu suất & KPI:</td><td class="text-end num">${d.bonus.toLocaleString()} đ</td></tr>
+                            <tr class="table-light fw-bold"><td>TỔNG THU NHẬP (GROSS):</td><td class="text-end num text-success">${d.grossSalary.toLocaleString()} đ</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h6 class="fw-bold text-danger small text-uppercase mb-2">2. Các khoản khấu trừ & Thuế</h6>
+                    <table class="table table-sm table-bordered small mb-3">
+                        <tbody>
+                            <tr><td>Bảo hiểm xã hội (BHXH 8%):</td><td class="text-end num">-${d.socialInsurance.toLocaleString()} đ</td></tr>
+                            <tr><td>Bảo hiểm y tế (BHYT 1.5%):</td><td class="text-end num">-${d.healthInsurance.toLocaleString()} đ</td></tr>
+                            <tr><td>Bảo hiểm thất nghiệp (BHTN 1%):</td><td class="text-end num">-${d.unemploymentInsurance.toLocaleString()} đ</td></tr>
+                            <tr><td>Thuế TNCN (sau giảm trừ gia cảnh):</td><td class="text-end num">-${d.personalIncomeTax.toLocaleString()} đ</td></tr>
+                            ${d.latePenalty > 0 ? `<tr><td>Phạt đi muộn không phép:</td><td class="text-end num">-${d.latePenalty.toLocaleString()} đ</td></tr>` : ''}
+                            <tr class="table-light fw-bold"><td>TỔNG KHẤU TRỪ:</td><td class="text-end num text-danger">-${(d.totalInsurance + d.personalIncomeTax + d.latePenalty).toLocaleString()} đ</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="p-3 bg-indigo-subtle rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-primary">THỰC LĨNH CHUYỂN KHOẢN (NET):</span>
+                        <h4 class="fw-bold text-primary mb-0 num">${d.netSalary.toLocaleString()} VNĐ</h4>
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<div class="alert alert-danger">Lỗi tải dữ liệu.</div>`;
+            }
+        }
+
+        // 8. CẬP NHẬT LIÊN HỆ & ĐĂNG KÝ PHỤ THUỘC
+        async function submitContactUpdate(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch('/CongNhanVien/CapNhatLienHe', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert('Lỗi cập nhật.');
+            }
+        }
+
+        async function submitDependentRegister(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch('/CongNhanVien/DangKyNguoiPhuThuoc', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.ERP?.toast) ERP.toast.success(data.message);
+                    else alert(data.message);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                alert('Lỗi gửi đăng ký.');
+            }
+        }
+    </script>
+}
+

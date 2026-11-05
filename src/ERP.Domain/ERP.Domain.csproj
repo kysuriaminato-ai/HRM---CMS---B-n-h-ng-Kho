@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ERP.Domain</RootNamespace>
+    <AssemblyName>ERP.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ERP.Application" />
+    <InternalsVisibleTo Include="ERP.Infrastructure" />
+    <InternalsVisibleTo Include="ERP_HRM_CMS" />
+    <InternalsVisibleTo Include="ERP_HRM_CMS.Tests" />
+  </ItemGroup>
+
+</Project>
+

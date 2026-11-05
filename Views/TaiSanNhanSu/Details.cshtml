@@ -1,0 +1,291 @@
+@model ERP_HRM_CMS.Models.Entities.CompanyAsset
+@{
+    ViewData["Title"] = $"Chi tiết Tài sản - {Model.AssetCode}";
+    var assignments = ViewBag.Assignments as List<ERP_HRM_CMS.Services.HRM.AssetAssignmentDto> ?? new();
+    var currentAssignment = assignments.FirstOrDefault(a => a.Status == "Active");
+}
+
+<div class="content-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-subtle mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">Tài sản cấp phát</a></li>
+                    <li class="breadcrumb-item active">@Model.AssetCode</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="page-title mb-0">@Model.AssetName</h1>
+                <span class="badge bg-secondary font-monospace">@Model.AssetCode</span>
+                @switch (Model.Status)
+                {
+                    case "Available":
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Sẵn sàng (Kho)</span>
+                        break;
+                    case "Assigned":
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Đang cấp phát</span>
+                        break;
+                    case "Maintenance":
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Đang bảo trì</span>
+                        break;
+                    default:
+                        <span class="badge bg-secondary-subtle text-secondary border">@Model.Status</span>
+                        break;
+                }
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            @if (Model.Status == "Available")
+            {
+                <a asp-action="CapPhat" asp-route-assetId="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Bàn giao cấp phát
+                </a>
+            }
+            else if (Model.Status == "Assigned" && currentAssignment != null)
+            {
+                <button type="button" class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#thuHoiModal">
+                    <i class="bi bi-box-arrow-in-left me-1"></i> Thu hồi tài sản
+                </button>
+            }
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Danh sách
+            </a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Cột trái: Thông tin tài sản -->
+    <div class="col-lg-5">
+        <div class="card card-enterprise shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="card-title mb-0 fw-bold text-primary">
+                    <i class="bi bi-cpu me-2"></i> Thông số & Hồ sơ kỹ thuật
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-secondary" style="width: 140px;">Mã tài sản:</td>
+                            <td class="fw-bold font-monospace">@Model.AssetCode</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Loại tài sản:</td>
+                            <td><span class="badge bg-light text-dark border">@Model.AssetType</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Serial / IMEI:</td>
+                            <td class="font-monospace">@(Model.SerialNumber ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Ngày mua:</td>
+                            <td>@(Model.PurchaseDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Nguyên giá:</td>
+                            <td class="tabular-nums fw-bold text-primary">@Model.PurchasePrice.ToString("N0") đ</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Hạn bảo hành:</td>
+                            <td>@(Model.WarrantyExpiryDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Chi nhánh:</td>
+                            <td>@(Model.Branch?.Name ?? "Trụ sở chính")</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                @if (!string.IsNullOrEmpty(Model.Specification))
+                {
+                    <hr />
+                    <div class="small fw-bold text-secondary mb-1">Cấu hình chi tiết / Ghi chú:</div>
+                    <div class="p-2 bg-light rounded small text-dark">
+                        @Model.Specification
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (currentAssignment != null)
+        {
+            <div class="card border-primary shadow-sm bg-primary-subtle bg-opacity-25">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-circle bg-primary text-white fs-4 p-3 rounded-circle">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                        <div>
+                            <div class="small text-uppercase text-secondary fw-bold">Hiện đang bàn giao cho</div>
+                            <h5 class="mb-0 text-primary fw-bold">@currentAssignment.EmployeeName</h5>
+                            <div class="small text-muted">Mã NV: @currentAssignment.EmployeeCode</div>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-calendar3 me-1"></i> Bàn giao ngày: <strong>@currentAssignment.AssignedDate.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                            @if (!string.IsNullOrEmpty(currentAssignment.ConditionOnAssign))
+                            {
+                                <div class="small text-dark mt-1">Tình trạng lúc giao: <em>@currentAssignment.ConditionOnAssign</em></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Cột phải: Lịch sử cấp phát & thu hồi -->
+    <div class="col-lg-7">
+        <div class="card card-enterprise shadow-sm">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0 fw-bold text-primary">
+                    <i class="bi bi-clock-history me-2"></i> Lịch sử Cấp phát & Bàn giao (@assignments.Count)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 erp-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nhân sự</th>
+                                <th>Ngày cấp</th>
+                                <th>Tình trạng giao</th>
+                                <th>Ngày trả</th>
+                                <th>Tình trạng trả</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (assignments.Any())
+                            {
+                                foreach (var h in assignments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">
+                                                <a asp-controller="NhanSu" asp-action="Details" asp-route-id="@h.EmployeeId" class="text-decoration-none">
+                                                    @h.EmployeeName
+                                                </a>
+                                            </div>
+                                            <small class="text-muted">@h.EmployeeCode</small>
+                                        </td>
+                                        <td>
+                                            <small>@h.AssignedDate.ToString("dd/MM/yyyy")</small>
+                                            @if (!string.IsNullOrEmpty(h.AssignedByName))
+                                            {
+                                                <div class="text-muted small">bởi @h.AssignedByName</div>
+                                            }
+                                        </td>
+                                        <td><small>@(h.ConditionOnAssign ?? "Tốt")</small></td>
+                                        <td>
+                                            @if (h.ReturnedDate.HasValue)
+                                            {
+                                                <small>@h.ReturnedDate.Value.ToString("dd/MM/yyyy")</small>
+                                                @if (!string.IsNullOrEmpty(h.ReturnedByName))
+                                                {
+                                                    <div class="text-muted small">bởi @h.ReturnedByName</div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                        <td><small>@(h.ConditionOnReturn ?? "—")</small></td>
+                                        <td>
+                                            @if (h.Status == "Active")
+                                            {
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Đang sử dụng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border">Đã thu hồi</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        Chưa có lịch sử cấp phát nào cho tài sản này.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thu Hồi Tài Sản -->
+@if (currentAssignment != null)
+{
+    <div class="modal fade" id="thuHoiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="ThuHoi" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="assignmentId" value="@currentAssignment.Id" />
+                    <input type="hidden" name="assetId" value="@Model.Id" />
+
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold text-primary">
+                            <i class="bi bi-box-arrow-in-left me-2"></i> Thu hồi tài sản
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2 small mb-3">
+                            Thu hồi tài sản <strong>@Model.AssetName</strong> (@Model.AssetCode) từ nhân sự <strong>@currentAssignment.EmployeeName</strong>.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tình trạng tài sản khi nhận lại <span class="text-danger">*</span></label>
+                            <input type="text" name="conditionOnReturn" class="form-control" value="Hoạt động bình thường, đầy đủ phụ kiện" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Trạng thái tài sản sau thu hồi <span class="text-danger">*</span></label>
+                            <select name="returnStatus" class="form-select" required>
+                                <option value="Available">Sẵn sàng nhập kho để cấp phát tiếp</option>
+                                <option value="Maintenance">Cần bảo trì / Vệ sinh / Cài đặt lại</option>
+                                <option value="Liquidated">Hư hỏng / Đề nghị thanh lý</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú thu hồi</label>
+                            <textarea name="note" class="form-control" rows="2" placeholder="Ghi chú thêm biên bản bàn giao, tình trạng trầy xước..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-warning text-dark">
+                            <i class="bi bi-check-circle me-1"></i> Xác nhận thu hồi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

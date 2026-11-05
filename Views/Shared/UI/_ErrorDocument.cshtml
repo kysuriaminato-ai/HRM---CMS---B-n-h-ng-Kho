@@ -1,0 +1,132 @@
+@model ERP_HRM_CMS.Models.ErrorViewModel
+@{
+    int code = Model?.StatusCode ?? 500;
+    string variant = Model?.Variant ?? (code == 403 ? "danger" : code == 404 ? "primary" : "warning");
+    string icon = Model?.IconClass ?? (code == 403 ? "bi-shield-lock-fill" : code == 404 ? "bi-compass" : "bi-exclamation-triangle-fill");
+    string statusBadge = code switch
+    {
+        403 => "HTTP 403 • FORBIDDEN",
+        404 => "HTTP 404 • NOT FOUND",
+        500 => "HTTP 500 • INTERNAL SERVER ERROR",
+        _ => $"HTTP {code} • STATUS"
+    };
+    string title = Model?.Title ?? code switch
+    {
+        403 => "Truy cập bị từ chối",
+        404 => "Không tìm thấy trang yêu cầu",
+        _ => "Đã xảy ra lỗi hệ thống"
+    };
+    string message = Model?.Message ?? code switch
+    {
+        403 => "Tài khoản hiện tại không có quyền hạn thực hiện chức năng này theo chính sách phân quyền RBAC/ACL. Vui lòng liên hệ Quản trị viên tổng (Super Admin) để được cấp quyền.",
+        404 => "Đường dẫn bạn truy cập không tồn tại, đã được di chuyển hoặc bạn nhập sai địa chỉ URL.",
+        _ => "Hệ thống gặp sự cố gián đoạn khi xử lý yêu cầu này. Đội ngũ kỹ thuật đã ghi nhận mã truy vết để khắc phục."
+    };
+    bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    string homeUrl = isAuthenticated ? "/Home/Index" : "/";
+    string homeLabel = isAuthenticated ? "Về Bảng điều khiển" : "Về Trang chủ";
+}
+<!DOCTYPE html>
+<html lang="vi" data-module="system">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@code - @title | ERP Enterprise</title>
+
+    @* Anti-FOUC Dark Mode *@
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('erp-theme');
+                if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) { }
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/enterprise-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-components.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-animations.css" asp-append-version="true" />
+</head>
+<body>
+    <main class="erp-error-shell position-relative">
+        <div class="position-fixed top-0 end-0 p-3">
+            <button type="button"
+                    class="topbar-icon-btn"
+                    onclick="window.toggleTheme && window.toggleTheme(event)"
+                    title="Chuyển chế độ Sáng / Tối"
+                    aria-label="Chuyển chế độ Sáng / Tối">
+                <i class="bi bi-moon-stars" id="themeToggleIcon"></i>
+            </button>
+        </div>
+
+        <section class="erp-error-card slide-up" role="alert" aria-live="polite">
+            <div class="erp-error-icon-wrap @variant">
+                <i class="bi @icon"></i>
+            </div>
+
+            <div class="erp-error-code">@statusBadge</div>
+            <h1 class="h3 fw-bold mb-2">@title</h1>
+            <p class="text-muted small mb-4">@message</p>
+
+            @if (!string.IsNullOrWhiteSpace(Model?.OriginalPath) || !string.IsNullOrWhiteSpace(Model?.ReturnUrl) || (code >= 500 && Model?.ShowRequestId == true))
+            {
+                <div class="erp-error-meta">
+                    @if (!string.IsNullOrWhiteSpace(Model?.OriginalPath))
+                    {
+                        <div class="mb-1">
+                            <span class="fw-semibold">Đường dẫn yêu cầu:</span>
+                            <code class="ms-1">@Model.OriginalPath</code>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model?.ReturnUrl))
+                    {
+                        <div class="mb-1">
+                            <span class="fw-semibold">Tài nguyên hạn chế:</span>
+                            <code class="ms-1">@Model.ReturnUrl</code>
+                        </div>
+                    }
+                    @if (code == 403 && isAuthenticated)
+                    {
+                        <div class="mb-1">
+                            <span class="fw-semibold">Tài khoản hiện tại:</span>
+                            <span class="ms-1">@User.Identity?.Name</span>
+                        </div>
+                    }
+                    @if (Model?.ShowRequestId == true)
+                    {
+                        <div>
+                            <span class="fw-semibold">Mã truy vết (Request ID):</span>
+                            <code class="ms-1">@Model.RequestId</code>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary px-3 py-2">
+                    <i class="bi bi-arrow-left me-1"></i>Quay lại
+                </a>
+                <a href="@homeUrl" class="btn btn-primary px-4 py-2">
+                    <i class="bi bi-house-door me-1"></i>@homeLabel
+                </a>
+                @if (code == 403)
+                {
+                    <a href="/Auth/Login" class="btn btn-outline-primary px-3 py-2">
+                        <i class="bi bi-person-fill-lock me-1"></i>@(isAuthenticated ? "Đổi tài khoản" : "Đăng nhập")
+                    </a>
+                }
+            </div>
+        </section>
+    </main>
+
+    <script src="~/js/enterprise-theme.js" asp-append-version="true"></script>
+</body>
+</html>
+

@@ -1,13 +1,16 @@
 @model ERP_HRM_CMS.Models.ViewModels.ExecutiveDashboardViewModel
 @{
     Layout = "_Layout";
-    ViewData["Title"] = "Dashboard";
+    ViewData["Module"] = "system";
+    ViewData["Title"] = Model.IsSelfServiceView ? "Không gian làm việc cá nhân" : "Dashboard";
     ViewData["BreadcrumbSection"] = "Tổng quan";
-    var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
+    var fullName = User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "Người dùng";
 }
 
-@* Chart.js *@
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+@if (Model.CanViewSalesKpi)
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+}
 
 <div class="py-2">
     @* ═══════ WELCOME BANNER ═══════ *@
@@ -16,383 +19,483 @@
             <div>
                 <div class="d-flex align-items-center gap-2 mb-1">
                     <span class="erp-badge erp-badge-success erp-badge-dot" style="font-size:11px;">
-                        Real-time Connected
+                        @Model.ScopeBadgeLabel
                     </span>
                     <span class="text-white-50 small"><i class="bi bi-clock me-1"></i>@ERP_HRM_CMS.Helpers.VietnamTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
                 </div>
-                <h4 class="fw-bold mb-1 text-white">Trung tâm điều hành</h4>
-                <p class="text-white-50 small mb-0">Xin chào <strong class="text-white">@fullName</strong> — Doanh thu, Nhân sự, Kho vận, Công nợ real-time.</p>
+                <h4 class="fw-bold mb-1 text-white">
+                    @(Model.IsSelfServiceView ? "Không gian làm việc cá nhân" : "Trung tâm điều hành")
+                </h4>
+                <p class="text-white-50 small mb-0">
+                    Xin chào <strong class="text-white">@fullName</strong> —
+                    @(Model.IsSelfServiceView
+                        ? "Cổng tự phục vụ nhân sự: Quản lý đơn từ, ngày phép và bảo mật tài khoản cá nhân."
+                        : "Số liệu hiển thị tự động lọc theo quyền hạn và phạm vi dữ liệu của bạn.")
+                </p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="/BanHang/POS" class="btn btn-primary btn-sm ripple"><i class="bi bi-cart3 me-1"></i>POS</a>
-                <a href="/Kho/NhapKho" class="btn btn-warning btn-sm text-dark ripple"><i class="bi bi-box-arrow-in-down me-1"></i>Nhập kho</a>
-                <a href="/DonTu/Create" class="btn btn-info btn-sm text-white ripple"><i class="bi bi-file-earmark-plus me-1"></i>Đơn từ</a>
-                <a href="/ChamCong/Index" class="btn btn-success btn-sm ripple"><i class="bi bi-calendar2-check me-1"></i>Chấm công</a>
+                @if (Model.CanUsePos)
+                {
+                    <a href="/BanHang/POS" class="btn btn-primary btn-sm ripple"><i class="bi bi-cart3 me-1"></i>POS</a>
+                }
+                @if (Model.CanViewInventoryKpi)
+                {
+                    <a href="/Kho/NhapKho" class="btn btn-warning btn-sm text-dark ripple"><i class="bi bi-box-arrow-in-down me-1"></i>Nhập kho</a>
+                }
+                <a href="/DonTu/Create" class="btn btn-info btn-sm text-white ripple"><i class="bi bi-file-earmark-plus me-1"></i>Tạo đơn từ</a>
+                <a href="/Auth/ChangePassword" class="btn btn-outline-light btn-sm ripple"><i class="bi bi-key me-1"></i>Đổi mật khẩu</a>
             </div>
         </div>
     </div>
 
-    @* ═══════ 6 KPI STAT CARDS ═══════ *@
-    <div class="row g-3 mb-4 stagger-list">
-        @* Doanh Thu Tháng *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Doanh thu tháng</div>
-                    <div class="stat-card-value">
-                        <span class="count-up" data-target="@Model.MonthlyRevenue" data-suffix=" đ">0</span>
+    @if (Model.IsSelfServiceView)
+    {
+        @* ═══════ EMPLOYEE SELF-SERVICE WORKSPACE (KHÔNG LỘ DOANH THU / NHÂN SỰ TOÀN CÔNG TY) ═══════ *@
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card hover-lift">
+                    <div class="stat-card-body">
+                        <div class="stat-card-label">Ngày công tháng này</div>
+                        <div class="stat-card-value">
+                            <span>@Model.MyWorkDaysThisMonth</span> <small class="text-muted" style="font-size:14px;">ngày</small>
+                        </div>
+                        <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                            <i class="bi bi-calendar2-check text-success me-1"></i>Chấm công cá nhân
+                        </div>
                     </div>
-                    <div class="stat-card-trend @(Model.RevenueGrowthPercent >= 0 ? "up" : "down")">
-                        <i class="bi @(Model.RevenueGrowthPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right") me-1"></i>@Model.RevenueGrowthPercent% vs tháng trước
-                    </div>
+                    <div class="stat-card-icon success"><i class="bi bi-calendar-check-fill"></i></div>
                 </div>
-                <div class="stat-card-icon primary"><i class="bi bi-currency-dollar"></i></div>
             </div>
-        </div>
 
-        @* Đơn Hàng Hôm Nay *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Đơn hàng hôm nay</div>
-                    <div class="stat-card-value">
-                        <span class="count-up" data-target="@Model.TodayOrdersCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+            <div class="col-md-4">
+                <div class="stat-card hover-lift">
+                    <div class="stat-card-body">
+                        <div class="stat-card-label">Đơn từ đang chờ duyệt</div>
+                        <div class="stat-card-value" style="color:var(--erp-warning);">
+                            <span>@Model.MyPendingLeavesCount</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+                        </div>
+                        <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                            <a href="/DonTu/Index" class="text-decoration-none small">Theo dõi trạng thái →</a>
+                        </div>
                     </div>
-                    <div class="stat-card-trend up">
-                        <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
-                    </div>
+                    <div class="stat-card-icon warning"><i class="bi bi-hourglass-split"></i></div>
                 </div>
-                <div class="stat-card-icon success"><i class="bi bi-bag-check-fill"></i></div>
             </div>
-        </div>
 
-        @* Nhân Sự Active *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Nhân sự</div>
-                    <div class="stat-card-value">
-                        <span class="count-up" data-target="@Model.ActiveEmployeesCount">0</span>
-                        <small class="text-muted" style="font-size:14px;">/ @Model.TotalEmployeesCount</small>
+            <div class="col-md-4">
+                <div class="stat-card hover-lift">
+                    <div class="stat-card-body">
+                        <div class="stat-card-label">Ngày phép đã duyệt trong năm</div>
+                        <div class="stat-card-value">
+                            <span>@Model.MyApprovedLeaveDaysThisYear</span> <small class="text-muted" style="font-size:14px;">ngày</small>
+                        </div>
+                        <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                            <a href="/DonTu/Create" class="text-decoration-none small">Đăng ký đơn mới →</a>
+                        </div>
                     </div>
-                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
-                        <i class="bi bi-check-circle-fill text-success me-1"></i>Đang hoạt động
-                    </div>
-                </div>
-                <div class="stat-card-icon info"><i class="bi bi-people-fill"></i></div>
-            </div>
-        </div>
-
-        @* Đơn Chờ Duyệt *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Chờ phê duyệt</div>
-                    <div class="stat-card-value" style="color:var(--erp-warning);">
-                        <span class="count-up" data-target="@Model.PendingApprovalsCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
-                    </div>
-                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
-                        <a href="/DonTu/Index" class="text-decoration-none small">Duyệt ngay →</a>
-                    </div>
-                </div>
-                <div class="stat-card-icon warning"><i class="bi bi-clock-history"></i></div>
-            </div>
-        </div>
-
-        @* Tồn Kho Cảnh Báo *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Cảnh báo tồn kho</div>
-                    <div class="stat-card-value" style="color:var(--erp-danger);">
-                        <span class="count-up" data-target="@Model.LowStockCount">0</span> <small class="text-muted" style="font-size:14px;">mặt hàng</small>
-                    </div>
-                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
-                        <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none small">Dưới ngưỡng →</a>
-                    </div>
-                </div>
-                <div class="stat-card-icon danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
-            </div>
-        </div>
-
-        @* Công Nợ Quá Hạn *@
-        <div class="col-xl-2 col-md-4 col-sm-6">
-            <div class="stat-card hover-lift">
-                <div class="stat-card-body">
-                    <div class="stat-card-label">Nợ quá hạn</div>
-                    <div class="stat-card-value">
-                        <span class="count-up" data-target="@Model.OverdueDebtTotal" data-suffix=" đ">0</span>
-                    </div>
-                    <div class="stat-card-trend" style="color:var(--erp-text-muted);">
-                        <a href="/CongNo/Index" class="text-decoration-none small">Phân tích tuổi nợ →</a>
-                    </div>
-                </div>
-                <div class="stat-card-icon purple"><i class="bi bi-credit-card-2-front-fill"></i></div>
-            </div>
-        </div>
-    </div>
-
-    @* ═══════ BIỂU ĐỒ ═══════ *@
-    <div class="row g-4 mb-4">
-        @* Doanh thu 12 tháng *@
-        <div class="col-lg-8">
-            <div class="erp-table-wrapper p-4 h-100 chart-container">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h6 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Doanh thu 12 tháng</h6>
-                        <p class="text-muted small mb-0">Xu hướng doanh số bán hàng lẻ & đơn đặt hàng</p>
-                    </div>
-                    <span class="erp-badge erp-badge-primary">Tổng: @Model.MonthlyRevenue.ToString("N0") đ</span>
-                </div>
-                <div style="height:300px; position:relative;">
-                    <canvas id="revenue12MonthsChart"></canvas>
+                    <div class="stat-card-icon info"><i class="bi bi-file-earmark-check-fill"></i></div>
                 </div>
             </div>
         </div>
+    }
+    else
+    {
+        @* ═══════ KPI STAT CARDS (CHỈ HIỂN THỊ CÁC THẺ ĐÚNG QUYỀN CỦA NGƯỜI DÙNG) ═══════ *@
+        <div class="row g-3 mb-4 stagger-list">
+            @if (Model.CanViewSalesKpi)
+            {
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Doanh thu tháng</div>
+                            <div class="stat-card-value">
+                                <span class="count-up" data-target="@Model.MonthlyRevenue" data-suffix=" đ">0</span>
+                            </div>
+                            <div class="stat-card-trend @(Model.RevenueGrowthPercent >= 0 ? "up" : "down")">
+                                <i class="bi @(Model.RevenueGrowthPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right") me-1"></i>@Model.RevenueGrowthPercent% vs tháng trước
+                            </div>
+                        </div>
+                        <div class="stat-card-icon primary"><i class="bi bi-currency-dollar"></i></div>
+                    </div>
+                </div>
 
-        @* Tỷ trọng doanh thu *@
-        <div class="col-lg-4">
-            <div class="erp-table-wrapper p-4 h-100 chart-container">
-                <h6 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ trọng doanh thu</h6>
-                <p class="text-muted small mb-3">Phân bổ theo chi nhánh</p>
-                <div style="height:250px;" class="d-flex justify-content-center align-items-center">
-                    <canvas id="branchRevenueChart"></canvas>
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Đơn hàng hôm nay</div>
+                            <div class="stat-card-value">
+                                <span class="count-up" data-target="@Model.TodayOrdersCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+                            </div>
+                            <div class="stat-card-trend up">
+                                <i class="bi bi-cash-stack me-1"></i>@Model.TodayRevenue.ToString("N0") đ
+                            </div>
+                        </div>
+                        <div class="stat-card-icon success"><i class="bi bi-bag-check-fill"></i></div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanViewHrKpi)
+            {
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Nhân sự</div>
+                            <div class="stat-card-value">
+                                <span class="count-up" data-target="@Model.ActiveEmployeesCount">0</span>
+                                <small class="text-muted" style="font-size:14px;">/ @Model.TotalEmployeesCount</small>
+                            </div>
+                            <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>Đang hoạt động
+                            </div>
+                        </div>
+                        <div class="stat-card-icon info"><i class="bi bi-people-fill"></i></div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanViewApprovalsKpi)
+            {
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Chờ phê duyệt</div>
+                            <div class="stat-card-value" style="color:var(--erp-warning);">
+                                <span class="count-up" data-target="@Model.PendingApprovalsCount">0</span> <small class="text-muted" style="font-size:14px;">đơn</small>
+                            </div>
+                            <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                                <a href="/DonTu/Index" class="text-decoration-none small">Duyệt ngay →</a>
+                            </div>
+                        </div>
+                        <div class="stat-card-icon warning"><i class="bi bi-clock-history"></i></div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanViewInventoryKpi)
+            {
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Cảnh báo tồn kho</div>
+                            <div class="stat-card-value" style="color:var(--erp-danger);">
+                                <span class="count-up" data-target="@Model.LowStockCount">0</span> <small class="text-muted" style="font-size:14px;">mặt hàng</small>
+                            </div>
+                            <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                                <a href="/Kho/Index?lowStock=true" class="text-danger text-decoration-none small">Dưới ngưỡng →</a>
+                            </div>
+                        </div>
+                        <div class="stat-card-icon danger"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanViewDebtKpi)
+            {
+                <div class="col-xl-2 col-md-4 col-sm-6">
+                    <div class="stat-card hover-lift">
+                        <div class="stat-card-body">
+                            <div class="stat-card-label">Nợ quá hạn</div>
+                            <div class="stat-card-value">
+                                <span class="count-up" data-target="@Model.OverdueDebtTotal" data-suffix=" đ">0</span>
+                            </div>
+                            <div class="stat-card-trend" style="color:var(--erp-text-muted);">
+                                <a href="/CongNo/Index" class="text-decoration-none small">Phân tích tuổi nợ →</a>
+                            </div>
+                        </div>
+                        <div class="stat-card-icon purple"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.CanViewSalesKpi)
+        {
+            @* ═══════ BIỂU ĐỒ DOANH THU (CHỈ HIỂN THỊ KHI CÓ QUYỀN) ═══════ *@
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="erp-table-wrapper p-4 h-100 chart-container">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Doanh thu 12 tháng</h6>
+                                <p class="text-muted small mb-0">Xu hướng doanh số bán hàng lẻ & đơn đặt hàng</p>
+                            </div>
+                            <span class="erp-badge erp-badge-primary">Tổng tháng: @Model.MonthlyRevenue.ToString("N0") đ</span>
+                        </div>
+                        <div style="height:300px; position:relative;">
+                            <canvas id="revenue12MonthsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="erp-table-wrapper p-4 h-100 chart-container">
+                        <h6 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-success me-2"></i>Tỷ trọng doanh thu</h6>
+                        <p class="text-muted small mb-3">Phân bổ theo chi nhánh</p>
+                        <div style="height:250px;" class="d-flex justify-content-center align-items-center">
+                            <canvas id="branchRevenueChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+        }
 
-    @* ═══════ BẢNG SẢN PHẨM BÁN CHẠY + ACTIVITY FEED ═══════ *@
-    <div class="row g-4">
-        @* Top sản phẩm *@
-        <div class="col-lg-7">
-            <div class="erp-table-wrapper h-100">
-                <div class="erp-table-toolbar">
-                    <div>
-                        <span class="erp-table-toolbar-title"><i class="bi bi-trophy-fill text-warning me-2"></i>Top sản phẩm bán chạy</span>
-                    </div>
-                    <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả →</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Sản phẩm</th>
-                                <th>Danh mục</th>
-                                <th class="text-center">Đã bán</th>
-                                <th class="text-end">Doanh số</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.TopProducts != null && Model.TopProducts.Any())
-                            {
-                                int rank = 1;
-                                foreach (var p in Model.TopProducts)
-                                {
+        <div class="row g-4">
+            @if (Model.CanViewSalesKpi)
+            {
+                <div class="@(Model.CanViewAuditFeed ? "col-lg-7" : "col-lg-12")">
+                    <div class="erp-table-wrapper h-100">
+                        <div class="erp-table-toolbar">
+                            <div>
+                                <span class="erp-table-toolbar-title"><i class="bi bi-trophy-fill text-warning me-2"></i>Top sản phẩm bán chạy</span>
+                            </div>
+                            <a href="/SanPham/Index" class="btn btn-sm btn-outline-secondary">Xem tất cả →</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
                                     <tr>
-                                        <td class="fw-bold text-muted font-monospace">@rank</td>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="stat-card-icon primary" style="width:32px;height:32px;font-size:14px;border-radius:8px;">
-                                                    <i class="bi bi-box-seam"></i>
+                                        <th>#</th>
+                                        <th>Sản phẩm</th>
+                                        <th>Danh mục</th>
+                                        <th class="text-center">Đã bán</th>
+                                        <th class="text-end">Doanh số</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.TopProducts != null && Model.TopProducts.Any())
+                                    {
+                                        int rank = 1;
+                                        foreach (var p in Model.TopProducts)
+                                        {
+                                            <tr>
+                                                <td class="fw-bold text-muted font-monospace">@rank</td>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div class="stat-card-icon primary" style="width:32px;height:32px;font-size:14px;border-radius:8px;">
+                                                            <i class="bi bi-box-seam"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div class="fw-semibold small">@p.Name</div>
+                                                            <div class="text-muted" style="font-size:11px;">@p.SKU</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="erp-badge erp-badge-neutral">@p.CategoryName</span></td>
+                                                <td class="text-center font-monospace fw-bold" style="color:var(--erp-primary);">@p.QuantitySold</td>
+                                                <td class="text-end font-monospace fw-bold" style="color:var(--erp-success);">@p.Revenue.ToString("N0") đ</td>
+                                            </tr>
+                                            rank++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="5">
+                                                <div class="erp-empty-state">
+                                                    <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
+                                                    <div class="erp-empty-state-title">Chưa có dữ liệu</div>
+                                                    <div class="erp-empty-state-desc">Chưa có thông tin sản phẩm bán lẻ</div>
                                                 </div>
-                                                <div>
-                                                    <div class="fw-semibold small">@p.Name</div>
-                                                    <div class="text-muted" style="font-size:11px;">@p.SKU</div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanViewAuditFeed)
+            {
+                <div class="@(Model.CanViewSalesKpi ? "col-lg-5" : "col-lg-12")">
+                    <div class="erp-table-wrapper h-100">
+                        <div class="erp-table-toolbar">
+                            <span class="erp-table-toolbar-title"><i class="bi bi-activity text-danger me-2"></i>Hoạt động gần đây</span>
+                            <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log →</a>
+                        </div>
+                        <div class="p-3" id="activityFeedList" style="max-height:420px; overflow-y:auto;">
+                            @if (Model.RecentActivities != null && Model.RecentActivities.Any())
+                            {
+                                foreach (var act in Model.RecentActivities)
+                                {
+                                    <div class="d-flex justify-content-between align-items-start gap-2 py-3 border-bottom">
+                                        <div class="d-flex gap-2 align-items-start">
+                                            <div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
+                                                @(act.Username?.Length > 0 ? act.Username[0].ToString().ToUpper() : "?")
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold small">@act.Description</div>
+                                                <div class="text-muted" style="font-size:11px;">
+                                                    @act.Username • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">@act.Action</span>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td><span class="erp-badge erp-badge-neutral">@p.CategoryName</span></td>
-                                        <td class="text-center font-monospace fw-bold" style="color:var(--erp-primary);">@p.QuantitySold</td>
-                                        <td class="text-end font-monospace fw-bold" style="color:var(--erp-success);">@p.Revenue.ToString("N0") đ</td>
-                                    </tr>
-                                    rank++;
+                                        </div>
+                                        <span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
+                                    </div>
                                 }
                             }
                             else
                             {
-                                <tr>
-                                    <td colspan="5">
-                                        <div class="erp-empty-state">
-                                            <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
-                                            <div class="erp-empty-state-title">Chưa có dữ liệu</div>
-                                            <div class="erp-empty-state-desc">Chưa có thông tin sản phẩm bán lẻ</div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        @* Activity Feed *@
-        <div class="col-lg-5">
-            <div class="erp-table-wrapper h-100">
-                <div class="erp-table-toolbar">
-                    <span class="erp-table-toolbar-title"><i class="bi bi-activity text-danger me-2"></i>Hoạt động gần đây</span>
-                    <a href="/AuditLog/Index" class="btn btn-sm btn-outline-primary">Audit Log →</a>
-                </div>
-                <div class="p-3" id="activityFeedList" style="max-height:420px; overflow-y:auto;">
-                    @if (Model.RecentActivities != null && Model.RecentActivities.Any())
-                    {
-                        foreach (var act in Model.RecentActivities)
-                        {
-                            <div class="d-flex justify-content-between align-items-start gap-2 py-3 border-bottom">
-                                <div class="d-flex gap-2 align-items-start">
-                                    <div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
-                                        @(act.Username?.Length > 0 ? act.Username[0].ToString().ToUpper() : "?")
-                                    </div>
-                                    <div>
-                                        <div class="fw-semibold small">@act.Description</div>
-                                        <div class="text-muted" style="font-size:11px;">
-                                            @act.Username • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">@act.Action</span>
-                                        </div>
-                                    </div>
+                                <div class="erp-empty-state">
+                                    <div class="erp-empty-state-icon"><i class="bi bi-clock-history"></i></div>
+                                    <div class="erp-empty-state-title">Chưa có hoạt động</div>
+                                    <div class="erp-empty-state-desc">Nhật ký hoạt động sẽ xuất hiện khi có thao tác mới</div>
                                 </div>
-                                <span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">@act.CreatedAt.ToString("HH:mm dd/MM")</span>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="erp-empty-state">
-                            <div class="erp-empty-state-icon"><i class="bi bi-clock-history"></i></div>
-                            <div class="erp-empty-state-title">Chưa có hoạt động</div>
-                            <div class="erp-empty-state-desc">Nhật ký hoạt động sẽ xuất hiện khi có thao tác mới</div>
+                            }
                         </div>
-                    }
+                    </div>
                 </div>
-            </div>
+            }
         </div>
-    </div>
+    }
 </div>
 
-@* ═══════ CHART INIT ═══════ *@
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Lấy màu từ CSS variables cho dark mode
-    var style = getComputedStyle(document.documentElement);
-    var gridColor = style.getPropertyValue('--erp-border-color').trim() || 'rgba(0,0,0,0.05)';
-    var textColor = style.getPropertyValue('--erp-text-muted').trim() || '#64748B';
+@if (Model.CanViewSalesKpi)
+{
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function readToken(name) {
+            return (window.ERP && ERP.themeColor)
+                ? ERP.themeColor(name)
+                : getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
 
-    // Doanh thu 12 tháng
-    var ctxRev = document.getElementById('revenue12MonthsChart');
-    if (ctxRev) {
-        var labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
-        var dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
-        new Chart(ctxRev, {
-            type: 'line',
-            data: {
-                labels: labelsRev,
-                datasets: [{
-                    label: 'Doanh thu (VNĐ)',
-                    data: dataRev,
-                    borderColor: '#2563EB',
-                    backgroundColor: 'rgba(37,99,235,0.08)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#2563EB',
-                    borderWidth: 2.5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 1200, easing: 'easeOutQuart' },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15,23,42,0.9)',
-                        titleFont: { family: "'Be Vietnam Pro'" },
-                        bodyFont: { family: "'Be Vietnam Pro'" },
-                        cornerRadius: 8,
-                        padding: 12,
-                        callbacks: {
-                            label: function (c) { return ' Doanh thu: ' + c.parsed.y.toLocaleString('vi-VN') + ' đ'; }
-                        }
-                    }
+        var revChart = null;
+        var branchChart = null;
+
+        function buildPalette() {
+            return {
+                primary: readToken('--erp-primary'),
+                primarySubtle: readToken('--erp-primary-subtle'),
+                success: readToken('--erp-success'),
+                warning: readToken('--erp-warning'),
+                info: readToken('--erp-info'),
+                purple: readToken('--erp-purple'),
+                danger: readToken('--erp-danger'),
+                grid: readToken('--erp-border-color'),
+                text: readToken('--erp-text-muted'),
+                card: readToken('--erp-bg-card'),
+                tooltipBg: readToken('--erp-bg-sidebar')
+            };
+        }
+
+        var palette = buildPalette();
+
+        var ctxRev = document.getElementById('revenue12MonthsChart');
+        if (ctxRev) {
+            var labelsRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsLabels));
+            var dataRev = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue12MonthsData));
+            revChart = new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: labelsRev,
+                    datasets: [{
+                        label: 'Doanh thu (VNĐ)',
+                        data: dataRev,
+                        borderColor: palette.primary,
+                        backgroundColor: palette.primarySubtle,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: palette.primary,
+                        borderWidth: 2.5
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: gridColor, drawBorder: false },
-                        ticks: {
-                            color: textColor,
-                            font: { family: "'Be Vietnam Pro'", size: 11 },
-                            callback: function (v) {
-                                if (v >= 1e9) return (v / 1e9).toFixed(1) + ' tỷ';
-                                if (v >= 1e6) return (v / 1e6).toFixed(0) + ' tr';
-                                return v.toLocaleString('vi-VN');
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 900, easing: 'easeOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: palette.tooltipBg,
+                            titleFont: { family: "'Be Vietnam Pro'" },
+                            bodyFont: { family: "'Be Vietnam Pro'" },
+                            cornerRadius: 8,
+                            padding: 12,
+                            callbacks: {
+                                label: function (c) { return ' Doanh thu: ' + c.parsed.y.toLocaleString('vi-VN') + ' đ'; }
                             }
                         }
                     },
-                    x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Be Vietnam Pro'", size: 11 } } }
-                }
-            }
-        });
-    }
-
-    // Tỷ trọng chi nhánh
-    var ctxBranch = document.getElementById('branchRevenueChart');
-    if (ctxBranch) {
-        var lb = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
-        var db = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
-        new Chart(ctxBranch, {
-            type: 'doughnut',
-            data: {
-                labels: lb.length > 0 ? lb : ['Trụ sở chính'],
-                datasets: [{
-                    data: db.length > 0 ? db : [1],
-                    backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6'],
-                    borderWidth: 2,
-                    borderColor: style.getPropertyValue('--erp-bg-card').trim() || '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: { duration: 1000, easing: 'easeOutQuart' },
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { boxWidth: 10, padding: 12, font: { family: "'Be Vietnam Pro'", size: 11 }, color: textColor }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(15,23,42,0.9)',
-                        cornerRadius: 8,
-                        padding: 12,
-                        callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.parsed.toLocaleString('vi-VN') + ' đ'; } }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: palette.grid, drawBorder: false },
+                            ticks: {
+                                color: palette.text,
+                                font: { family: "'Be Vietnam Pro'", size: 11 },
+                                callback: function (v) {
+                                    if (v >= 1e9) return (v / 1e9).toFixed(1) + ' tỷ';
+                                    if (v >= 1e6) return (v / 1e6).toFixed(0) + ' tr';
+                                    return v.toLocaleString('vi-VN');
+                                }
+                            }
+                        },
+                        x: { grid: { display: false }, ticks: { color: palette.text, font: { family: "'Be Vietnam Pro'", size: 11 } } }
                     }
+                }
+            });
+        }
+
+        var ctxBranch = document.getElementById('branchRevenueChart');
+        if (ctxBranch) {
+            var labelsBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
+            var dataBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchData));
+            var branchColors = [palette.primary, palette.success, palette.warning, palette.purple, palette.info];
+
+            if (labelsBranch.length === 0) { labelsBranch = ["Chưa có dữ liệu"]; dataBranch = [1]; branchColors = [palette.grid]; }
+
+            branchChart = new Chart(ctxBranch, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsBranch,
+                    datasets: [{
+                        data: dataBranch,
+                        backgroundColor: branchColors,
+                        borderWidth: 2,
+                        borderColor: palette.card
+                    }]
                 },
-                cutout: '68%'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 14, color: palette.text, font: { family: "'Be Vietnam Pro'", size: 11 }, usePointStyle: true, pointStyleWidth: 8 }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('erp:themechange', function () {
+            var p = buildPalette();
+            if (revChart) {
+                revChart.data.datasets[0].borderColor = p.primary;
+                revChart.data.datasets[0].backgroundColor = p.primarySubtle;
+                revChart.data.datasets[0].pointBackgroundColor = p.primary;
+                revChart.options.scales.y.grid.color = p.grid;
+                revChart.options.scales.y.ticks.color = p.text;
+                revChart.options.scales.x.ticks.color = p.text;
+                revChart.options.plugins.tooltip.backgroundColor = p.tooltipBg;
+                revChart.update('none');
+            }
+            if (branchChart) {
+                var realBranch = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueByBranchLabels));
+                branchChart.data.datasets[0].backgroundColor = realBranch.length === 0
+                    ? [p.grid]
+                    : [p.primary, p.success, p.warning, p.purple, p.info];
+                branchChart.data.datasets[0].borderColor = p.card;
+                branchChart.options.plugins.legend.labels.color = p.text;
+                branchChart.update('none');
             }
         });
-    }
-
-    // SignalR Activity Feed live update
-    if (window.enterpriseSignalRHub) {
-        window.enterpriseSignalRHub.on("ReceiveNotification", function (d) {
-            var feed = document.getElementById("activityFeedList");
-            if (!feed) return;
-            var item = document.createElement("div");
-            item.className = "d-flex justify-content-between align-items-start gap-2 py-3 border-bottom slide-up";
-            item.innerHTML = '<div class="d-flex gap-2 align-items-start">' +
-                '<div class="avatar-circle" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">S</div>' +
-                '<div><div class="fw-semibold small">' + HRM.escapeHtml(d.title) + '</div>' +
-                '<div class="text-muted" style="font-size:11px;">' + HRM.escapeHtml(d.content) +
-                ' • <span class="erp-badge erp-badge-primary" style="font-size:10px;padding:2px 6px;">' + HRM.escapeHtml(d.type || 'SYSTEM') + '</span></div></div></div>' +
-                '<span class="text-muted font-monospace flex-shrink-0" style="font-size:11px;">Vừa xong</span>';
-            feed.insertBefore(item, feed.firstChild);
-        });
-    }
-});
-</script>
-
-@section Scripts {
-    @* Thêm script bổ sung nếu cần *@
+    });
+    </script>
 }

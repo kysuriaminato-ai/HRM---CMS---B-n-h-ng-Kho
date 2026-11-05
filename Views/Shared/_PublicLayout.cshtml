@@ -14,7 +14,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="@(ViewData["Description"] ?? siteName)" />
+    <erp-seo-head title="@((string?)ViewData["Title"])"
+                  description="@((string?)ViewData["Description"])"
+                  canonical="@((string?)ViewData["CanonicalUrl"])"
+                  og-image="@((string?)ViewData["OgImage"])"
+                  og-type="@((string?)ViewData["OgType"] ?? "website")"
+                  entity-type="@((string?)ViewData["SeoEntityType"])"
+                  entity-id="@((int?)ViewData["SeoEntityId"])"
+                  custom-json-ld="@((string?)ViewData["CustomJsonLd"])"></erp-seo-head>
     <title>@ViewData["Title"] - @siteName</title>
     <script>
         // Áp dụng giao diện đã chọn trước khi trang hiển thị, tránh nháy sáng/tối
@@ -47,6 +54,7 @@
                 }
             </div>
             <div class="d-flex align-items-center gap-2">
+                <a href="/tuyen-dung" class="ps-topbar-link me-2"><i class="bi bi-briefcase me-1"></i>Tuyển dụng</a>
                 <button type="button" class="ps-icon-btn" id="psSearchToggle" aria-expanded="false" aria-controls="psSearchPanel" aria-label="Tìm kiếm bài viết" title="Tìm kiếm">
                     <i class="bi bi-search"></i>
                 </button>
@@ -96,6 +104,7 @@
                     <ul>
                         <li><a href="/">Trang chủ</a></li>
                         <li><a href="/Public/GioiThieu">Giới thiệu</a></li>
+                        <li><a href="/tuyen-dung">Tuyển dụng</a></li>
                         <li><a href="/Public/TinTuc">Tin tức</a></li>
                         <li><a href="/Public/LienHe">Liên hệ</a></li>
                     </ul>

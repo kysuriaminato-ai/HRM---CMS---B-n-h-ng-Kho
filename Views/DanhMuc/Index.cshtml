@@ -1,6 +1,6 @@
 @model IEnumerable<ERP_HRM_CMS.Models.Entities.Category>
 @{
-    Layout = "_SalesLayout";
+    ViewData["Module"] = "sales";
     ViewData["Title"] = "Quản Lý Danh Mục Ngành Hàng";
     var parents = ViewBag.Parents as List<ERP_HRM_CMS.Models.Entities.Category> ?? new();
 }

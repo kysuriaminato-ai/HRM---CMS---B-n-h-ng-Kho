@@ -1,7 +1,7 @@
 @model IEnumerable<ERP_HRM_CMS.Models.Entities.DebtRecord>
 @{
     ViewData["Title"] = "Quản Trị Công Nợ & Báo Cáo Tuổi Nợ";
-    Layout = "~/Views/Shared/_SalesLayout.cshtml";
+    ViewData["Module"] = "sales";
     decimal totalReceivable = ViewBag.TotalReceivable ?? 0;
     decimal totalPayable = ViewBag.TotalPayable ?? 0;
     decimal agingCurrent = ViewBag.AgingCurrent ?? 0;

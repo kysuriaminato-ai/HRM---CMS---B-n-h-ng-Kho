@@ -1,0 +1,104 @@
+@model ERP_HRM_CMS.Models.Entities.CompanyAsset
+@{
+    ViewData["Title"] = "Thêm Mới Tài Sản Doanh Nghiệp";
+    var branches = ViewBag.Branches as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+}
+
+<div class="content-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-subtle mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">Tài sản cấp phát</a></li>
+                    <li class="breadcrumb-item active">Thêm mới</li>
+                </ol>
+            </nav>
+            <h1 class="page-title mb-0">Thêm Mới Tài Sản Công Ty</h1>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-enterprise shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="card-title mb-0 fw-bold text-primary">
+                    <i class="bi bi-info-circle me-2"></i> Thông tin thiết bị & tài sản
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="CreateAsset" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="AssetCode" class="form-label fw-semibold">Mã tài sản <span class="text-danger">*</span></label>
+                            <input asp-for="AssetCode" class="form-control" required />
+                            <span asp-validation-for="AssetCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="AssetType" class="form-label fw-semibold">Loại tài sản <span class="text-danger">*</span></label>
+                            <select asp-for="AssetType" class="form-select" required>
+                                <option value="Laptop">Laptop / Máy tính xách tay</option>
+                                <option value="Monitor">Màn hình vi tính</option>
+                                <option value="AccessCard">Thẻ từ / Thẻ ra vào văn phòng</option>
+                                <option value="Uniform">Đồng phục công ty</option>
+                                <option value="Mobile">Điện thoại / Thiết bị di động</option>
+                                <option value="Other">Thiết bị khác</option>
+                            </select>
+                            <span asp-validation-for="AssetType" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label asp-for="AssetName" class="form-label fw-semibold">Tên tài sản / Model <span class="text-danger">*</span></label>
+                            <input asp-for="AssetName" class="form-control" placeholder="Ví dụ: Laptop Dell Latitude 5420 i7/16GB/512GB" required />
+                            <span asp-validation-for="AssetName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="SerialNumber" class="form-label fw-semibold">Số Serial / IMEI / Service Tag</label>
+                            <input asp-for="SerialNumber" class="form-control font-monospace" placeholder="Số hiệu dập trên thân máy" />
+                            <span asp-validation-for="SerialNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="BranchId" class="form-label fw-semibold">Chi nhánh quản lý</label>
+                            <select asp-for="BranchId" class="form-select" asp-items="branches">
+                                <option value="">-- Trụ sở chính / Chung --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="PurchaseDate" class="form-label fw-semibold">Ngày mua / Nhập kho</label>
+                            <input asp-for="PurchaseDate" type="date" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="PurchasePrice" class="form-label fw-semibold">Nguyên giá (VNĐ)</label>
+                            <input asp-for="PurchasePrice" type="number" step="1000" class="form-control text-end tabular-nums" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="WarrantyExpiryDate" class="form-label fw-semibold">Hạn bảo hành</label>
+                            <input asp-for="WarrantyExpiryDate" type="date" class="form-control" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label asp-for="Specification" class="form-label fw-semibold">Thông số kỹ thuật / Cấu hình / Ghi chú</label>
+                            <textarea asp-for="Specification" class="form-control" rows="3" placeholder="CPU, RAM, Ổ cứng, Phụ kiện kèm theo (sạc, túi chống sốc, chuột...)"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-1"></i> Lưu thông tin tài sản
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,7 +1,7 @@
 @model IEnumerable<ERP_HRM_CMS.Models.Entities.PurchaseOrder>
 @{
     ViewData["Title"] = "Đơn Mua Hàng & Nhập Kho (PO)";
-    Layout = "~/Views/Shared/_WarehouseLayout.cshtml";
+    ViewData["Module"] = "warehouse";
     decimal totalAmount = ViewBag.TotalAmount ?? 0;
     var suppliers = ViewBag.Suppliers as IEnumerable<ERP_HRM_CMS.Models.Entities.Supplier> ?? new List<ERP_HRM_CMS.Models.Entities.Supplier>();
     var branches = ViewBag.Branches as IEnumerable<ERP_HRM_CMS.Models.Entities.Branch> ?? new List<ERP_HRM_CMS.Models.Entities.Branch>();

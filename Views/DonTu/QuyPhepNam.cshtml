@@ -1,0 +1,186 @@
+@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.LeaveBalanceListItemDto>
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Quản lý Quỹ Phép Năm & Thâm Niên BLLĐ";
+    ViewData["BreadcrumbSection"] = "Đơn từ & Phê duyệt";
+    var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.LeaveBalanceFilterDto ?? new();
+    var departments = ViewBag.Departments as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+}
+
+<erp-page-header title="Quản Lý Quỹ Phép Năm & Thâm Niên (Điều 114 BLLĐ)"
+                 subtitle="Năm @filter.Year &mdash; Tự động cộng ngày phép thâm niên (+1 ngày cho mỗi 5 năm làm việc) và kiểm soát tồn phép"
+                 icon="bi-pie-chart-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Đơn từ:/DonTu/Index|Quỹ phép năm">
+    <form asp-action="KhoiTaoQuyPhep" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="year" value="@filter.Year" />
+        <button type="submit" class="btn btn-primary btn-sm shadow-sm" onclick="return confirm('Bạn có chắc chắn muốn tính toán và làm mới quỹ phép năm @filter.Year cho toàn bộ nhân sự?')">
+            <i class="bi bi-arrow-repeat me-1"></i> Tính toán & Khởi tạo Quỹ phép năm
+        </button>
+    </form>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Danh sách đơn từ
+    </a>
+</erp-page-header>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Bộ lọc tìm kiếm -->
+<erp-filter-bar method="get">
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Năm</label>
+        <input type="number" name="year" value="@filter.Year" class="form-control form-control-sm tabular-nums" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="departments">
+            <option value="">-- Toàn bộ phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Từ khóa tìm kiếm</label>
+        <input type="text" name="keyword" value="@filter.Keyword" placeholder="Mã NV, Họ và tên..." class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-funnel-fill me-1"></i> Lọc dữ liệu
+        </button>
+    </div>
+</erp-filter-bar>
+
+<!-- Bảng danh sách quỹ phép -->
+<div class="card card-enterprise shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0 fw-bold text-primary">
+            <i class="bi bi-wallet2 me-2"></i> Số Dư Quỹ Phép Năm (@Model.TotalCount nhân sự)
+        </h6>
+        <div class="small text-muted">
+            <i class="bi bi-info-circle me-1"></i> Phép thâm niên: Cứ đủ 5 năm làm việc tại công ty được cộng thêm 1 ngày phép theo luật định
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 erp-table sticky-thead">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width: 90px;">Mã NV</th>
+                    <th style="min-width: 170px;">Họ và tên</th>
+                    <th style="min-width: 140px;">Phòng ban</th>
+                    <th>Ngày vào làm</th>
+                    <th class="text-center">Thâm niên</th>
+                    <th class="text-center tabular-nums">Tiêu chuẩn</th>
+                    <th class="text-center tabular-nums text-primary">+ Thâm niên</th>
+                    <th class="text-center tabular-nums">+ Phép tồn</th>
+                    <th class="text-center tabular-nums fw-bold">Tổng được nghỉ</th>
+                    <th class="text-center tabular-nums text-danger">Đã sử dụng</th>
+                    <th class="text-center tabular-nums fw-bold text-success">Còn lại</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var row in Model)
+                    {
+                        <tr>
+                            <td class="font-monospace fw-semibold"><code>@row.EmployeeCode</code></td>
+                            <td>
+                                <a asp-controller="NhanSu" asp-action="Details" asp-route-id="@row.EmployeeId" class="fw-bold text-decoration-none">
+                                    @row.FullName
+                                </a>
+                            </td>
+                            <td class="small text-secondary">@row.DepartmentName</td>
+                            <td class="small font-monospace">@row.HireDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-center small">
+                                <span class="badge bg-light text-dark border font-monospace">@row.CompletedYearsOfService năm</span>
+                            </td>
+                            <td class="text-center tabular-nums font-monospace">@row.StandardDays.ToString("0.#")</td>
+                            <td class="text-center tabular-nums font-monospace fw-bold text-primary">
+                                @if (row.SeniorityBonusDays > 0)
+                                {
+                                    <span class="badge bg-primary-subtle text-primary">+@row.SeniorityBonusDays.ToString("0.#")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">0</span>
+                                }
+                            </td>
+                            <td class="text-center tabular-nums font-monospace text-secondary">@row.CarriedOverDays.ToString("0.#")</td>
+                            <td class="text-center tabular-nums font-monospace fw-bold text-dark">
+                                @row.TotalEntitledDays.ToString("0.#")
+                            </td>
+                            <td class="text-center tabular-nums font-monospace text-danger fw-semibold">
+                                @row.UsedDays.ToString("0.#")
+                            </td>
+                            <td class="text-center tabular-nums font-monospace">
+                                @if (row.RemainingDays > 3)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle fs-6 px-2 py-1">
+                                        @row.RemainingDays.ToString("0.#")
+                                    </span>
+                                }
+                                else if (row.RemainingDays > 0)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle fs-6 px-2 py-1">
+                                        @row.RemainingDays.ToString("0.#")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-6 px-2 py-1">
+                                        0
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="11" class="text-center py-5 text-muted">
+                            <i class="bi bi-wallet2 fs-2 d-block mb-2"></i>
+                            Không có dữ liệu quỹ phép nào cho năm @filter.Year.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalCount bản ghi)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="QuyPhepNam" asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-year="@filter.Year" asp-route-departmentId="@filter.DepartmentId" asp-route-keyword="@filter.Keyword">Trước</a>
+                </li>
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.PageIndex ? "active" : "")">
+                        <a class="page-link" asp-action="QuyPhepNam" asp-route-page="@p"
+                           asp-route-year="@filter.Year" asp-route-departmentId="@filter.DepartmentId" asp-route-keyword="@filter.Keyword">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="QuyPhepNam" asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-year="@filter.Year" asp-route-departmentId="@filter.DepartmentId" asp-route-keyword="@filter.Keyword">Sau</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+

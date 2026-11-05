@@ -1,60 +1,149 @@
 /* ==========================================================================
-   ADMIN ANIMATIONS - Hiệu ứng động
-   Tôn trọng prefers-reduced-motion
+   ADMIN ANIMATIONS - Hiệu ứng động & Micro-interactions (GIAI ĐOẠN A)
+   Bao gồm: View Transitions, Accordion, Sliding Tab Indicator, Stagger Rows,
+   Shake Error, Success Tick, Circular Reveal Dark Mode, Toast Progress Bar.
+   Tôn trọng đầy đủ prefers-reduced-motion: reduce.
    ========================================================================== */
 
 /* ==========================================================================
-   1. FADE-IN & SLIDE-UP khi tải trang
+   1. VIEW TRANSITIONS (MPA & SPA/AJAX DOM Swap)
+   ========================================================================== */
+@view-transition {
+    navigation: auto;
+}
+
+.erp-sidebar {
+    view-transition-name: erp-sidebar;
+}
+
+.erp-topbar {
+    view-transition-name: erp-topbar;
+}
+
+.erp-page-content {
+    view-transition-name: erp-page-content;
+}
+
+::view-transition-old(erp-page-content) {
+    animation: vtFadeOut var(--erp-duration-fast) var(--erp-ease-in) both;
+}
+
+::view-transition-new(erp-page-content) {
+    animation: vtSlideIn var(--erp-duration-normal) var(--erp-ease-out) both;
+}
+
+@keyframes vtFadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes vtSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Circular Reveal Dark Mode (khi html có class .erp-theme-reveal) */
+html.erp-theme-reveal .erp-sidebar,
+html.erp-theme-reveal .erp-topbar,
+html.erp-theme-reveal .erp-page-content {
+    view-transition-name: none !important;
+}
+
+html.erp-theme-reveal::view-transition-old(root),
+html.erp-theme-reveal::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+html.erp-theme-reveal::view-transition-old(root) {
+    z-index: 1;
+}
+
+html.erp-theme-reveal::view-transition-new(root) {
+    z-index: 9999;
+}
+
+/* ==========================================================================
+   2. ENTRANCE: FADE-IN & SLIDE-UP
    ========================================================================== */
 .fade-in {
-    animation: fadeIn 0.4s ease-out both;
+    animation: fadeIn var(--erp-duration-slow) var(--erp-ease-out) both;
 }
 
 .slide-up {
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: slideUp var(--erp-duration-slow) var(--erp-ease-out) both;
 }
 
 .slide-up-sm {
-    animation: slideUpSm 0.35s ease-out both;
+    animation: slideUpSm var(--erp-duration-normal) var(--erp-ease-out) both;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; }
-    to { opacity: 1; }
+    to   { opacity: 1; }
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideUpSm {
     from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================================================
-   2. STAGGER - Hiệu ứng so le cho danh sách
+   3. STAGGER CARDS & STAGGER TABLE ROWS
    ========================================================================== */
 .stagger-list > * {
-    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: slideUp var(--erp-duration-slow) var(--erp-ease-out) both;
 }
 
-.stagger-list > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-list > *:nth-child(2) { animation-delay: 60ms; }
-.stagger-list > *:nth-child(3) { animation-delay: 120ms; }
-.stagger-list > *:nth-child(4) { animation-delay: 180ms; }
-.stagger-list > *:nth-child(5) { animation-delay: 240ms; }
-.stagger-list > *:nth-child(6) { animation-delay: 300ms; }
-.stagger-list > *:nth-child(7) { animation-delay: 360ms; }
-.stagger-list > *:nth-child(8) { animation-delay: 420ms; }
-.stagger-list > *:nth-child(n+9) { animation-delay: 480ms; }
+.stagger-list > *:nth-child(1)  { animation-delay: 0ms; }
+.stagger-list > *:nth-child(2)  { animation-delay: 50ms; }
+.stagger-list > *:nth-child(3)  { animation-delay: 100ms; }
+.stagger-list > *:nth-child(4)  { animation-delay: 150ms; }
+.stagger-list > *:nth-child(5)  { animation-delay: 200ms; }
+.stagger-list > *:nth-child(6)  { animation-delay: 250ms; }
+.stagger-list > *:nth-child(7)  { animation-delay: 300ms; }
+.stagger-list > *:nth-child(8)  { animation-delay: 350ms; }
+.stagger-list > *:nth-child(n+9){ animation-delay: 400ms; }
+
+.stagger-rows tbody > tr,
+tbody.stagger-rows > tr {
+    animation: staggerRowIn var(--erp-duration-normal) var(--erp-ease-out) both;
+}
+
+.stagger-rows tbody > tr:nth-child(1),  tbody.stagger-rows > tr:nth-child(1)  { animation-delay: 0ms; }
+.stagger-rows tbody > tr:nth-child(2),  tbody.stagger-rows > tr:nth-child(2)  { animation-delay: 30ms; }
+.stagger-rows tbody > tr:nth-child(3),  tbody.stagger-rows > tr:nth-child(3)  { animation-delay: 60ms; }
+.stagger-rows tbody > tr:nth-child(4),  tbody.stagger-rows > tr:nth-child(4)  { animation-delay: 90ms; }
+.stagger-rows tbody > tr:nth-child(5),  tbody.stagger-rows > tr:nth-child(5)  { animation-delay: 120ms; }
+.stagger-rows tbody > tr:nth-child(6),  tbody.stagger-rows > tr:nth-child(6)  { animation-delay: 150ms; }
+.stagger-rows tbody > tr:nth-child(7),  tbody.stagger-rows > tr:nth-child(7)  { animation-delay: 180ms; }
+.stagger-rows tbody > tr:nth-child(8),  tbody.stagger-rows > tr:nth-child(8)  { animation-delay: 210ms; }
+.stagger-rows tbody > tr:nth-child(9),  tbody.stagger-rows > tr:nth-child(9)  { animation-delay: 240ms; }
+.stagger-rows tbody > tr:nth-child(10), tbody.stagger-rows > tr:nth-child(10) { animation-delay: 270ms; }
+.stagger-rows tbody > tr:nth-child(n+11), tbody.stagger-rows > tr:nth-child(n+11) { animation-delay: 300ms; }
+
+@keyframes staggerRowIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* ==========================================================================
-   3. HOVER - Nâng thẻ khi hover
+   4. HOVER & RIPPLE
    ========================================================================== */
 .hover-lift {
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out),
+                box-shadow var(--erp-duration-normal) var(--erp-ease-default);
 }
 
 .hover-lift:hover {
@@ -63,16 +152,13 @@
 }
 
 .hover-grow {
-    transition: transform 0.2s ease;
+    transition: transform var(--erp-duration-fast) var(--erp-ease-default);
 }
 
 .hover-grow:hover {
     transform: scale(1.02);
 }
 
-/* ==========================================================================
-   4. RIPPLE - Hiệu ứng khi nhấn nút
-   ========================================================================== */
 .ripple {
     position: relative;
     overflow: hidden;
@@ -81,9 +167,9 @@
 .ripple-effect {
     position: absolute;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.32);
     transform: scale(0);
-    animation: rippleAnim 0.6s ease-out;
+    animation: rippleAnim var(--erp-duration-slower) var(--erp-ease-out);
     pointer-events: none;
 }
 
@@ -95,13 +181,81 @@
 }
 
 /* ==========================================================================
-   5. SCROLL REVEAL (IntersectionObserver)
-   Thêm class .reveal vào phần tử, JS sẽ thêm .revealed khi vào viewport
+   5. SHAKE ON ERROR & SUCCESS TICK
+   ========================================================================== */
+.erp-shake {
+    animation: erpShake var(--erp-duration-slow) var(--erp-ease-default);
+    border-color: var(--erp-danger) !important;
+    box-shadow: 0 0 0 3px rgba(var(--erp-danger-rgb), 0.22) !important;
+}
+
+@keyframes erpShake {
+    0%, 100% { transform: translateX(0); }
+    16%      { transform: translateX(-7px); }
+    33%      { transform: translateX(6px); }
+    50%      { transform: translateX(-5px); }
+    66%      { transform: translateX(4px); }
+    83%      { transform: translateX(-2px); }
+}
+
+/* Animated SVG Success Checkmark */
+.erp-success-tick {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    color: var(--erp-success);
+    animation: erpTickPop var(--erp-duration-slow) var(--erp-ease-spring) both;
+}
+
+.erp-success-tick-sm {
+    width: 28px;
+    height: 28px;
+}
+
+.erp-success-tick svg {
+    width: 100%;
+    height: 100%;
+}
+
+.erp-success-tick-circle {
+    stroke: var(--erp-success);
+    stroke-width: 3;
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    fill: var(--erp-success-subtle);
+    animation: erpStrokeDraw var(--erp-duration-slow) var(--erp-ease-out) forwards;
+}
+
+.erp-success-tick-check {
+    stroke: var(--erp-success);
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    fill: none;
+    animation: erpStrokeDraw 0.32s var(--erp-ease-out) 0.22s forwards;
+}
+
+@keyframes erpStrokeDraw {
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes erpTickPop {
+    0%   { transform: scale(0.75); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ==========================================================================
+   6. SCROLL REVEAL, COUNT-UP & CHART
    ========================================================================== */
 .reveal {
     opacity: 0;
-    transform: translateY(24px);
-    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(20px);
+    transition: opacity var(--erp-duration-slower) var(--erp-ease-out),
+                transform var(--erp-duration-slower) var(--erp-ease-out);
 }
 
 .reveal.revealed {
@@ -111,8 +265,9 @@
 
 .reveal-left {
     opacity: 0;
-    transform: translateX(-24px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateX(-20px);
+    transition: opacity var(--erp-duration-slower) var(--erp-ease-out),
+                transform var(--erp-duration-slower) var(--erp-ease-out);
 }
 
 .reveal-left.revealed {
@@ -122,8 +277,9 @@
 
 .reveal-right {
     opacity: 0;
-    transform: translateX(24px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateX(20px);
+    transition: opacity var(--erp-duration-slower) var(--erp-ease-out),
+                transform var(--erp-duration-slower) var(--erp-ease-out);
 }
 
 .reveal-right.revealed {
@@ -133,8 +289,9 @@
 
 .reveal-scale {
     opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: scale(0.92);
+    transition: opacity var(--erp-duration-slow) var(--erp-ease-out),
+                transform var(--erp-duration-slow) var(--erp-ease-out);
 }
 
 .reveal-scale.revealed {
@@ -142,42 +299,31 @@
     transform: scale(1);
 }
 
-/* ==========================================================================
-   6. COUNT-UP ANIMATION (JS-driven, class)
-   ========================================================================== */
 .count-up {
     display: inline-block;
-    /* Dùng tabular-nums để số không nhảy bố cục */
     font-variant-numeric: tabular-nums;
 }
 
-/* ==========================================================================
-   7. CHART ANIMATION
-   ========================================================================== */
 .chart-container {
     position: relative;
-    animation: chartFadeIn 0.6s ease-out 0.2s both;
+    animation: chartFadeIn var(--erp-duration-slower) var(--erp-ease-out) 0.15s both;
 }
 
 @keyframes chartFadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================================================
-   8. SIDEBAR & MODAL TRANSITIONS
+   7. MODAL, TOAST SLIDE & PROGRESS COUNTDOWN
    ========================================================================== */
-.erp-sidebar {
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 #sidebarToggleIcon {
-    transition: transform 0.25s ease;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-default);
 }
 
-/* Modal smooth */
 .modal.fade .modal-dialog {
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out),
+                opacity var(--erp-duration-fast) var(--erp-ease-default);
     transform: scale(0.95) translateY(-10px);
 }
 
@@ -185,28 +331,41 @@
     transform: scale(1) translateY(0);
 }
 
-/* ==========================================================================
-   9. TOAST AUTO-DISMISS ANIMATION
-   ========================================================================== */
 .erp-toast-alert {
-    animation: toastSlideIn 0.3s ease-out;
+    animation: toastSlideIn var(--erp-duration-normal) var(--erp-ease-out);
 }
 
 @keyframes toastSlideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .erp-toast-dismiss {
-    animation: toastSlideOut 0.25s ease-in forwards;
+    animation: toastSlideOut 0.22s var(--erp-ease-in) forwards;
 }
 
 @keyframes toastSlideOut {
-    to { opacity: 0; transform: translateY(-10px); height: 0; padding: 0; margin: 0; overflow: hidden; }
+    to {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+}
+
+.erp-toast-progress {
+    animation: toastCountdown var(--toast-duration, 5000ms) linear forwards;
+}
+
+.erp-toast-alert:hover .erp-toast-progress {
+    animation-play-state: paused;
+}
+
+@keyframes toastCountdown {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
 }
 
 /* ==========================================================================
-   10. SPINNER / LOADING
+   8. SPINNER & PULSE UTILITIES
    ========================================================================== */
 .erp-spinner {
     display: inline-block;
@@ -224,36 +383,62 @@
     border-width: 3px;
 }
 
-/* ==========================================================================
-   11. PULSE
-   ========================================================================== */
+.spin {
+    display: inline-block;
+    animation: btn-spin 1s linear infinite;
+}
+
 .pulse {
     animation: pulseAnim 2s ease-in-out infinite;
 }
 
 @keyframes pulseAnim {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50%      { opacity: 0.5; }
 }
 
 /* ==========================================================================
-   12. PREFERS-REDUCED-MOTION - Tắt tất cả hiệu ứng
+   9. PREFERS-REDUCED-MOTION: REDUCE (Tôn trọng giảm chuyển động)
    ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    @view-transition {
+        navigation: none;
+    }
+
+    *,
+    *::before,
+    *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 
-    .reveal, .reveal-left, .reveal-right, .reveal-scale {
-        opacity: 1;
-        transform: none;
+    .erp-sidebar,
+    .erp-topbar,
+    .erp-page-content {
+        view-transition-name: none !important;
+    }
+
+    .reveal,
+    .reveal-left,
+    .reveal-right,
+    .reveal-scale {
+        opacity: 1 !important;
+        transform: none !important;
     }
 
     .hover-lift:hover,
     .hover-grow:hover,
-    .stat-card:hover {
-        transform: none;
+    .hover-elevate:hover,
+    .stat-card:hover,
+    .btn:hover,
+    .erp-nav-item:hover {
+        transform: none !important;
+    }
+
+    .erp-success-tick-circle,
+    .erp-success-tick-check {
+        stroke-dashoffset: 0 !important;
     }
 }

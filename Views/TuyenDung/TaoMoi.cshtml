@@ -1,0 +1,152 @@
+@model ERP_HRM_CMS.Models.ViewModels.JobPostingCreateEditDto
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Đăng Tin Tuyển Dụng Mới";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-file-earmark-plus me-2 text-primary"></i>Đăng Tin Tuyển Dụng Mới</h4>
+            <p class="text-muted small mb-0">Thiết lập thông tin vị trí công việc và cấu hình thẻ meta chuẩn SEO.</p>
+        </div>
+        <a href="/TuyenDung/Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <div asp-validation-summary="All" class="text-danger small mb-0"></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form method="post" action="/TuyenDung/TaoMoi">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <!-- Left: Main Job Info -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Thông Tin Tuyển Dụng</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tiêu đề tin tuyển dụng <span class="text-danger">*</span></label>
+                        <input type="text" asp-for="Title" class="form-control" placeholder="Ví dụ: Senior .NET Software Engineer" required />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">SEO Slug (Đường dẫn thân thiện)</label>
+                        <input type="text" asp-for="Slug" class="form-control font-monospace" placeholder="Để trống hệ thống sẽ tự sinh từ tiêu đề (ví dụ: senior-net-software-engineer)" />
+                        <span class="form-text small">Tự động chuyển đổi tiếng Việt không dấu, gạch nối chuẩn URL.</span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Phòng ban <span class="text-danger">*</span></label>
+                            <select asp-for="DepartmentId" class="form-select" asp-items="ViewBag.Departments" required>
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Vị trí chức danh <span class="text-danger">*</span></label>
+                            <select asp-for="PositionId" class="form-select" asp-items="ViewBag.Positions" required>
+                                <option value="">-- Chọn vị trí --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Số lượng cần tuyển</label>
+                            <input type="number" asp-for="Vacancies" class="form-control" min="1" max="1000" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Mức lương hiển thị</label>
+                            <input type="text" asp-for="SalaryRange" class="form-control" placeholder="Ví dụ: 15 - 25 Triệu, Thỏa thuận" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Địa điểm làm việc</label>
+                            <input type="text" asp-for="WorkLocation" class="form-control" placeholder="Hà Nội, TP.HCM, Remote..." />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả công việc (Job Description)</label>
+                        <textarea asp-for="Description" rows="6" class="form-control" placeholder="Trách nhiệm chính, nhiệm vụ hàng ngày..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Yêu cầu ứng viên (Requirements)</label>
+                        <textarea asp-for="Requirements" rows="5" class="form-control" placeholder="Kinh nghiệm, kỹ năng chuyên môn, trình độ học vấn..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Quyền lợi & Phúc lợi (Benefits)</label>
+                        <textarea asp-for="Benefits" rows="4" class="form-control" placeholder="Bảo hiểm, thưởng, đào tạo, teambuilding..."></textarea>
+                    </div>
+                </div>
+
+                <!-- SEO Meta Configuration Card -->
+                <div class="card border-0 shadow-sm rounded-3 p-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-google me-2 text-primary"></i>Cấu Hình Technical SEO & Open Graph</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">SEO Meta Title</label>
+                        <input type="text" asp-for="MetaTitle" class="form-control" placeholder="Để trống sẽ dùng Tiêu đề tin tuyển dụng" maxlength="200" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">SEO Meta Description</label>
+                        <textarea asp-for="MetaDescription" rows="3" class="form-control" placeholder="Mô tả súc tích xuất hiện trên kết quả tìm kiếm Google (150-160 ký tự)" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Từ khóa tìm kiếm (Keywords)</label>
+                            <input type="text" asp-for="MetaKeywords" class="form-control" placeholder="tuyển dụng net, việc làm c#, senior developer" maxlength="500" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ảnh chia sẻ mạng xã hội (OG Image URL)</label>
+                            <input type="text" asp-for="OgImage" class="form-control" placeholder="/images/banner-hiring.png" maxlength="500" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Settings & Publishing -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-gear me-2 text-primary"></i>Trạng Thái & Thời Gian</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Trạng thái tin</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="Open">Đang mở (Hiển thị công khai)</option>
+                            <option value="Draft">Bản nháp (Nội bộ)</option>
+                            <option value="Closed">Đã đóng (Ngừng nhận hồ sơ)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ngày bắt đầu đăng</label>
+                        <input type="date" asp-for="OpenDate" class="form-control" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Hạn nộp hồ sơ</label>
+                        <input type="date" asp-for="CloseDate" class="form-control" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                        <i class="bi bi-check-circle me-1"></i> Lưu & Xuất Bản Tin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+

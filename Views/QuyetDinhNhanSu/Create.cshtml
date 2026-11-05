@@ -1,0 +1,147 @@
+@model ERP_HRM_CMS.Models.Entities.HrDecision
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Ban Hành Quyết Định Nhân Sự";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+}
+
+<erp-page-header title="Ban Hành Quyết Định Nhân Sự Mới"
+                 subtitle="Khởi tạo văn bản quyết định điện tử chuẩn thể thức hành chính doanh nghiệp"
+                 icon="bi-file-earmark-plus-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự:/NhanSu/Index|Quyết định nhân sự:/QuyetDinhNhanSu/Index|Tạo mới">
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Quay lại danh sách</a>
+</erp-page-header>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card erp-card p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-primary mb-3">1. Thông Tin Cơ Bản Quyết Định</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label asp-for="DecisionNumber" class="form-label small fw-semibold">Số quyết định (*)</label>
+                        <input asp-for="DecisionNumber" class="form-control form-control-sm tabular-nums" required />
+                        <span asp-validation-for="DecisionNumber" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="DecisionType" class="form-label small fw-semibold">Loại quyết định (*)</label>
+                        <select asp-for="DecisionType" class="form-select form-select-sm" id="selDecisionType" onchange="toggleDecisionFields()">
+                            <option value="Appointment">Bổ nhiệm chức vụ</option>
+                            <option value="Transfer">Điều chuyển phòng ban / chi nhánh</option>
+                            <option value="SalaryAdjustment">Điều chỉnh mức lương</option>
+                            <option value="Reward">Khen thưởng thành tích</option>
+                            <option value="Discipline">Kỷ luật vi phạm</option>
+                            <option value="Termination">Thôi việc / Chấm dứt HĐLĐ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="EmployeeId" class="form-label small fw-semibold">Nhân sự thụ hưởng (*)</label>
+                        <select asp-for="EmployeeId" class="form-select form-select-sm" asp-items="ViewBag.Employees" required>
+                            <option value="">-- Chọn nhân sự --</option>
+                        </select>
+                        <span asp-validation-for="EmployeeId" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Title" class="form-label small fw-semibold">Trích yếu / Tiêu đề quyết định (*)</label>
+                        <input asp-for="Title" class="form-control form-control-sm" placeholder="VD: Về việc bổ nhiệm chức vụ Trưởng phòng Kinh doanh đối với ông/bà..." required />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="EffectiveDate" class="form-label small fw-semibold">Ngày có hiệu lực (*)</label>
+                        <input asp-for="EffectiveDate" type="date" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="SignDate" class="form-label small fw-semibold">Ngày ký ban hành</label>
+                        <input asp-for="SignDate" type="date" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-primary mb-3">2. Chi Tiết Nội Dung Quyết Định</h6>
+                
+                <!-- Nhóm trường điều chuyển phòng ban -->
+                <div class="row g-3 mb-3" id="secDeptPos">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Phòng ban mới (Nếu điều chuyển)</label>
+                        <select asp-for="NewDepartmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+                            <option value="">-- Giữ nguyên hoặc không đổi --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Chức danh / Vị trí mới (Nếu bổ nhiệm)</label>
+                        <select asp-for="NewPositionId" class="form-select form-select-sm" asp-items="ViewBag.Positions">
+                            <option value="">-- Giữ nguyên hoặc không đổi --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Nhóm trường lương & tiền thưởng -->
+                <div class="row g-3 mb-3" id="secSalaryAmount">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Mức lương cũ</label>
+                        <input asp-for="OldSalary" type="number" class="form-control form-control-sm tabular-nums" placeholder="VNĐ" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Mức lương mới (Áp dụng HĐ)</label>
+                        <input asp-for="NewSalary" type="number" class="form-control form-control-sm tabular-nums" placeholder="VNĐ" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Số tiền Thưởng / Phạt</label>
+                        <input asp-for="Amount" type="number" class="form-control form-control-sm tabular-nums" value="0" />
+                    </div>
+                </div>
+
+                <!-- Lý do / Căn cứ -->
+                <div class="mb-4">
+                    <label asp-for="Reason" class="form-label small fw-semibold">Căn cứ &amp; Lý do ban hành quyết định</label>
+                    <textarea asp-for="Reason" class="form-control form-control-sm" rows="3" placeholder="VD: Căn cứ đề xuất của Trưởng bộ phận và năng lực thực tế của nhân sự trong kỳ đánh giá..."></textarea>
+                </div>
+
+                <h6 class="fw-bold text-uppercase pb-2 border-bottom text-primary mb-3">3. Người Ký Thẩm Quyền</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label asp-for="SignerName" class="form-label small fw-semibold">Họ tên người ký</label>
+                        <input asp-for="SignerName" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="SignerTitle" class="form-label small fw-semibold">Chức vụ người ký</label>
+                        <input asp-for="SignerTitle" class="form-control form-control-sm" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <span class="text-muted small"><i class="bi bi-info-circle me-1"></i> Quyết định sau khi tạo sẽ ở trạng thái "Đã ban hành", sẵn sàng phê duyệt hiệu lực.</span>
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-sm btn-primary px-4"><i class="bi bi-check-lg me-1"></i> Lưu và Ban Hành</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleDecisionFields() {
+            var type = document.getElementById('selDecisionType').value;
+            var titleInput = document.getElementById('Title');
+            if (type === 'Appointment' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Bổ nhiệm cán bộ quản lý';
+            } else if (type === 'Transfer' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Điều chuyển công tác cán bộ nhân viên';
+            } else if (type === 'SalaryAdjustment' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Điều chỉnh mức lương lao động';
+            } else if (type === 'Reward' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Khen thưởng thành tích xuất sắc';
+            } else if (type === 'Discipline' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Kỷ luật lao động nội bộ';
+            } else if (type === 'Termination' && (!titleInput.value || titleInput.value.startsWith('Quyết định'))) {
+                titleInput.value = 'Quyết định về việc Chấm dứt hợp đồng lao động và bàn giao công việc';
+            }
+        }
+    </script>
+}
+

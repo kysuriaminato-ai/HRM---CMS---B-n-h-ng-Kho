@@ -1,0 +1,69 @@
+@model PaginationModel
+@if (Model != null && Model.TotalCount > 0)
+{
+    int safeTotalPages = Math.Max(1, Model.TotalPages);
+    int from = ((Model.PageIndex - 1) * Model.PageSize) + 1;
+    int to = Math.Min(Model.PageIndex * Model.PageSize, Model.TotalCount);
+    int startPage = Math.Max(1, Model.PageIndex - 2);
+    int endPage = Math.Min(safeTotalPages, startPage + 4);
+    startPage = Math.Max(1, endPage - 4);
+
+    <div class="erp-table-footer">
+        <div class="d-flex align-items-center gap-2">
+            <span>Hiển thị <strong>@from–@to</strong> / <strong>@Model.TotalCount.ToString("N0")</strong></span>
+            @if (Model.IsAjax)
+            {
+                <select class="form-select form-select-sm w-auto py-1" data-erp-page-size aria-label="Số dòng mỗi trang">
+                    @foreach (var opt in new[] { 5, 10, 20, 50 })
+                    {
+                        <option value="@opt" selected="@(opt == Model.PageSize)">@opt / trang</option>
+                    }
+                </select>
+            }
+        </div>
+        <nav aria-label="Phân trang bảng">
+            <ul class="erp-pagination">
+                @if (Model.IsAjax)
+                {
+                    <li>
+                        <button type="button" class="erp-page-btn" data-erp-page="@(Model.PageIndex - 1)" disabled="@(!Model.HasPreviousPage)" aria-label="Trang trước">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                    </li>
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        <li>
+                            <button type="button" class="erp-page-btn @(p == Model.PageIndex ? "active" : "")" data-erp-page="@p">@p</button>
+                        </li>
+                    }
+                    <li>
+                        <button type="button" class="erp-page-btn" data-erp-page="@(Model.PageIndex + 1)" disabled="@(!Model.HasNextPage)" aria-label="Trang sau">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </li>
+                }
+                else
+                {
+                    var baseUrl = string.IsNullOrWhiteSpace(Model.BaseUrl) ? "?" : (Model.BaseUrl.Contains('?') ? Model.BaseUrl + "&" : Model.BaseUrl + "?");
+                    <li>
+                        <a class="erp-page-btn @(!Model.HasPreviousPage ? "disabled" : "")" href="@(baseUrl)page=@(Model.PageIndex - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        <li>
+                            <a class="erp-page-btn @(p == Model.PageIndex ? "active" : "")" href="@(baseUrl)page=@p">@p</a>
+                        </li>
+                    }
+                    <li>
+                        <a class="erp-page-btn @(!Model.HasNextPage ? "disabled" : "")" href="@(baseUrl)page=@(Model.PageIndex + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+}
+

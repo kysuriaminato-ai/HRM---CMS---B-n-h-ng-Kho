@@ -1,0 +1,100 @@
+@{
+    ViewData["Title"] = "Bàn Giao & Cấp Phát Tài Sản";
+    var availableAssets = ViewBag.AvailableAssets as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    var employees = ViewBag.Employees as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    int? selectedAssetId = ViewBag.SelectedAssetId as int?;
+    int? selectedEmployeeId = ViewBag.SelectedEmployeeId as int?;
+}
+
+<div class="content-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-subtle mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Index">Tài sản cấp phát</a></li>
+                    <li class="breadcrumb-item active">Bàn giao cấp phát</li>
+                </ol>
+            </nav>
+            <h1 class="page-title mb-0">Bàn Giao & Cấp Phát Tài Sản Cho Nhân Sự</h1>
+            <p class="text-secondary small mb-0">Thiết lập biên bản giao tài sản công ty (Laptop, Màn hình, Thẻ nhân viên) phục vụ công tác</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-enterprise shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="card-title mb-0 fw-bold text-primary">
+                    <i class="bi bi-box-arrow-up-right me-2"></i> Thông tin phiếu bàn giao cấp phát
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="CapPhat" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn tài sản bàn giao <span class="text-danger">*</span></label>
+                        <select name="assetId" class="form-select select2-basic" required>
+                            <option value="">-- Chọn thiết bị / tài sản trong kho --</option>
+                            @foreach (var a in availableAssets)
+                            {
+                                <option value="@a.Value" selected="@(selectedAssetId.HasValue && selectedAssetId.Value.ToString() == a.Value)">
+                                    @a.Text
+                                </option>
+                            }
+                        </select>
+                        <div class="form-text">Chỉ hiển thị các tài sản có trạng thái <strong>Sẵn sàng (Available)</strong> trong kho.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nhân viên tiếp nhận <span class="text-danger">*</span></label>
+                        <select name="employeeId" class="form-select select2-basic" required>
+                            <option value="">-- Chọn nhân sự tiếp nhận tài sản --</option>
+                            @foreach (var emp in employees)
+                            {
+                                <option value="@emp.Value" selected="@(selectedEmployeeId.HasValue && selectedEmployeeId.Value.ToString() == emp.Value)">
+                                    @emp.Text
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tình trạng tài sản lúc bàn giao</label>
+                        <input type="text" name="conditionOnAssign" class="form-control" value="Máy mới 100%, nguyên seal, kèm đầy đủ củ sạc và phụ kiện" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Ghi chú & Cam kết</label>
+                        <textarea name="note" class="form-control" rows="3" placeholder="Ghi chú thêm số biên bản bàn giao, điều khoản bảo quản hoặc hạn trả dự kiến..."></textarea>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted">
+                        <i class="bi bi-info-circle me-1"></i> Sau khi bàn giao, trạng thái tài sản sẽ tự động chuyển thành <strong>Đang cấp phát (Assigned)</strong> và được đồng bộ vào tab <strong>Tài sản</strong> trong Hồ sơ 360° của nhân viên.
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check2-circle me-1"></i> Xác nhận cấp phát tài sản
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

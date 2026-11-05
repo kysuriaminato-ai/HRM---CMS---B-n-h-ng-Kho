@@ -1,84 +1,92 @@
+using ERP.Application.Common.Interfaces;
+using ERP.Domain.Enums;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
-using ERP_HRM_CMS.Models.Enums;
+using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services.HRM;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
-using ERP_HRM_CMS.Services;
 
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     public class DonTuController : Controller
     {
-        private readonly AppDbContext _context;
-        private readonly INotificationService _notificationService;
+        private readonly ILeaveManagementService _leaveService;
+        private readonly IDepartmentService _departmentService;
+        private readonly IEmployeeService _employeeService;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IPermissionService _permissionService;
 
-        public DonTuController(AppDbContext context, INotificationService notificationService)
+        public DonTuController(
+            ILeaveManagementService leaveService,
+            IDepartmentService departmentService,
+            IEmployeeService employeeService,
+            ICurrentUserService currentUser,
+            IPermissionService permissionService)
         {
-            _context = context;
-            _notificationService = notificationService;
+            _leaveService = leaveService;
+            _departmentService = departmentService;
+            _employeeService = employeeService;
+            _currentUser = currentUser;
+            _permissionService = permissionService;
         }
 
-        // 1. DANH SÁCH ĐƠN TỪ & BỘ LỌC ĐA CHIỀU
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        // ═══════════════════════════════════════════════════════════
+        // 1. DANH SÁCH ĐƠN TỪ & TRUNG TÂM PHÊ DUYỆT
+        // ═══════════════════════════════════════════════════════════
         [HttpGet]
-        [KiemTraQuyen("hrm.leave.view")]
-        public async Task<IActionResult> Index(string? status, string? type, int? departmentId, DateTime? fromDate, DateTime? toDate)
+        [KiemTraQuyen("hrm.leave.view,hrm.self.service")]
+        public async Task<IActionResult> Index(
+            string? status, string? type, int? departmentId, DateTime? fromDate, DateTime? toDate, string? keyword, int page = 1)
         {
-            var query = _context.LeaveRequests
-                .Include(l => l.Employee)
-                    .ThenInclude(e => e.Department)
-                .Include(l => l.DepartmentHead)
-                .Include(l => l.Director)
-                .AsQueryable();
+            var filter = new LeaveRequestFilterDto
+            {
+                Status = status,
+                Type = type,
+                DepartmentId = departmentId,
+                FromDate = fromDate,
+                ToDate = toDate,
+                Keyword = keyword,
+                Page = page,
+                PageSize = 20
+            };
 
-            if (!string.IsNullOrWhiteSpace(status))
-                if (WorkflowStatusCodes.TryParse(WorkflowStatusCodes.LeaveRequest, status, out var leaveStatus))
-                    query = query.Where(l => l.Status == leaveStatus);
+            var paged = await _leaveService.GetLeaveRequestsPagedAsync(filter);
+            var kpis = await _leaveService.GetSummaryKpisAsync();
 
-            if (!string.IsNullOrWhiteSpace(type))
-                query = query.Where(l => l.RequestType == type);
+            ViewBag.Filter = filter;
+            ViewBag.TotalCount = kpis.TotalCount;
+            ViewBag.PendingCount = kpis.PendingCount;
+            ViewBag.DeptApprovedCount = kpis.DeptApprovedCount;
+            ViewBag.ApprovedCount = kpis.ApprovedCount;
+            ViewBag.RejectedCount = kpis.RejectedCount;
 
-            if (departmentId.HasValue && departmentId.Value > 0)
-                query = query.Where(l => l.Employee.DepartmentId == departmentId.Value);
+            ViewBag.CanApproveLeave = _currentUser.IsSuperAdmin ||
+                                     await _permissionService.HasPermissionAsync(CurrentUserId, "hrm.leave.approve");
+            ViewBag.CurrentEmployeeId = _currentUser.EmployeeId;
+            ViewBag.CurrentUserId = CurrentUserId;
+            ViewBag.IsSuperAdmin = _currentUser.IsSuperAdmin;
+            ViewBag.Departments = await _departmentService.GetDepartmentSelectListAsync(departmentId);
+            ViewBag.LeaveTypes = await _leaveService.GetLeaveTypesAsync();
 
-            if (fromDate.HasValue)
-                query = query.Where(l => l.FromDate >= fromDate.Value.Date);
-
-            if (toDate.HasValue)
-                query = query.Where(l => l.ToDate <= toDate.Value.Date.AddDays(1).AddTicks(-1));
-
-            var requests = await query.OrderByDescending(l => l.CreatedAt).ToListAsync();
-
-            // Thống kê nhanh KPI
-            ViewBag.TotalCount = await _context.LeaveRequests.CountAsync();
-            ViewBag.PendingCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.PendingApproval);
-            ViewBag.DeptApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.DepartmentApproved);
-            ViewBag.ApprovedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.DirectorApproved);
-            ViewBag.RejectedCount = await _context.LeaveRequests.CountAsync(l => l.Status == LeaveRequestStatus.Rejected);
-
-            ViewBag.Departments = new SelectList(await _context.Departments.OrderBy(d => d.Name).ToListAsync(), "Id", "Name", departmentId);
-            ViewBag.Status = status;
-            ViewBag.Type = type;
-            ViewBag.DepartmentId = departmentId;
-            ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
-            ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
-
-            return View(requests);
+            return View(paged);
         }
 
-        // 2. TẠO ĐƠN TỪ MỚI
+        // ═══════════════════════════════════════════════════════════
+        // 2. TẠO ĐƠN TỪ MỚI (ESS & HR)
+        // ═══════════════════════════════════════════════════════════
         [HttpGet]
-        [KiemTraQuyen("hrm.leave.manage")]
+        [KiemTraQuyen("hrm.leave.manage,hrm.self.service")]
         public async Task<IActionResult> Create()
         {
-            await LoadDropdowns();
+            await LoadDropdowns(_currentUser.EmployeeId);
             var model = new LeaveRequest
             {
+                EmployeeId = _currentUser.EmployeeId ?? 0,
                 FromDate = VietnamTime.Today,
                 ToDate = VietnamTime.Today,
                 TotalDays = 1.0m,
@@ -89,225 +97,252 @@ namespace ERP_HRM_CMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [KiemTraQuyen("hrm.leave.manage")]
+        [KiemTraQuyen("hrm.leave.manage,hrm.self.service")]
         public async Task<IActionResult> Create(LeaveRequest model)
         {
-            if (model.ToDate < model.FromDate)
+            ModelState.Remove(nameof(LeaveRequest.Employee));
+
+            // Nếu phạm vi là Self, ép EmployeeId vào chính mình
+            if (_currentUser.EmployeeId.HasValue)
             {
-                ModelState.AddModelError("ToDate", "Ngày kết thúc không được nhỏ hơn ngày bắt đầu.");
+                model.EmployeeId = _currentUser.EmployeeId.Value;
             }
 
             if (ModelState.IsValid)
             {
-                // Tự sinh mã đơn
-                string prefix = $"LR-{VietnamTime.Now:yyMM}";
-                int countThisMonth = await _context.LeaveRequests.CountAsync(l => l.RequestCode.StartsWith(prefix));
-                model.RequestCode = $"{prefix}-{(countThisMonth + 1):D3}";
-
-                if (model.TotalDays <= 0)
+                var (success, error, _) = await _leaveService.CreateLeaveRequestAsync(model, CurrentUserId);
+                if (success)
                 {
-                    var span = model.ToDate.Date - model.FromDate.Date;
-                    model.TotalDays = Math.Max(1, (decimal)span.TotalDays + 1);
+                    TempData["SuccessMessage"] = $"Đã nộp đơn {model.RequestCode} thành công và gửi thông báo đến người phê duyệt!";
+                    return RedirectToAction(nameof(Index));
                 }
-
-                model.Status = LeaveRequestStatus.PendingApproval;
-                model.CreatedAt = VietnamTime.Now;
-
-                _context.LeaveRequests.Add(model);
-                await _context.SaveChangesAsync();
-
-                var emp = await _context.Employees.Include(e => e.Department).FirstOrDefaultAsync(e => e.Id == model.EmployeeId);
-                string empName = emp?.FullName ?? "Nhân viên";
-
-                // Gửi thông báo Real-time cho Trưởng phòng / HR Manager
-                await _notificationService.SendToRoleAsync("HR_MANAGER",
-                    $"Đơn từ mới cần duyệt: {model.RequestCode}",
-                    $"{empName} ({emp?.Department?.Name}) đã nộp đơn {GetRequestTypeName(model.RequestType)}. Thời gian: {model.FromDate:dd/MM/yyyy} - {model.ToDate:dd/MM/yyyy}.",
-                    $"/DonTu/Index?status=CHO_DUYET",
-                    "LEAVE_REQUEST");
-
-                TempData["SuccessMessage"] = $"Đã nộp đơn {model.RequestCode} thành công và gửi thông báo đến người phê duyệt!";
-                return RedirectToAction(nameof(Index));
+                ModelState.AddModelError("", error ?? "Không thể gửi đơn từ.");
             }
 
             await LoadDropdowns(model.EmployeeId);
             return View(model);
         }
 
-        // 3. DUYỆT ĐƠN (CẤP 1: TRƯỞNG PHÒNG / CẤP 2: GIÁM ĐỐC)
+        // ═══════════════════════════════════════════════════════════
+        // 3. DUYỆT ĐƠN (CẤP 1: TP / CẤP 2: GD HOẶC HR)
+        // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("hrm.leave.approve")]
         public async Task<IActionResult> Duyet(int id, string level, string? note)
         {
-            var req = await _context.LeaveRequests
-                .Include(l => l.Employee)
-                .FirstOrDefaultAsync(l => l.Id == id);
+            bool isAjax = IsAjaxRequest();
+            var (success, error) = await _leaveService.ApproveLeaveRequestAsync(id, level, note, CurrentUserId);
 
-            if (req == null) return NotFound();
-
-            int currentUserId = GetCurrentUserId();
-
-            if (level == "TP") // Trưởng phòng duyệt
+            if (isAjax)
             {
-                req.Status = LeaveRequestStatus.DepartmentApproved;
-                req.DepartmentHeadId = currentUserId;
-                req.DepartmentHeadApprovedAt = VietnamTime.Now;
-                req.DepartmentHeadNote = note;
-
-                // Gửi thông báo lên Giám Đốc / SuperAdmin
-                await _notificationService.SendToRoleAsync("SUPERADMIN",
-                    $"Đơn từ {req.RequestCode} đã qua duyệt Trưởng bộ phận",
-                    $"Trưởng phòng đã xác nhận đơn của {req.Employee.FullName}. Chờ Ban Giám Đốc phê duyệt cuối cùng.",
-                    $"/DonTu/Index?status=TRUONG_PHONG_DUYET",
-                    "LEAVE_REQUEST");
-
-                TempData["SuccessMessage"] = $"Đã duyệt đơn {req.RequestCode} ở cấp Trưởng bộ phận!";
-            }
-            else // Giám đốc duyệt (Hoàn tất)
-            {
-                req.Status = LeaveRequestStatus.DirectorApproved;
-                req.DirectorId = currentUserId;
-                req.DirectorApprovedAt = VietnamTime.Now;
-                req.DirectorNote = note;
-
-                // TỰ ĐỘNG ĐỒNG BỘ VÀO BẢNG CHẤM CÔNG HÀNG NGÀY (AttendanceDaily)
-                await SyncAttendanceOnApprovalAsync(req);
-
-                // Gửi thông báo cho Nhân viên
-                var linkedUser = await _context.Users.FirstOrDefaultAsync(u => u.EmployeeId == req.EmployeeId);
-                if (linkedUser != null)
+                if (success) return Json(new { success = true, message = "Phê duyệt đơn từ thành công!" });
+                if (error != null && (error.Contains("kiểm soát nội bộ") || error.Contains("tự phê duyệt")))
                 {
-                    await _notificationService.SendToUserAsync(linkedUser.Id,
-                        $"Đơn {req.RequestCode} đã được phê duyệt chính thức!",
-                        $"Ban Giám Đốc đã duyệt đơn của bạn. Hệ thống đã tự động ghi nhận vào bảng công.",
-                        $"/DonTu/Index",
-                        "LEAVE_REQUEST");
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = error });
                 }
-
-                TempData["SuccessMessage"] = $"Đã phê duyệt chính thức đơn {req.RequestCode} và tự động cập nhật bảng chấm công!";
+                return BadRequest(new { success = false, message = error });
             }
 
-            await _context.SaveChangesAsync();
+            if (success)
+                TempData["SuccessMessage"] = "Phê duyệt đơn từ thành công!";
+            else
+                TempData["ErrorMessage"] = error;
+
             return RedirectToAction(nameof(Index));
         }
 
-        // 4. TỪ CHỐI ĐƠN TỪ
+        // ═══════════════════════════════════════════════════════════
+        // 4. DUYỆT HÀNG LOẠT (BATCH APPROVAL)
+        // ═══════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.leave.approve")]
+        public async Task<IActionResult> DuyetHangLoat(List<int> ids, string level, string? note)
+        {
+            if (ids == null || !ids.Any())
+            {
+                return Json(new { success = false, message = "Vui lòng chọn ít nhất 1 đơn từ để duyệt." });
+            }
+
+            var (successCount, failCount, errors) = await _leaveService.BatchApproveAsync(
+                ids, level, note, CurrentUserId);
+
+            return Json(new
+            {
+                success = true,
+                successCount,
+                failCount,
+                message = $"Đã phê duyệt {successCount}/{ids.Count} đơn từ được chọn!"
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 5. TỪ CHỐI ĐƠN TỪ
+        // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("hrm.leave.approve")]
         public async Task<IActionResult> TuChoi(int id, string reason)
         {
-            var req = await _context.LeaveRequests
-                .Include(l => l.Employee)
-                .FirstOrDefaultAsync(l => l.Id == id);
+            bool isAjax = IsAjaxRequest();
+            var (success, error) = await _leaveService.RejectLeaveRequestAsync(id, reason, CurrentUserId);
 
-            if (req == null) return NotFound();
-
-            int currentUserId = GetCurrentUserId();
-            req.Status = LeaveRequestStatus.Rejected;
-            req.DirectorId = currentUserId;
-            req.DirectorApprovedAt = VietnamTime.Now;
-            req.DirectorNote = string.IsNullOrWhiteSpace(reason) ? "Từ chối theo quy định nội bộ" : reason;
-
-            // Thông báo cho Nhân viên
-            var linkedUser = await _context.Users.FirstOrDefaultAsync(u => u.EmployeeId == req.EmployeeId);
-            if (linkedUser != null)
+            if (isAjax)
             {
-                await _notificationService.SendToUserAsync(linkedUser.Id,
-                    $"Đơn {req.RequestCode} đã bị từ chối",
-                    $"Lý do: {req.DirectorNote}. Vui lòng liên hệ Trưởng bộ phận để biết thêm chi tiết.",
-                    $"/DonTu/Index",
-                    "LEAVE_REQUEST");
+                if (success) return Json(new { success = true, message = "Đã từ chối đơn từ." });
+                if (error != null && (error.Contains("kiểm soát nội bộ") || error.Contains("tự phê duyệt") || error.Contains("tự từ chối")))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = error });
+                }
+                return BadRequest(new { success = false, message = error });
             }
 
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Đã từ chối đơn {req.RequestCode} và phản hồi đến nhân sự!";
+            if (success)
+                TempData["SuccessMessage"] = "Đã từ chối đơn từ!";
+            else
+                TempData["ErrorMessage"] = error;
+
             return RedirectToAction(nameof(Index));
         }
 
-        // Tự động đồng bộ vào Bảng chấm công
-        private async Task SyncAttendanceOnApprovalAsync(LeaveRequest req)
+        // ═══════════════════════════════════════════════════════════
+        // 6. QUẢN LÝ QUỸ PHÉP NĂM (LEAVE BALANCES)
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.leave.view")]
+        public async Task<IActionResult> QuyPhepNam(int? year, int? departmentId, string? keyword, int page = 1)
         {
-            var defaultShift = await _context.Shifts.FirstOrDefaultAsync(s => s.IsActive) ?? 
-                               new Shift { Id = 1, StartTime = new TimeSpan(8,0,0), EndTime = new TimeSpan(17,30,0), WorkHours = 8.0m };
-
-            for (var d = req.FromDate.Date; d <= req.ToDate.Date; d = d.AddDays(1))
+            int targetYear = year ?? VietnamTime.Today.Year;
+            var filter = new LeaveBalanceFilterDto
             {
-                if (d.DayOfWeek == DayOfWeek.Sunday) continue; // Bỏ qua chủ nhật
+                Year = targetYear,
+                DepartmentId = departmentId,
+                Keyword = keyword,
+                Page = page,
+                PageSize = 25
+            };
 
-                var att = await _context.AttendanceDailies
-                    .FirstOrDefaultAsync(a => a.EmployeeId == req.EmployeeId && a.WorkDate == d);
-
-                if (att == null)
-                {
-                    att = new AttendanceDaily
-                    {
-                        EmployeeId = req.EmployeeId,
-                        ShiftId = defaultShift.Id,
-                        WorkDate = d,
-                        CreatedAt = VietnamTime.Now
-                    };
-                    _context.AttendanceDailies.Add(att);
-                }
-
-                if (req.RequestType == "ANNUAL_LEAVE" || req.RequestType == "SICK_LEAVE" || req.RequestType == "UNPAID_LEAVE")
-                {
-                    att.AttendanceStatus = "Leave";
-                    att.LateMinutes = 0;
-                    att.EarlyMinutes = 0;
-                    att.Note = $"[Phép] {GetRequestTypeName(req.RequestType)} ({req.RequestCode}): {req.Reason}";
-                }
-                else if (req.RequestType == "BUSINESS_TRIP")
-                {
-                    att.AttendanceStatus = "BusinessTrip";
-                    att.WorkHourCount = 8.0m;
-                    att.LateMinutes = 0;
-                    att.Note = $"[Công tác] ({req.RequestCode}): {req.Reason}";
-                }
-                else if (req.RequestType == "LATE_EARLY")
-                {
-                    att.LateMinutes = 0;
-                    att.EarlyMinutes = 0;
-                    att.AttendanceStatus = "Present";
-                    att.Note = $"[Đi muộn/về sớm có phép] ({req.RequestCode})";
-                }
-                else if (req.RequestType == "OVERTIME")
-                {
-                    att.OvertimeHours += Math.Max(2.0m, req.TotalDays * 4.0m);
-                    att.Note = $"[Đăng ký OT đã duyệt] ({req.RequestCode})";
-                }
-            }
+            var paged = await _leaveService.GetLeaveBalancesPagedAsync(filter);
+            ViewBag.Filter = filter;
+            ViewBag.Departments = await _departmentService.GetDepartmentSelectListAsync(departmentId);
+            return View(paged);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.leave.manage")]
+        public async Task<IActionResult> KhoiTaoQuyPhep(int year)
+        {
+            var (success, error, count) = await _leaveService.RecalculateAllBalancesAsync(year, CurrentUserId);
+            if (success)
+            {
+                TempData["SuccessMessage"] = $"Đã tính toán & khởi tạo thành công Quỹ phép năm {year} (kèm phép thâm niên BLLĐ) cho {count} nhân sự!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = error;
+            }
+
+            return RedirectToAction(nameof(QuyPhepNam), new { year });
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // 7. ĐƠN GIẢI TRÌNH CHẤM CÔNG (ATTENDANCE ADJUSTMENT)
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.leave.view,hrm.self.service")]
+        public async Task<IActionResult> GiaiTrinh(string? status, string? type, int? departmentId, DateTime? workDate, int page = 1)
+        {
+            var filter = new AdjustmentFilterDto
+            {
+                Status = status,
+                AdjustmentType = type,
+                DepartmentId = departmentId,
+                WorkDate = workDate,
+                Page = page,
+                PageSize = 20
+            };
+
+            var paged = await _leaveService.GetAdjustmentRequestsPagedAsync(filter);
+            ViewBag.Filter = filter;
+            ViewBag.Departments = await _departmentService.GetDepartmentSelectListAsync(departmentId);
+            ViewBag.CanApprove = _currentUser.IsSuperAdmin ||
+                                 await _permissionService.HasPermissionAsync(CurrentUserId, "hrm.attendance.manage");
+            return View(paged);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.leave.manage,hrm.self.service")]
+        public async Task<IActionResult> CreateGiaiTrinh(AttendanceAdjustmentRequest request)
+        {
+            if (_currentUser.EmployeeId.HasValue)
+                request.EmployeeId = _currentUser.EmployeeId.Value;
+
+            if (ModelState.IsValid)
+            {
+                var (success, error, _) = await _leaveService.CreateAdjustmentRequestAsync(request, CurrentUserId);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"Gửi đơn giải trình chấm công {request.RequestCode} thành công!";
+                    return RedirectToAction(nameof(GiaiTrinh));
+                }
+                TempData["ErrorMessage"] = error;
+            }
+
+            return RedirectToAction(nameof(GiaiTrinh));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.attendance.manage")]
+        public async Task<IActionResult> DuyetGiaiTrinh(int id, string? note)
+        {
+            var (success, error) = await _leaveService.ApproveAdjustmentRequestAsync(id, CurrentUserId, note);
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success, message = success ? "Duyệt giải trình thành công!" : error });
+
+            if (success)
+                TempData["SuccessMessage"] = "Phê duyệt đơn giải trình và đồng bộ giờ công thành công!";
+            else
+                TempData["ErrorMessage"] = error;
+
+            return RedirectToAction(nameof(GiaiTrinh));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.attendance.manage")]
+        public async Task<IActionResult> TuChoiGiaiTrinh(int id, string reason)
+        {
+            var (success, error) = await _leaveService.RejectAdjustmentRequestAsync(id, reason, CurrentUserId);
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success, message = success ? "Từ chối giải trình thành công!" : error });
+
+            if (success)
+                TempData["SuccessMessage"] = "Đã từ chối đơn giải trình chấm công.";
+            else
+                TempData["ErrorMessage"] = error;
+
+            return RedirectToAction(nameof(GiaiTrinh));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // HELPERS
+        // ═══════════════════════════════════════════════════════════
 
         private async Task LoadDropdowns(int? selectedEmpId = null)
         {
-            var employees = await _context.Employees
-                .Where(e => e.Status == "Active")
-                .Include(e => e.Department)
-                .OrderBy(e => e.FullName)
-                .Select(e => new { e.Id, DisplayName = $"{e.EmployeeCode} - {e.FullName} ({e.Department.Name})" })
-                .ToListAsync();
-
-            ViewBag.Employees = new SelectList(employees, "Id", "DisplayName", selectedEmpId);
+            var dropdowns = await _employeeService.GetDropdownDataAsync();
+            ViewBag.Employees = dropdowns.Employees;
+            ViewBag.LeaveTypes = await _leaveService.GetLeaveTypesAsync();
         }
 
-        private int GetCurrentUserId()
+        private bool IsAjaxRequest()
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(idClaim, out int uid)) return uid;
-            return HttpContext.Session.GetInt32("UserId") ?? 1;
+            return string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                || Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
         }
-
-        private static string GetRequestTypeName(string type) => type switch
-        {
-            "ANNUAL_LEAVE" => "Nghỉ phép năm",
-            "SICK_LEAVE" => "Nghỉ ốm / Khám bệnh",
-            "LATE_EARLY" => "Đi muộn / Về sớm",
-            "BUSINESS_TRIP" => "Đi công tác ngoại tỉnh",
-            "UNPAID_LEAVE" => "Nghỉ không hưởng lương",
-            "OVERTIME" => "Đăng ký làm thêm giờ (OT)",
-            _ => type
-        };
     }
 }

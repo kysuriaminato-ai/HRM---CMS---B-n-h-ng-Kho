@@ -1,0 +1,164 @@
+@model ERP.Application.Common.Models.PagedResult<ERP_HRM_CMS.Models.ViewModels.JobPostingDto>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Quản Lý Tuyển Dụng & Vị Trí Mở";
+    var filter = (ERP_HRM_CMS.Models.ViewModels.JobPostingFilterDto)ViewBag.Filter;
+}
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-briefcase me-2 text-primary"></i>Quản Lý Tin Tuyển Dụng</h4>
+            <p class="text-muted small mb-0">Thiết lập vị trí tuyển dụng, cấu hình SEO thẻ meta và theo dõi số lượng hồ sơ ứng tuyển.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/TuyenDung/Kanban" class="btn btn-outline-primary fw-semibold">
+                <i class="bi bi-kanban me-1"></i> Kanban Pipeline
+            </a>
+            <a href="/TuyenDung/LichPhongVan" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-calendar-event me-1"></i> Lịch Phỏng Vấn
+            </a>
+            <a href="/TuyenDung/Onboarding" class="btn btn-outline-success fw-semibold">
+                <i class="bi bi-check2-all me-1"></i> Onboarding / Offboarding
+            </a>
+            <a href="/TuyenDung/TaoMoi" class="btn btn-primary fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i> Đăng Tin Mới
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm rounded-3 p-3 mb-4">
+        <form method="get" action="/TuyenDung/Index" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Từ khóa</label>
+                <input type="text" name="keyword" value="@filter.Keyword" class="form-control form-control-sm" placeholder="Tìm theo tiêu đề, mã tin..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Phòng ban</label>
+                <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+                    <option value="">Tất cả phòng ban</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Trạng thái</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Open" selected="@(filter.Status == "Open" ? "selected" : null)">Đang mở (Open)</option>
+                    <option value="Draft" selected="@(filter.Status == "Draft" ? "selected" : null)">Bản nháp (Draft)</option>
+                    <option value="Closed" selected="@(filter.Status == "Closed" ? "selected" : null)">Đã đóng (Closed)</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-sm btn-primary fw-semibold">
+                    <i class="bi bi-search me-1"></i> Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small">
+                    <tr>
+                        <th style="width: 120px;">Mã tin</th>
+                        <th>Vị trí tuyển dụng</th>
+                        <th>Phòng ban</th>
+                        <th class="text-center">Chỉ tiêu</th>
+                        <th>Mức lương</th>
+                        <th class="text-center">Số ứng viên</th>
+                        <th>Thời hạn</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-end" style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Any())
+                    {
+                        foreach (var job in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">@job.Code</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@job.Title</div>
+                                    <div class="small text-muted">
+                                        <a href="/tuyen-dung/@job.Slug" target="_blank" class="text-decoration-none text-muted">
+                                            <i class="bi bi-link-45deg me-1"></i>/tuyen-dung/@job.Slug
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>@job.DepartmentName</td>
+                                <td class="text-center fw-bold tabular-nums">@job.Vacancies</td>
+                                <td class="text-success fw-semibold small tabular-nums">
+                                    @(string.IsNullOrWhiteSpace(job.SalaryRange) ? "Thỏa thuận" : job.SalaryRange)
+                                </td>
+                                <td class="text-center">
+                                    <a href="/TuyenDung/Kanban?jobPostingId=@job.Id" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none px-2 py-1">
+                                        <i class="bi bi-people me-1"></i>@job.CandidateCount ứng viên
+                                    </a>
+                                </td>
+                                <td class="small tabular-nums">
+                                    <div>Từ: @job.OpenDate.ToString("dd/MM/yyyy")</div>
+                                    <div class="text-muted">Đến: @(job.CloseDate.HasValue ? job.CloseDate.Value.ToString("dd/MM/yyyy") : "Vô thời hạn")</div>
+                                </td>
+                                <td class="text-center">
+                                    @if (job.Status == "Open")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Đang mở</span>
+                                    }
+                                    else if (job.Status == "Draft")
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Bản nháp</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã đóng</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/TuyenDung/Kanban?jobPostingId=@job.Id" class="btn btn-outline-primary" title="Xem Pipeline">
+                                            <i class="bi bi-kanban"></i>
+                                        </a>
+                                        <a href="/TuyenDung/ChinhSua/@job.Id" class="btn btn-outline-secondary" title="Sửa tin & SEO">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post" action="/TuyenDung/Xoa/@job.Id" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tin tuyển dụng này?');" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger" title="Xóa tin">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-briefcase fs-2 d-block mb-2"></i>
+                                Chưa có tin tuyển dụng nào được tạo.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+

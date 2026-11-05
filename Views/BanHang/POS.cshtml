@@ -1,6 +1,6 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
+@model ERP_HRM_CMS.Models.ViewModels.CartViewModel
 @{
-    Layout = "_SalesLayout";
+    ViewData["Module"] = "sales";
     ViewData["Title"] = "Điểm Bán Hàng Nhanh (POS)";
     int selectedBranchId = ViewBag.SelectedBranchId ?? 1;
     var branches = ViewBag.Branches as List<ERP_HRM_CMS.Models.Entities.Branch>;
@@ -118,9 +118,20 @@
                     </select>
                 </div>
 
+                <div class="row g-2 mb-2 small">
+                    <div class="col-6">
+                        <label class="form-label mb-1 fw-semibold">Giảm giá (tối đa @(ViewBag.MaxDiscountPercent ?? 10)%):</label>
+                        <input type="number" name="DiscountAmount" id="posDiscountInput" value="0" min="0" step="1000" class="form-control form-control-sm" oninput="capNhatTongThuPos(@Model.SubTotal)" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label mb-1 fw-semibold">Lý do giảm giá / Ghi chú:</label>
+                        <input type="text" name="Note" class="form-control form-control-sm" placeholder="Bắt buộc nếu giảm > 5%" />
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center py-2 border-top border-bottom my-2">
                     <span class="fw-bold">TỔNG TIỀN PHẢI THU:</span>
-                    <span class="fw-bold fs-5 text-dark">@Model.FinalTotal.ToString("N0") đ</span>
+                    <span class="fw-bold fs-5 text-dark" id="posFinalTotalDisplay">@Model.FinalTotal.ToString("N0") đ</span>
                 </div>
 
                 <button type="submit" class="btn btn-erp-black w-100 py-2 @(Model.Items.Any() ? "" : "disabled")">
@@ -136,6 +147,13 @@
         const branchId = @selectedBranchId;
         const txtSearch = document.getElementById('txtSearchPos');
         const searchBox = document.getElementById('posSearchResults');
+
+        function capNhatTongThuPos(subTotal) {
+            const d = parseFloat(document.getElementById('posDiscountInput')?.value || '0') || 0;
+            const finalVal = Math.max(0, subTotal - Math.max(0, d));
+            const el = document.getElementById('posFinalTotalDisplay');
+            if (el) el.textContent = finalVal.toLocaleString('vi-VN') + ' đ';
+        }
 
         function doiChiNhanh(newBranchId) {
             window.location.href = '/BanHang/POS?branchId=' + newBranchId;

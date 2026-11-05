@@ -1,0 +1,92 @@
+@model ERP_HRM_CMS.Controllers.StyleguideTableViewModel
+@{
+    string SortClass(string col) =>
+        string.Equals(Model.SortBy, col, StringComparison.OrdinalIgnoreCase)
+            ? (string.Equals(Model.SortDir, "desc", StringComparison.OrdinalIgnoreCase) ? "sort-desc" : "sort-asc")
+            : string.Empty;
+
+    string SortIcon(string col) =>
+        !string.Equals(Model.SortBy, col, StringComparison.OrdinalIgnoreCase)
+            ? "bi-arrow-down-up"
+            : (string.Equals(Model.SortDir, "desc", StringComparison.OrdinalIgnoreCase) ? "bi-sort-down" : "bi-sort-up");
+}
+
+<erp-data-table id="sgAjaxTable"
+                title="Danh sách chứng từ nghiệp vụ mẫu (AJAX Filter / Sort / Pagination)"
+                ajax-url="/UI/StyleguideTableData"
+                page-index="@Model.PageIndex"
+                total-pages="@Model.TotalPages"
+                total-count="@Model.TotalCount"
+                page-size="@Model.PageSize"
+                sort-by="@Model.SortBy"
+                sort-dir="@Model.SortDir">
+    <table class="table table-hover align-middle mb-0">
+        <thead>
+            <tr>
+                <th data-sort="code" class="@SortClass("code")">
+                    Mã chứng từ <span class="erp-sort-indicator"><i class="bi @SortIcon("code")"></i></span>
+                </th>
+                <th data-sort="title" class="@SortClass("title")">
+                    Nội dung nghiệp vụ <span class="erp-sort-indicator"><i class="bi @SortIcon("title")"></i></span>
+                </th>
+                <th data-sort="module" class="@SortClass("module")">
+                    Phân hệ <span class="erp-sort-indicator"><i class="bi @SortIcon("module")"></i></span>
+                </th>
+                <th data-sort="owner" class="@SortClass("owner")">
+                    Phụ trách <span class="erp-sort-indicator"><i class="bi @SortIcon("owner")"></i></span>
+                </th>
+                <th data-sort="amount" class="text-end @SortClass("amount")">
+                    Giá trị <span class="erp-sort-indicator"><i class="bi @SortIcon("amount")"></i></span>
+                </th>
+                <th>Trạng thái</th>
+                <th data-sort="updatedat" class="text-end @SortClass("updatedat")">
+                    Cập nhật <span class="erp-sort-indicator"><i class="bi @SortIcon("updatedat")"></i></span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" class="p-0 border-0">
+                        <erp-empty-state icon="bi-search"
+                                         title="Không tìm thấy bản ghi phù hợp"
+                                         description="Hãy thay đổi từ khóa tìm kiếm hoặc nhấn 'Đặt lại' trên FilterBar để khôi phục dữ liệu mẫu." />
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var row in Model.Items)
+                {
+                    <tr>
+                        <td class="font-monospace fw-semibold" style="color: var(--erp-primary);">@row.Code</td>
+                        <td>
+                            <div class="fw-semibold small">@row.Title</div>
+                            <div class="text-muted" style="font-size: 11.5px;">Workflow: @row.Workflow</div>
+                        </td>
+                        <td>
+                            <span class="erp-badge erp-badge-neutral">@row.ModuleLabel</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <erp-avatar name="@row.Owner" size="sm" />
+                                <span class="small">@row.Owner</span>
+                            </div>
+                        </td>
+                        <td class="text-end font-monospace fw-semibold">
+                            @(row.Amount > 0 ? $"{row.Amount:N0} đ" : "—")
+                        </td>
+                        <td>
+                            <erp-status-badge status="@row.StatusCode" workflow="@row.Workflow" />
+                        </td>
+                        <td class="text-end text-muted font-monospace small">
+                            @row.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</erp-data-table>
+

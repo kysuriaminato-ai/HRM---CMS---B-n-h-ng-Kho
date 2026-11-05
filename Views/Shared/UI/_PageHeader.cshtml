@@ -1,0 +1,37 @@
+@model PageHeaderModel
+<div class="erp-page-header">
+    <div class="erp-page-header-main">
+        @if (Model.Breadcrumbs != null && Model.Breadcrumbs.Count > 0)
+        {
+            <nav class="erp-page-breadcrumb" aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    @for (int i = 0; i < Model.Breadcrumbs.Count; i++)
+                    {
+                        var item = Model.Breadcrumbs[i];
+                        bool isLast = i == Model.Breadcrumbs.Count - 1;
+                        if (!isLast && !string.IsNullOrWhiteSpace(item.Url) && UrlAnToan.LaHopLe(item.Url))
+                        {
+                            <li class="breadcrumb-item"><a href="@item.Url">@item.Text</a></li>
+                        }
+                        else
+                        {
+                            <li class="breadcrumb-item active" aria-current="page">@item.Text</li>
+                        }
+                    }
+                </ol>
+            </nav>
+        }
+        <div class="erp-page-header-title-row">
+            @if (!string.IsNullOrWhiteSpace(Model.Icon))
+            {
+                <span class="erp-page-header-icon"><i class="bi @Model.Icon"></i></span>
+            }
+            <h1 class="erp-page-header-title">@Model.Title</h1>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+        {
+            <p class="erp-page-header-subtitle">@Model.Subtitle</p>
+        }
+    </div>
+</div>
+

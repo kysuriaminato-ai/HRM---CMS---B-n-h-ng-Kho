@@ -1,174 +1,92 @@
 @model ERP_HRM_CMS.Models.ViewModels.MaTranPhanQuyenViewModel
 @{
     ViewData["Title"] = "Ma Trận Phân Quyền Vai Trò (RBAC)";
+    ViewData["Module"] = "system";
 }
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <title>@ViewData["Title"]</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-    <style>
-        body {
-            background-color: #F8F9FA;
-            color: #111111;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+<erp-page-header title="Ma Trận Phân Quyền Vai Trò (RBAC)"
+                 subtitle="Quản lý và thiết lập ma trận cấp quyền cho từng Nhóm / Vai trò trong doanh nghiệp"
+                 icon="bi-shield-lock-fill">
+    <a href="/PhanQuyen/PhanQuyenCaNhan" class="btn btn-outline-secondary">
+        <i class="bi bi-person-gear me-1"></i> Ngoại Lệ Cá Nhân (ACL)
+    </a>
+    <button type="button" class="btn btn-primary" id="btnSaveMatrix" onclick="luuMaTran()">
+        <i class="bi bi-check2-circle me-1"></i> Lưu Thiết Lập
+    </button>
+</erp-page-header>
+
+<div class="mb-4">
+    <label class="form-label small fw-semibold text-muted text-uppercase mb-2">Chọn vai trò cần thiết lập</label>
+    <div class="d-flex flex-wrap gap-2">
+        @foreach (var r in Model.Roles)
+        {
+            <a href="@Url.Action("MaTranPhanQuyen", new { roleId = r.Id })"
+               class="erp-role-pill @(r.Id == Model.SelectedRoleId ? "active" : "")">
+                <i class="bi bi-shield"></i>
+                <span>@r.Name (@r.Code)</span>
+            </a>
         }
+    </div>
+</div>
 
-        .matrix-card {
-            background: #FFFFFF;
-            border: 1px solid #E5E7EB;
-            border-radius: 10px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .role-btn {
-            border: 1px solid #E5E7EB;
-            color: #374151;
-            background: #FFFFFF;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-            .role-btn.active {
-                background: #000000;
-                color: #FFFFFF;
-                border-color: #000000;
-            }
-
-        .table-matrix thead th {
-            background-color: #111111;
-            color: #FFFFFF;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 12px;
-        }
-
-        .module-row {
-            background-color: #F3F4F6 !important;
-            font-weight: 700;
-            color: #111111;
-        }
-
-        .checkbox-custom {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #000000;
-        }
-
-        .btn-save-matrix {
-            background-color: #000000;
-            color: #FFFFFF;
-            border: none;
-            font-weight: 600;
-            padding: 10px 24px;
-            border-radius: 8px;
-        }
-
-            .btn-save-matrix:hover {
-                background-color: #262626;
-                color: #FFFFFF;
-            }
-    </style>
-</head>
-<body class="p-4">
-    <div class="container-fluid">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-            <div>
-                <h4 class="fw-bold mb-1"><i class="bi bi-shield-lock-fill me-2"></i>Ma Trận Phân Quyền Vai Trò (RBAC)</h4>
-                <p class="text-secondary small mb-0">Quản lý và thiết lập ma trận cấp quyền cho từng Nhóm / Vai trò trong doanh nghiệp</p>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="/PhanQuyen/PhanQuyenCaNhan" class="btn btn-outline-dark btn-sm fw-semibold">
-                    <i class="bi bi-person-gear me-1"></i> Ngoại Lệ Cá Nhân (ACL)
-                </a>
-                <button type="button" class="btn btn-save-matrix btn-sm" onclick="luuMaTran()">
-                    <i class="bi bi-check2-circle me-1"></i> Lưu Thiết Lập
-                </button>
-            </div>
-        </div>
-
-        <!-- Bộ chọn vai trò -->
-        <div class="mb-4">
-            <label class="form-label small fw-semibold text-secondary mb-2">CHỌN VAI TRÒ CẦN THIẾT LẬP:</label>
-            <div class="d-flex flex-wrap gap-2">
-                @foreach (var r in Model.Roles)
-                {
-                    <a href="@Url.Action("MaTranPhanQuyen", new { roleId = r.Id })"
-                       class="role-btn @(r.Id == Model.SelectedRoleId ? "active" : "")">
-                        @r.Name (@r.Code)
-                    </a>
-                }
-            </div>
-        </div>
-
-        <!-- Bảng Ma trận Phân quyền -->
-        <div class="matrix-card p-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="small text-muted">
-                    <i class="bi bi-info-circle me-1"></i> Tích chọn vào quyền để kích hoạt cho vai trò đang chọn
-                </span>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-light border" onclick="chonTatCa(true)">Chọn tất cả</button>
-                    <button class="btn btn-sm btn-light border" onclick="chonTatCa(false)">Bỏ chọn tất cả</button>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle table-matrix mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;" class="text-center">#</th>
-                            <th style="width: 250px;">Mã Quyền (Code)</th>
-                            <th style="width: 350px;">Tên Quyền Hạn</th>
-                            <th>Mô Tả Chức Năng</th>
-                            <th style="width: 120px;" class="text-center">Kích Hoạt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var mod in Model.Modules)
-                        {
-                            <tr class="module-row">
-                                <td colspan="4">
-                                    <i class="@mod.ModuleIcon me-2"></i> @mod.ModuleName.ToUpper()
-                                </td>
-                                <td class="text-center">
-                                    <input type="checkbox" class="checkbox-custom module-master"
-                                           onchange="toggleModuleGroup(this, @mod.ModuleId)" />
-                                </td>
-                            </tr>
-                            @foreach (var p in mod.Permissions)
-                            {
-                                bool isChecked = Model.ActivePermissionIds.Contains(p.Id);
-                                <tr>
-                                    <td class="text-center text-muted small">@p.Id</td>
-                                    <td><code>@p.Code</code></td>
-                                    <td class="fw-semibold">@p.Name</td>
-                                    <td class="small text-secondary">@p.Description</td>
-                                    <td class="text-center">
-                                        <input type="checkbox"
-                                               class="checkbox-custom perm-checkbox mod-@mod.ModuleId"
-                                               value="@p.Id"
-                                               @(isChecked ? "checked" : "") />
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+<div class="erp-table-wrapper stagger-rows">
+    <div class="erp-table-toolbar">
+        <span class="small text-muted">
+            <i class="bi bi-info-circle me-1"></i> Tích chọn vào quyền để kích hoạt cho vai trò đang chọn
+        </span>
+        <div class="erp-table-toolbar-actions">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="chonTatCa(true)">Chọn tất cả</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="chonTatCa(false)">Bỏ chọn tất cả</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="text-center">#</th>
+                    <th>Mã Quyền (Code)</th>
+                    <th>Tên Quyền Hạn</th>
+                    <th>Mô Tả Chức Năng</th>
+                    <th class="text-center">Kích Hoạt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var mod in Model.Modules)
+                {
+                    <tr class="erp-module-group-row">
+                        <td colspan="4">
+                            <i class="@mod.ModuleIcon me-2 text-primary"></i> @mod.ModuleName.ToUpper()
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" class="erp-checkbox-accent module-master"
+                                   aria-label="Chọn cả phân hệ @mod.ModuleName"
+                                   onchange="toggleModuleGroup(this, @mod.ModuleId)" />
+                        </td>
+                    </tr>
+                    @foreach (var p in mod.Permissions)
+                    {
+                        bool isChecked = Model.ActivePermissionIds.Contains(p.Id);
+                        <tr>
+                            <td class="text-center text-muted small">@p.Id</td>
+                            <td><code>@p.Code</code></td>
+                            <td class="fw-semibold">@p.Name</td>
+                            <td class="small text-secondary">@p.Description</td>
+                            <td class="text-center">
+                                <input type="checkbox"
+                                       class="erp-checkbox-accent perm-checkbox mod-@mod.ModuleId"
+                                       value="@p.Id"
+                                       @(isChecked ? "checked" : "") />
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
     <script>
         function toggleModuleGroup(masterCheckbox, moduleId) {
             const checkboxes = document.querySelectorAll('.mod-' + moduleId);
@@ -181,35 +99,31 @@
         }
 
         function luuMaTran() {
+            const btn = document.getElementById('btnSaveMatrix');
             const roleId = @Model.SelectedRoleId;
             const checkedPerms = [];
             document.querySelectorAll('.perm-checkbox:checked').forEach(cb => {
-                checkedPerms.push(parseInt(cb.value));
+                checkedPerms.push(parseInt(cb.value, 10));
             });
 
+            ERP.btnLoading(btn);
             fetch('/PhanQuyen/LuuMaTranQuyenRole', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roleId: roleId,
-                    permissionIds: checkedPerms
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roleId: roleId, permissionIds: checkedPerms })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        ERP.toast(data.message || 'Đã lưu ma trận phân quyền.', 'success');
+                    } else {
+                        ERP.toast(data.message || 'Không thể lưu phân quyền.', 'danger');
+                    }
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                } else {
-                    alert('Lỗi: ' + data.message);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Không thể kết nối đến máy chủ.');
-            });
+                .catch(() => {
+                    ERP.toast('Không thể kết nối đến máy chủ.', 'danger');
+                })
+                .finally(() => ERP.btnReset(btn));
         }
     </script>
-</body>
-</html>
+}

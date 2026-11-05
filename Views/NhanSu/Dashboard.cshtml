@@ -1,6 +1,6 @@
 @model ERP_HRM_CMS.Services.HRM.HrDashboardDto
 @{
-    Layout = "_HRMLayout";
+    ViewData["Module"] = "hrm";
     ViewData["Title"] = "Dashboard Nhân Sự";
 }
 
@@ -9,9 +9,14 @@
         <h4 class="fw-bold mb-1">Dashboard Nhân Sự</h4>
         <p class="text-secondary small mb-0">Tổng quan tình hình nhân sự toàn công ty</p>
     </div>
-    <a asp-action="Index" class="btn btn-erp-outline">
-        <i class="bi bi-list me-1"></i> Danh sách nhân viên
-    </a>
+    <div class="d-flex gap-2">
+        <a href="/NhanSu/BaoCao" class="btn btn-primary btn-sm ripple">
+            <i class="bi bi-pie-chart-fill me-1"></i> Executive People Analytics
+        </a>
+        <a asp-action="Index" class="btn btn-erp-outline btn-sm">
+            <i class="bi bi-list me-1"></i> Danh sách nhân viên
+        </a>
+    </div>
 </div>
 
 <!-- Thống kê tổng quan -->
@@ -165,63 +170,75 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
-        // Dữ liệu từ server
-        const deptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByDepartment.Keys.ToList()));
-        const deptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByDepartment.Values.ToList()));
+        document.addEventListener('DOMContentLoaded', function () {
+            const deptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByDepartment.Keys.ToList()));
+            const deptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByDepartment.Values.ToList()));
 
-        // Biểu đồ phòng ban (Bar)
-        new Chart(document.getElementById('chartDepartment'), {
-            type: 'bar',
-            data: {
-                labels: deptLabels,
-                datasets: [{
-                    label: 'Số nhân viên',
-                    data: deptData,
-                    backgroundColor: 'rgba(26, 26, 46, 0.8)',
-                    borderColor: 'rgba(26, 26, 46, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } },
-                    x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
+            const primaryColor = ERP.themeColor('--erp-primary');
+            const successColor = ERP.themeColor('--erp-success');
+            const infoColor = ERP.themeColor('--erp-info');
+            const warningColor = ERP.themeColor('--erp-warning');
+            const neutralColor = ERP.themeColor('--erp-neutral');
+            const pinkColor = ERP.themeColor('--erp-pink');
+            const textMuted = ERP.themeColor('--erp-text-muted');
+            const borderColor = ERP.themeColor('--erp-border-color');
+
+            new Chart(document.getElementById('chartDepartment'), {
+                type: 'bar',
+                data: {
+                    labels: deptLabels,
+                    datasets: [{
+                        label: 'Số nhân viên',
+                        data: deptData,
+                        backgroundColor: primaryColor,
+                        borderColor: primaryColor,
+                        borderRadius: 6,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: borderColor }, ticks: { stepSize: 1, color: textMuted } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, color: textMuted } }
+                    }
                 }
-            }
-        });
+            });
 
-        // Biểu đồ giới tính (Doughnut)
-        new Chart(document.getElementById('chartGender'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Nam', 'Nữ'],
-                datasets: [{
-                    data: [@Model.MaleCount, @Model.FemaleCount],
-                    backgroundColor: ['#1a1a2e', '#6c757d']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-            }
-        });
+            new Chart(document.getElementById('chartGender'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Nam', 'Nữ'],
+                    datasets: [{
+                        data: [@Model.MaleCount, @Model.FemaleCount],
+                        backgroundColor: [primaryColor, pinkColor],
+                        borderColor: ERP.themeColor('--erp-bg-card'),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: textMuted } } }
+                }
+            });
 
-        // Biểu đồ trạng thái (Doughnut)
-        new Chart(document.getElementById('chartStatus'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Đang làm', 'Thử việc', 'Nghỉ phép', 'Đã nghỉ'],
-                datasets: [{
-                    data: [@Model.ActiveEmployees, @Model.ProbationEmployees, @Model.OnLeaveEmployees, @Model.ResignedEmployees],
-                    backgroundColor: ['#198754', '#0d6efd', '#ffc107', '#adb5bd']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
-            }
+            new Chart(document.getElementById('chartStatus'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Đang làm', 'Thử việc', 'Nghỉ phép', 'Đã nghỉ'],
+                    datasets: [{
+                        data: [@Model.ActiveEmployees, @Model.ProbationEmployees, @Model.OnLeaveEmployees, @Model.ResignedEmployees],
+                        backgroundColor: [successColor, infoColor, warningColor, neutralColor],
+                        borderColor: ERP.themeColor('--erp-bg-card'),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: textMuted } } }
+                }
+            });
         });
     </script>
 }

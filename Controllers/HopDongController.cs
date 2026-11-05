@@ -1,64 +1,91 @@
-﻿using ERP_HRM_CMS.Helpers;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
+using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services.HRM;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     public class HopDongController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IContractService _contractService;
 
-        public HopDongController(AppDbContext context)
+        public HopDongController(IContractService contractService)
         {
-            _context = context;
+            _contractService = contractService;
         }
 
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
-        public async Task<IActionResult> Index(string? keyword, string? status)
+        public async Task<IActionResult> Index(
+            string? keyword, string? status, int? departmentId, int? expiringDays, int page = 1, int pageSize = 20)
         {
-            var query = _context.Contracts
-                .Include(c => c.Employee)
-                    .ThenInclude(e => e.Department)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(keyword))
+            var filter = new ContractFilterDto
             {
-                keyword = keyword.Trim().ToLower();
-                query = query.Where(c => c.ContractNumber.ToLower().Contains(keyword) ||
-                                         c.Employee.FullName.ToLower().Contains(keyword) ||
-                                         c.Employee.EmployeeCode.ToLower().Contains(keyword));
-            }
+                Keyword = keyword,
+                Status = status,
+                DepartmentId = departmentId,
+                ExpiringWithinDays = expiringDays,
+                Page = page,
+                PageSize = pageSize
+            };
 
-            if (!string.IsNullOrWhiteSpace(status))
-                query = query.Where(c => c.Status == status);
-
-            var contracts = await query.OrderByDescending(c => c.StartDate).ToListAsync();
-
-            // Lọc danh sách cảnh báo sắp hết hạn trong vòng 30 ngày
-            var warningDate = VietnamTime.Today.AddDays(30);
-            var expiring = await _context.Contracts
-                .Include(c => c.Employee)
-                    .ThenInclude(e => e.Department)
-                .Where(c => c.Status == "Active" && c.EndDate != null && c.EndDate <= warningDate && c.EndDate >= VietnamTime.Today)
-                .OrderBy(c => c.EndDate)
-                .ToListAsync();
+            var paged = await _contractService.GetPagedAsync(filter);
+            var expiring = await _contractService.GetExpiringContractsAsync(30);
 
             var vm = new ContractListViewModel
             {
-                Contracts = contracts,
-                ExpiringContracts = expiring,
+                Contracts = paged.Select(item => new Contract
+                {
+                    Id = item.Id,
+                    EmployeeId = item.EmployeeId,
+                    ContractNumber = item.ContractNumber,
+                    ContractType = item.ContractType,
+                    StartDate = item.StartDate,
+                    EndDate = item.EndDate,
+                    BasicSalary = item.BasicSalary,
+                    InsuranceSalary = item.InsuranceSalary,
+                    Status = item.Status,
+                    SignDate = item.SignDate,
+                    Employee = new Employee
+                    {
+                        Id = item.EmployeeId,
+                        EmployeeCode = item.EmployeeCode,
+                        FullName = item.FullName,
+                        Department = new Department { Name = item.DepartmentName },
+                        Position = new Position { Name = item.PositionName }
+                    }
+                }).ToList(),
+                ExpiringContracts = expiring.Select(item => new Contract
+                {
+                    Id = item.Id,
+                    EmployeeId = item.EmployeeId,
+                    ContractNumber = item.ContractNumber,
+                    ContractType = item.ContractType,
+                    StartDate = item.StartDate,
+                    EndDate = item.EndDate,
+                    BasicSalary = item.BasicSalary,
+                    InsuranceSalary = item.InsuranceSalary,
+                    Status = item.Status,
+                    SignDate = item.SignDate,
+                    Employee = new Employee
+                    {
+                        Id = item.EmployeeId,
+                        EmployeeCode = item.EmployeeCode,
+                        FullName = item.FullName,
+                        Department = new Department { Name = item.DepartmentName },
+                        Position = new Position { Name = item.PositionName }
+                    }
+                }).ToList(),
                 Keyword = keyword,
                 Status = status
             };
 
+            ViewBag.PagedList = paged;
+            ViewBag.Filter = filter;
             return View(vm);
         }
 
@@ -66,7 +93,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Create(int? employeeId)
         {
-            await LoadEmployees(employeeId);
+            ViewBag.Employees = await _contractService.GetEmployeeSelectListAsync(employeeId);
             return View(new Contract
             {
                 EmployeeId = employeeId ?? 0,
@@ -85,23 +112,18 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Create(Contract contract)
         {
-            if (await _context.Contracts.AnyAsync(c => c.ContractNumber == contract.ContractNumber))
-                ModelState.AddModelError("ContractNumber", "Số hợp đồng này đã tồn tại trên hệ thống.");
-
-            if (contract.EndDate.HasValue && contract.EndDate <= contract.StartDate)
-                ModelState.AddModelError("EndDate", "Ngày kết thúc phải lớn hơn ngày bắt đầu hợp đồng.");
-
             if (ModelState.IsValid)
             {
-                contract.CreatedAt = VietnamTime.Now;
-                _context.Contracts.Add(contract);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = $"Lập hợp đồng số {contract.ContractNumber} thành công!";
-                return RedirectToAction(nameof(Index));
+                var (success, error, id) = await _contractService.CreateAsync(contract, null);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = $"Lập hợp đồng số {contract.ContractNumber} thành công!";
+                    return RedirectToAction(nameof(Index));
+                }
+                ModelState.AddModelError("", error ?? "Không thể lập hợp đồng.");
             }
 
-            await LoadEmployees(contract.EmployeeId);
+            ViewBag.Employees = await _contractService.GetEmployeeSelectListAsync(contract.EmployeeId);
             return View(contract);
         }
 
@@ -110,26 +132,25 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> ChamDutHopDong(int id)
         {
-            var contract = await _context.Contracts.FindAsync(id);
-            if (contract == null) return NotFound();
-
-            contract.Status = "Terminated";
-            contract.EndDate = VietnamTime.Today;
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = $"Đã chấm dứt hiệu lực hợp đồng {contract.ContractNumber}!";
+            var (success, error) = await _contractService.TerminateAsync(id, null);
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Đã chấm dứt hiệu lực hợp đồng thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = error;
+            }
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task LoadEmployees(int? selectedId = null)
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> InHopDong(int id)
         {
-            var emps = await _context.Employees
-                .Where(e => e.Status == "Active")
-                .OrderBy(e => e.FullName)
-                .Select(e => new { e.Id, Display = $"{e.FullName} ({e.EmployeeCode})" })
-                .ToListAsync();
-
-            ViewBag.Employees = new SelectList(emps, "Id", "Display", selectedId);
+            var printModel = await _contractService.GetPrintModelAsync(id);
+            if (printModel == null) return NotFound();
+            return View(printModel);
         }
     }
 }

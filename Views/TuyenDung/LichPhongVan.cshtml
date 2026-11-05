@@ -1,0 +1,219 @@
+@model List<ERP_HRM_CMS.Models.ViewModels.InterviewScheduleDto>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Lịch Phỏng Vấn & Đánh Giá Ứng Viên";
+}
+
+<div class="container-fluid py-3">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h4 class="fw-bold mb-1"><i class="bi bi-calendar2-week me-2 text-primary"></i>Lịch Phỏng Vấn & Đánh Giá</h4>
+            <p class="text-muted small mb-0">Theo dõi lịch phỏng vấn tuyển dụng, cập nhật điểm đánh giá chuyên môn và nhận xét.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/TuyenDung/Kanban" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-kanban me-1"></i> ATS Kanban
+            </a>
+            <a href="/TuyenDung/Index" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i> Danh Sách Tin
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Table of Schedules -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-secondary small">
+                    <tr>
+                        <th style="width: 80px;">Vòng</th>
+                        <th>Thời gian</th>
+                        <th>Ứng viên</th>
+                        <th>Vị trí ứng tuyển</th>
+                        <th>Hình thức & Địa điểm</th>
+                        <th>Người phỏng vấn</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-center">Điểm & Kết quả</th>
+                        <th class="text-end" style="width: 140px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var s in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-light text-dark border">Vòng @s.RoundNumber</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold tabular-nums">@s.ScheduledTime.ToString("HH:mm")</div>
+                                    <div class="small text-muted tabular-nums">@s.ScheduledTime.ToString("dd/MM/yyyy")</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@s.CandidateName</div>
+                                    <div class="small text-muted">@s.CandidatePhone</div>
+                                </td>
+                                <td>
+                                    <div class="text-primary small fw-semibold">@s.JobPostingTitle</div>
+                                    <div class="small text-muted">@s.Title</div>
+                                </td>
+                                <td class="small">
+                                    <span class="badge @(s.InterviewType == "Online" ? "bg-info-subtle text-info" : "bg-secondary-subtle text-secondary") me-1">
+                                        @s.InterviewType
+                                    </span>
+                                    <span class="text-secondary text-truncate d-inline-block" style="max-width: 200px;">
+                                        @(string.IsNullOrWhiteSpace(s.LocationOrMeetingLink) ? "Tại văn phòng" : s.LocationOrMeetingLink)
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold">@(string.IsNullOrWhiteSpace(s.InterviewerName) ? "Chưa phân công" : s.InterviewerName)</div>
+                                </td>
+                                <td class="text-center">
+                                    @if (s.Status == "Completed")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Hoàn thành</span>
+                                    }
+                                    else if (s.Status == "Scheduled")
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Đã lên lịch</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">@s.Status</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (s.Score.HasValue)
+                                    {
+                                        <div class="fw-bold text-warning tabular-nums">@s.Score.Value.ToString("0.#") / 100</div>
+                                        <span class="badge @(s.Result == "Passed" ? "bg-success" : (s.Result == "Failed" ? "bg-danger" : "bg-secondary")) small">
+                                            @s.Result
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Chưa đánh giá</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEvaluateModal(@s.Id, '@s.CandidateName', '@(s.Score.HasValue ? s.Score.Value.ToString("0.#") : "")', '@s.Result', '@(s.Feedback ?? "")')">
+                                        <i class="bi bi-pencil-square me-1"></i> Chấm Điểm
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                                Chưa có lịch phỏng vấn nào.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Evaluation Modal -->
+<div class="modal fade" id="evaluateModal" tabindex="-1" aria-labelledby="evaluateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="evaluateModalLabel">
+                    <i class="bi bi-award text-warning me-2"></i>Chấm Điểm & Nhận Xét Phỏng Vấn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="evaluateForm">
+                    <input type="hidden" id="evalScheduleId" name="ScheduleId" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Ứng viên</label>
+                        <input type="text" id="evalCandidateName" class="form-control form-control-sm bg-light" readonly />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Điểm đánh giá (0-100) <span class="text-danger">*</span></label>
+                            <input type="number" id="evalScore" name="Score" class="form-control form-control-sm" min="0" max="100" step="0.5" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Kết luận <span class="text-danger">*</span></label>
+                            <select id="evalResult" name="Result" class="form-select form-select-sm" required>
+                                <option value="Passed">Đạt (Passed)</option>
+                                <option value="Failed">Không đạt (Failed)</option>
+                                <option value="Consider">Cân nhắc (Consider)</option>
+                                <option value="Pending">Chờ xem xét (Pending)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nhận xét chi tiết & Phản hồi chuyên môn</label>
+                        <textarea id="evalFeedback" name="Feedback" rows="4" class="form-control form-control-sm" placeholder="Điểm mạnh, điểm yếu, mức độ phù hợp văn hóa..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-sm btn-primary fw-semibold" onclick="submitEvaluation()">
+                    <i class="bi bi-check-lg me-1"></i> Lưu Kết Quả
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openEvaluateModal(schedId, candName, score, result, feedback) {
+        document.getElementById('evalScheduleId').value = schedId;
+        document.getElementById('evalCandidateName').value = candName;
+        document.getElementById('evalScore').value = score || '';
+        document.getElementById('evalResult').value = result || 'Passed';
+        document.getElementById('evalFeedback').value = feedback || '';
+
+        new bootstrap.Modal(document.getElementById('evaluateModal')).show();
+    }
+
+    async function submitEvaluation() {
+        const payload = {
+            scheduleId: parseInt(document.getElementById('evalScheduleId').value),
+            score: parseFloat(document.getElementById('evalScore').value) || null,
+            result: document.getElementById('evalResult').value,
+            feedback: document.getElementById('evalFeedback').value
+        };
+
+        try {
+            const res = await fetch('/TuyenDung/DanhGiaPhongVan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('evaluateModal')).hide();
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert(data.message || 'Lỗi khi lưu đánh giá');
+            }
+        } catch (err) {
+            alert('Lỗi kết nối máy chủ');
+        }
+    }
+</script>
+}
+

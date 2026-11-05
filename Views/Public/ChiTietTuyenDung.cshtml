@@ -1,0 +1,219 @@
+@model ERP_HRM_CMS.Models.ViewModels.PublicJobDetailViewModel
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = Model.Job.MetaTitle ?? Model.Job.Title;
+    ViewData["Description"] = Model.Job.MetaDescription ?? (Model.Job.Description?.Length > 160 ? Model.Job.Description[..157] + "..." : Model.Job.Description);
+    ViewData["CanonicalUrl"] = Model.CanonicalUrl;
+    ViewData["CustomJsonLd"] = Model.JsonLdSchema;
+}
+
+<!-- Breadcrumb -->
+<div class="bg-light py-3 border-bottom">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 small">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="/tuyen-dung" class="text-decoration-none">Tuyển dụng</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Job.Title</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-5">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 mb-4 p-4 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill fs-2 me-3 text-success"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Ứng tuyển thành công!</h5>
+                    <p class="mb-0">@TempData["SuccessMessage"]</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 mb-4 p-4 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-2 me-3 text-danger"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Đã có lỗi xảy ra!</h5>
+                    <p class="mb-0">@ViewBag.ErrorMessage</p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Main Content (8 cols) -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                        <i class="bi bi-building me-1"></i>@Model.Job.DepartmentName
+                    </span>
+                    <span class="text-muted small">
+                        <i class="bi bi-clock me-1"></i>Hạn nộp: @(Model.Job.CloseDate.HasValue ? Model.Job.CloseDate.Value.ToString("dd/MM/yyyy") : "Đang mở")
+                    </span>
+                </div>
+
+                <h1 class="fw-bold text-dark mb-3">@Model.Job.Title</h1>
+
+                <div class="row g-3 py-3 border-top border-bottom my-3 bg-light rounded-3 px-2">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="small text-muted">Mức lương</div>
+                        <div class="fw-bold text-success">@(string.IsNullOrWhiteSpace(Model.Job.SalaryRange) ? "Thỏa thuận" : Model.Job.SalaryRange)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="small text-muted">Địa điểm làm việc</div>
+                        <div class="fw-bold text-dark">@(string.IsNullOrWhiteSpace(Model.Job.WorkLocation) ? (string.IsNullOrWhiteSpace(Model.Job.BranchName) ? "Toàn quốc" : Model.Job.BranchName) : Model.Job.WorkLocation)</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="small text-muted">Số lượng tuyển</div>
+                        <div class="fw-bold text-dark">@Model.Job.Vacancies người</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="small text-muted">Hình thức</div>
+                        <div class="fw-bold text-dark">Toàn thời gian</div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mt-4">
+                    <h4 class="fw-bold text-dark mb-3"><i class="bi bi-file-text me-2 text-primary"></i>Mô tả công việc</h4>
+                    <div class="text-secondary" style="line-height: 1.8; white-space: pre-line;">
+                        @Model.Job.Description
+                    </div>
+                </div>
+
+                <!-- Requirements -->
+                @if (!string.IsNullOrWhiteSpace(Model.Job.Requirements))
+                {
+                    <div class="mt-5">
+                        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-check me-2 text-primary"></i>Yêu cầu ứng viên</h4>
+                        <div class="text-secondary" style="line-height: 1.8; white-space: pre-line;">
+                            @Model.Job.Requirements
+                        </div>
+                    </div>
+                }
+
+                <!-- Benefits -->
+                @if (!string.IsNullOrWhiteSpace(Model.Job.Benefits))
+                {
+                    <div class="mt-5">
+                        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-gift me-2 text-primary"></i>Quyền lợi được hưởng</h4>
+                        <div class="text-secondary" style="line-height: 1.8; white-space: pre-line;">
+                            @Model.Job.Benefits
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Online Application Form -->
+            <div id="ung-tuyen-ngay" class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                <div class="mb-4">
+                    <h3 class="fw-bold text-dark mb-2"><i class="bi bi-send-fill me-2 text-primary"></i>Ứng Tuyển Ngay Hôm Nay</h3>
+                    <p class="text-muted small">Điền đầy đủ thông tin bên dưới và đính kèm CV định dạng .PDF hoặc .DOCX (tối đa 10MB).</p>
+                </div>
+
+                <form action="/tuyen-dung/@Model.Job.Slug/ung-tuyen" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Anti-spam Honeypot Field -->
+                    <div style="display:none;" aria-hidden="true">
+                        <input type="text" name="Website" value="" tabindex="-1" autocomplete="off" />
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Họ và tên ứng viên <span class="text-danger">*</span></label>
+                            <input type="text" name="FullName" value="@Model.ApplyModel.FullName" class="form-control form-control-lg" placeholder="Ví dụ: Nguyễn Văn A" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Địa chỉ Email <span class="text-danger">*</span></label>
+                            <input type="email" name="Email" value="@Model.ApplyModel.Email" class="form-control" placeholder="email@domain.com" required />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Số điện thoại liên hệ <span class="text-danger">*</span></label>
+                            <input type="tel" name="Phone" value="@Model.ApplyModel.Phone" class="form-control" placeholder="0901234567" required />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Đính kèm hồ sơ CV cá nhân <span class="text-danger">*</span></label>
+                            <div class="p-3 border rounded-3 bg-light text-center">
+                                <i class="bi bi-cloud-arrow-up text-primary fs-2 d-block mb-2"></i>
+                                <input type="file" name="CvFile" class="form-control" accept=".pdf,.docx" required />
+                                <div class="form-text mt-2">Hệ thống hỗ trợ định dạng: <strong>.pdf</strong>, <strong>.docx</strong> (Dung lượng &le; 10MB).</div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Thư giới thiệu / Lời nhắn gửi (Cover Letter)</label>
+                            <textarea name="CoverLetter" rows="4" class="form-control" placeholder="Chia sẻ thêm về mục tiêu nghề nghiệp, dự án tiêu biểu hoặc lý do bạn phù hợp với vị trí này...">@Model.ApplyModel.CoverLetter</textarea>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-3 rounded-pill shadow-sm">
+                                <i class="bi bi-check2-circle me-2"></i> Gửi Hồ Sơ Ứng Tuyển
+                            </button>
+                            <p class="text-center text-muted small mt-2">
+                                <i class="bi bi-shield-lock me-1"></i>Thông tin cá nhân của bạn được bảo mật tuyệt đối theo quy định quyền riêng tư.
+                            </p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar (4 cols) -->
+        <div class="col-lg-4">
+            <!-- Company Info Widget -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-building-check me-2 text-primary"></i>Về Chúng Tôi</h5>
+                <p class="text-muted small mb-3">
+                    Đơn vị tiên phong trong lĩnh vực chuyển đổi số và quản trị doanh nghiệp tích hợp. Môi trường trẻ trung, cởi mở và khuyến khích đổi mới.
+                </p>
+                <div class="small text-secondary mb-2">
+                    <i class="bi bi-geo-alt me-2 text-danger"></i><strong>Địa chỉ:</strong> @Model.CompanyAddress
+                </div>
+                <div class="small text-secondary mb-3">
+                    <i class="bi bi-award me-2 text-warning"></i><strong>Văn hóa:</strong> Trao quyền, Sáng tạo, Bền vững
+                </div>
+                <a href="#ung-tuyen-ngay" class="btn btn-primary w-100 fw-semibold rounded-pill">
+                    <i class="bi bi-pencil-square me-1"></i> Nộp Đơn Ngay
+                </a>
+            </div>
+
+            <!-- Related Jobs Widget -->
+            @if (Model.RelatedJobs.Any())
+            {
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-briefcase me-2 text-primary"></i>Vị Trí Cùng Phòng Ban</h5>
+                    <div class="list-group list-group-flush">
+                        @foreach (var rj in Model.RelatedJobs)
+                        {
+                            <a href="/tuyen-dung/@rj.Slug" class="list-group-item list-group-item-action px-0 py-3 border-bottom">
+                                <div class="fw-semibold text-dark">@rj.Title</div>
+                                <div class="small text-muted mt-1">
+                                    <span class="me-2"><i class="bi bi-geo-alt me-1"></i>@rj.WorkLocation</span>
+                                    @if (!string.IsNullOrWhiteSpace(rj.SalaryRange))
+                                    {
+                                        <span class="text-success"><i class="bi bi-coin me-1"></i>@rj.SalaryRange</span>
+                                    }
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

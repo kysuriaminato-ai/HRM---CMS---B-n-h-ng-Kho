@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -10,13 +11,15 @@ namespace ERP_HRM_CMS.Controllers
     public class GioHangController : Controller
     {
         private readonly ICartService _cartService;
+        private readonly ICurrentUserService _currentUser;
 
-        public GioHangController(ICartService cartService)
+        public GioHangController(ICartService cartService, ICurrentUserService currentUser)
         {
             _cartService = cartService;
+            _currentUser = currentUser;
         }
 
-        private int? CurrentUserId => HttpContext.Session.GetInt32("UserId");
+        private int? CurrentUserId => _currentUser.UserId;
         private string CurrentSessionId => HttpContext.Session.Id;
 
         // Trang giỏ hàng chuẩn

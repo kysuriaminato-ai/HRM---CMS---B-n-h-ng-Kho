@@ -2,15 +2,45 @@
 @{
     var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP");
     var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
-    var avatarInitial = !string.IsNullOrEmpty(fullName) ? fullName[0].ToString().ToUpper() : "Q";
     var isAuth = User.Identity?.IsAuthenticated ?? false;
-    var isSuperAdmin = User.IsInRole("SUPERADMIN") || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase);
+    var isSuperAdmin = User.IsInRole("SUPERADMIN")
+        || User.IsInRole("SuperAdmin")
+        || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase);
+
+    var controllerName = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
+    var rawModule = ViewData["Module"]?.ToString()?.Trim().ToLowerInvariant();
+    var module = rawModule switch
+    {
+        "hrm" or "payroll" or "sales" or "warehouse" or "cms" or "system" => rawModule,
+        _ => controllerName switch
+        {
+            "nhansu" or "phongban" or "hopdong" or "chamcong" or "dontu" or "tuyendung" => "hrm",
+            "bangluong" => "payroll",
+            "banhang" or "donhang" or "sanpham" or "danhmuc" or "congno" or "giohang" => "sales",
+            "kho" or "purchaseorder" or "supplier" => "warehouse",
+            "content" or "menu" or "layoutconfig" => "cms",
+            _ => "system"
+        }
+    };
+
+    var (moduleLabel, moduleIcon) = module switch
+    {
+        "hrm"       => ("Nhân sự & Chấm công", "bi-people-fill"),
+        "payroll"   => ("Tiền lương & Phúc lợi", "bi-cash-stack"),
+        "sales"     => ("Bán hàng & POS", "bi-bag-check-fill"),
+        "warehouse" => ("Kho vận & Mua hàng", "bi-box-seam-fill"),
+        "cms"       => ("Nội dung CMS", "bi-newspaper"),
+        _           => ("Hệ thống & Tổng quan", "bi-layers-half")
+    };
+
+    var breadcrumbSection = ViewData["BreadcrumbSection"]?.ToString() ?? moduleLabel;
 }
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-module="@module">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="view-transition" content="same-origin" />
     <title>@ViewData["Title"] - @brand</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
@@ -18,16 +48,25 @@
     <link rel="stylesheet" href="~/css/enterprise-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-components.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-animations.css" asp-append-version="true" />
-    @* Chống nhấp nháy: áp dụng theme trước khi render *@
+    <link rel="stylesheet" href="~/css/hrm-workspace.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-print.css" asp-append-version="true" media="print" />
+    @await RenderSectionAsync("Styles", required: false)
     <script>
         (function () {
             var m = document.cookie.match(/(^| )erp_theme=([^;]+)/);
-            var t = localStorage.getItem('erp_theme') || (m ? m[2] : null);
+            var t = localStorage.getItem('erp_theme') || (m ? decodeURIComponent(m[2]) : null);
             if (!t) { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
             document.documentElement.setAttribute('data-bs-theme', t);
             if (t === 'dark') document.documentElement.classList.add('dark-mode');
-            // Sidebar thu gọn
             if (localStorage.getItem('erp_sidebar_collapsed') === 'true') document.documentElement.classList.add('sidebar-collapsed');
+
+            var den = localStorage.getItem('erp_density');
+            if (den === 'compact') {
+                document.documentElement.setAttribute('data-density', 'compact');
+                document.documentElement.classList.add('density-compact');
+            } else {
+                document.documentElement.setAttribute('data-density', 'comfortable');
+            }
         })();
     </script>
 </head>
@@ -35,149 +74,309 @@
 
 @if (isAuth)
 {
-    @* ═══════════════════════════════════════════════════════════════════
-       SIDEBAR - Thu gọn được (toggle qua nút hoặc responsive)
-       ═══════════════════════════════════════════════════════════════════ *@
-    <aside class="erp-sidebar" id="erpSidebar">
-        @* Logo & Brand *@
+    <aside class="erp-sidebar" id="erpSidebar" aria-label="Điều hướng quản trị">
         <div class="erp-sidebar-brand">
-            <div class="sidebar-brand-full">
+            <a href="/" class="sidebar-brand-full">
                 <i class="bi bi-layers-half fs-4 text-primary"></i>
                 <span class="brand-text">@brand</span>
-            </div>
-            <div class="sidebar-brand-mini">
+            </a>
+            <a href="/" class="sidebar-brand-mini" aria-label="Trang tổng quan">
                 <i class="bi bi-layers-half fs-4 text-primary"></i>
-            </div>
+            </a>
         </div>
 
-        @* Menu chính *@
         <nav class="erp-sidebar-nav" id="sidebarNav">
             @* — Tổng quan — *@
-            <div class="nav-section-title">Tổng quan</div>
             <a href="/" class="erp-nav-item" data-path="/">
                 <i class="bi bi-grid-1x2"></i>
-                <span class="nav-label">Dashboard</span>
+                <span class="nav-label">Dashboard tổng quan</span>
             </a>
 
-            @* — Nhân sự — *@
-            <div class="nav-section-title">Nhân sự</div>
-            <a href="/NhanSu/Index" class="erp-nav-item" data-path="/NhanSu">
-                <i class="bi bi-person-badge"></i>
-                <span class="nav-label">Nhân sự</span>
-            </a>
-            <a href="/PhongBan/Index" class="erp-nav-item" data-path="/PhongBan">
-                <i class="bi bi-diagram-3"></i>
-                <span class="nav-label">Phòng ban</span>
-            </a>
-            <a href="/HopDong/Index" class="erp-nav-item" data-path="/HopDong">
-                <i class="bi bi-file-earmark-text"></i>
-                <span class="nav-label">Hợp đồng</span>
-            </a>
-            <a href="/ChamCong/Index" class="erp-nav-item" data-path="/ChamCong">
-                <i class="bi bi-calendar2-check"></i>
-                <span class="nav-label">Chấm công</span>
-            </a>
-            <a href="/DonTu/Index" class="erp-nav-item" data-path="/DonTu">
-                <i class="bi bi-file-earmark-check"></i>
-                <span class="nav-label">Đơn từ</span>
-            </a>
-            <a href="/BangLuong/Index" class="erp-nav-item" data-path="/BangLuong">
-                <i class="bi bi-cash-stack"></i>
-                <span class="nav-label">Bảng lương</span>
+            @* — Cổng tự phục vụ nhân viên (ESS Portal) — *@
+            <a href="/CongNhanVien" class="erp-nav-item @(controllerName == "selfservice" || controllerName == "congnhanvien" ? "active" : "")" data-path="/CongNhanVien">
+                <i class="bi bi-person-workspace text-primary"></i>
+                <span class="nav-label fw-semibold">Cổng Nhân Viên (ESS)</span>
             </a>
 
-            @* — Bán hàng & Kho — *@
-            <div class="nav-section-title">Bán hàng & Kho</div>
-            <a href="/BanHang/POS" class="erp-nav-item" data-path="/BanHang">
-                <i class="bi bi-cart3"></i>
-                <span class="nav-label">POS bán hàng</span>
-            </a>
-            <a href="/DonHang/Index" class="erp-nav-item" data-path="/DonHang">
-                <i class="bi bi-receipt"></i>
-                <span class="nav-label">Đơn hàng</span>
-            </a>
-            <a href="/SanPham/Index" class="erp-nav-item" data-path="/SanPham">
-                <i class="bi bi-box-seam"></i>
-                <span class="nav-label">Sản phẩm</span>
-            </a>
-            <a href="/Kho/Index" class="erp-nav-item" data-path="/Kho">
-                <i class="bi bi-building"></i>
-                <span class="nav-label">Kho hàng</span>
-            </a>
-            <a href="/PurchaseOrder/Index" class="erp-nav-item" data-path="/PurchaseOrder">
-                <i class="bi bi-truck"></i>
-                <span class="nav-label">Mua hàng (PO)</span>
-            </a>
-            <a href="/CongNo/Index" class="erp-nav-item" data-path="/CongNo">
-                <i class="bi bi-cash-coin"></i>
-                <span class="nav-label">Công nợ</span>
-            </a>
+            @* — 1. Nhân sự (HRM) — *@
+            <div class="erp-nav-group @(module == "hrm" ? "open" : "")" data-group="hrm">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "hrm" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-people"></i> Nhân sự &amp; Chấm công</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/NhanSu/Dashboard" class="erp-nav-item" data-path="/NhanSu/Dashboard">
+                            <i class="bi bi-speedometer2"></i>
+                            <span class="nav-label">Dashboard Nhân sự</span>
+                        </a>
+                        <a href="/NhanSu/Index" class="erp-nav-item" data-path="/NhanSu">
+                            <i class="bi bi-person-badge"></i>
+                            <span class="nav-label">Hồ sơ nhân sự</span>
+                        </a>
+                        <a href="/PhongBan/Index" class="erp-nav-item" data-path="/PhongBan">
+                            <i class="bi bi-diagram-3"></i>
+                            <span class="nav-label">Phòng ban &amp; Org Chart</span>
+                        </a>
+                        <a href="/HopDong/Index" class="erp-nav-item" data-path="/HopDong">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span class="nav-label">Hợp đồng lao động</span>
+                        </a>
+                        <a href="/QuyetDinhNhanSu/Index" class="erp-nav-item" data-path="/QuyetDinhNhanSu">
+                            <i class="bi bi-award"></i>
+                            <span class="nav-label">Quyết định nhân sự</span>
+                        </a>
+                        <a href="/TaiSanNhanSu/Index" class="erp-nav-item" data-path="/TaiSanNhanSu">
+                            <i class="bi bi-laptop"></i>
+                            <span class="nav-label">Tài sản cấp phát</span>
+                        </a>
+                        <a href="/TuyenDung/Index" class="erp-nav-item" data-path="/TuyenDung">
+                            <i class="bi bi-briefcase"></i>
+                            <span class="nav-label">Tuyển dụng ATS</span>
+                        </a>
+                        <a href="/TuyenDung/Kanban" class="erp-nav-item" data-path="/TuyenDung/Kanban">
+                            <i class="bi bi-kanban"></i>
+                            <span class="nav-label">Pipeline ứng viên</span>
+                        </a>
+                        <a href="/TuyenDung/Onboarding" class="erp-nav-item" data-path="/TuyenDung/Onboarding">
+                            <i class="bi bi-person-check"></i>
+                            <span class="nav-label">Onboarding / Offboarding</span>
+                        </a>
+                        <a href="/NhanSu/CanhBao" class="erp-nav-item" data-path="/NhanSu/CanhBao">
+                            <i class="bi bi-bell"></i>
+                            <span class="nav-label">Cảnh báo nhân sự</span>
+                        </a>
+                        <a href="/ChamCong/Index" class="erp-nav-item" data-path="/ChamCong/Index">
+                            <i class="bi bi-calendar2-check"></i>
+                            <span class="nav-label">Chấm công ngày</span>
+                        </a>
+                        <a href="/ChamCong/BangCongThang" class="erp-nav-item" data-path="/ChamCong/BangCongThang">
+                            <i class="bi bi-calendar-month"></i>
+                            <span class="nav-label">Bảng công &amp; Shift Matrix</span>
+                        </a>
+                        <a href="/ChamCong/Heatmap" class="erp-nav-item" data-path="/ChamCong/Heatmap">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                            <span class="nav-label">Heatmap chấm công</span>
+                        </a>
+                        <a href="/ChamCong/CaLamViec" class="erp-nav-item" data-path="/ChamCong/CaLamViec">
+                            <i class="bi bi-clock-history"></i>
+                            <span class="nav-label">Định nghĩa ca làm</span>
+                        </a>
+                        <a href="/ChamCong/PhanCa" class="erp-nav-item" data-path="/ChamCong/PhanCa">
+                            <i class="bi bi-calendar-week"></i>
+                            <span class="nav-label">Phân ca tuần (Roster)</span>
+                        </a>
+                        <a href="/DonTu/Index" class="erp-nav-item" data-path="/DonTu">
+                            <i class="bi bi-file-earmark-check"></i>
+                            <span class="nav-label">Đơn từ &amp; Phê duyệt</span>
+                        </a>
+                        <a href="/DonTu/QuyPhepNam" class="erp-nav-item" data-path="/DonTu/QuyPhepNam">
+                            <i class="bi bi-wallet2"></i>
+                            <span class="nav-label">Quỹ phép năm (BLLĐ)</span>
+                        </a>
+                        <a href="/DonTu/GiaiTrinh" class="erp-nav-item" data-path="/DonTu/GiaiTrinh">
+                            <i class="bi bi-patch-question"></i>
+                            <span class="nav-label">Giải trình chấm công</span>
+                        </a>
+                        <a href="/NhanSu/BaoCao" class="erp-nav-item" data-path="/NhanSu/BaoCao">
+                            <i class="bi bi-pie-chart"></i>
+                            <span class="nav-label">People Analytics &amp; Báo cáo</span>
+                        </a>
+                        <a href="/DanhGiaKpi/Index" class="erp-nav-item" data-path="/DanhGiaKpi">
+                            <i class="bi bi-trophy"></i>
+                            <span class="nav-label">Đánh giá KPI</span>
+                        </a>
+                        <a href="/DanhGiaKpi/NineBox" class="erp-nav-item" data-path="/DanhGiaKpi/NineBox">
+                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                            <span class="nav-label">Ma trận 9-Box Talent</span>
+                        </a>
+                        <a href="/DaoTao/Index" class="erp-nav-item" data-path="/DaoTao">
+                            <i class="bi bi-mortarboard"></i>
+                            <span class="nav-label">Đào tạo nội bộ (LMS)</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-            @* — CMS — *@
-            <div class="nav-section-title">Nội dung</div>
-            <a href="/Content/Index" class="erp-nav-item" data-path="/Content">
-                <i class="bi bi-newspaper"></i>
-                <span class="nav-label">Bài viết</span>
-            </a>
-            <a href="/Menu/Index" class="erp-nav-item" data-path="/Menu">
-                <i class="bi bi-list-stars"></i>
-                <span class="nav-label">Menu</span>
-            </a>
+            @* — 2. Tiền lương (Payroll) — *@
+            <div class="erp-nav-group @(module == "payroll" ? "open" : "")" data-group="payroll">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "payroll" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-cash-stack"></i> Tiền lương</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/BangLuong/Index" class="erp-nav-item" data-path="/BangLuong">
+                            <i class="bi bi-wallet2"></i>
+                            <span class="nav-label">Bảng lương &amp; Chi trả</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-            @* — Hệ thống — *@
-            <div class="nav-section-title">Hệ thống</div>
-            <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item" data-path="/PhanQuyen">
-                <i class="bi bi-shield-lock"></i>
-                <span class="nav-label">Phân quyền</span>
-            </a>
-            @if (isSuperAdmin)
-            {
-                <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item" data-path="/QuanTriTaiKhoan">
-                    <i class="bi bi-people"></i>
-                    <span class="nav-label">Tài khoản</span>
-                </a>
-                <a href="/VaiTro/Index" class="erp-nav-item" data-path="/VaiTro">
-                    <i class="bi bi-diagram-3"></i>
-                    <span class="nav-label">Nhóm quyền</span>
-                </a>
-            }
-            <a href="/AuditLog/Index" class="erp-nav-item" data-path="/AuditLog">
-                <i class="bi bi-shield-check"></i>
-                <span class="nav-label">Audit Trail</span>
-            </a>
-            <a href="/Notification/Index" class="erp-nav-item" data-path="/Notification">
-                <i class="bi bi-bell"></i>
-                <span class="nav-label">Thông báo</span>
-            </a>
+            @* — 3. Bán hàng & POS (Sales) — *@
+            <div class="erp-nav-group @(module == "sales" ? "open" : "")" data-group="sales">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "sales" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-bag-check"></i> Bán hàng &amp; POS</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/BanHang/POS" class="erp-nav-item" data-path="/BanHang">
+                            <i class="bi bi-cart3"></i>
+                            <span class="nav-label">POS bán hàng</span>
+                        </a>
+                        <a href="/DonHang/Dashboard" class="erp-nav-item" data-path="/DonHang/Dashboard">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            <span class="nav-label">Dashboard doanh số</span>
+                        </a>
+                        <a href="/DonHang/Index" class="erp-nav-item" data-path="/DonHang">
+                            <i class="bi bi-receipt"></i>
+                            <span class="nav-label">Đơn hàng</span>
+                        </a>
+                        <a href="/SanPham/Index" class="erp-nav-item" data-path="/SanPham">
+                            <i class="bi bi-tags"></i>
+                            <span class="nav-label">Sản phẩm</span>
+                        </a>
+                        <a href="/DanhMuc/Index" class="erp-nav-item" data-path="/DanhMuc">
+                            <i class="bi bi-diagram-2"></i>
+                            <span class="nav-label">Danh mục ngành hàng</span>
+                        </a>
+                        <a href="/CongNo/Index" class="erp-nav-item" data-path="/CongNo">
+                            <i class="bi bi-cash-coin"></i>
+                            <span class="nav-label">Quản trị công nợ</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* — 4. Kho vận & Mua hàng (Warehouse) — *@
+            <div class="erp-nav-group @(module == "warehouse" ? "open" : "")" data-group="warehouse">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "warehouse" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-box-seam"></i> Kho vận &amp; Mua hàng</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/Kho/Index" class="erp-nav-item" data-path="/Kho/Index">
+                            <i class="bi bi-boxes"></i>
+                            <span class="nav-label">Tồn kho thực tế</span>
+                        </a>
+                        <a href="/Kho/NhapKho" class="erp-nav-item" data-path="/Kho/NhapKho">
+                            <i class="bi bi-box-arrow-in-down"></i>
+                            <span class="nav-label">Phiếu nhập kho</span>
+                        </a>
+                        <a href="/Kho/XuatKho" class="erp-nav-item" data-path="/Kho/XuatKho">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            <span class="nav-label">Phiếu xuất kho</span>
+                        </a>
+                        <a href="/Kho/DieuChuyen" class="erp-nav-item" data-path="/Kho/DieuChuyen">
+                            <i class="bi bi-arrow-left-right"></i>
+                            <span class="nav-label">Điều chuyển kho</span>
+                        </a>
+                        <a href="/Kho/KiemKe" class="erp-nav-item" data-path="/Kho/KiemKe">
+                            <i class="bi bi-clipboard2-check"></i>
+                            <span class="nav-label">Kiểm kê kho</span>
+                        </a>
+                        <a href="/PurchaseOrder/Index" class="erp-nav-item" data-path="/PurchaseOrder">
+                            <i class="bi bi-journal-bookmark"></i>
+                            <span class="nav-label">Đơn mua hàng (PO)</span>
+                        </a>
+                        <a href="/Supplier/Index" class="erp-nav-item" data-path="/Supplier">
+                            <i class="bi bi-truck"></i>
+                            <span class="nav-label">Nhà cung cấp</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* — 5. Nội dung CMS — *@
+            <div class="erp-nav-group @(module == "cms" ? "open" : "")" data-group="cms">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "cms" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-newspaper"></i> Nội dung CMS</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/Content/Index" class="erp-nav-item" data-path="/Content">
+                            <i class="bi bi-file-richtext"></i>
+                            <span class="nav-label">Bài viết</span>
+                        </a>
+                        <a href="/Menu/Index" class="erp-nav-item" data-path="/Menu">
+                            <i class="bi bi-list-stars"></i>
+                            <span class="nav-label">Menu điều hướng</span>
+                        </a>
+                        <a href="/LayoutConfig/Index" class="erp-nav-item" data-path="/LayoutConfig">
+                            <i class="bi bi-layout-wtf"></i>
+                            <span class="nav-label">Cấu hình giao diện</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @* — 6. Hệ thống (System) — *@
+            <div class="erp-nav-group @(module == "system" ? "open" : "")" data-group="system">
+                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "system" ? "true" : "false")">
+                    <span class="erp-nav-group-label"><i class="bi bi-gear"></i> Hệ thống</span>
+                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                </button>
+                <div class="erp-nav-group-body">
+                    <div class="erp-nav-group-inner">
+                        <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item" data-path="/PhanQuyen">
+                            <i class="bi bi-shield-lock"></i>
+                            <span class="nav-label">Phân quyền RBAC/ACL</span>
+                        </a>
+                        @if (isSuperAdmin)
+                        {
+                            <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item" data-path="/QuanTriTaiKhoan">
+                                <i class="bi bi-person-gear"></i>
+                                <span class="nav-label">Quản lý tài khoản</span>
+                            </a>
+                            <a href="/VaiTro/Index" class="erp-nav-item" data-path="/VaiTro">
+                                <i class="bi bi-key"></i>
+                                <span class="nav-label">Nhóm quyền</span>
+                            </a>
+                            <a href="/UI/Styleguide" class="erp-nav-item" data-path="/UI/Styleguide">
+                                <i class="bi bi-palette2"></i>
+                                <span class="nav-label">UI Styleguide</span>
+                            </a>
+                        }
+                        <a href="/AuditLog/Index" class="erp-nav-item" data-path="/AuditLog">
+                            <i class="bi bi-shield-check"></i>
+                            <span class="nav-label">Audit Trail</span>
+                        </a>
+                        <a href="/Notification/Index" class="erp-nav-item" data-path="/Notification">
+                            <i class="bi bi-bell"></i>
+                            <span class="nav-label">Thông báo</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </nav>
 
-        @* Nút thu gọn sidebar (ở đáy) *@
         <div class="erp-sidebar-footer">
-            <button type="button" class="erp-sidebar-toggle" id="sidebarCollapseBtn" title="Thu gọn / Mở rộng">
+            <button type="button" class="erp-sidebar-toggle" id="sidebarCollapseBtn" title="Thu gọn / Mở rộng thanh bên" aria-label="Thu gọn hoặc mở rộng thanh bên">
                 <i class="bi bi-chevron-bar-left" id="sidebarToggleIcon"></i>
             </button>
         </div>
     </aside>
 
-    @* ═══════════════════════════════════════════════════════════════════
-       MAIN CONTENT (Topbar + Breadcrumb + Body)
-       ═══════════════════════════════════════════════════════════════════ *@
     <div class="erp-main-content" id="erpMainContent">
-
-        @* — Topbar — *@
         <header class="erp-topbar" id="erpTopbar">
             <div class="topbar-left">
-                @* Nút mở sidebar trên mobile *@
                 <button type="button" class="erp-sidebar-mobile-toggle d-lg-none" id="sidebarMobileBtn" aria-label="Mở menu">
                     <i class="bi bi-list fs-4"></i>
                 </button>
-                @* Breadcrumb *@
+                <span class="erp-module-pill d-none d-sm-inline-flex">
+                    <i class="bi @moduleIcon"></i>
+                    <span>@moduleLabel</span>
+                </span>
                 <nav aria-label="breadcrumb" class="d-none d-md-block">
                     <ol class="breadcrumb mb-0 small">
                         <li class="breadcrumb-item"><a href="/" class="text-decoration-none"><i class="bi bi-house-door"></i></a></li>
-                        @if (ViewData["BreadcrumbSection"] != null)
+                        @if (!string.IsNullOrWhiteSpace(breadcrumbSection))
                         {
-                            <li class="breadcrumb-item">@ViewData["BreadcrumbSection"]</li>
+                            <li class="breadcrumb-item">@breadcrumbSection</li>
                         }
                         @if (ViewData["Title"] != null)
                         {
@@ -187,31 +386,32 @@
                 </nav>
             </div>
             <div class="topbar-right">
-                @* Tìm kiếm nhanh *@
                 <button type="button" class="command-palette-trigger" onclick="window.openCommandPalette()" title="Tìm kiếm nhanh (Ctrl + K)">
                     <i class="bi bi-search"></i>
                     <span class="d-none d-xl-inline">Tìm kiếm...</span>
                     <kbd class="d-none d-lg-inline">Ctrl K</kbd>
                 </button>
 
-                @* Dark / Light *@
-                <button type="button" class="topbar-icon-btn" onclick="window.toggleTheme()" title="Sáng / Tối">
+                <button type="button" class="topbar-icon-btn density-toggle-btn" id="densityToggleBtn" onclick="window.toggleDensity()" title="Độ giãn cách: Thoải mái / Thu gọn" aria-label="Chuyển đổi độ giãn cách bảng biểu">
+                    <i class="bi bi-arrows-expand density-toggle-icon"></i>
+                </button>
+
+                <button type="button" class="topbar-icon-btn" id="themeToggleBtn" onclick="window.toggleTheme(event)" title="Chế độ Sáng / Tối" aria-label="Chuyển đổi chế độ Sáng hoặc Tối">
                     <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
                 </button>
 
-                @* Thông báo *@
                 <div class="dropdown">
-                    <button class="topbar-icon-btn position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
+                    <button class="topbar-icon-btn position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo" aria-label="Thông báo">
                         <i class="bi bi-bell"></i>
-                        <span id="notificationBadge" class="notif-badge" style="display:none;">0</span>
+                        <span id="notificationBadge" class="notif-badge">0</span>
                     </button>
-                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" aria-labelledby="notifDropdownBtn" style="width:360px; max-height:480px;">
-                        <div class="p-3 d-flex justify-content-between align-items-center" style="background:var(--erp-bg-sidebar); color:#fff;">
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0 erp-notif-dropdown" aria-labelledby="notifDropdownBtn">
+                        <div class="p-3 d-flex justify-content-between align-items-center erp-notif-dropdown-header">
                             <span class="fw-bold small"><i class="bi bi-bell-fill me-2 text-warning"></i>Thông báo</span>
                             <a href="javascript:void(0)" class="text-white-50 small text-decoration-none"
-                               onclick="fetch('/Notification/MarkAllAsRead',{method:'POST'}).then(()=>window.refreshNotificationDropdown())">Đã đọc hết</a>
+                               onclick="fetch('/Notification/MarkAllAsRead',{method:'POST'}).then(()=>window.refreshNotificationDropdown && window.refreshNotificationDropdown())">Đã đọc hết</a>
                         </div>
-                        <div id="notificationDropdownList" style="max-height:340px; overflow-y:auto;">
+                        <div id="notificationDropdownList" class="erp-notif-dropdown-list">
                             <div class="text-center py-4 text-muted small"><i class="bi bi-arrow-repeat spin d-block mb-1"></i>Đang tải...</div>
                         </div>
                         <div class="p-2 text-center border-top">
@@ -220,15 +420,20 @@
                     </div>
                 </div>
 
-                @* Avatar & tên *@
                 <div class="dropdown">
                     <button class="topbar-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="avatar-circle">@avatarInitial</span>
+                        <erp-avatar name="@fullName" size="sm" status="online" />
                         <span class="d-none d-lg-inline avatar-name">@fullName</span>
                         <i class="bi bi-chevron-down small d-none d-lg-inline"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg">
-                        <li><a class="dropdown-item small" href="/" target="_blank"><i class="bi bi-globe me-2"></i>Trang công khai</a></li>
+                        <li><a class="dropdown-item small" href="/CongNhanVien"><i class="bi bi-person-workspace me-2 text-primary"></i>Cổng tự phục vụ (ESS)</a></li>
+                        <li><a class="dropdown-item small" href="/Auth/ChangePassword"><i class="bi bi-key-fill me-2"></i>Đổi mật khẩu cá nhân</a></li>
+                        <li><a class="dropdown-item small" href="/Public/TinTuc" target="_blank"><i class="bi bi-globe me-2"></i>Cổng thông tin công khai</a></li>
+                        @if (isSuperAdmin)
+                        {
+                            <li><a class="dropdown-item small" href="/UI/Styleguide"><i class="bi bi-palette2 me-2"></i>UI Styleguide</a></li>
+                        }
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0">
@@ -241,49 +446,47 @@
             </div>
         </header>
 
-        @* — Thông báo hệ thống (TempData) — *@
-        <div class="erp-content-wrapper">
+        <div id="erpToastContainer" class="erp-toast-container" aria-live="polite">
             @if (TempData["SuccessMessage"] != null)
             {
-                <div class="erp-toast-alert erp-toast-success fade-in" role="alert">
+                <div class="erp-toast-alert erp-toast-success" role="alert">
                     <i class="bi bi-check-circle-fill"></i>
-                    <span>@TempData["SuccessMessage"]</span>
-                    <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()"></button>
+                    <span class="flex-grow-1">@TempData["SuccessMessage"]</span>
+                    <button type="button" class="btn-close btn-close-sm" aria-label="Đóng"></button>
+                    <div class="erp-toast-progress"></div>
                 </div>
             }
             @if (TempData["ErrorMessage"] != null)
             {
-                <div class="erp-toast-alert erp-toast-danger fade-in" role="alert">
+                <div class="erp-toast-alert erp-toast-danger" role="alert">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span>@TempData["ErrorMessage"]</span>
-                    <button type="button" class="btn-close btn-close-sm" onclick="this.parentElement.remove()"></button>
+                    <span class="flex-grow-1">@TempData["ErrorMessage"]</span>
+                    <button type="button" class="btn-close btn-close-sm" aria-label="Đóng"></button>
+                    <div class="erp-toast-progress"></div>
                 </div>
             }
+        </div>
 
-            @* — Nội dung chính — *@
+        <div class="erp-content-wrapper">
             <main class="erp-page-content fade-in">
                 @RenderBody()
             </main>
         </div>
 
-        @* Footer *@
         <footer class="erp-footer">
-            &copy; @ERP_HRM_CMS.Helpers.VietnamTime.Now.Year @brand &mdash; Hệ thống quản trị doanh nghiệp
+            &copy; @ERP_HRM_CMS.Helpers.VietnamTime.Now.Year @brand &mdash; Hệ thống quản trị doanh nghiệp hợp nhất
         </footer>
     </div>
 
-    @* Overlay khi sidebar mở trên mobile *@
     <div class="erp-sidebar-overlay" id="sidebarOverlay"></div>
 }
 else
 {
-    @* Layout cho trang chưa đăng nhập (login, register) *@
     <main class="container-fluid px-4 py-4">
         @RenderBody()
     </main>
 }
 
-@* ═══════ Scripts ═══════ *@
 <script src="~/js/security.js" asp-append-version="true"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/lib/jquery/dist/jquery.min.js"></script>

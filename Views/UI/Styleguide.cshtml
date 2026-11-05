@@ -1,0 +1,937 @@
+@model ERP_HRM_CMS.Controllers.StyleguideTableViewModel
+@using ERP_HRM_CMS.Models.Enums
+@{
+    Layout = "_Layout";
+    ViewData["Module"] = "system";
+    ViewData["Title"] = "UI Styleguide";
+    ViewData["BreadcrumbSection"] = "Hệ thống";
+
+    var surfaceTokens = new (string Name, string VarName)[]
+    {
+        ("Body Surface", "--erp-bg-body"),
+        ("Card Surface", "--erp-bg-card"),
+        ("Input Surface", "--erp-bg-surface"),
+        ("Subtle Surface", "--erp-bg-subtle"),
+        ("Hover Surface", "--erp-bg-hover"),
+        ("Sidebar Surface", "--erp-bg-sidebar")
+    };
+
+    var semanticTokens = new (string Name, string VarName)[]
+    {
+        ("Module Primary", "--erp-primary"),
+        ("Primary Subtle", "--erp-primary-subtle"),
+        ("Success", "--erp-success"),
+        ("Warning", "--erp-warning"),
+        ("Danger", "--erp-danger"),
+        ("Info", "--erp-info"),
+        ("Purple", "--erp-purple"),
+        ("Border Default", "--erp-border-color")
+    };
+
+    var moduleDefs = new (string Key, string Label, string Icon)[]
+    {
+        ("system", "System (Mặc định)", "bi-sliders2"),
+        ("hrm", "HRM (Nhân sự)", "bi-people"),
+        ("payroll", "Payroll (Lương)", "bi-cash-coin"),
+        ("sales", "Sales (Bán hàng)", "bi-cart-check"),
+        ("warehouse", "Warehouse (Kho)", "bi-box-seam"),
+        ("cms", "CMS (Nội dung)", "bi-newspaper")
+    };
+
+    var radiusScale = new (string Label, string VarName)[]
+    {
+        ("xs (4px)", "--erp-radius-xs"),
+        ("sm (6px)", "--erp-radius-sm"),
+        ("md (8px)", "--erp-radius-md"),
+        ("lg (12px)", "--erp-radius-lg"),
+        ("xl (16px)", "--erp-radius-xl"),
+        ("2xl (20px)", "--erp-radius-2xl"),
+        ("full (9999px)", "--erp-radius-full")
+    };
+
+    var spacingScale = new (string Label, string VarName)[]
+    {
+        ("space-1 (4px)", "--erp-space-1"),
+        ("space-2 (8px)", "--erp-space-2"),
+        ("space-3 (12px)", "--erp-space-3"),
+        ("space-4 (16px)", "--erp-space-4"),
+        ("space-5 (20px)", "--erp-space-5"),
+        ("space-6 (24px)", "--erp-space-6"),
+        ("space-8 (32px)", "--erp-space-8"),
+        ("space-10 (40px)", "--erp-space-10"),
+        ("space-12 (48px)", "--erp-space-12")
+    };
+
+    var shadowScale = new (string Label, string VarName)[]
+    {
+        ("shadow-xs", "--erp-shadow-xs"),
+        ("shadow-sm", "--erp-shadow-sm"),
+        ("shadow-md", "--erp-shadow-md"),
+        ("shadow-lg", "--erp-shadow-lg"),
+        ("shadow-xl", "--erp-shadow-xl")
+    };
+}
+
+@* ═══════ 1. PAGE HEADER COMPONENT ═══════ *@
+<erp-page-header title="UI Styleguide & Design System"
+                 subtitle="Trình diễn đầy đủ Design Tokens, 12 Shared Components và Micro-interactions Giai đoạn A (Dành riêng cho Super Admin)"
+                 icon="bi-palette2"
+                 breadcrumbs="Bảng điều khiển:/Home/Index|Hệ thống:/PhanQuyen/MaTranPhanQuyen|UI Styleguide">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-drawer-open="sgRightDrawer">
+        <i class="bi bi-layout-sidebar-inset-reverse me-1"></i>Mở Drawer mẫu
+    </button>
+    <button type="button" class="btn btn-primary btn-sm ripple" onclick="window.toggleTheme && window.toggleTheme(event)">
+        <i class="bi bi-circle-half me-1"></i>Đổi Sáng / Tối (Circular Reveal)
+    </button>
+</erp-page-header>
+
+@* ═══════ STICKY LIVE MODULE & THEME SWITCHER ═══════ *@
+<div class="erp-sg-sticky-bar d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="small fw-semibold text-muted me-1">
+            <i class="bi bi-droplet-half me-1"></i>Màu nhấn phân hệ (<code>data-module</code>):
+        </span>
+        @foreach (var m in moduleDefs)
+        {
+            <button type="button"
+                    class="erp-sg-module-btn @(m.Key == "system" ? "active" : "")"
+                    data-sg-module="@m.Key">
+                <i class="bi @m.Icon"></i>
+                <span>@m.Label</span>
+            </button>
+        }
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="erp-badge erp-badge-primary erp-badge-dot" id="sgMotionStatusBadge">Motion: Standard</span>
+    </div>
+</div>
+
+@* ═══════ SECTION A: DESIGN TOKENS ═══════ *@
+<section class="erp-sg-section">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-sliders me-2" style="color: var(--erp-primary);"></i>1. Design Tokens (Màu sắc, Bo góc, Khoảng cách, Đổ bóng & Motion)</h5>
+            <p class="text-muted small mb-0">Toàn bộ giá trị được định nghĩa tại <code>enterprise-theme.css</code>, tự động thích ứng Light / Dark và <code>[data-module]</code>.</p>
+        </div>
+    </div>
+
+    <h6 class="fw-semibold small text-uppercase text-muted mb-3">Surface & Background Tokens</h6>
+    <div class="row g-3 mb-4">
+        @foreach (var sw in surfaceTokens)
+        {
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="erp-sg-swatch">
+                    <div class="erp-sg-swatch-color" style="background: var(@sw.VarName);"></div>
+                    <div class="erp-sg-swatch-meta">
+                        <div class="fw-semibold text-truncate">@sw.Name</div>
+                        <code class="small">@sw.VarName</code>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <h6 class="fw-semibold small text-uppercase text-muted mb-3">Semantic & Module Accent Tokens</h6>
+    <div class="row g-3 mb-4">
+        @foreach (var sw in semanticTokens)
+        {
+            <div class="col-6 col-md-3 col-xl-3">
+                <div class="erp-sg-swatch">
+                    <div class="erp-sg-swatch-color" style="background: var(@sw.VarName);"></div>
+                    <div class="erp-sg-swatch-meta">
+                        <div class="fw-semibold text-truncate">@sw.Name</div>
+                        <code class="small">@sw.VarName</code>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h6 class="fw-semibold small text-uppercase text-muted mb-3">Border Radius Scale</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var r in radiusScale)
+                {
+                    <div class="erp-sg-demo-box" style="border-radius: var(@r.VarName); min-width: 108px;">
+                        <div>@r.Label</div>
+                        <code class="small d-block mt-1">@r.VarName</code>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <h6 class="fw-semibold small text-uppercase text-muted mb-3">Spacing Scale</h6>
+            <div class="d-flex flex-column gap-2">
+                @foreach (var sp in spacingScale)
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <code class="small" style="min-width: 145px;">@sp.VarName</code>
+                        <span class="erp-sg-space-bar" style="width: var(@sp.VarName);"></span>
+                        <span class="text-muted small">@sp.Label</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <h6 class="fw-semibold small text-uppercase text-muted mb-3">Elevation & Shadow Scale</h6>
+            <div class="row g-3">
+                @foreach (var sh in shadowScale)
+                {
+                    <div class="col-6 col-sm-4">
+                        <div class="erp-sg-shadow-box" style="box-shadow: var(@sh.VarName);">
+                            <div>@sh.Label</div>
+                            <code class="small text-muted">@sh.VarName</code>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <h6 class="fw-semibold small text-uppercase text-muted mb-3">Motion & Easing Tokens</h6>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Token</th>
+                            <th>Vai trò</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>--erp-duration-instant</code></td><td class="small text-muted">80ms — Phản hồi tức thời</td></tr>
+                        <tr><td><code>--erp-duration-fast</code></td><td class="small text-muted">150ms — Hover, focus, badge</td></tr>
+                        <tr><td><code>--erp-duration-normal</code></td><td class="small text-muted">240ms — Accordion, tab, modal</td></tr>
+                        <tr><td><code>--erp-duration-slow</code></td><td class="small text-muted">380ms — Drawer, view transition</td></tr>
+                        <tr><td><code>--erp-ease-spring</code></td><td class="small text-muted">Cubic-bezier đàn hồi nhẹ</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ═══════ SECTION B: STAT CARDS ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow me-2" style="color: var(--erp-primary);"></i>2. StatCard Component (<code>&lt;erp-stat-card&gt;</code> &amp; <code>_StatCard.cshtml</code>)</h5>
+    <p class="text-muted small mb-4">Hỗ trợ đếm số tự động (<code>count-up-target</code>), tiền tố/hậu tố, xu hướng tăng/giảm và 6 biến thể ngữ nghĩa.</p>
+
+    <div class="row g-3 stagger-list">
+        <div class="col-sm-6 col-xl-3">
+            <erp-stat-card label="Doanh thu thuần"
+                           count-up-target="1285400000"
+                           suffix=" đ"
+                           trend="+18.4% so với kỳ trước"
+                           trend-dir="up"
+                           icon="bi-currency-dollar"
+                           variant="primary" />
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <erp-stat-card label="Nhân sự chính thức"
+                           count-up-target="248"
+                           suffix=" người"
+                           trend="+6 nhân sự mới"
+                           trend-dir="up"
+                           icon="bi-people-fill"
+                           variant="success" />
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <erp-stat-card label="Đơn từ chờ duyệt"
+                           count-up-target="14"
+                           suffix=" hồ sơ"
+                           trend="Cần xử lý trong ngày"
+                           trend-dir="neutral"
+                           icon="bi-hourglass-split"
+                           variant="warning" />
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <erp-stat-card label="Cảnh báo tồn kho"
+                           count-up-target="5"
+                           suffix=" SKU"
+                           trend="-2 SKU dưới định mức"
+                           trend-dir="down"
+                           icon="bi-exclamation-triangle-fill"
+                           variant="danger" />
+        </div>
+    </div>
+</section>
+
+@* ═══════ SECTION C: FILTER BAR + AJAX DATA TABLE ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-table me-2" style="color: var(--erp-primary);"></i>3. FilterBar &amp; AJAX DataTable (<code>&lt;erp-filter-bar&gt;</code> + <code>&lt;erp-data-table&gt;</code>)</h5>
+    <p class="text-muted small mb-4">Gõ tìm kiếm (debounce 300ms), lọc theo phân hệ/trạng thái, bấm vào tiêu đề cột để sắp xếp hoặc chuyển trang mượt bằng AJAX + View Transition + Stagger Rows.</p>
+
+    <erp-filter-bar target-table="sgAjaxTable"
+                    action-url="/UI/StyleguideTableData"
+                    search-name="keyword"
+                    search-placeholder="Tìm mã chứng từ, nội dung, người phụ trách...">
+        <select name="moduleFilter" class="form-select form-select-sm w-auto" aria-label="Lọc theo phân hệ">
+            <option value="">Tất cả phân hệ</option>
+            <option value="hrm">Nhân sự (HRM)</option>
+            <option value="payroll">Lương &amp; Phúc lợi</option>
+            <option value="sales">Bán hàng &amp; POS</option>
+            <option value="warehouse">Kho &amp; Mua hàng</option>
+            <option value="cms">Nội dung (CMS)</option>
+            <option value="system">Hệ thống</option>
+        </select>
+
+        <select name="statusFilter" class="form-select form-select-sm w-auto" aria-label="Lọc theo nhóm trạng thái">
+            <option value="">Mọi trạng thái</option>
+            <option value="success">Hoàn tất / Đã duyệt (Success)</option>
+            <option value="info">Đang xử lý / Đã gửi (Info)</option>
+            <option value="warning">Chờ duyệt / Khóa sổ (Warning)</option>
+            <option value="danger">Từ chối / Quá hạn (Danger)</option>
+            <option value="neutral">Bản nháp (Neutral)</option>
+        </select>
+    </erp-filter-bar>
+
+    <partial name="_StyleguideTablePartial" model="Model" />
+</section>
+
+@* ═══════ SECTION D: WORKFLOW STATUS BADGES ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-patch-check me-2" style="color: var(--erp-primary);"></i>4. Badge Trạng Thái Chuẩn Hóa (<code>&lt;erp-status-badge&gt;</code> theo <code>WorkflowStatuses</code>)</h5>
+    <p class="text-muted small mb-4">Ánh xạ tự động toàn bộ 5 nhóm Enum nghiệp vụ trong <code>Models/Enums/WorkflowStatuses.cs</code> và mã chuỗi lưu trong cơ sở dữ liệu.</p>
+
+    <div class="row g-3">
+        <div class="col-md-6 col-xl-4">
+            <div class="p-3 border rounded-3 h-100">
+                <div class="fw-semibold small mb-2">PurchaseOrderStatus (Đơn mua hàng PO)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var st in Enum.GetValues<PurchaseOrderStatus>())
+                    {
+                        <erp-status-badge status="@st" show-icon="true" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="p-3 border rounded-3 h-100">
+                <div class="fw-semibold small mb-2">DebtStatus (Công nợ AR / AP)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var st in Enum.GetValues<DebtStatus>())
+                    {
+                        <erp-status-badge status="@st" show-icon="true" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="p-3 border rounded-3 h-100">
+                <div class="fw-semibold small mb-2">LeaveRequestStatus (Đơn nghỉ phép / Công tác)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var st in Enum.GetValues<LeaveRequestStatus>())
+                    {
+                        <erp-status-badge status="@st" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 h-100">
+                <div class="fw-semibold small mb-2">PayrollPeriodStatus (Kỳ tính lương)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var st in Enum.GetValues<PayrollPeriodStatus>())
+                    {
+                        <erp-status-badge status="@st" show-icon="true" />
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="p-3 border rounded-3 h-100">
+                <div class="fw-semibold small mb-2">SalarySlipStatus (Phiếu lương cá nhân)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var st in Enum.GetValues<SalarySlipStatus>())
+                    {
+                        <erp-status-badge status="@st" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ═══════ SECTION E: TABS (SLIDING INDICATOR) + EMPTY STATE + SKELETON + AVATAR + TIMELINE ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-segmented-nav me-2" style="color: var(--erp-primary);"></i>5. Tabs Trượt Indicator &amp; Nhóm Component Hiển Thị</h5>
+    <p class="text-muted small mb-4">Hỗ trợ thanh trượt mượt (<code>.erp-tab-indicator</code>), điều hướng phím mũi tên Trái/Phải/Home/End, tích hợp EmptyState, Skeleton, Avatar và Timeline.</p>
+
+    <erp-tabs id="sgShowcaseTabs">
+        <erp-tab id="tabTimeline" title="Timeline" icon="bi-clock-history" badge="4" active="true">
+            <erp-timeline>
+                <erp-timeline-item title="Giám đốc phê duyệt đơn mua hàng PO-2026-003"
+                                   time="10/04/2026 16:45"
+                                   actor="Super Admin • Ban Giám đốc"
+                                   variant="success"
+                                   icon="bi-check-lg">
+                    Đã ký duyệt hạn mức 96.800.000 đ và chuyển phiếu sang bộ phận Kho tiếp nhận hàng hóa.
+                </erp-timeline-item>
+                <erp-timeline-item title="Kế toán trưởng kiểm tra ngân sách quý II"
+                                   time="10/04/2026 14:10"
+                                   actor="Trịnh Thu Hà • Phòng Tài chính Kế toán"
+                                   variant="info"
+                                   icon="bi-calculator">
+                    Xác nhận số dư ngân sách mua sắm thiết bị CNTT còn khả dụng.
+                </erp-timeline-item>
+                <erp-timeline-item title="Yêu cầu bổ sung báo giá cạnh tranh"
+                                   time="09/04/2026 11:20"
+                                   actor="Phạm Minh Châu • Phòng Mua hàng"
+                                   variant="warning"
+                                   icon="bi-exclamation-lg">
+                    Đã đính kèm đủ 3 báo giá nhà cung cấp đạt chuẩn ISO.
+                </erp-timeline-item>
+                <erp-timeline-item title="Khởi tạo đề xuất mua sắm"
+                                   time="09/04/2026 08:30"
+                                   actor="Đinh Gia Bảo • Khối Kỹ thuật"
+                                   variant="primary"
+                                   icon="bi-plus-lg">
+                    Tạo phiếu yêu cầu trang bị màn hình phục vụ dự án ERP Giai đoạn A.
+                </erp-timeline-item>
+            </erp-timeline>
+        </erp-tab>
+
+        <erp-tab id="tabAvatar" title="Avatar" icon="bi-person-circle" badge="5 cỡ">
+            <div class="d-flex flex-wrap align-items-end gap-4 py-2">
+                <div class="text-center">
+                    <erp-avatar name="Nguyễn Văn An" size="xs" status="online" />
+                    <div class="small text-muted mt-2"><code>xs</code> (24px)</div>
+                </div>
+                <div class="text-center">
+                    <erp-avatar name="Trần Quốc Bảo" size="sm" status="online" />
+                    <div class="small text-muted mt-2"><code>sm</code> (32px)</div>
+                </div>
+                <div class="text-center">
+                    <erp-avatar name="Lê Hoàng Châu" size="md" status="busy" />
+                    <div class="small text-muted mt-2"><code>md</code> (40px • busy)</div>
+                </div>
+                <div class="text-center">
+                    <erp-avatar name="Phạm Minh Dũng" size="lg" status="away" />
+                    <div class="small text-muted mt-2"><code>lg</code> (52px • away)</div>
+                </div>
+                <div class="text-center">
+                    <erp-avatar name="Võ Khánh Linh" size="xl" status="offline" />
+                    <div class="small text-muted mt-2"><code>xl</code> (68px • offline)</div>
+                </div>
+            </div>
+        </erp-tab>
+
+        <erp-tab id="tabEmptyState" title="EmptyState" icon="bi-inbox">
+            <erp-empty-state icon="bi-folder2-open"
+                             title="Chưa có chứng từ phát sinh trong kỳ"
+                             description="Khi có đơn hàng, phiếu kho hoặc bảng lương mới, dữ liệu sẽ được đồng bộ trực tiếp tại đây."
+                             action-text="Tạo chứng từ mẫu"
+                             action-url="/UI/Styleguide" />
+        </erp-tab>
+
+        <erp-tab id="tabSkeleton" title="Skeleton" icon="bi-hourglass">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="small fw-semibold text-muted mb-2">Card &amp; Avatar Skeleton</div>
+                    <erp-skeleton type="card" rows="3" />
+                    <div class="mt-3">
+                        <erp-skeleton type="avatar" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="small fw-semibold text-muted mb-2">List &amp; Table Skeleton</div>
+                    <erp-skeleton type="list" rows="2" />
+                    <div class="mt-3">
+                        <erp-skeleton type="table" rows="3" />
+                    </div>
+                </div>
+            </div>
+        </erp-tab>
+    </erp-tabs>
+</section>
+
+@* ═══════ SECTION F: OVERLAYS (CONFIRM MODAL + DRAWER) & MICRO-INTERACTIONS ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-magic me-2" style="color: var(--erp-primary);"></i>6. ConfirmModal, Drawer &amp; Hiệu Ứng Tương Tác (Animations Playground)</h5>
+    <p class="text-muted small mb-4">Tất cả hiệu ứng tự động giảm chuyển động khi hệ điều hành bật chế độ <code>prefers-reduced-motion: reduce</code>.</p>
+
+    <div class="row g-4">
+        @* ConfirmModal & Drawer *@
+        <div class="col-lg-6">
+            <div class="p-4 border rounded-3 h-100">
+                <h6 class="fw-bold mb-2">ConfirmModal &amp; Offcanvas Drawer</h6>
+                <p class="text-muted small mb-3">Thử nghiệm hộp thoại xác nhận (JS API hoặc thuộc tính <code>data-erp-confirm</code>) và ngăn kéo trượt trái/phải.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-danger btn-sm" id="sgBtnProgrammaticConfirm">
+                        <i class="bi bi-trash3 me-1"></i>ERP.confirm (Danger)
+                    </button>
+                    <button type="button"
+                            class="btn btn-warning btn-sm"
+                            data-erp-confirm="Bạn có chắc chắn muốn khóa sổ kỳ lương tháng 04/2026 không?"
+                            data-erp-confirm-title="Khóa sổ bảng lương"
+                            data-erp-confirm-variant="warning"
+                            id="sgBtnDeclarativeConfirm">
+                        <i class="bi bi-lock me-1"></i>Declarative Confirm
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-drawer-open="sgRightDrawer">
+                        <i class="bi bi-layout-sidebar-reverse me-1"></i>Drawer Phải (md)
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-drawer-open="sgLeftDrawer">
+                        <i class="bi bi-layout-sidebar me-1"></i>Drawer Trái (sm)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Toast Progress Bar *@
+        <div class="col-lg-6">
+            <div class="p-4 border rounded-3 h-100">
+                <h6 class="fw-bold mb-2">Toast Có Thanh Đếm Ngược (Hover để tạm dừng)</h6>
+                <p class="text-muted small mb-3">Di chuột lên thông báo Toast để dừng thanh progress bar, rời chuột để tiếp tục đếm thời gian còn lại.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-success btn-sm" onclick="ERP.toast('Đã lưu cấu hình thành công!', 'success', 4500)">
+                        <i class="bi bi-check-circle me-1"></i>Toast Success
+                    </button>
+                    <button type="button" class="btn btn-info btn-sm text-white" onclick="ERP.toast('Đang đồng bộ 24 chứng từ mới từ phân hệ Kho.', 'info', 4500)">
+                        <i class="bi bi-info-circle me-1"></i>Toast Info
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm" onclick="ERP.toast('Cảnh báo: 5 mặt hàng sắp chạm ngưỡng tồn tối thiểu.', 'warning', 5000)">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Toast Warning
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="ERP.toast('Không thể kết nối máy in hóa đơn cổng LAN.', 'danger', 5000)">
+                        <i class="bi bi-x-octagon me-1"></i>Toast Danger
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Shake Error + Success Tick SVG + View Transition + Stagger *@
+        <div class="col-lg-6">
+            <div class="p-4 border rounded-3 h-100" id="sgShakeCard">
+                <h6 class="fw-bold mb-2">Shake Khi Lỗi &amp; Success Tick SVG</h6>
+                <p class="text-muted small mb-3">Thử để trống ô bắt buộc rồi bấm Kiểm tra (tự động rung form), hoặc kích hoạt dấu tích SVG hoàn tất.</p>
+                <form id="sgDemoValidationForm" class="d-flex gap-2 mb-3" novalidate>
+                    <input type="text" class="form-control form-control-sm" id="sgRequiredInput" placeholder="Nhập mã phê duyệt (để trống để test Shake)..." required />
+                    <button type="submit" class="btn btn-primary btn-sm flex-shrink-0">Kiểm tra</button>
+                </form>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="ERP.shake('#sgShakeCard')">
+                        <i class="bi bi-lightning me-1"></i>Rung lỗi thủ công
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="ERP.successTick('#sgTickMount', 'Đã duyệt chứng từ!')">
+                        <i class="bi bi-check2-circle me-1"></i>Chạy Success Tick
+                    </button>
+                    <div id="sgTickMount" class="ms-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        @* View Transition & Stagger Replay *@
+        <div class="col-lg-6">
+            <div class="p-4 border rounded-3 h-100">
+                <h6 class="fw-bold mb-2">View Transitions API &amp; Stagger Rows</h6>
+                <p class="text-muted small mb-3">Chuyển đổi bố cục DOM bằng <code>ERP.withViewTransition()</code> và phát lại hiệu ứng xuất hiện tuần tự cho bảng dữ liệu.</p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="sgBtnViewTransition">
+                        <i class="bi bi-layers-half me-1"></i>Đổi chế độ thẻ (View Transition)
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="ERP.staggerRows('#sgAjaxTable')">
+                        <i class="bi bi-list-ol me-1"></i>Phát lại Stagger Rows
+                    </button>
+                </div>
+                <div id="sgTransitionPreview" class="erp-sg-demo-box rounded-3 d-flex align-items-center justify-content-between">
+                    <span id="sgTransitionText"><i class="bi bi-grid-1x2 me-2"></i>Chế độ hiển thị: <strong>Tổng quan tiêu chuẩn</strong></span>
+                    <span class="erp-badge erp-badge-primary" id="sgTransitionBadge">Compact OFF</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ═══════ SECTION G: HRM WORKSPACE & DESIGN SYSTEM (PHIÊN 3) ═══════ *@
+<section class="erp-sg-section">
+    <h5 class="fw-bold mb-1"><i class="bi bi-people-fill me-2" style="color: var(--erp-primary);"></i>7. HRM Workspace Components &amp; Design System (Phiên 3)</h5>
+    <p class="text-muted small mb-4">Bộ thành phần chuyên sâu tối ưu riêng cho phân hệ Quản trị Nguồn nhân lực: Bento Grid, Sơ đồ tổ chức Org Chart, ATS Kanban, Shift Matrix Grid và Density Switcher.</p>
+
+    <!-- 1. Density Switcher & Sticky Columns -->
+    <div class="card erp-card p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+                <h6 class="fw-bold mb-1"><i class="bi bi-arrows-expand me-2 text-primary"></i>Table &amp; UI Density Switcher (Comfortable vs Compact)</h6>
+                <div class="text-muted small">Tự động thu gọn chiều cao dòng bảng chấm công, bảng lương, font-size 0.8125rem, hỗ trợ <code>sticky-thead</code> và <code>sticky-col</code> khi cuộn ngang.</div>
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.setDensity('comfortable')">
+                    <i class="bi bi-arrows-expand me-1"></i>Thoải mái (Comfortable)
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="window.setDensity('compact')">
+                    <i class="bi bi-arrows-collapse me-1"></i>Thu gọn (Compact)
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" style="max-height: 220px;">
+            <table class="table erp-table sticky-thead mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="sticky-col-1" style="width: 100px;">Mã NV</th>
+                        <th class="sticky-col-2" style="min-width: 160px;">Họ Và Tên</th>
+                        <th>Phòng Ban</th>
+                        <th>Chức Danh</th>
+                        <th class="text-end">Lương Hợp Đồng</th>
+                        <th class="text-center">Số Ngày Phép</th>
+                        <th class="text-center">Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="sticky-col-1 tabular-nums"><code>NV-2026-001</code></td>
+                        <td class="sticky-col-2 fw-semibold">Nguyễn Văn An</td>
+                        <td class="small">Khối Kỹ Thuật</td>
+                        <td class="small">Trưởng nhóm Kỹ thuật</td>
+                        <td class="text-end tabular-nums fw-semibold">32.000.000 đ</td>
+                        <td class="text-center tabular-nums">12/12</td>
+                        <td class="text-center"><erp-status-badge variant="success" label="Chính thức" dot="true" /></td>
+                    </tr>
+                    <tr>
+                        <td class="sticky-col-1 tabular-nums"><code>NV-2026-002</code></td>
+                        <td class="sticky-col-2 fw-semibold">Trần Thị Bích</td>
+                        <td class="small">Ban Giám Đốc</td>
+                        <td class="small">Trưởng phòng Nhân sự</td>
+                        <td class="text-end tabular-nums fw-semibold">28.500.000 đ</td>
+                        <td class="text-center tabular-nums">14/14</td>
+                        <td class="text-center"><erp-status-badge variant="success" label="Chính thức" dot="true" /></td>
+                    </tr>
+                    <tr>
+                        <td class="sticky-col-1 tabular-nums"><code>NV-2026-003</code></td>
+                        <td class="sticky-col-2 fw-semibold">Lê Hoàng Nam</td>
+                        <td class="small">Khối Kinh Doanh</td>
+                        <td class="small">Chuyên viên Kinh doanh</td>
+                        <td class="text-end tabular-nums fw-semibold">18.000.000 đ</td>
+                        <td class="text-center tabular-nums">6/6</td>
+                        <td class="text-center"><erp-status-badge variant="primary" label="Thử việc" dot="true" /></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. Interactive Org Chart & Bento Grid Demos -->
+    <div class="row g-4 mb-4">
+        <!-- Demo Org Chart Node -->
+        <div class="col-lg-6">
+            <div class="card erp-card p-4 h-100">
+                <h6 class="fw-bold mb-1"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Interactive Org Chart Node</h6>
+                <p class="text-muted small mb-3">Thẻ lãnh đạo phòng ban kèm avatar, đếm nhân sự biên chế và nút thu gọn/mở rộng nhánh.</p>
+                <div class="d-flex justify-content-center py-3 bg-body-tertiary rounded-3 border">
+                    <div class="org-node-card root-node">
+                        <div class="org-node-header">
+                            <span class="org-node-dept"><i class="bi bi-building me-1"></i>TECH_DIV</span>
+                        </div>
+                        <div class="org-node-leader">
+                            <div class="org-node-avatar bg-primary text-white d-flex align-items-center justify-content-center fw-bold small">
+                                KT
+                            </div>
+                            <div class="org-node-info">
+                                <div class="org-node-name">Khối Kỹ Thuật &amp; R&amp;D</div>
+                                <div class="org-node-title">Trần Văn Hoàng (CTO)</div>
+                            </div>
+                        </div>
+                        <div class="org-node-footer">
+                            <span class="org-node-count tabular-nums">
+                                <i class="bi bi-people-fill"></i> 18 nhân sự
+                            </span>
+                            <button type="button" class="org-toggle-btn" title="Thu gọn / Mở rộng" onclick="this.classList.toggle('collapsed')">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Shift Matrix Cells -->
+        <div class="col-lg-6">
+            <div class="card erp-card p-4 h-100">
+                <h6 class="fw-bold mb-1"><i class="bi bi-calendar-check-fill me-2 text-primary"></i>Calendar &amp; Shift Matrix Grid Cells</h6>
+                <p class="text-muted small mb-3">Ký hiệu chấm công với mã màu chuẩn WCAG AA và hiển thị tabular-nums thẳng tắp.</p>
+                <div class="p-3 bg-body-tertiary rounded-3 border mb-3">
+                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                        <div class="erp-shift-cell shift-ontime" title="Đúng giờ">P</div>
+                        <div class="erp-shift-cell shift-late" title="Đi muộn">L</div>
+                        <div class="erp-shift-cell shift-leave" title="Nghỉ phép">V</div>
+                        <div class="erp-shift-cell shift-ot" title="Làm thêm giờ">OT</div>
+                        <div class="erp-shift-cell shift-trip" title="Công tác">CT</div>
+                        <div class="erp-shift-cell shift-absent" title="Vắng">X</div>
+                        <div class="erp-shift-cell shift-weekend" title="Cuối tuần">-</div>
+                    </div>
+                </div>
+                <div class="shift-legend-bar rounded-3 border">
+                    <span class="shift-legend-item"><span class="shift-legend-dot shift-ontime"></span> P (Đúng giờ)</span>
+                    <span class="shift-legend-item"><span class="shift-legend-dot shift-late"></span> L (Đi muộn)</span>
+                    <span class="shift-legend-item"><span class="shift-legend-dot shift-leave"></span> V (Phép)</span>
+                    <span class="shift-legend-item"><span class="shift-legend-dot shift-ot"></span> OT (Tăng ca)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ATS Kanban Board Drag & Drop Demo -->
+    <div class="card erp-card p-4 mb-4">
+        <h6 class="fw-bold mb-1"><i class="bi bi-kanban me-2 text-primary"></i>ATS Kanban Board (Pipeline Tuyển Dụng)</h6>
+        <p class="text-muted small mb-3">Cột cuộn độc lập, thẻ ứng viên hiển thị điểm số (0-100), tag vị trí và hiệu ứng nghiêng khi kéo-thả.</p>
+        <div class="erp-kanban-board" style="min-height: 280px;">
+            <div class="kanban-column" data-column-id="applied">
+                <div class="kanban-column-header">
+                    <span class="kanban-column-title"><i class="bi bi-inbox text-primary"></i> Ứng tuyển mới</span>
+                    <span class="kanban-counter">2</span>
+                </div>
+                <div class="kanban-column-body">
+                    <div class="kanban-card" data-id="cand-1">
+                        <div class="kanban-card-header">
+                            <span class="kanban-card-title">Nguyễn Hải Đăng</span>
+                            <span class="kanban-card-score kanban-score-high">92/100</span>
+                        </div>
+                        <div class="kanban-card-job">Kỹ sư Senior .NET Core</div>
+                        <div class="kanban-card-footer">
+                            <span><i class="bi bi-calendar3 me-1"></i>Hôm qua</span>
+                            <span class="badge bg-light text-secondary border">Remote</span>
+                        </div>
+                    </div>
+                    <div class="kanban-card" data-id="cand-2">
+                        <div class="kanban-card-header">
+                            <span class="kanban-card-title">Phạm Thùy Linh</span>
+                            <span class="kanban-card-score kanban-score-mid">84/100</span>
+                        </div>
+                        <div class="kanban-card-job">Chuyên viên Kế toán Thuế</div>
+                        <div class="kanban-card-footer">
+                            <span><i class="bi bi-calendar3 me-1"></i>3 ngày trước</span>
+                            <span class="badge bg-light text-secondary border">Full-time</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-column" data-column-id="interview">
+                <div class="kanban-column-header">
+                    <span class="kanban-column-title"><i class="bi bi-person-video3 text-warning"></i> Phỏng vấn vòng 1</span>
+                    <span class="kanban-counter">1</span>
+                </div>
+                <div class="kanban-column-body">
+                    <div class="kanban-card" data-id="cand-3">
+                        <div class="kanban-card-header">
+                            <span class="kanban-card-title">Vũ Minh Tuấn</span>
+                            <span class="kanban-card-score kanban-score-high">95/100</span>
+                        </div>
+                        <div class="kanban-card-job">Trưởng phòng Kinh doanh B2B</div>
+                        <div class="kanban-card-footer">
+                            <span><i class="bi bi-clock me-1"></i>14:00 Hôm nay</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">Online Google Meet</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kanban-column" data-column-id="hired">
+                <div class="kanban-column-header">
+                    <span class="kanban-column-title"><i class="bi bi-check2-circle text-success"></i> Trúng tuyển (Hired)</span>
+                    <span class="kanban-counter">1</span>
+                </div>
+                <div class="kanban-column-body">
+                    <div class="kanban-card" data-id="cand-4">
+                        <div class="kanban-card-header">
+                            <span class="kanban-card-title">Đỗ Thị Mai</span>
+                            <span class="kanban-card-score kanban-score-high">98/100</span>
+                        </div>
+                        <div class="kanban-card-job">UI/UX Design Lead</div>
+                        <div class="kanban-card-footer">
+                            <span><i class="bi bi-award me-1"></i>Đã nhận Offer</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Onboarding T12</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Bento Dashboard Grid Demo -->
+    <div class="card erp-card p-4">
+        <h6 class="fw-bold mb-1"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Bento Dashboard Grid (12 Cột Đáp Ứng)</h6>
+        <p class="text-muted small mb-3">Hiệu ứng hover nâng nhẹ (<code>.hover-lift</code>), viền sáng tinh tế (<code>.border-glow</code>) và khung tải dữ liệu mượt mà.</p>
+        <div class="erp-bento-grid">
+            <div class="bento-col-8 bento-card border-glow">
+                <div class="bento-card-header">
+                    <span class="bento-card-title"><i class="bi bi-activity text-primary"></i> Biểu đồ biến động nhân sự &amp; Tuyển dụng</span>
+                    <span class="badge bg-light text-secondary border">Năm 2026</span>
+                </div>
+                <div class="bento-card-body d-flex align-items-center justify-content-center text-muted" style="min-height: 120px;">
+                    <i class="bi bi-bar-chart-line fs-1 me-2 text-primary opacity-50"></i> Khu vực biểu đồ thống kê tương tác
+                </div>
+            </div>
+            <div class="bento-col-4 bento-card border-glow">
+                <div class="bento-card-header">
+                    <span class="bento-card-title"><i class="bi bi-pie-chart text-success"></i> Tỷ lệ chuyên cần</span>
+                </div>
+                <div class="bento-card-body text-center py-3">
+                    <div class="fs-1 fw-bold text-success tabular-nums">98.4%</div>
+                    <div class="small text-muted">Đúng giờ toàn công ty</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<erp-confirm-modal id="sgStaticConfirmModal"
+                   title="Xác nhận xóa bản ghi mẫu"
+                   message="Hành động này chỉ mô phỏng giao diện ConfirmModal trong Styleguide."
+                   confirm-text="Đồng ý xóa"
+                   cancel-text="Đóng"
+                   variant="danger" />
+
+<erp-drawer id="sgRightDrawer"
+            title="Chi tiết chứng từ PO-2026-001"
+            subtitle="Ngăn kéo trượt bên phải (erp-drawer-end • size md)"
+            size="md"
+            position="end">
+    <div class="mb-3">
+        <div class="small text-muted mb-1">Trạng thái hiện tại</div>
+        <erp-status-badge status="@PurchaseOrderStatus.PendingApproval" show-icon="true" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label small fw-semibold">Ghi chú phê duyệt</label>
+        <textarea class="form-control" rows="3" placeholder="Nhập ý kiến phê duyệt chứng từ..."></textarea>
+    </div>
+    <erp-timeline>
+        <erp-timeline-item title="Tạo đơn mua hàng PO-2026-001" time="09:15 hôm nay" actor="Trần Quốc Bảo" variant="primary" icon="bi-file-earmark-plus">
+            Đề xuất nhập 10 máy laptop Dell Latitude phục vụ nhân sự mới.
+        </erp-timeline-item>
+        <erp-timeline-item title="Đang chờ Giám đốc phê duyệt" time="Hiện tại" actor="Hệ thống Workflow" variant="warning" icon="bi-hourglass-split" />
+    </erp-timeline>
+    <erp-drawer-footer>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-drawer-close="sgRightDrawer">Đóng</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="ERP.drawer.close('sgRightDrawer'); ERP.toast('Đã lưu phê duyệt mẫu!', 'success');">
+            <i class="bi bi-check2 me-1"></i>Phê duyệt mẫu
+        </button>
+    </erp-drawer-footer>
+</erp-drawer>
+
+<erp-drawer id="sgLeftDrawer"
+            title="Bộ lọc nâng cao"
+            subtitle="Ngăn kéo trượt bên trái (erp-drawer-start • size sm)"
+            size="sm"
+            position="start">
+    <p class="small text-muted">Drawer hỗ trợ đóng bằng phím <kbd>ESC</kbd>, bấm ra vùng mờ bên ngoài hoặc gọi <code>ERP.drawer.close('sgLeftDrawer')</code>.</p>
+    <div class="mb-3">
+        <label class="form-label small fw-semibold">Chi nhánh</label>
+        <select class="form-select form-select-sm">
+            <option>Toàn hệ thống</option>
+            <option>Trụ sở Hà Nội</option>
+            <option>Chi nhánh TP.HCM</option>
+            <option>Chi nhánh Đà Nẵng</option>
+        </select>
+    </div>
+    <erp-drawer-footer>
+        <button type="button" class="btn btn-primary btn-sm w-100" data-drawer-close="sgLeftDrawer">Áp dụng</button>
+    </erp-drawer-footer>
+</erp-drawer>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Live Module Switcher
+    var modButtons = document.querySelectorAll('[data-sg-module]');
+    modButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var mod = btn.getAttribute('data-sg-module');
+            ERP.withViewTransition(function () {
+                if (window.setErpModule) {
+                    window.setErpModule(mod);
+                } else {
+                    document.documentElement.setAttribute('data-module', mod);
+                }
+                modButtons.forEach(function (b) { b.classList.toggle('active', b === btn); });
+            });
+        });
+    });
+
+    // 2. Reduced Motion Indicator
+    var motionBadge = document.getElementById('sgMotionStatusBadge');
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function syncMotionBadge() {
+        if (!motionBadge) return;
+        if (mq.matches) {
+            motionBadge.textContent = 'Motion: Reduced (Tôn trọng cài đặt hệ thống)';
+            motionBadge.className = 'erp-badge erp-badge-warning erp-badge-dot';
+        } else {
+            motionBadge.textContent = 'Motion: Full Animations';
+            motionBadge.className = 'erp-badge erp-badge-success erp-badge-dot';
+        }
+    }
+    syncMotionBadge();
+    if (mq.addEventListener) mq.addEventListener('change', syncMotionBadge);
+
+    // 3. Programmatic & Declarative Confirm Demo
+    var progBtn = document.getElementById('sgBtnProgrammaticConfirm');
+    if (progBtn) {
+        progBtn.addEventListener('click', function () {
+            ERP.confirm({
+                title: 'Xác nhận xóa chứng từ mẫu?',
+                message: 'Thao tác này minh họa hộp thoại ERP.confirm() dùng chung trên toàn hệ thống.',
+                confirmText: 'Xóa bản ghi',
+                variant: 'danger',
+                onConfirm: function () {
+                    ERP.toast('Đã xác nhận thao tác xóa mẫu!', 'success');
+                }
+            });
+        });
+    }
+
+    var declBtn = document.getElementById('sgBtnDeclarativeConfirm');
+    if (declBtn) {
+        declBtn.addEventListener('erp:confirmed', function () {
+            ERP.toast('Đã khóa sổ kỳ lương mẫu thành công!', 'info');
+        });
+    }
+
+    // 4. Form Validation Shake + Success Tick Demo
+    var demoForm = document.getElementById('sgDemoValidationForm');
+    var reqInput = document.getElementById('sgRequiredInput');
+    if (demoForm && reqInput) {
+        demoForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!reqInput.value.trim()) {
+                reqInput.classList.add('is-invalid');
+                ERP.shake(demoForm);
+                ERP.toast('Vui lòng nhập mã phê duyệt trước khi gửi!', 'danger');
+            } else {
+                reqInput.classList.remove('is-invalid');
+                reqInput.classList.add('is-valid');
+                ERP.successTick('#sgTickMount', 'Mã hợp lệ!');
+                ERP.toast('Kiểm tra hợp lệ thành công!', 'success');
+            }
+        });
+    }
+
+    // 5. View Transition Card Swap Demo
+    var vtBtn = document.getElementById('sgBtnViewTransition');
+    var vtText = document.getElementById('sgTransitionText');
+    var vtBadge = document.getElementById('sgTransitionBadge');
+    var compact = false;
+    if (vtBtn && vtText && vtBadge) {
+        vtBtn.addEventListener('click', function () {
+            compact = !compact;
+            ERP.withViewTransition(function () {
+                if (compact) {
+                    vtText.innerHTML = '<i class="bi bi-list-check me-2"></i>Chế độ hiển thị: <strong>Mật độ cao (Enterprise Dense)</strong>';
+                    vtBadge.textContent = 'Compact ON';
+                    vtBadge.className = 'erp-badge erp-badge-success';
+                } else {
+                    vtText.innerHTML = '<i class="bi bi-grid-1x2 me-2"></i>Chế độ hiển thị: <strong>Tổng quan tiêu chuẩn</strong>';
+                    vtBadge.textContent = 'Compact OFF';
+                    vtBadge.className = 'erp-badge erp-badge-primary';
+                }
+            });
+        });
+    }
+});
+</script>
+}

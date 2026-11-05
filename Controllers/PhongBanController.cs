@@ -1,36 +1,31 @@
-﻿using ERP_HRM_CMS.Helpers;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
+using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Services.HRM;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     public class PhongBanController : Controller
     {
-        private readonly AppDbContext _context;
         private readonly IDepartmentService _departmentService;
 
-        public PhongBanController(AppDbContext context, IDepartmentService departmentService)
+        public PhongBanController(IDepartmentService departmentService)
         {
-            _context = context;
             _departmentService = departmentService;
         }
 
         // ═══════════════════════════════════════════════════════════
-        // DANH SÁCH PHÒNG BAN (cây đệ quy)
+        // DANH SÁCH PHÒNG BAN (cây đệ quy & sơ đồ tổ chức tương tác)
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
         public async Task<IActionResult> Index()
         {
-            ViewBag.Branches = await _context.Branches.Include(b => b.Company).ToListAsync();
-            ViewBag.Positions = await _context.Positions.OrderBy(p => p.Name).ToListAsync();
+            ViewBag.Branches = await _departmentService.GetBranchesAsync();
+            ViewBag.Positions = await _departmentService.GetPositionsAsync();
 
             // Lấy danh sách phẳng cho dropdown parent
             ViewBag.FlatDepartments = await _departmentService.GetFlatListAsync();
@@ -38,6 +33,18 @@ namespace ERP_HRM_CMS.Controllers
             // Lấy cây phòng ban
             var tree = await _departmentService.GetTreeAsync();
             return View(tree);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // CHI TIẾT PHÒNG BAN (DRAWER SLIDEOUT API)
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> GetDrawerDetail(int id)
+        {
+            var detail = await _departmentService.GetDrawerDetailAsync(id);
+            if (detail == null) return NotFound(new { success = false, message = "Không tìm thấy phòng ban." });
+            return Json(new { success = true, data = detail });
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -120,34 +127,29 @@ namespace ERP_HRM_CMS.Controllers
         {
             if (ModelState.IsValid)
             {
-                pos.CreatedAt = VietnamTime.Now;
-                _context.Positions.Add(pos);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Thêm chức vụ '{pos.Name}' thành công!";
+                var (success, error) = await _departmentService.CreatePositionAsync(pos);
+                if (success)
+                    TempData["SuccessMessage"] = $"Thêm chức vụ '{pos.Name}' thành công!";
+                else
+                    TempData["ErrorMessage"] = error;
             }
             return RedirectToAction(nameof(Index));
         }
 
         // ═══════════════════════════════════════════════════════════
-        // XÓA PHÒNG BAN (soft delete / hard delete nếu không có NV)
+        // XÓA PHÒNG BAN
         // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> XoaPhongBan(int id)
         {
-            var dept = await _context.Departments.Include(d => d.Employees).FirstOrDefaultAsync(d => d.Id == id);
-            if (dept == null) return NotFound();
+            var (success, error) = await _departmentService.DeleteAsync(id);
+            if (success)
+                TempData["SuccessMessage"] = "Đã xóa phòng ban thành công!";
+            else
+                TempData["ErrorMessage"] = error;
 
-            if (dept.Employees.Any())
-            {
-                TempData["ErrorMessage"] = "Không thể xóa phòng ban đang có nhân viên trực thuộc!";
-                return RedirectToAction(nameof(Index));
-            }
-
-            _context.Departments.Remove(dept);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Đã xóa phòng ban thành công!";
             return RedirectToAction(nameof(Index));
         }
     }

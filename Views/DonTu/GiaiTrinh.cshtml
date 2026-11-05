@@ -1,0 +1,296 @@
+@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Models.Entities.AttendanceAdjustmentRequest>
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Đơn Giải Trình Chấm Công";
+    ViewData["BreadcrumbSection"] = "Đơn từ & Phê duyệt";
+    var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.AdjustmentFilterDto ?? new();
+    var departments = ViewBag.Departments as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    bool canApprove = ViewBag.CanApprove as bool? ?? false;
+}
+
+<erp-page-header title="Đơn Giải Trình Chấm Công (Quên Quẹt Thẻ / Sự Cố Máy)"
+                 subtitle="Tiếp nhận và phê duyệt giải trình quên vào/ra, lỗi thiết bị hoặc đi công tác ngoại tỉnh"
+                 icon="bi-patch-question-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Đơn từ:/DonTu/Index|Giải trình">
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createAdjModal">
+        <i class="bi bi-plus-circle me-1"></i> Tạo đơn giải trình
+    </button>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Quản lý đơn từ
+    </a>
+</erp-page-header>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Bộ lọc tìm kiếm -->
+<erp-filter-bar method="get">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Pending" selected="@(filter.Status == "Pending")">Chờ duyệt</option>
+            <option value="Approved" selected="@(filter.Status == "Approved")">Đã duyệt</option>
+            <option value="Rejected" selected="@(filter.Status == "Rejected")">Đã từ chối</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Loại giải trình</label>
+        <select name="type" class="form-select form-select-sm">
+            <option value="">-- Tất cả loại --</option>
+            <option value="MissedCheckIn" selected="@(filter.AdjustmentType == "MissedCheckIn")">Quên quẹt thẻ vào</option>
+            <option value="MissedCheckOut" selected="@(filter.AdjustmentType == "MissedCheckOut")">Quên quẹt thẻ ra</option>
+            <option value="Both" selected="@(filter.AdjustmentType == "Both")">Quên quẹt thẻ cả hai</option>
+            <option value="SystemError" selected="@(filter.AdjustmentType == "SystemError")">Lỗi máy chấm công</option>
+            <option value="BusinessTrip" selected="@(filter.AdjustmentType == "BusinessTrip")">Đi gặp đối tác / Công tác</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="departments">
+            <option value="">-- Toàn bộ phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-funnel-fill me-1"></i> Lọc
+        </button>
+    </div>
+</erp-filter-bar>
+
+<!-- Bảng danh sách giải trình -->
+<div class="card card-enterprise shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0 fw-bold text-primary">
+            <i class="bi bi-clock-history me-2"></i> Danh sách Đơn Giải trình (@Model.TotalCount bản ghi)
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 erp-table sticky-thead">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 130px;">Mã đơn</th>
+                    <th>Nhân sự</th>
+                    <th>Ngày công</th>
+                    <th>Loại giải trình</th>
+                    <th>Giờ vào thực tế</th>
+                    <th>Giờ ra thực tế</th>
+                    <th>Lý do giải trình</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center" style="width: 140px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var row in Model)
+                    {
+                        <tr>
+                            <td><code>@row.RequestCode</code></td>
+                            <td>
+                                <div class="fw-bold">@row.Employee.FullName</div>
+                                <small class="text-muted">@row.Employee.EmployeeCode | @(row.Employee.Department?.Name ?? "")</small>
+                            </td>
+                            <td class="font-monospace fw-semibold">@row.WorkDate.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @switch (row.AdjustmentType)
+                                {
+                                    case "MissedCheckIn":
+                                        <span class="badge bg-warning-subtle text-warning border">Quên quẹt vào</span>
+                                        break;
+                                    case "MissedCheckOut":
+                                        <span class="badge bg-warning-subtle text-warning border">Quên quẹt ra</span>
+                                        break;
+                                    case "Both":
+                                        <span class="badge bg-danger-subtle text-danger border">Quên cả hai</span>
+                                        break;
+                                    case "SystemError":
+                                        <span class="badge bg-info-subtle text-info border">Lỗi máy quét</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-primary-subtle text-primary border">Công tác</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="font-monospace text-primary fw-bold">@(row.ActualInTime?.ToString(@"hh\:mm") ?? "—")</td>
+                            <td class="font-monospace text-primary fw-bold">@(row.ActualOutTime?.ToString(@"hh\:mm") ?? "—")</td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 250px;" title="@row.Reason">
+                                    @row.Reason
+                                </div>
+                            </td>
+                            <td>
+                                @switch (row.Status)
+                                {
+                                    case "Pending":
+                                        <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                        break;
+                                    case "Approved":
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-danger">Từ chối</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (canApprove && row.Status == "Pending")
+                                {
+                                    <div class="btn-group btn-group-sm">
+                                        <form asp-action="DuyetGiaiTrinh" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@row.Id" />
+                                            <button type="submit" class="btn btn-outline-success" title="Phê duyệt">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+                                        <button type="button" class="btn btn-outline-danger" title="Từ chối"
+                                                onclick="openRejectModal(@row.Id, '@row.RequestCode')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Đã xử lý</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                            Không có đơn giải trình nào phù hợp.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalCount bản ghi)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="GiaiTrinh" asp-route-page="@(Model.PageIndex - 1)">Trước</a>
+                </li>
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.PageIndex ? "active" : "")">
+                        <a class="page-link" asp-action="GiaiTrinh" asp-route-page="@p">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="GiaiTrinh" asp-route-page="@(Model.PageIndex + 1)">Sau</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+<!-- Modal Tạo Đơn Giải Trình -->
+<div class="modal fade" id="createAdjModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="CreateGiaiTrinh" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="bi bi-plus-circle me-2"></i> Tạo đơn giải trình chấm công
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ngày công cần giải trình <span class="text-danger">*</span></label>
+                        <input type="date" name="WorkDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại giải trình <span class="text-danger">*</span></label>
+                        <select name="AdjustmentType" class="form-select" required>
+                            <option value="MissedCheckIn">Quên quẹt thẻ lúc vào</option>
+                            <option value="MissedCheckOut">Quên quẹt thẻ lúc ra</option>
+                            <option value="Both">Quên quẹt cả vào và ra</option>
+                            <option value="SystemError">Máy chấm công bị lỗi không nhận diện</option>
+                            <option value="BusinessTrip">Đi công tác / Gặp gỡ đối tác ngoại tỉnh</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Giờ vào thực tế</label>
+                            <input type="time" name="ActualInTime" class="form-control" value="08:00" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Giờ ra thực tế</label>
+                            <input type="time" name="ActualOutTime" class="form-control" value="17:30" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lý do giải trình cụ thể <span class="text-danger">*</span></label>
+                        <textarea name="Reason" class="form-control" rows="3" placeholder="Ghi rõ lý do quên, sự cố hoặc người làm chứng..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i> Gửi đơn giải trình
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Từ Chối Giải Trình -->
+<div class="modal fade" id="rejectAdjModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <form asp-action="TuChoiGiaiTrinh" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="rejectAdjId" />
+
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold text-danger">Từ chối giải trình</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="small text-muted mb-2" id="rejectAdjCode"></div>
+                    <label class="form-label small fw-semibold">Lý do từ chối <span class="text-danger">*</span></label>
+                    <textarea name="reason" class="form-control form-control-sm" rows="3" placeholder="Nhập lý do không chấp thuận..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger btn-sm">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRejectModal(id, code) {
+            document.getElementById('rejectAdjId').value = id;
+            document.getElementById('rejectAdjCode').textContent = 'Đơn: ' + code;
+            new bootstrap.Modal(document.getElementById('rejectAdjModal')).show();
+        }
+    </script>
+}
+

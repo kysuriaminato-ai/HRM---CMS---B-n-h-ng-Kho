@@ -1,0 +1,751 @@
+/* ==========================================================================
+   HRM WORKSPACE & ENTERPRISE COMPONENT SYSTEM 2026
+   Thiết kế chuyên sâu: Bento Grid, Org Chart, ATS Kanban, Shift Matrix Grid
+   Theme: Nordic People & Indigo Slate | Chuẩn WCAG AA | Tabular-nums
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. BENTO DASHBOARD GRID
+   -------------------------------------------------------------------------- */
+.erp-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--erp-space-4);
+    width: 100%;
+}
+
+.bento-col-12 { grid-column: span 12; }
+.bento-col-9  { grid-column: span 9; }
+.bento-col-8  { grid-column: span 8; }
+.bento-col-7  { grid-column: span 7; }
+.bento-col-6  { grid-column: span 6; }
+.bento-col-5  { grid-column: span 5; }
+.bento-col-4  { grid-column: span 4; }
+.bento-col-3  { grid-column: span 3; }
+
+.bento-row-2  { grid-row: span 2; }
+
+@media (max-width: 1199.98px) {
+    .bento-col-9, .bento-col-8, .bento-col-7 { grid-column: span 12; }
+    .bento-col-5, .bento-col-4, .bento-col-3 { grid-column: span 6; }
+}
+
+@media (max-width: 767.98px) {
+    .erp-bento-grid {
+        gap: var(--erp-space-3);
+    }
+    .bento-col-12, .bento-col-9, .bento-col-8, .bento-col-7,
+    .bento-col-6, .bento-col-5, .bento-col-4, .bento-col-3 {
+        grid-column: span 12;
+    }
+}
+
+.bento-card {
+    background-color: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-xl);
+    padding: var(--erp-space-5);
+    box-shadow: var(--erp-card-shadow);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: transform var(--erp-duration-normal) var(--erp-ease-out),
+                box-shadow var(--erp-duration-normal) var(--erp-ease-out),
+                border-color var(--erp-duration-normal) var(--erp-ease-out);
+}
+
+.bento-card.border-glow:hover {
+    border-color: var(--erp-primary);
+    box-shadow: 0 0 0 1px var(--erp-primary), var(--erp-shadow-md);
+    transform: translateY(-2px);
+}
+
+.bento-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--erp-space-4);
+}
+
+.bento-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--erp-text-main);
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+}
+
+.bento-card-body {
+    flex: 1;
+}
+
+.bento-card-footer {
+    margin-top: var(--erp-space-4);
+    padding-top: var(--erp-space-3);
+    border-top: 1px solid var(--erp-border-subtle);
+    font-size: 0.8125rem;
+    color: var(--erp-text-muted);
+}
+
+/* Shimmer Skeleton khi tải dữ liệu */
+.bento-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--erp-bg-subtle) 0%,
+        var(--erp-border-color) 50%,
+        var(--erp-bg-subtle) 100%
+    );
+    background-size: 200% 100%;
+    animation: erp-shimmer 1.8s infinite linear;
+    border-radius: var(--erp-radius-md);
+}
+
+@keyframes erp-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* --------------------------------------------------------------------------
+   2. INTERACTIVE ORG CHART (SƠ ĐỒ CÂY TỔ CHỨC DOANH NGHIỆP)
+   -------------------------------------------------------------------------- */
+.erp-org-viewport {
+    position: relative;
+    width: 100%;
+    min-height: 520px;
+    background-color: var(--erp-bg-subtle);
+    background-image: radial-gradient(var(--erp-border-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-xl);
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+}
+
+.erp-org-viewport:active {
+    cursor: grabbing;
+}
+
+.erp-org-canvas {
+    display: flex;
+    justify-content: center;
+    padding: var(--erp-space-8) var(--erp-space-4);
+    transform-origin: 50% 10%;
+    transition: transform var(--erp-duration-fast) var(--erp-ease-out);
+}
+
+/* Tree Structure with pure CSS lines */
+.org-tree,
+.org-tree ul {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    padding-top: 24px;
+    margin: 0;
+    list-style-type: none;
+    transition: all var(--erp-duration-normal) var(--erp-ease-default);
+}
+
+.org-tree li {
+    position: relative;
+    text-align: center;
+    padding: 24px 12px 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Đường nối ngang và dọc giữa các cấp */
+.org-tree li::before,
+.org-tree li::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    border-top: 2px solid var(--erp-border-strong);
+    width: 50%;
+    height: 24px;
+}
+
+.org-tree li::after {
+    right: auto;
+    left: 50%;
+    border-left: 2px solid var(--erp-border-strong);
+}
+
+.org-tree li:only-child::after,
+.org-tree li:only-child::before {
+    display: none;
+}
+
+.org-tree li:only-child {
+    padding-top: 0;
+}
+
+.org-tree li:first-child::before,
+.org-tree li:last-child::after {
+    border: 0 none;
+}
+
+.org-tree li:last-child::before {
+    border-right: 2px solid var(--erp-border-strong);
+    border-radius: 0 8px 0 0;
+}
+
+.org-tree li:first-child::after {
+    border-radius: 8px 0 0 0;
+}
+
+/* Đường nối từ node cha xuống nhánh con */
+.org-tree ul::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    border-left: 2px solid var(--erp-border-strong);
+    width: 0;
+    height: 24px;
+}
+
+/* Node Thẻ Phòng Ban / Lãnh Đạo */
+.org-node-card {
+    background-color: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    box-shadow: var(--erp-shadow-md);
+    width: 220px;
+    padding: var(--erp-space-3);
+    text-align: left;
+    position: relative;
+    z-index: 2;
+    transition: transform var(--erp-duration-fast) var(--erp-ease-out),
+                box-shadow var(--erp-duration-fast) var(--erp-ease-out),
+                border-color var(--erp-duration-fast) var(--erp-ease-out);
+}
+
+.org-node-card:hover {
+    border-color: var(--erp-primary);
+    box-shadow: 0 0 0 1px var(--erp-primary), var(--erp-shadow-lg);
+    transform: translateY(-2px);
+}
+
+.org-node-card.root-node {
+    border-top: 4px solid var(--erp-primary);
+    width: 240px;
+}
+
+.org-node-header {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+    margin-bottom: var(--erp-space-2);
+}
+
+.org-node-dept {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--erp-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.org-node-leader {
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+}
+
+.org-node-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--erp-radius-full);
+    object-fit: cover;
+    border: 2px solid var(--erp-border-color);
+    flex-shrink: 0;
+}
+
+.org-node-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.org-node-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--erp-text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.org-node-title {
+    font-size: 0.75rem;
+    color: var(--erp-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.org-node-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--erp-space-2);
+    padding-top: var(--erp-space-2);
+    border-top: 1px dashed var(--erp-border-subtle);
+    font-size: 0.75rem;
+}
+
+.org-node-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--erp-text-muted);
+    font-weight: 500;
+}
+
+.org-toggle-btn {
+    border: 1px solid var(--erp-border-color);
+    background-color: var(--erp-bg-surface);
+    color: var(--erp-text-secondary);
+    border-radius: var(--erp-radius-full);
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.org-toggle-btn:hover {
+    background-color: var(--erp-primary);
+    color: #FFFFFF;
+    border-color: var(--erp-primary);
+}
+
+/* Trạng thái thu gọn nhánh con */
+.org-tree li.org-collapsed > ul {
+    display: none;
+}
+
+.org-tree li.org-collapsed .org-toggle-btn i {
+    transform: rotate(-90deg);
+}
+
+/* Floating Zoom & Pan Controls */
+.org-controls-bar {
+    position: absolute;
+    bottom: var(--erp-space-4);
+    right: var(--erp-space-4);
+    background-color: var(--erp-bg-surface);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-full);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: var(--erp-shadow-md);
+    z-index: 10;
+}
+
+.org-control-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: var(--erp-radius-full);
+    color: var(--erp-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color var(--erp-duration-fast) var(--erp-ease-default);
+}
+
+.org-control-btn:hover {
+    background-color: var(--erp-bg-subtle);
+    color: var(--erp-primary);
+}
+
+/* --------------------------------------------------------------------------
+   3. ATS KANBAN BOARD (PIPELINE TUYỂN DỤNG ỨNG VIÊN)
+   -------------------------------------------------------------------------- */
+.erp-kanban-board {
+    display: flex;
+    gap: var(--erp-space-4);
+    overflow-x: auto;
+    padding-bottom: var(--erp-space-4);
+    min-height: calc(100vh - 220px);
+    scroll-behavior: smooth;
+    user-select: none;
+}
+
+.kanban-column {
+    flex: 0 0 320px;
+    background-color: var(--erp-bg-subtle);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 220px);
+}
+
+.kanban-column-header {
+    padding: var(--erp-space-3) var(--erp-space-4);
+    border-bottom: 1px solid var(--erp-border-color);
+    background-color: var(--erp-bg-surface);
+    border-radius: var(--erp-radius-lg) var(--erp-radius-lg) 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.kanban-column-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--erp-space-2);
+}
+
+.kanban-counter {
+    background-color: var(--erp-border-color);
+    color: var(--erp-text-main);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--erp-radius-full);
+}
+
+.kanban-column-body {
+    padding: var(--erp-space-3);
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--erp-space-3);
+    min-height: 150px;
+}
+
+.kanban-column.is-drag-over .kanban-column-body {
+    background-color: var(--erp-primary-subtle);
+}
+
+/* Thẻ ứng viên Kanban */
+.kanban-card {
+    background-color: var(--erp-bg-card);
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-md);
+    padding: var(--erp-space-3);
+    box-shadow: var(--erp-shadow-xs);
+    cursor: grab;
+    transition: transform var(--erp-duration-fast) var(--erp-ease-out),
+                box-shadow var(--erp-duration-fast) var(--erp-ease-out),
+                border-color var(--erp-duration-fast) var(--erp-ease-out);
+    position: relative;
+}
+
+.kanban-card:hover {
+    border-color: var(--erp-primary);
+    box-shadow: var(--erp-shadow-sm);
+    transform: translateY(-2px);
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+}
+
+/* Hiệu ứng nhấc thẻ nghiêng nhẹ khi đang kéo thả */
+.kanban-card.is-dragging {
+    opacity: 0.85;
+    transform: rotate(2.5deg) scale(1.02);
+    box-shadow: var(--erp-shadow-xl);
+    border-color: var(--erp-primary);
+    z-index: 1000;
+}
+
+.kanban-placeholder {
+    border: 2px dashed var(--erp-primary);
+    background-color: var(--erp-primary-subtle);
+    border-radius: var(--erp-radius-md);
+    min-height: 80px;
+    margin-bottom: var(--erp-space-3);
+}
+
+.kanban-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--erp-space-2);
+}
+
+.kanban-card-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--erp-text-main);
+    margin: 0;
+}
+
+.kanban-card-score {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--erp-radius-xs);
+    font-variant-numeric: tabular-nums;
+}
+
+.kanban-score-high {
+    background-color: #ECFDF5;
+    color: #065F46;
+    border: 1px solid #A7F3D0;
+}
+
+.kanban-score-mid {
+    background-color: #FFFBEB;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+
+.kanban-card-job {
+    font-size: 0.8125rem;
+    color: var(--erp-primary);
+    font-weight: 600;
+    margin-bottom: var(--erp-space-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kanban-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--erp-space-2);
+    font-size: 0.75rem;
+    color: var(--erp-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   4. CALENDAR & SHIFT MATRIX GRID (MA TRẬN CHẤM CÔNG & LỊCH CA)
+   -------------------------------------------------------------------------- */
+.erp-shift-matrix-wrapper {
+    position: relative;
+    border: 1px solid var(--erp-border-color);
+    border-radius: var(--erp-radius-lg);
+    background-color: var(--erp-bg-card);
+    box-shadow: var(--erp-card-shadow);
+    overflow: hidden;
+}
+
+.erp-shift-matrix-container {
+    overflow-x: auto;
+    max-height: 650px;
+    position: relative;
+}
+
+.erp-shift-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--erp-table-font-size);
+}
+
+.erp-shift-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background-color: var(--erp-bg-surface);
+    border-bottom: 2px solid var(--erp-border-strong);
+    padding: var(--erp-table-cell-py) 4px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.erp-shift-table th.col-emp,
+.erp-shift-table td.col-emp {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: var(--erp-bg-card);
+    min-width: 180px;
+    max-width: 220px;
+    padding-left: var(--erp-space-3);
+    box-shadow: 2px 0 5px -2px rgba(15, 23, 42, 0.08);
+}
+
+.erp-shift-table thead th.col-emp {
+    z-index: 30;
+    background-color: var(--erp-bg-surface);
+}
+
+.erp-shift-cell {
+    width: 36px;
+    min-width: 36px;
+    height: 38px;
+    padding: 2px !important;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--erp-border-subtle);
+    border-right: 1px solid var(--erp-border-subtle);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--erp-duration-instant) var(--erp-ease-default);
+}
+
+.erp-shift-cell:hover {
+    transform: scale(1.15);
+    z-index: 5;
+    box-shadow: var(--erp-shadow-sm);
+    border-radius: var(--erp-radius-xs);
+}
+
+/* Màu trạng thái chấm công */
+.shift-ontime {
+    background-color: #ECFDF5;
+    color: #065F46;
+}
+.shift-late {
+    background-color: #FFFBEB;
+    color: #92400E;
+}
+.shift-leave {
+    background-color: #EFF6FF;
+    color: #1E40AF;
+}
+.shift-ot {
+    background-color: #EEF2FF;
+    color: #3730A3;
+}
+.shift-trip {
+    background-color: #ECFEFF;
+    color: #0E7490;
+}
+.shift-absent {
+    background-color: #FEF2F2;
+    color: #991B1B;
+}
+.shift-weekend {
+    background-color: var(--erp-bg-subtle);
+    color: var(--erp-text-muted);
+}
+
+[data-bs-theme="dark"] .shift-ontime {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #A7F3D0;
+}
+[data-bs-theme="dark"] .shift-late {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #FDE68A;
+}
+[data-bs-theme="dark"] .shift-leave {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #BFDBFE;
+}
+[data-bs-theme="dark"] .shift-ot {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #C7D2FE;
+}
+[data-bs-theme="dark"] .shift-trip {
+    background-color: rgba(6, 182, 212, 0.2);
+    color: #A5F3FC;
+}
+[data-bs-theme="dark"] .shift-absent {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #FECACA;
+}
+
+/* Shift Legend Bar */
+.shift-legend-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--erp-space-3);
+    padding: var(--erp-space-3) var(--erp-space-4);
+    background-color: var(--erp-bg-surface);
+    border-top: 1px solid var(--erp-border-color);
+    font-size: 0.8125rem;
+}
+
+.shift-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--erp-text-secondary);
+}
+
+.shift-legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--erp-radius-xs);
+    display: inline-block;
+}
+
+/* --------------------------------------------------------------------------
+   5. GLASSMORPHISM COMMAND PALETTE ENHANCEMENT
+   -------------------------------------------------------------------------- */
+.command-palette-modal .modal-content {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-radius: var(--erp-radius-2xl);
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+}
+
+[data-bs-theme="dark"] .command-palette-modal .modal-content,
+body.dark-mode .command-palette-modal .modal-content {
+    background: rgba(17, 24, 39, 0.82) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65) !important;
+}
+
+.command-palette-input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--erp-text-main) !important;
+}
+
+.command-palette-group-title {
+    padding: var(--erp-space-2) var(--erp-space-4);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--erp-text-muted);
+    background-color: var(--erp-bg-subtle);
+    border-top: 1px solid var(--erp-border-subtle);
+    border-bottom: 1px solid var(--erp-border-subtle);
+}
+
+.command-palette-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--erp-space-2) var(--erp-space-4);
+    cursor: pointer;
+    transition: background-color var(--erp-duration-instant) var(--erp-ease-default);
+}
+
+.command-palette-item:hover,
+.command-palette-item.active {
+    background-color: var(--erp-primary-subtle);
+}
+

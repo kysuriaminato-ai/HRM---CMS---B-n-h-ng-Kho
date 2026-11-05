@@ -1,7 +1,8 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>
+@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>
 @{
-    Layout = "_HRMLayout";
-    ViewData["Title"] = "Danh Sách Hồ Sơ Nhân Sự";
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Hồ sơ nhân sự";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
     var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.EmployeeFilterDto;
     int totalActive = ViewBag.TotalActive ?? 0;
     int totalProbation = ViewBag.TotalProbation ?? 0;
@@ -9,122 +10,129 @@
     int totalResigned = ViewBag.TotalResigned ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Quản Trị Hồ Sơ Nhân Sự</h4>
-        <p class="text-secondary small mb-0">Tra cứu, cập nhật thông tin và cấp tài khoản làm việc nội bộ</p>
+<erp-page-header title="Hồ Sơ Nhân Sự Doanh Nghiệp"
+                 subtitle="Tra cứu, quản lý vòng đời nhân sự 360°, nhập xuất Excel và cảnh báo thông minh"
+                 icon="bi-people-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Hồ sơ nhân sự">
+    <a asp-action="CanhBao" class="btn btn-outline-warning btn-sm" title="Trung tâm cảnh báo nhân sự">
+        <i class="bi bi-bell-fill me-1"></i> Cảnh báo
+    </a>
+    <a asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+    <div class="btn-group btn-group-sm">
+        <a asp-action="ExportExcel"
+           asp-route-keyword="@filter?.Keyword"
+           asp-route-departmentId="@filter?.DepartmentId"
+           asp-route-positionId="@filter?.PositionId"
+           asp-route-status="@filter?.Status"
+           class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+        </a>
+        <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
+        <ul class="dropdown-menu dropdown-menu-end small">
+            <li><a class="dropdown-item" asp-action="DownloadImportTemplate"><i class="bi bi-download me-2"></i>Tải file mẫu (Template)</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalImportExcel"><i class="bi bi-upload me-2 text-primary"></i>Nhập dữ liệu từ Excel...</a></li>
+        </ul>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-action="Dashboard" class="btn btn-erp-outline">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-        </a>
-        <a asp-action="Create" class="btn btn-erp-black">
-            <i class="bi bi-person-plus-fill me-1"></i> Tiếp Nhận Nhân Sự Mới
-        </a>
+    <a asp-action="Create" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-person-plus-fill me-1"></i> Tiếp nhận nhân sự
+    </a>
+</erp-page-header>
+
+<!-- Thống kê trạng thái nhân sự -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đang Làm Việc" value="@totalActive" icon="bi-person-check-fill" variant="success" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Thử Việc" value="@totalProbation" icon="bi-person-badge" variant="primary" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Nghỉ Phép" value="@totalOnLeave" icon="bi-pause-circle-fill" variant="warning" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đã Nghỉ Việc" value="@totalResigned" icon="bi-person-x-fill" variant="neutral" />
     </div>
 </div>
 
-<!-- Thống kê trạng thái -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="erp-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-secondary small fw-semibold">Đang Làm Việc</span>
-                <h3 class="fw-bold m-0 text-success">@totalActive</h3>
-            </div>
-            <i class="bi bi-person-check fs-2 text-success"></i>
+<!-- Cảnh báo lỗi Import Excel (nếu có) -->
+@if (TempData["ImportErrors"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show p-3 mb-4" role="alert">
+        <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Báo Cáo Lỗi Khi Nhập File Excel:</h6>
+        <p class="small mb-1">Hệ thống phát hiện một số dòng dữ liệu không hợp lệ. Vui lòng kiểm tra lại theo danh sách dưới đây:</p>
+        <div class="bg-white p-2 rounded border small font-monospace text-dark" style="max-height: 150px; overflow-y: auto;">
+            @TempData["ImportErrors"]
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div class="col-md-3">
-        <div class="erp-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-secondary small fw-semibold">Thử Việc</span>
-                <h3 class="fw-bold m-0 text-primary">@totalProbation</h3>
-            </div>
-            <i class="bi bi-person-badge fs-2 text-primary"></i>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="erp-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-secondary small fw-semibold">Nghỉ Phép</span>
-                <h3 class="fw-bold m-0 text-warning">@totalOnLeave</h3>
-            </div>
-            <i class="bi bi-pause-circle fs-2 text-warning"></i>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="erp-card p-3 d-flex align-items-center justify-content-between">
-            <div>
-                <span class="text-secondary small fw-semibold">Đã Nghỉ Việc</span>
-                <h3 class="fw-bold m-0 text-muted">@totalResigned</h3>
-            </div>
-            <i class="bi bi-person-x fs-2 text-muted"></i>
-        </div>
-    </div>
-</div>
+}
 
 <!-- Bộ lọc tìm kiếm -->
-<div class="erp-card p-3 mb-4">
-    <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold mb-1">Tìm kiếm</label>
-            <input type="text" name="keyword" value="@filter?.Keyword" class="form-control form-control-sm" placeholder="Tên, mã NV, email, SĐT..." />
+<erp-filter-bar method="get">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Từ khóa tìm kiếm</label>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="keyword" value="@filter?.Keyword" class="form-control" placeholder="Tên, mã NV, email..." />
         </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold mb-1">Phòng ban</label>
-            <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
-                <option value="">-- Tất cả --</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold mb-1">Chức vụ</label>
-            <select name="positionId" class="form-select form-select-sm" asp-items="ViewBag.Positions">
-                <option value="">-- Tất cả --</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold mb-1">Trạng thái</label>
-            <select name="status" class="form-select form-select-sm">
-                <option value="">-- Tất cả --</option>
-                <option value="Active" selected="@(filter?.Status == "Active")">Đang làm việc</option>
-                <option value="Probation" selected="@(filter?.Status == "Probation")">Thử việc</option>
-                <option value="OnLeave" selected="@(filter?.Status == "OnLeave")">Nghỉ phép</option>
-                <option value="Resigned" selected="@(filter?.Status == "Resigned")">Đã nghỉ việc</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold mb-1">Sắp xếp</label>
-            <select name="sortBy" class="form-select form-select-sm">
-                <option value="HireDate" selected="@(filter?.SortBy == "HireDate")">Ngày vào làm</option>
-                <option value="FullName" selected="@(filter?.SortBy == "FullName")">Họ tên</option>
-                <option value="EmployeeCode" selected="@(filter?.SortBy == "EmployeeCode")">Mã NV</option>
-                <option value="Department" selected="@(filter?.SortBy == "Department")">Phòng ban</option>
-            </select>
-        </div>
-        <div class="col-md-1">
-            <button type="submit" class="btn btn-sm btn-erp-black w-100"><i class="bi bi-search"></i> Lọc</button>
-        </div>
-        <input type="hidden" name="sortDesc" value="@filter?.SortDesc.ToString().ToLower()" />
-        <input type="hidden" name="pageSize" value="@filter?.PageSize" />
-    </form>
-</div>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+            <option value="">-- Tất cả phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Chức vụ</label>
+        <select name="positionId" class="form-select form-select-sm" asp-items="ViewBag.Positions">
+            <option value="">-- Tất cả chức vụ --</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Active" selected="@(filter?.Status == "Active")">Đang làm việc</option>
+            <option value="Probation" selected="@(filter?.Status == "Probation")">Thử việc</option>
+            <option value="OnLeave" selected="@(filter?.Status == "OnLeave")">Nghỉ phép</option>
+            <option value="Resigned" selected="@(filter?.Status == "Resigned")">Đã nghỉ việc</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Sắp xếp theo</label>
+        <select name="sortBy" class="form-select form-select-sm">
+            <option value="HireDate" selected="@(filter?.SortBy == "HireDate")">Ngày vào làm</option>
+            <option value="FullName" selected="@(filter?.SortBy == "FullName")">Họ và tên</option>
+            <option value="EmployeeCode" selected="@(filter?.SortBy == "EmployeeCode")">Mã nhân viên</option>
+            <option value="Department" selected="@(filter?.SortBy == "Department")">Phòng ban</option>
+        </select>
+    </div>
+    <div class="col-md-1 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100" title="Tìm kiếm"><i class="bi bi-funnel-fill"></i></button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+    <input type="hidden" name="sortDesc" value="@filter?.SortDesc.ToString().ToLower()" />
+    <input type="hidden" name="pageSize" value="@filter?.PageSize" />
+</erp-filter-bar>
 
-<!-- Bảng hiển thị -->
-<div class="erp-card">
+<!-- Bảng hiển thị danh sách hồ sơ -->
+<div class="card erp-card">
     <div class="table-responsive">
-        <table class="table erp-table mb-0 align-middle">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
             <thead>
                 <tr>
-                    <th style="width: 60px;"></th>
-                    <th style="width: 100px;">Mã NV</th>
+                    <th class="sticky-col-1" style="width: 50px;"></th>
+                    <th class="sticky-col-2" style="width: 110px;">Mã NV</th>
                     <th>Họ Và Tên</th>
                     <th>Phòng Ban</th>
                     <th>Chức Vụ</th>
-                    <th>Liên Hệ</th>
+                    <th>Thông Tin Liên Hệ</th>
                     <th>Ngày Vào Làm</th>
                     <th class="text-center">Trạng Thái</th>
-                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                    <th class="text-end sticky-col-actions" style="width: 110px;">Thao Tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -132,50 +140,76 @@
                 {
                     foreach (var e in Model)
                     {
+                        var statusVariant = e.Status switch
+                        {
+                            "Active" => "success",
+                            "Probation" => "primary",
+                            "OnLeave" => "warning",
+                            _ => "neutral"
+                        };
+                        var statusLabel = e.Status switch
+                        {
+                            "Active" => "Đang làm việc",
+                            "Probation" => "Thử việc",
+                            "OnLeave" => "Nghỉ phép",
+                            _ => "Đã nghỉ việc"
+                        };
                         <tr>
-                            <td>
+                            <td class="sticky-col-1 text-center">
                                 @if (!string.IsNullOrEmpty(e.AvatarUrl))
                                 {
-                                    <img src="@e.AvatarUrl" alt="" class="rounded-circle" width="36" height="36" style="object-fit: cover;" />
+                                    <img src="@e.AvatarUrl" alt="@e.FullName" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;" />
                                 }
                                 else
                                 {
-                                    <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
-                                        <i class="bi bi-person text-muted"></i>
+                                    <div class="avatar avatar-sm bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 12px;">
+                                        @e.FullName[..Math.Min(2, e.FullName.Length)].ToUpper()
                                     </div>
                                 }
                             </td>
-                            <td><code>@e.EmployeeCode</code></td>
+                            <td class="sticky-col-2 tabular-nums">
+                                <code>@e.EmployeeCode</code>
+                            </td>
                             <td>
-                                <a asp-action="Details" asp-route-id="@e.Id" class="fw-bold text-dark text-decoration-none">@e.FullName</a>
-                            </td>
-                            <td class="small">@e.DepartmentName</td>
-                            <td><span class="badge bg-light text-dark border">@e.PositionName</span></td>
-                            <td class="small">
-                                <div><i class="bi bi-envelope me-1"></i>@e.Email</div>
-                                <div><i class="bi bi-telephone me-1"></i>@(e.Phone ?? "-")</div>
-                            </td>
-                            <td class="small text-secondary">@e.HireDate.ToString("dd/MM/yyyy")</td>
-                            <td class="text-center">
-                                @switch (e.Status)
+                                <a asp-action="Details" asp-route-id="@e.Id" class="fw-semibold text-decoration-none text-dark hover-primary">
+                                    @e.FullName
+                                </a>
+                                @if (e.Gender == "Nam")
                                 {
-                                    case "Active":
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Đang làm</span>
-                                        break;
-                                    case "Probation":
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Thử việc</span>
-                                        break;
-                                    case "OnLeave":
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Nghỉ phép</span>
-                                        break;
-                                    default:
-                                        <span class="badge bg-light text-muted border">Nghỉ việc</span>
-                                        break;
+                                    <span class="badge bg-info-subtle text-info border ms-1" style="font-size: 10px;">Nam</span>
+                                }
+                                else if (e.Gender == "Nữ")
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border ms-1" style="font-size: 10px;">Nữ</span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Xem hồ sơ"><i class="bi bi-eye"></i></a>
-                                <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-sm btn-erp-outline py-1 px-2" title="Sửa"><i class="bi bi-pencil"></i></a>
+                            <td class="small">
+                                <span class="fw-medium">@e.DepartmentName</span>
+                                <small class="text-muted d-block">@e.BranchName</small>
+                            </td>
+                            <td class="small text-secondary">@e.PositionName</td>
+                            <td class="small">
+                                <div class="text-truncate" style="max-width: 180px;"><i class="bi bi-envelope text-muted me-1"></i>@e.Email</div>
+                                @if (!string.IsNullOrEmpty(e.Phone))
+                                {
+                                    <div class="tabular-nums text-muted"><i class="bi bi-telephone text-muted me-1"></i>@e.Phone</div>
+                                }
+                            </td>
+                            <td class="small tabular-nums text-secondary">
+                                @e.HireDate.ToString("dd/MM/yyyy")
+                            </td>
+                            <td class="text-center">
+                                <erp-status-badge variant="@statusVariant" label="@statusLabel" dot="true" />
+                            </td>
+                            <td class="text-end sticky-col-actions">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@e.Id" class="btn btn-outline-secondary py-0 px-2" title="Xem hồ sơ 360°">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-outline-primary py-0 px-2" title="Chỉnh sửa hồ sơ">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -183,7 +217,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">Không tìm thấy bản ghi nhân viên nào phù hợp.</td>
+                        <td colspan="9" class="p-0 border-0">
+                            <erp-empty-state icon="bi-people-slash"
+                                             title="Không tìm thấy nhân sự"
+                                             description="Không có bản ghi nhân sự nào phù hợp với bộ lọc tìm kiếm hiện tại." />
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -193,38 +231,46 @@
     <!-- Phân trang -->
     @if (Model.TotalPages > 1)
     {
-        <div class="d-flex justify-content-between align-items-center p-3 border-top">
-            <span class="small text-muted">
-                Hiển thị @((Model.PageIndex - 1) * Model.PageSize + 1)–@Math.Min(Model.PageIndex * Model.PageSize, Model.TotalCount) / @Model.TotalCount nhân viên
-            </span>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    @if (Model.HasPreviousPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = Model.PageIndex - 1, pageSize = filter?.PageSize })">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                    }
-
-                    @for (int i = Math.Max(1, Model.PageIndex - 2); i <= Math.Min(Model.TotalPages, Model.PageIndex + 2); i++)
-                    {
-                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = i, pageSize = filter?.PageSize })">@i</a>
-                        </li>
-                    }
-
-                    @if (Model.HasNextPage)
-                    {
-                        <li class="page-item">
-                            <a class="page-link" href="@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, page = Model.PageIndex + 1, pageSize = filter?.PageSize })">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </nav>
+        <div class="card-footer bg-transparent py-3">
+            <erp-pagination current-page="@Model.PageIndex"
+                            total-pages="@Model.TotalPages"
+                            url-template='@Url.Action("Index", new { keyword = filter?.Keyword, departmentId = filter?.DepartmentId, positionId = filter?.PositionId, status = filter?.Status, sortBy = filter?.SortBy, sortDesc = filter?.SortDesc, pageSize = filter?.PageSize, page = "__PAGE__" })' />
         </div>
     }
+</div>
+
+<!-- Modal Nhập Excel Hàng Loạt -->
+<div class="modal fade" id="modalImportExcel" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-card border-0 shadow">
+            <form asp-action="ImportExcel" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-primary text-white">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Nhập Danh Sách Nhân Sự Hàng Loạt</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">
+                        Vui lòng tải file mẫu Excel trước khi nhập dữ liệu để đảm bảo cấu trúc cột và định dạng hợp lệ.
+                    </p>
+                    <div class="mb-3 text-center">
+                        <a asp-action="DownloadImportTemplate" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-download me-1"></i> Tải file Excel Template mẫu
+                        </a>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Chọn file Excel (.xlsx):</label>
+                        <input type="file" name="excelFile" class="form-control form-control-sm" accept=".xlsx" required />
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Hệ thống tự động kiểm tra trùng mã nhân viên, trùng email và tính hợp lệ của mã phòng ban/chức vụ.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-sm btn-primary px-3"><i class="bi bi-upload me-1"></i> Tiến hành Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>

@@ -1,6 +1,6 @@
 # ERD — Sơ đồ quan hệ thực thể
 
-> Cập nhật: Phiên 4 (2026-11-04)
+> Cập nhật: Phiên 2 (2026-11-05) — Enterprise HRM, Clean Architecture & Bảo mật
 > Quy ước: int PK (Identity) cho bảng thường, long PK cho bảng dữ liệu lớn.
 > Tất cả bảng nghiệp vụ có: CreatedAt, UpdatedAt, IsDeleted, CreatedBy, UpdatedBy.
 
@@ -17,6 +17,7 @@ erDiagram
         string PasswordSalt
         bool IsActive
         bool IsSuperAdmin
+        bool MustChangePassword "NEW P0"
         string SecurityStamp
         datetime LastLoginAt
         int EmployeeId FK "nullable"
@@ -108,7 +109,7 @@ erDiagram
 
 ---
 
-## 2. Nhóm HRM (Nhân sự)
+## 2. Nhóm HRM (Nhân sự Enterprise Khép Kín)
 
 ```mermaid
 erDiagram
@@ -154,6 +155,7 @@ erDiagram
         string IdentityCard "encrypted"
         string Status
         datetime HireDate
+        bool IsDeleted
         int DepartmentId FK
         int PositionId FK
     }
@@ -195,6 +197,29 @@ erDiagram
         int EmployeeId FK
         int ShiftId FK
     }
+    AttendanceLocks {
+        int Id PK
+        int Month
+        int Year
+        int BranchId FK "nullable"
+        int DepartmentId FK "nullable"
+        bool IsLocked
+        datetime LockedAt
+        int LockedById FK
+    }
+    AttendanceAdjustmentRequests {
+        int Id PK
+        string RequestCode UK
+        int EmployeeId FK
+        datetime WorkDate
+        int ShiftId FK "nullable"
+        string AdjustmentType
+        time ActualInTime
+        time ActualOutTime
+        string Reason
+        string Status
+        int ApprovedById FK
+    }
     LeaveTypes {
         int Id PK
         string Code UK
@@ -206,13 +231,26 @@ erDiagram
     LeaveRequests {
         int Id PK
         string RequestCode UK
-        int LeaveTypeId FK "NEW"
+        int LeaveTypeId FK
         datetime FromDate
         datetime ToDate
         decimal TotalDays "5,2"
         string Reason
         string Status
         int EmployeeId FK
+        int CreatedByUserId FK "NEW P0"
+    }
+    EmployeeLeaveBalances {
+        int Id PK
+        int EmployeeId FK
+        int Year
+        int LeaveTypeId FK
+        decimal StandardDays "5,2"
+        decimal SeniorityBonusDays "5,2"
+        decimal CarriedOverDays "5,2"
+        decimal UsedDays "5,2"
+        decimal RemainingDays "5,2"
+        datetime ExpiredCarryOverDate
     }
     PayrollPeriods {
         int Id PK
@@ -233,24 +271,70 @@ erDiagram
         int PayrollPeriodId FK
         int EmployeeId FK
     }
-    EmployeeDependents {
+    HrDecisions {
         int Id PK
-        string FullName
-        string Relationship
-        datetime DateOfBirth
+        string DecisionNumber UK
         int EmployeeId FK
+        string DecisionType
+        string Title
+        datetime EffectiveDate
+        int OldDepartmentId FK "nullable"
+        int NewDepartmentId FK "nullable"
+        int OldPositionId FK "nullable"
+        int NewPositionId FK "nullable"
+        decimal OldSalary "18,2"
+        decimal NewSalary "18,2"
+        decimal Amount "18,2"
+        string Status
+        int ApprovedById FK
     }
-    PayrollAllowanceTypes {
+    CompanyAssets {
         int Id PK
-        string Code UK
-        string Name
-        decimal DefaultAmount "18,2"
-        bool IsTaxExempt
+        string AssetCode UK
+        string AssetName
+        string AssetType
+        string SerialNumber
+        decimal PurchasePrice "18,2"
+        string Status
+        int BranchId FK
+    }
+    EmployeeAssetAssignments {
+        int Id PK
+        int AssetId FK
+        int EmployeeId FK
+        datetime AssignedDate
+        string ConditionOnAssign
+        datetime ReturnedDate "nullable"
+        string ConditionOnReturn "nullable"
+        string Status
+        int AssignedById FK
+    }
+    OnboardingChecklists {
+        int Id PK
+        int EmployeeId FK
+        string Type
+        string Title
+        datetime StartDate
+        datetime TargetCompletionDate
+        string Status
+        int AssignedHrId FK
+    }
+    OnboardingTasks {
+        int Id PK
+        int ChecklistId FK
+        string TaskName
+        string DepartmentRole
+        int AssignedToUserId FK
+        datetime DueDate
+        bool IsCompleted
+        string Status
+        int OrderIndex
     }
     JobPostings {
         int Id PK
         string Code UK
         string Title
+        string Slug UK "NEW SEO"
         int DepartmentId FK
         int PositionId FK
         int Vacancies
@@ -269,6 +353,20 @@ erDiagram
         string ResumeUrl
         string Status
         int JobPostingId FK
+    }
+    InterviewSchedules {
+        int Id PK
+        int CandidateId FK
+        int RoundNumber
+        string Title
+        datetime ScheduledTime
+        int DurationMinutes
+        string InterviewType
+        string LocationOrMeetingLink
+        int InterviewerEmployeeId FK
+        string Status
+        decimal Score "5,2"
+        string Result
     }
     Trainings {
         int Id PK
@@ -315,8 +413,17 @@ erDiagram
     Employees ||--o{ AttendanceDailies : ""
     Employees ||--o{ LeaveRequests : ""
     Employees ||--o{ SalarySlips : ""
-    Employees ||--o{ EmployeeDependents : ""
-    Employees ||--o{ KpiReviews : "được đánh giá"
+    Employees ||--o{ EmployeeLeaveBalances : ""
+    LeaveTypes ||--o{ EmployeeLeaveBalances : ""
+    Employees ||--o{ AttendanceAdjustmentRequests : ""
+    Shifts ||--o{ AttendanceAdjustmentRequests : ""
+    Employees ||--o{ HrDecisions : ""
+    Employees ||--o{ EmployeeAssetAssignments : ""
+    CompanyAssets ||--o{ EmployeeAssetAssignments : ""
+    Branches ||--o{ CompanyAssets : ""
+    Employees ||--o{ OnboardingChecklists : ""
+    OnboardingChecklists ||--o{ OnboardingTasks : ""
+    Candidates ||--o{ InterviewSchedules : ""
     LeaveTypes ||--o{ LeaveRequests : ""
     PayrollPeriods ||--o{ SalarySlips : ""
     Shifts ||--o{ AttendanceDailies : ""
@@ -355,7 +462,7 @@ erDiagram
         int ContentId PK_FK
         int TagId PK_FK
     }
-    Media {
+    MediaFiles {
         long Id PK
         string FileName
         string OriginalName
@@ -367,7 +474,7 @@ erDiagram
         string Folder
         int UploadedBy FK
     }
-    SeoMeta {
+    SeoMetas {
         int Id PK
         string EntityType
         int EntityId
@@ -406,7 +513,7 @@ erDiagram
     Contents ||--o{ ContentTags : ""
     Tags ||--o{ ContentTags : ""
     Users ||--o{ Contents : "AuthorId"
-    Users ||--o{ Media : "UploadedBy"
+    Users ||--o{ MediaFiles : "UploadedBy"
 ```
 
 ---
@@ -441,7 +548,7 @@ erDiagram
         string ImageUrl
         bool IsActive
         int CategoryId FK
-        int UnitId FK "NEW"
+        int UnitId FK
     }
     Customers {
         int Id PK
@@ -465,7 +572,7 @@ erDiagram
     Inventories {
         int Id PK
         int ProductId FK
-        int WarehouseId FK "NEW thay BranchId"
+        int WarehouseId FK
         int StockQuantity
         int MinStockAlert
         int MaxStockLimit
@@ -516,7 +623,7 @@ erDiagram
         string OrderStatus
         string PaymentStatus
         string PaymentMethod
-        int CustomerId FK "NEW nullable"
+        int CustomerId FK "nullable"
         int BranchId FK
         int CreatedBy FK
     }
@@ -573,7 +680,7 @@ erDiagram
         string Code UK
         datetime CheckDate
         string Status
-        int WarehouseId FK "NEW thay BranchId"
+        int WarehouseId FK
     }
     StocktakingDetails {
         long Id PK
@@ -604,25 +711,15 @@ erDiagram
 
 ---
 
-## 5. Tổng hợp số lượng bảng
+## 5. Tổng hợp số lượng bảng hệ thống (67 Bảng)
 
-| Nhóm              | Số bảng | Bảng mới (Phiên 4) |
-|--------------------|---------|---------------------|
-| Hệ thống          | 12      | 0                   |
-| HRM                | 18      | +6 (LeaveType, JobPosting, Candidate, Training, TrainingParticipant, KpiReview, KpiCriteria) |
-| CMS                | 7       | +3 (Tag, ContentTag, Media, SeoMeta) |
-| Kho & Bán hàng    | 16      | +4 (Customer, Unit, Warehouse, Invoice, Payment) |
-| **Tổng**           | **53**  | **+13 bảng mới**    |
-
-## 6. Thay đổi quan trọng trên bảng hiện có
-
-| Bảng hiện có        | Thay đổi                                                    |
-|----------------------|--------------------------------------------------------------|
-| **Tất cả bảng**      | Thêm `IsDeleted`, `UpdatedAt`, `UpdatedBy` (nếu chưa có)    |
-| `Products`           | Thêm `UnitId FK` → bảng `Units`                             |
-| `Inventories`        | `BranchId` → `WarehouseId` (FK đến `Warehouses`)            |
-| `Orders`             | Thêm `CustomerId FK` → bảng `Customers` (nullable)          |
-| `LeaveRequests`      | Thêm `LeaveTypeId FK` → bảng `LeaveTypes`                   |
-| `StocktakingSheets`  | `BranchId` → `WarehouseId` (FK đến `Warehouses`)            |
-| `InventoryTransactions` | Thêm `SourceWarehouseId`, `DestWarehouseId` cho chuyển kho |
-| `DebtRecords`        | Thêm `CustomerId FK` → bảng `Customers` (nullable)          |
+| Nhóm | Số bảng | Mô tả |
+|---|---|---|
+| Hệ thống | 12 | Auth, Quyền, Modules, AuditLog, Notifications, LoginAttempt, Settings |
+| HRM Core & Profile | 15 | Company, Branch, Department, Position, Employee, Details, Contract, Shift, Attendance, 5 bảng Profile mở rộng, SeedHistory |
+| HRM Quỹ phép & Tiền lương | 7 | LeaveType, LeaveRequest, EmployeeLeaveBalance, AttendanceLock, AttendanceAdjustmentRequest, PayrollPeriod, SalarySlip, Dependents |
+| HRM Tuyển dụng, Đào tạo, KPI, Quyết định, Onboarding | 9 | JobPosting, Candidate, InterviewSchedule, Training, TrainingParticipant, KpiReview, KpiCriteria, HrDecision, OnboardingChecklist, OnboardingTask |
+| HRM Quản lý Tài sản | 2 | CompanyAsset, EmployeeAssetAssignment |
+| CMS | 7 | Content, Category, Menu, Banner, Tag, ContentTag, MediaFile, SeoMeta |
+| Kho & Bán hàng (SCM) | 16 | Product, Inventory, InventoryTransaction, Order, OrderDetail, CartItem, Supplier, PO, PODetail, DebtRecord, DebtPayment, StocktakingSheet, Detail, Customer, Unit, Warehouse, Invoice, Payment |
+| **Tổng cộng** | **67 Bảng** | **Toàn bộ thực thể đã được mô hình hóa và đồng bộ 100% trên SSMS và EF Core** |

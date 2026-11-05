@@ -1,0 +1,221 @@
+@model ERP_HRM_CMS.Models.ViewModels.PublicCareersIndexViewModel
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = "Cơ Hội Nghề Nghiệp & Tuyển Dụng Nhân Tài";
+    ViewData["Description"] = "Khám phá các vị trí tuyển dụng hấp dẫn tại doanh nghiệp. Môi trường làm việc chuyên nghiệp, đãi ngộ cạnh tranh và lộ trình phát triển rõ ràng.";
+    ViewData["CanonicalUrl"] = "/tuyen-dung";
+}
+
+<!-- Careers Hero Section -->
+<section class="ps-careers-hero py-5 text-white" style="background: linear-gradient(135deg, #1e293b 0%, #312e81 50%, #4338ca 100%);">
+    <div class="container py-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="badge bg-indigo-subtle text-indigo-200 border border-indigo-400 px-3 py-2 rounded-pill mb-3" style="background: rgba(99,102,241,0.2);">
+                    <i class="bi bi-stars me-1"></i> Khởi Đầu Sự Nghiệp Vững Chắc
+                </span>
+                <h1 class="display-5 fw-bold text-white mb-3">Kiến Tạo Tương Lai Cùng Đội Ngũ Tiên Phong</h1>
+                <p class="lead text-light mb-4" style="max-width: 600px; opacity: 0.9;">
+                    Chúng tôi tin rằng con người là tài sản quý giá nhất. Hãy gia nhập môi trường làm việc cởi mở, sáng tạo và không ngừng nâng tầm giá trị bản thân.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="#danh-sach-vi-tri" class="btn btn-light btn-lg px-4 fw-semibold text-primary">
+                        <i class="bi bi-briefcase me-2"></i>Xem @Model.TotalOpenings Vị Trí Đang Tuyển
+                    </a>
+                    <a href="#van-hoa-phuc-loi" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-heart me-2"></i>Văn Hóa & Đãi Ngộ
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <div class="p-4 rounded-4 shadow-lg" style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15);">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="p-3 bg-white bg-opacity-10 rounded-3">
+                                <div class="display-6 fw-bold text-white">@Model.TotalOpenings</div>
+                                <div class="small text-light text-opacity-75">Chỉ tiêu tuyển dụng</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-white bg-opacity-10 rounded-3">
+                                <div class="display-6 fw-bold text-white">@Model.Departments.Count</div>
+                                <div class="small text-light text-opacity-75">Phòng ban mở đợt</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-white bg-opacity-10 rounded-3">
+                                <div class="display-6 fw-bold text-white">100%</div>
+                                <div class="small text-light text-opacity-75">Bảo hiểm & Đãi ngộ</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-white bg-opacity-10 rounded-3">
+                                <div class="display-6 fw-bold text-white">4.8/5</div>
+                                <div class="small text-light text-opacity-75">Hài lòng nhân viên</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Company Culture & Featured Benefits -->
+<section id="van-hoa-phuc-loi" class="py-5 bg-light">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-dark">Tại Sao Bạn Nên Chọn Chúng Tôi?</h2>
+            <p class="text-muted" style="max-width: 600px; margin: 0 auto;">Chính sách phúc lợi toàn diện hỗ trợ nhân viên phát triển vượt bậc cả về chuyên môn và đời sống tinh thần.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm p-4 rounded-4 text-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Đãi Ngộ Cạnh Tranh</h5>
+                    <p class="text-muted small mb-0">Lương thưởng minh bạch theo năng lực, thưởng hiệu quả kinh doanh, tháng 13 và xét tăng lương định kỳ 2 lần/năm.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm p-4 rounded-4 text-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Lộ Trình Rõ Ràng</h5>
+                    <p class="text-muted small mb-0">Mỗi nhân sự đều có bản kế hoạch phát triển cá nhân (IDP), mentor kèm cặp và cơ hội thăng tiến quản lý rộng mở.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm p-4 rounded-4 text-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 text-warning mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Đào Tạo Đỉnh Cao</h5>
+                    <p class="text-muted small mb-0">Tài trợ 100% chi phí các khóa học chứng chỉ chuyên môn quốc tế, hội thảo công nghệ và workshop định kỳ hàng tháng.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm p-4 rounded-4 text-center">
+                    <div class="rounded-circle bg-info bg-opacity-10 text-info mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 1.75rem;">
+                        <i class="bi bi-cup-hot"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Môi Trường Hứng Khởi</h5>
+                    <p class="text-muted small mb-0">Văn phòng chuẩn hiện đại, trà bánh tự do, teambuilding thường niên, câu lạc bộ thể thao và ngày nghỉ sinh nhật hưởng nguyên lương.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter & Job Listings -->
+<section id="danh-sach-vi-tri" class="py-5">
+    <div class="container py-2">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-5">
+            <form method="get" action="/tuyen-dung" class="row g-3 align-items-end">
+                <div class="col-lg-5">
+                    <label class="form-label fw-semibold text-secondary small">Tìm kiếm vị trí</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="keyword" value="@Model.Keyword" class="form-control border-start-0" placeholder="Nhập chức danh, kỹ năng..." />
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label fw-semibold text-secondary small">Phòng ban</label>
+                    <select name="departmentId" class="form-select">
+                        <option value="">Tất cả phòng ban</option>
+                        @foreach (var d in Model.Departments)
+                        {
+                            <option value="@d.Id" selected="@(Model.DepartmentId == d.Id ? "selected" : null)">@d.Name (@d.OpenJobCount)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label fw-semibold text-secondary small">Khu vực</label>
+                    <select name="branchId" class="form-select">
+                        <option value="">Tất cả chi nhánh</option>
+                        @foreach (var b in Model.Branches)
+                        {
+                            <option value="@b.Id" selected="@(Model.BranchId == b.Id ? "selected" : null)">@b.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-2 d-grid">
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        <i class="bi bi-funnel me-1"></i> Lọc Tin
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">Vị Trí Đang Tuyển Dụng (@Model.OpenJobs.Count)</h3>
+            @if (!string.IsNullOrWhiteSpace(Model.Keyword) || Model.DepartmentId.HasValue || Model.BranchId.HasValue)
+            {
+                <a href="/tuyen-dung" class="text-decoration-none small text-muted"><i class="bi bi-x-circle me-1"></i>Xóa bộ lọc</a>
+            }
+        </div>
+
+        @if (Model.OpenJobs.Any())
+        {
+            <div class="row g-4">
+                @foreach (var job in Model.OpenJobs)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift p-4 d-flex flex-column justify-content-between" style="transition: all 0.2s ease;">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 small">
+                                        @job.DepartmentName
+                                    </span>
+                                    <span class="text-muted small"><i class="bi bi-people me-1"></i>@job.Vacancies chỉ tiêu</span>
+                                </div>
+                                <h5 class="fw-bold mt-2 mb-2">
+                                    <a href="/tuyen-dung/@job.Slug" class="text-dark text-decoration-none stretched-link">
+                                        @job.Title
+                                    </a>
+                                </h5>
+                                <div class="text-muted small mb-3">
+                                    <div class="mb-1"><i class="bi bi-geo-alt me-1 text-danger"></i>@(string.IsNullOrWhiteSpace(job.WorkLocation) ? (string.IsNullOrWhiteSpace(job.BranchName) ? "Toàn quốc" : job.BranchName) : job.WorkLocation)</div>
+                                    @if (!string.IsNullOrWhiteSpace(job.SalaryRange))
+                                    {
+                                        <div class="text-success fw-semibold"><i class="bi bi-coin me-1"></i>@job.SalaryRange</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted"><i class="bi bi-coin me-1"></i>Thỏa thuận theo năng lực</div>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(job.Description))
+                                {
+                                    <p class="text-muted small mb-4" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                        @job.Description
+                                    </p>
+                                }
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top position-relative" style="z-index: 2;">
+                                <span class="text-muted small">
+                                    <i class="bi bi-clock me-1"></i>Hạn: @(job.CloseDate.HasValue ? job.CloseDate.Value.ToString("dd/MM/yyyy") : "Đang mở")
+                                </span>
+                                <a href="/tuyen-dung/@job.Slug" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3">
+                                    Ứng Tuyển <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-briefcase text-muted" style="font-size: 3.5rem;"></i>
+                <h4 class="fw-bold mt-3">Chưa tìm thấy vị trí tuyển dụng phù hợp</h4>
+                <p class="text-muted">Vui lòng thử thay đổi từ khóa hoặc bộ lọc phòng ban để khám phá các cơ hội khác.</p>
+                <a href="/tuyen-dung" class="btn btn-outline-primary px-4 mt-2">Xem Tất Cả Vị Trí</a>
+            </div>
+        }
+    </div>
+</section>
+

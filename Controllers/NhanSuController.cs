@@ -1,40 +1,38 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
+using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services.HRM;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     public class NhanSuController : Controller
     {
-        private readonly AppDbContext _context;
         private readonly IEmployeeService _employeeService;
+        private readonly IPeopleAnalyticsService _analyticsService;
         private readonly IDepartmentService _departmentService;
+        private readonly ICurrentUserService _currentUser;
 
         public NhanSuController(
-            AppDbContext context,
             IEmployeeService employeeService,
-            IDepartmentService departmentService)
+            IPeopleAnalyticsService analyticsService,
+            IDepartmentService departmentService,
+            ICurrentUserService currentUser)
         {
-            _context = context;
             _employeeService = employeeService;
+            _analyticsService = analyticsService;
             _departmentService = departmentService;
+            _currentUser = currentUser;
         }
 
-        private int? CurrentUserId => int.TryParse(
-            User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int uid) ? uid
-            : HttpContext.Session.GetInt32("UserId");
+        private int? CurrentUserId => _currentUser.UserId;
 
         // ═══════════════════════════════════════════════════════════
-        // DANH SÁCH NHÂN VIÊN (có phân trang, lọc, sắp xếp)
+        // DANH SÁCH NHÂN VIÊN (phân trang, lọc, sắp xếp, Clean Architecture)
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
@@ -55,22 +53,23 @@ namespace ERP_HRM_CMS.Controllers
             };
 
             var pagedList = await _employeeService.GetPagedAsync(filter);
+            var counts = await _employeeService.GetStatusCountsAsync();
 
-            // Thống kê nhanh
-            ViewBag.TotalActive = await _context.Employees.CountAsync(e => e.Status == "Active");
-            ViewBag.TotalProbation = await _context.Employees.CountAsync(e => e.Status == "Probation");
-            ViewBag.TotalOnLeave = await _context.Employees.CountAsync(e => e.Status == "OnLeave");
-            ViewBag.TotalResigned = await _context.Employees.CountAsync(e => e.Status == "Resigned");
-
-            // Giữ lại filter
+            ViewBag.TotalActive = counts.TotalActive;
+            ViewBag.TotalProbation = counts.TotalProbation;
+            ViewBag.TotalOnLeave = counts.TotalOnLeave;
+            ViewBag.TotalResigned = counts.TotalResigned;
             ViewBag.Filter = filter;
 
-            await LoadDropdowns(departmentId, positionId);
+            var dropdowns = await _employeeService.GetDropdownDataAsync(departmentId, positionId);
+            ViewBag.Departments = dropdowns.Departments;
+            ViewBag.Positions = dropdowns.Positions;
+
             return View(pagedList);
         }
 
         // ═══════════════════════════════════════════════════════════
-        // CHI TIẾT NHÂN VIÊN (trang tab: Thông tin, Hợp đồng, Lịch sử, Tài liệu)
+        // CHI TIẾT NHÂN VIÊN (HỒ SƠ 360°)
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
@@ -90,7 +89,10 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Create()
         {
-            await LoadDropdowns();
+            var dropdowns = await _employeeService.GetDropdownDataAsync();
+            ViewBag.Departments = dropdowns.Departments;
+            ViewBag.Positions = dropdowns.Positions;
+
             return View(new EmployeeCreateEditViewModel
             {
                 EmployeeCode = $"EMP{VietnamTime.Now:yyMMddHHmm}",
@@ -103,8 +105,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Create(EmployeeCreateEditViewModel model)
         {
-            // Kiểm tra mật khẩu khi cấp tài khoản
-            if (model.CreateUserAccount)
+            if (model.CreateUserAccount && !string.IsNullOrWhiteSpace(model.DefaultPassword))
             {
                 string? loiMatKhau = MatKhauHelper.KiemTraDoManh(model.DefaultPassword);
                 if (loiMatKhau != null)
@@ -122,7 +123,9 @@ namespace ERP_HRM_CMS.Controllers
                 ModelState.AddModelError("", error ?? "Lỗi không xác định.");
             }
 
-            await LoadDropdowns(model.DepartmentId, model.PositionId);
+            var dropdowns = await _employeeService.GetDropdownDataAsync(model.DepartmentId, model.PositionId);
+            ViewBag.Departments = dropdowns.Departments;
+            ViewBag.Positions = dropdowns.Positions;
             return View(model);
         }
 
@@ -136,7 +139,7 @@ namespace ERP_HRM_CMS.Controllers
             var emp = await _employeeService.GetByIdAsync(id);
             if (emp == null) return NotFound();
 
-            var userAcc = await _context.Users.FirstOrDefaultAsync(u => u.EmployeeId == id);
+            var detailDto = await _employeeService.GetDetailAsync(id);
 
             var model = new EmployeeCreateEditViewModel
             {
@@ -163,11 +166,13 @@ namespace ERP_HRM_CMS.Controllers
                 TaxIdentificationNumber = emp.EmployeeDetail?.TaxIdentificationNumber,
                 SocialInsuranceNumber = emp.EmployeeDetail?.SocialInsuranceNumber,
                 EducationLevel = emp.EmployeeDetail?.EducationLevel,
-                HasUserAccount = (userAcc != null),
-                Username = userAcc?.Username
+                HasUserAccount = (detailDto?.UserAccount != null),
+                Username = detailDto?.UserAccount?.Username
             };
 
-            await LoadDropdowns(emp.DepartmentId, emp.PositionId);
+            var dropdowns = await _employeeService.GetDropdownDataAsync(emp.DepartmentId, emp.PositionId);
+            ViewBag.Departments = dropdowns.Departments;
+            ViewBag.Positions = dropdowns.Positions;
             return View(model);
         }
 
@@ -189,12 +194,139 @@ namespace ERP_HRM_CMS.Controllers
                 ModelState.AddModelError("", error ?? "Lỗi không xác định.");
             }
 
-            await LoadDropdowns(model.DepartmentId, model.PositionId);
+            var dropdowns = await _employeeService.GetDropdownDataAsync(model.DepartmentId, model.PositionId);
+            ViewBag.Departments = dropdowns.Departments;
+            ViewBag.Positions = dropdowns.Positions;
             return View(model);
         }
 
         // ═══════════════════════════════════════════════════════════
-        // UPLOAD AVATAR (AJAX)
+        // CẤP TÀI KHOẢN AN TOÀN
+        // ═══════════════════════════════════════════════════════════
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.employee.manage")]
+        public async Task<IActionResult> CapTaiKhoanNhanh(int employeeId)
+        {
+            bool isAjax = string.Equals(Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                       || Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
+
+            var (success, error, username, tempPassword) = await _employeeService.ProvisionUserAccountAsync(
+                employeeId, CurrentUserId, _currentUser.IpAddress);
+
+            if (!success)
+            {
+                if (isAjax) return BadRequest(new { success = false, message = error });
+                TempData["ErrorMessage"] = error;
+                return RedirectToAction(nameof(Details), new { id = employeeId });
+            }
+
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = true,
+                    username,
+                    temporaryPassword = tempPassword,
+                    mustChangePasswordOnFirstLogin = true,
+                    message = "Đã sinh mật khẩu tạm thời an toàn. Mật khẩu này chỉ hiển thị duy nhất 1 lần."
+                });
+            }
+
+            TempData["SuccessMessage"] = $"Đã cấp tài khoản '{username}' thành công (bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên).";
+            return RedirectToAction(nameof(Details), new { id = employeeId });
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // IMPORT / EXPORT EXCEL
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> ExportExcel(string? keyword, int? departmentId, int? positionId, string? status)
+        {
+            var filter = new EmployeeFilterDto
+            {
+                Keyword = keyword,
+                DepartmentId = departmentId,
+                PositionId = positionId,
+                Status = status,
+                Page = 1,
+                PageSize = 100000 // Xuất toàn bộ dữ liệu lọc
+            };
+
+            var bytes = await _employeeService.ExportToExcelAsync(filter);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"DanhSachNhanSu_{VietnamTime.Now:yyyyMMdd_HHmm}.xlsx");
+        }
+
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.manage")]
+        public IActionResult DownloadImportTemplate()
+        {
+            var bytes = _employeeService.GenerateImportTemplate();
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Import_NhanSu.xlsx");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("hrm.employee.manage")]
+        public async Task<IActionResult> ImportExcel(IFormFile excelFile)
+        {
+            if (excelFile == null || excelFile.Length == 0)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn file Excel để nhập dữ liệu.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!excelFile.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] = "Chỉ chấp nhận file định dạng Excel .xlsx.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            using var stream = excelFile.OpenReadStream();
+            var importResult = await _employeeService.ImportFromExcelAsync(stream, CurrentUserId);
+
+            if (importResult.Success)
+            {
+                TempData["SuccessMessage"] = $"Nhập thành công {importResult.ImportedCount}/{importResult.TotalRows} nhân sự từ file Excel!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = $"Nhập được {importResult.ImportedCount}/{importResult.TotalRows} nhân sự. Có {importResult.ErrorCount} lỗi cần kiểm tra.";
+                TempData["ImportErrors"] = System.Text.Json.JsonSerializer.Serialize(importResult.Errors.Take(10));
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // CẢNH BÁO NHÂN SỰ THÔNG MINH
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> CanhBao()
+        {
+            var alerts = await _employeeService.GetSmartAlertsAsync();
+            return View(alerts);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // IN SƠ YẾU LÝ LỊCH / HỒ SƠ NHÂN SỰ
+        // ═══════════════════════════════════════════════════════════
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> InSoYeuLyLich(int id)
+        {
+            var model = await _employeeService.GetPrintableResumeAsync(id);
+            if (model == null) return NotFound();
+            return View(model);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // UPLOAD AVATAR
         // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -204,13 +336,11 @@ namespace ERP_HRM_CMS.Controllers
             if (avatarFile == null || avatarFile.Length == 0)
                 return Json(new { success = false, error = "Không có file." });
 
-            // Kiểm tra loại file
             var allowedExts = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var ext = Path.GetExtension(avatarFile.FileName).ToLower();
             if (!allowedExts.Contains(ext))
                 return Json(new { success = false, error = "Chỉ chấp nhận file ảnh JPG, PNG hoặc WebP." });
 
-            // Giới hạn 2MB
             if (avatarFile.Length > 2 * 1024 * 1024)
                 return Json(new { success = false, error = "File ảnh không được vượt quá 2MB." });
 
@@ -222,7 +352,7 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         // ═══════════════════════════════════════════════════════════
-        // QUẢN LÝ NGƯỜI THÂN (AJAX)
+        // QUẢN LÝ NGƯỜI THÂN
         // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -232,9 +362,9 @@ namespace ERP_HRM_CMS.Controllers
             if (ModelState.IsValid)
             {
                 await _employeeService.AddRelativeAsync(model);
-                TempData["SuccessMessage"] = "Thêm người thân thành công!";
+                TempData["SuccessMessage"] = "Thêm thông tin người thân thành công!";
             }
-            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "dependants" });
         }
 
         [HttpPost]
@@ -244,11 +374,11 @@ namespace ERP_HRM_CMS.Controllers
         {
             await _employeeService.RemoveRelativeAsync(id);
             TempData["SuccessMessage"] = "Đã xóa người thân.";
-            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "dependants" });
         }
 
         // ═══════════════════════════════════════════════════════════
-        // QUẢN LÝ KỸ NĂNG
+        // QUẢN LÝ KỸ NĂNG & CHỨNG CHỈ
         // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -260,7 +390,7 @@ namespace ERP_HRM_CMS.Controllers
                 await _employeeService.AddSkillAsync(model);
                 TempData["SuccessMessage"] = "Thêm kỹ năng thành công!";
             }
-            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "skills" });
         }
 
         [HttpPost]
@@ -270,12 +400,9 @@ namespace ERP_HRM_CMS.Controllers
         {
             await _employeeService.RemoveSkillAsync(id);
             TempData["SuccessMessage"] = "Đã xóa kỹ năng.";
-            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "skills" });
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // QUẢN LÝ CHỨNG CHỈ
-        // ═══════════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("hrm.employee.manage")]
@@ -286,7 +413,7 @@ namespace ERP_HRM_CMS.Controllers
                 await _employeeService.AddCertificateAsync(model);
                 TempData["SuccessMessage"] = "Thêm chứng chỉ thành công!";
             }
-            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = model.EmployeeId, tab = "skills" });
         }
 
         [HttpPost]
@@ -296,7 +423,7 @@ namespace ERP_HRM_CMS.Controllers
         {
             await _employeeService.RemoveCertificateAsync(id);
             TempData["SuccessMessage"] = "Đã xóa chứng chỉ.";
-            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "info" });
+            return RedirectToAction(nameof(Details), new { id = employeeId, tab = "skills" });
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -313,16 +440,13 @@ namespace ERP_HRM_CMS.Controllers
                 return RedirectToAction(nameof(Details), new { id = employeeId, tab = "documents" });
             }
 
-            // Giới hạn 10MB
             if (documentFile.Length > 10 * 1024 * 1024)
             {
                 TempData["ErrorMessage"] = "File không được vượt quá 10MB.";
                 return RedirectToAction(nameof(Details), new { id = employeeId, tab = "documents" });
             }
 
-            // Lưu file
-            var uploadsDir = Path.Combine(
-                Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents", employeeId.ToString());
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "documents", employeeId.ToString());
             Directory.CreateDirectory(uploadsDir);
 
             var ext = Path.GetExtension(documentFile.FileName);
@@ -359,50 +483,6 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         // ═══════════════════════════════════════════════════════════
-        // CẤP TÀI KHOẢN NHANH
-        // ═══════════════════════════════════════════════════════════
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [KiemTraQuyen("hrm.employee.manage")]
-        public async Task<IActionResult> CapTaiKhoanNhanh(int employeeId, string rawPassword)
-        {
-            var emp = await _context.Employees.FindAsync(employeeId);
-            if (emp == null) return NotFound();
-
-            if (await _context.Users.AnyAsync(u => u.EmployeeId == employeeId))
-            {
-                TempData["ErrorMessage"] = "Nhân viên này đã có tài khoản người dùng!";
-                return RedirectToAction(nameof(Details), new { id = employeeId });
-            }
-
-            string? loiMatKhau = MatKhauHelper.KiemTraDoManh(rawPassword);
-            if (loiMatKhau != null)
-            {
-                TempData["ErrorMessage"] = loiMatKhau;
-                return RedirectToAction(nameof(Details), new { id = employeeId });
-            }
-
-            string username = emp.EmployeeCode.ToLower();
-            string salt = MatKhauHelper.GenerateSalt();
-
-            var user = new User
-            {
-                EmployeeId = emp.Id,
-                Username = username,
-                PasswordHash = MatKhauHelper.HashPassword(rawPassword, salt),
-                PasswordSalt = salt,
-                IsActive = true,
-                CreatedAt = VietnamTime.Now
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = $"Đã cấp tài khoản '{username}' thành công!";
-            return RedirectToAction(nameof(Details), new { id = employeeId });
-        }
-
-        // ═══════════════════════════════════════════════════════════
         // DASHBOARD HR
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
@@ -414,26 +494,44 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         // ═══════════════════════════════════════════════════════════
-        // BÁO CÁO (giữ lại action cũ)
+        // EXECUTIVE PEOPLE ANALYTICS & BÁO CÁO ĐIỀU HÀNH
         // ═══════════════════════════════════════════════════════════
         [HttpGet]
         [KiemTraQuyen("hrm.employee.view")]
-        public IActionResult BaoCao()
+        public async Task<IActionResult> BaoCao(int? year, int? quarter, int? branchId, int? departmentId)
         {
-            return RedirectToAction(nameof(Dashboard));
+            var filter = new PeopleAnalyticsFilterDto
+            {
+                Year = year ?? VietnamTime.Today.Year,
+                Quarter = quarter,
+                BranchId = branchId,
+                DepartmentId = departmentId
+            };
+
+            var analytics = await _analyticsService.GetExecutiveAnalyticsAsync(filter);
+            ViewBag.Departments = await _departmentService.GetFlatListAsync();
+            ViewBag.Branches = await _departmentService.GetBranchesAsync();
+
+            return View(analytics);
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // HELPER: Load dropdown
-        // ═══════════════════════════════════════════════════════════
-        private async Task LoadDropdowns(int? selectedDept = null, int? selectedPos = null)
+        [HttpGet]
+        [KiemTraQuyen("hrm.employee.view")]
+        public async Task<IActionResult> XuatBaoCaoExcel(int? year, int? quarter, int? branchId, int? departmentId)
         {
-            ViewBag.Departments = new SelectList(
-                await _context.Departments.Where(d => d.IsActive).OrderBy(d => d.Name).ToListAsync(),
-                "Id", "Name", selectedDept);
-            ViewBag.Positions = new SelectList(
-                await _context.Positions.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync(),
-                "Id", "Name", selectedPos);
+            var filter = new PeopleAnalyticsFilterDto
+            {
+                Year = year ?? VietnamTime.Today.Year,
+                Quarter = quarter,
+                BranchId = branchId,
+                DepartmentId = departmentId
+            };
+
+            var analytics = await _analyticsService.GetExecutiveAnalyticsAsync(filter);
+            var fileBytes = _analyticsService.ExportExecutiveReportExcel(analytics);
+            string fileName = $"Executive_People_Analytics_{filter.Year}_{(filter.Quarter.HasValue ? "Q" + filter.Quarter.Value : "All")}_{VietnamTime.Now:yyyyMMddHHmm}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
     }
 }

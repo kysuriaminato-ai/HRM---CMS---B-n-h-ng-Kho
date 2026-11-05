@@ -1,0 +1,393 @@
+@model ERP_HRM_CMS.Services.HRM.EmployeePrintModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sơ Yếu Lý Lịch - @Model.FullName (@Model.EmployeeCode)</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin-print.css" />
+    <style>
+        @@page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 20mm;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13pt;
+            line-height: 1.4;
+            color: #000;
+            background: #f8fafc;
+        }
+        .print-container {
+            max-width: 210mm;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20mm 20mm 20mm 25mm;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header-national {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .header-national h6 {
+            font-weight: bold;
+            font-size: 12pt;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .header-national h5 {
+            font-weight: bold;
+            font-size: 13pt;
+            margin-bottom: 4px;
+        }
+        .motto-line {
+            width: 140px;
+            height: 1px;
+            background: #000;
+            margin: 4px auto 0 auto;
+        }
+        .doc-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16pt;
+            text-transform: uppercase;
+            margin: 20px 0 25px 0;
+        }
+        .photo-box {
+            width: 30mm;
+            height: 40mm;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 10pt;
+            color: #666;
+            float: right;
+            margin-left: 15px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .section-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13pt;
+            margin-top: 18px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+        .info-row {
+            margin-bottom: 6px;
+        }
+        .info-label {
+            display: inline-block;
+            min-width: 170px;
+            font-weight: normal;
+        }
+        .dotted-fill {
+            border-bottom: 1px dotted #555;
+            display: inline-block;
+            min-width: 120px;
+        }
+        .table-print {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 11pt;
+        }
+        .table-print th, .table-print td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+        }
+        .table-print th {
+            text-align: center;
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .signature-section {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .signature-box {
+            text-align: center;
+        }
+        @@media print {
+            body {
+                background: #fff;
+            }
+            .print-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Thanh điều khiển in ấn -->
+    <div class="no-print bg-dark text-white p-2 text-center sticky-top">
+        <button class="btn btn-primary btn-sm me-2" onclick="window.print()">
+            <i class="bi bi-printer-fill me-1"></i> In Bản Cứng (A4) / Lưu PDF
+        </button>
+        <button class="btn btn-outline-light btn-sm" onclick="window.close()">Đóng cửa sổ</button>
+    </div>
+
+    <div class="print-container">
+        <!-- Quốc hiệu & Tiêu ngữ -->
+        <div class="header-national">
+            <h6>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h6>
+            <h5>Độc lập - Tự do - Hạnh phúc</h5>
+            <div class="motto-line"></div>
+        </div>
+
+        <!-- Ảnh 3x4 / 4x6 -->
+        <div class="photo-box">
+            @if (!string.IsNullOrWhiteSpace(Model.AvatarUrl))
+            {
+                <img src="@Model.AvatarUrl" alt="@Model.FullName" />
+            }
+            else
+            {
+                <span>Ảnh 4x6</span>
+            }
+        </div>
+
+        <div class="doc-title">SƠ YẾU LÝ LỊCH CÁN BỘ - NHÂN VIÊN</div>
+
+        <!-- I. THÔNG TIN BẢN THÂN -->
+        <div class="section-header">I. THÔNG TIN BẢN THÂN</div>
+        <div class="info-row">
+            <span class="info-label">1. Họ và tên khai sinh:</span>
+            <strong style="text-transform: uppercase;">@Model.FullName</strong>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">2. Giới tính:</span>
+                <strong>@(Model.Gender ?? "Nam")</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">3. Ngày sinh:</span>
+                <strong>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</strong>
+            </div>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">4. Số CCCD/CMND:</span>
+                <strong>@(Model.IdentityCard ?? "-")</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">5. Số điện thoại:</span>
+                <strong>@(Model.Phone ?? "-")</strong>
+            </div>
+        </div>
+        <div class="info-row">
+            <span class="info-label">6. Email liên hệ:</span>
+            <span>@Model.Email</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">7. Nơi đăng ký thường trú:</span>
+            <span>@(Model.Detail?.PermanentAddress ?? "Chưa cập nhật")</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">8. Chỗ ở hiện nay:</span>
+            <span>@(Model.Detail?.CurrentAddress ?? "Chưa cập nhật")</span>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">9. Mã số thuế:</span>
+                <strong>@(Model.Detail?.TaxIdentificationNumber ?? "-")</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">10. Số sổ BHXH:</span>
+                <strong>@(Model.Detail?.SocialInsuranceNumber ?? "-")</strong>
+            </div>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">11. Tài khoản NH:</span>
+                <strong>@(Model.Detail?.BankAccountNumber ?? "-") (@(Model.Detail?.BankName ?? "-"))</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">12. Trình độ học vấn:</span>
+                <strong>@(Model.Detail?.EducationLevel ?? "-")</strong>
+            </div>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">13. Mã nhân viên:</span>
+                <strong>@Model.EmployeeCode</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">14. Ngày vào làm:</span>
+                <strong>@Model.HireDate.ToString("dd/MM/yyyy")</strong>
+            </div>
+        </div>
+        <div class="row info-row">
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">15. Phòng ban:</span>
+                <strong>@Model.DepartmentName</strong>
+            </div>
+            <div class="col-6">
+                <span class="info-label" style="min-width: 130px;">16. Chức vụ hiện tại:</span>
+                <strong>@Model.PositionName</strong>
+            </div>
+        </div>
+
+        <!-- II. QUAN HỆ GIA ĐÌNH & PHỤ THUỘC -->
+        <div class="section-header">II. QUAN HỆ GIA ĐÌNH &amp; NGƯỜI PHỤ THUỘC</div>
+        <table class="table-print">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">STT</th>
+                    <th>Họ và Tên</th>
+                    <th style="width: 110px;">Quan Hệ</th>
+                    <th style="width: 110px;">Ngày Sinh</th>
+                    <th style="width: 130px;">Số Điện Thoại</th>
+                    <th style="width: 130px;">Giảm Trừ TNCN</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Relatives != null && Model.Relatives.Any())
+                {
+                    int stt = 1;
+                    foreach (var r in Model.Relatives)
+                    {
+                        <tr>
+                            <td class="text-center">@(stt++)</td>
+                            <td><strong>@r.FullName</strong></td>
+                            <td>@r.Relationship</td>
+                            <td class="text-center">@(r.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</td>
+                            <td class="text-center">@(r.Phone ?? "-")</td>
+                            <td class="text-center">@(r.IsDependant ? "Có (-4.4M)" : "Không")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Chưa ghi nhận thông tin thân nhân.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- III. QUÁ TRÌNH CÔNG TÁC & HỢP ĐỒNG LAO ĐỘNG -->
+        <div class="section-header">III. QUÁ TRÌNH CÔNG TÁC &amp; HỢP ĐỒNG ĐÃ KÝ</div>
+        <table class="table-print">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">STT</th>
+                    <th>Số Hợp Đồng</th>
+                    <th>Loại Hợp Đồng</th>
+                    <th style="width: 120px;">Ngày Bắt Đầu</th>
+                    <th style="width: 120px;">Ngày Kết Thúc</th>
+                    <th style="width: 120px;">Lương Cơ Bản</th>
+                    <th style="width: 100px;">Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Contracts != null && Model.Contracts.Any())
+                {
+                    int stt = 1;
+                    foreach (var c in Model.Contracts.OrderBy(x => x.StartDate))
+                    {
+                        <tr>
+                            <td class="text-center">@(stt++)</td>
+                            <td><strong>@c.ContractNumber</strong></td>
+                            <td>@c.ContractType</td>
+                            <td class="text-center">@c.StartDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-center">@(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                            <td class="text-end">@c.BasicSalary.ToString("N0") đ</td>
+                            <td class="text-center">@(c.Status == "Active" ? "Hiệu lực" : "Hết hạn")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Chưa ghi nhận hợp đồng.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- IV. TÀI SẢN DOANH NGHIỆP CẤP PHÁT -->
+        <div class="section-header">IV. TÀI SẢN &amp; THIẾT BỊ ĐÃ CẤP PHÁT</div>
+        <table class="table-print">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">STT</th>
+                    <th>Mã Tài Sản</th>
+                    <th>Tên Thiết Bị / Chủng Loại</th>
+                    <th style="width: 120px;">Ngày Bàn Giao</th>
+                    <th>Tình Trạng Khi Giao</th>
+                    <th style="width: 110px;">Trạng Thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Assets != null && Model.Assets.Any())
+                {
+                    int stt = 1;
+                    foreach (var a in Model.Assets)
+                    {
+                        <tr>
+                            <td class="text-center">@(stt++)</td>
+                            <td>@(a.Asset?.AssetCode ?? "-")</td>
+                            <td>@(a.Asset?.AssetName ?? "-") (@(a.Asset?.AssetType))</td>
+                            <td class="text-center">@a.AssignedDate.ToString("dd/MM/yyyy")</td>
+                            <td>@(a.ConditionOnAssign ?? "Hoạt động tốt")</td>
+                            <td class="text-center">@(a.Status == "Active" ? "Đang quản lý" : "Đã hoàn trả")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Không giữ tài sản của công ty.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Chữ ký xác nhận -->
+        <div class="signature-section">
+            <div class="row">
+                <div class="col-4 signature-box">
+                    <strong>NGƯỜI KHAI KÝ TÊN</strong><br />
+                    <em>(Ký, ghi rõ họ tên)</em>
+                    <div style="height: 70px;"></div>
+                    <strong>@Model.FullName</strong>
+                </div>
+                <div class="col-4 signature-box">
+                    <strong>TRƯỞNG PHÒNG NHÂN SỰ</strong><br />
+                    <em>(Ký, ghi rõ họ tên)</em>
+                    <div style="height: 70px;"></div>
+                    <strong>................................................</strong>
+                </div>
+                <div class="col-4 signature-box">
+                    <em>Hà Nội, ngày @DateTime.Today.Day tháng @DateTime.Today.Month năm @DateTime.Today.Year</em><br />
+                    <strong>TỔNG GIÁM ĐỐC</strong><br />
+                    <em>(Ký tên và đóng dấu)</em>
+                    <div style="height: 70px;"></div>
+                    <strong>................................................</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

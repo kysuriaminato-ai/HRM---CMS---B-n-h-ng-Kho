@@ -257,7 +257,9 @@ namespace ERP_HRM_CMS.Data
                 new Role { Code = "ADMIN_DONHANG", Name = "Quản lý đơn hàng", Description = "Quản lý đơn hàng, bán hàng và báo cáo bán hàng", IsSystem = false },
                 new Role { Code = "ADMIN_NHANVIEN", Name = "Quản lý nhân viên", Description = "Quản lý hồ sơ, chấm công và đơn từ nhân viên", IsSystem = false },
                 new Role { Code = "ADMIN_BANGLUONG", Name = "Quản lý lương", Description = "Tính lương, bảng lương và phiếu lương", IsSystem = false },
-                new Role { Code = "ADMIN_KHO", Name = "Quản lý kho & mua hàng", Description = "Tồn kho, nhập xuất, đơn mua hàng và nhà cung cấp", IsSystem = false }
+                new Role { Code = "ADMIN_KHO", Name = "Quản lý kho & mua hàng", Description = "Tồn kho, nhập xuất, đơn mua hàng và nhà cung cấp", IsSystem = false },
+                new Role { Code = "BRANCH_MANAGER", Name = "Quản lý Chi nhánh", Description = "Quản lý vận hành, nhân sự, bán hàng và kho trong phạm vi chi nhánh", IsSystem = false },
+                new Role { Code = "DEPARTMENT_HEAD", Name = "Trưởng phòng ban", Description = "Quản lý nhân sự, chấm công và duyệt đơn từ trong phạm vi phòng ban", IsSystem = false }
             };
 
             foreach (var r in roles)
@@ -298,6 +300,8 @@ namespace ERP_HRM_CMS.Data
             ("ADMIN_NHANVIEN", p => p.Code.StartsWith("hrm.employee.") || p.Code.StartsWith("hrm.attendance.") || p.Code.StartsWith("hrm.leave.")),
             ("ADMIN_BANGLUONG", p => p.Code.StartsWith("hrm.payroll.") || p.Code == "hrm.employee.view"),
             ("ADMIN_KHO", p => p.Code.StartsWith("inventory.") || p.Code.StartsWith("scm.")),
+            ("BRANCH_MANAGER", p => p.Code == "hrm.employee.view" || p.Code == "hrm.attendance.view" || p.Code.StartsWith("hrm.leave.") || p.Code.StartsWith("order.") || p.Code.StartsWith("inventory.") || p.Code == "product.view" || p.Code == "scm.po.view" || p.Code == "report.sales"),
+            ("DEPARTMENT_HEAD", p => p.Code == "hrm.employee.view" || p.Code == "hrm.attendance.view" || p.Code.StartsWith("hrm.leave.")),
         };
 
         /// <summary>

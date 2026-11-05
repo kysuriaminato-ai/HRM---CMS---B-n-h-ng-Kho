@@ -1,7 +1,7 @@
 @model ERP_HRM_CMS.Models.Entities.PurchaseOrder
 @{
     ViewData["Title"] = "Lập Đơn Đặt Mua Hàng (PO)";
-    Layout = "~/Views/Shared/_WarehouseLayout.cshtml";
+    ViewData["Module"] = "warehouse";
     var products = ViewBag.Products as IEnumerable<ERP_HRM_CMS.Models.Entities.Product> ?? new List<ERP_HRM_CMS.Models.Entities.Product>();
 }
 

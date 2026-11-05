@@ -1,45 +1,49 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.AttendanceDailyIndexViewModel
+@model ERP_HRM_CMS.Models.ViewModels.AttendanceDailyIndexViewModel
 @{
-    Layout = "_HRMLayout";
-    ViewData["Title"] = "Chấm Công Hàng Ngày";
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = $"Chấm công ngày {Model.SelectedDate:dd/MM/yyyy}";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
     var activeEmps = ViewBag.ActiveEmployees as List<ERP_HRM_CMS.Models.Entities.Employee>;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Bảng Chấm Công Hàng Ngày</h4>
-        <p class="text-secondary small mb-0">Theo dõi giờ vào/ra, điểm danh và ghi nhận biến động công trong ngày</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="/ChamCong/BangCongThang" class="btn btn-erp-outline btn-sm">
-            <i class="bi bi-calendar3 me-1"></i> Bảng Tổng Hợp Tháng
-        </a>
-    </div>
-</div>
+<erp-page-header title="Bảng Chấm Công Hàng Ngày"
+                 subtitle="Theo dõi thời gian vào/ra thực tế, điểm danh ca làm và phát hiện đi muộn về sớm"
+                 icon="bi-calendar2-check-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Chấm công ngày">
+    <a href="/ChamCong/Heatmap" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-grid-3x3-gap me-1"></i> Heatmap chấm công
+    </a>
+    <a href="/ChamCong/BangCongThang" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-calendar-month me-1"></i> Bảng tổng hợp tháng (Shift Matrix)
+    </a>
+</erp-page-header>
 
-<div class="erp-card p-3 mb-4">
-    <form method="get" class="row g-2 align-items-center">
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold text-secondary mb-1">Chọn ngày:</label>
-            <input type="date" name="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
-        </div>
-        <div class="col-md-4">
-            <label class="form-label small fw-semibold text-secondary mb-1">Lọc theo phòng ban:</label>
-            <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
-                <option value="">-- Tất cả phòng ban --</option>
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-sm btn-erp-black w-100">Tra cứu</button>
-        </div>
-    </form>
-</div>
+<!-- Bộ lọc ngày & phòng ban -->
+<erp-filter-bar method="get">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Chọn ngày chấm công</label>
+        <input type="date" name="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm tabular-nums" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+            <option value="">-- Tất cả phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-search me-1"></i> Tra cứu
+        </button>
+    </div>
+</erp-filter-bar>
 
 <!-- Điểm danh nhanh nếu là ngày hôm nay -->
 @if (Model.SelectedDate.Date == ERP_HRM_CMS.Helpers.VietnamTime.Today)
 {
-    <div class="erp-card p-3 mb-4 bg-light">
-        <h6 class="fw-bold mb-3 small text-uppercase">Check-In / Check-Out Nhanh Cho Nhân Viên</h6>
+    <div class="card erp-card p-3 mb-4 bg-body-tertiary">
+        <h6 class="fw-bold mb-3 small text-uppercase text-primary">
+            <i class="bi bi-fingerprint me-1"></i> Ghi Nhận Giờ Vào / Ra Nhanh Cho Nhân Viên
+        </h6>
         <form asp-action="QuickAction" method="post" class="row g-2 align-items-center">
             @Html.AntiForgeryToken()
             <div class="col-md-5">
@@ -63,28 +67,28 @@
                 </select>
             </div>
             <div class="col-md-4 d-flex gap-2">
-                <button type="submit" name="ActionType" value="CheckIn" class="btn btn-sm btn-erp-black flex-grow-1">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Ghi Nhận Giờ Vào/Ra
+                <button type="submit" name="ActionType" value="CheckIn" class="btn btn-sm btn-primary flex-grow-1">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Ghi nhận giờ vào / ra
                 </button>
             </div>
         </form>
     </div>
 }
 
-<div class="erp-card">
+<div class="card erp-card">
     <div class="table-responsive">
-        <table class="table erp-table mb-0 align-middle">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
             <thead>
                 <tr>
-                    <th>Mã NV</th>
-                    <th>Họ Và Tên</th>
+                    <th class="sticky-col-1" style="width: 110px;">Mã NV</th>
+                    <th class="sticky-col-2">Họ Và Tên</th>
                     <th>Phòng Ban</th>
                     <th>Ca Làm Việc</th>
-                    <th class="text-center">Giờ Vào</th>
-                    <th class="text-center">Giờ Ra</th>
-                    <th class="text-center">Đi Muộn</th>
-                    <th class="text-center">Số Giờ Công</th>
-                    <th class="text-center">Trạng Thái</th>
+                    <th class="text-center" style="width: 90px;">Giờ Vào</th>
+                    <th class="text-center" style="width: 90px;">Giờ Ra</th>
+                    <th class="text-center" style="width: 100px;">Đi Muộn</th>
+                    <th class="text-center" style="width: 100px;">Giờ Công</th>
+                    <th class="text-center" style="width: 120px;">Trạng Thái</th>
                 </tr>
             </thead>
             <tbody>
@@ -92,37 +96,47 @@
                 {
                     foreach (var item in Model.AttendanceList)
                     {
+                        var statusVariant = item.AttendanceStatus switch
+                        {
+                            "Present" => "success",
+                            "Late" => "warning",
+                            _ => "neutral"
+                        };
+                        var statusLabel = item.AttendanceStatus switch
+                        {
+                            "Present" => "Đúng giờ",
+                            "Late" => "Đi muộn",
+                            _ => "Vắng"
+                        };
+
                         <tr>
-                            <td><code>@item.Employee?.EmployeeCode</code></td>
-                            <td class="fw-bold">@item.Employee?.FullName</td>
-                            <td>@item.Employee?.Department?.Name</td>
-                            <td>@item.Shift?.Name</td>
-                            <td class="text-center">@(item.FirstInTime?.ToString(@"hh\:mm") ?? "-")</td>
-                            <td class="text-center">@(item.LastOutTime?.ToString(@"hh\:mm") ?? "-")</td>
-                            <td class="text-center">
+                            <td class="sticky-col-1 tabular-nums fw-semibold">
+                                <code>@item.Employee?.EmployeeCode</code>
+                            </td>
+                            <td class="sticky-col-2">
+                                <a href="/NhanSu/Details/@item.EmployeeId" class="fw-bold text-decoration-none text-primary">
+                                    @item.Employee?.FullName
+                                </a>
+                            </td>
+                            <td class="small text-secondary">@item.Employee?.Department?.Name</td>
+                            <td class="small">@item.Shift?.Name</td>
+                            <td class="text-center tabular-nums">@(item.FirstInTime?.ToString(@"hh\:mm") ?? "&mdash;")</td>
+                            <td class="text-center tabular-nums">@(item.LastOutTime?.ToString(@"hh\:mm") ?? "&mdash;")</td>
+                            <td class="text-center tabular-nums">
                                 @if (item.LateMinutes > 0)
                                 {
-                                    <span class="text-danger fw-semibold">+@item.LateMinutes phút</span>
+                                    <span class="text-danger fw-semibold">+@item.LateMinutes p</span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted">&mdash;</span>
                                 }
                             </td>
-                            <td class="text-center"><strong>@item.WorkHourCount.ToString("0.#")h</strong></td>
+                            <td class="text-center tabular-nums fw-bold text-success font-monospace">
+                                @item.WorkHourCount.ToString("0.#")h
+                            </td>
                             <td class="text-center">
-                                @if (item.AttendanceStatus == "Present")
-                                {
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Đúng giờ</span>
-                                }
-                                else if (item.AttendanceStatus == "Late")
-                                {
-                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Đi muộn</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-light text-muted border">Vắng</span>
-                                }
+                                <erp-status-badge variant="@statusVariant" label="@statusLabel" dot="true" />
                             </td>
                         </tr>
                     }
@@ -130,7 +144,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">Chưa có dữ liệu chấm công cho ngày @Model.SelectedDate.ToString("dd/MM/yyyy").</td>
+                        <td colspan="9" class="p-0 border-0">
+                            <erp-empty-state icon="bi-calendar2-x"
+                                             title="Chưa có dữ liệu chấm công"
+                                             description="Không tìm thấy bản ghi chấm công nào cho ngày @Model.SelectedDate.ToString("dd/MM/yyyy")." />
+                        </td>
                     </tr>
                 }
             </tbody>

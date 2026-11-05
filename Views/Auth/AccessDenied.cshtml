@@ -1,0 +1,12 @@
+@model ERP_HRM_CMS.Models.ErrorViewModel
+@{
+    Layout = null;
+    var vm = Model ?? new ERP_HRM_CMS.Models.ErrorViewModel();
+    vm.StatusCode = 403;
+    vm.Variant = "danger";
+    vm.IconClass = "bi-shield-x";
+    vm.Title ??= "Không đủ quyền truy cập";
+    vm.Message ??= "Tài khoản của bạn chưa được cấp quyền thực hiện thao tác hoặc truy cập phân hệ này theo ma trận phân quyền RBAC/ACL. Vui lòng liên hệ Super Admin để được hỗ trợ.";
+}
+<partial name="~/Views/Shared/UI/_ErrorDocument.cshtml" model="vm" />
+

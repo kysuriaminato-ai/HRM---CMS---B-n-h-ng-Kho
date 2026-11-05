@@ -1,6 +1,6 @@
 @model ERP_HRM_CMS.Models.ViewModels.WarehouseDashboardViewModel
 @{
-    Layout = "_WarehouseLayout";
+    ViewData["Module"] = "warehouse";
     ViewData["Title"] = "Quản Trị Tồn Kho Thực Tế & Cảnh Báo";
     int branchId = Model.SelectedBranchId;
 }

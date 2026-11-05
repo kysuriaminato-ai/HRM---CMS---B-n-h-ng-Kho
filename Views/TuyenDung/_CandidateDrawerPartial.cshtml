@@ -1,0 +1,153 @@
+@model ERP_HRM_CMS.Models.ViewModels.CandidateKanbanDto
+@{
+    var schedules = (List<ERP_HRM_CMS.Models.ViewModels.InterviewScheduleDto>)ViewBag.Schedules;
+}
+
+<div class="p-4">
+    <!-- Candidate Info Header -->
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h4 class="fw-bold mb-1">@Model.FullName</h4>
+            <div class="text-muted small">
+                <span class="badge bg-light text-dark border font-monospace me-2">@Model.Code</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@Model.Status</span>
+            </div>
+        </div>
+        @if (Model.Status == "Offered" || Model.Status == "Hired")
+        {
+            <a href="/TuyenDung/TiepNhanNhanSu/@Model.Id" class="btn btn-success btn-sm fw-bold">
+                <i class="bi bi-person-plus-fill me-1"></i> Tiếp Nhận Nhân Sự
+            </a>
+        }
+    </div>
+
+    <!-- Contact & Job Info -->
+    <div class="card bg-light border-0 rounded-3 p-3 mb-4">
+        <div class="row g-2 small">
+            <div class="col-6">
+                <span class="text-muted">Email:</span>
+                <div class="fw-semibold text-break"><a href="mailto:@Model.Email">@Model.Email</a></div>
+            </div>
+            <div class="col-6">
+                <span class="text-muted">Số điện thoại:</span>
+                <div class="fw-semibold"><a href="tel:@Model.Phone">@Model.Phone</a></div>
+            </div>
+            <div class="col-12 mt-2">
+                <span class="text-muted">Vị trí ứng tuyển:</span>
+                <div class="fw-semibold text-primary">@Model.JobPostingTitle (@Model.DepartmentName)</div>
+            </div>
+            <div class="col-6 mt-2">
+                <span class="text-muted">Ngày nộp đơn:</span>
+                <div class="fw-semibold">@Model.AppliedDate.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+            <div class="col-6 mt-2">
+                <span class="text-muted">Điểm đánh giá:</span>
+                <div class="fw-semibold text-warning">
+                    @(Model.EvaluationScore.HasValue ? $"{Model.EvaluationScore.Value:0.#} / 100 điểm" : "Chưa chấm điểm")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cover Letter -->
+    @if (!string.IsNullOrWhiteSpace(Model.CoverLetter))
+    {
+        <div class="mb-4">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-text me-2 text-primary"></i>Thư giới thiệu</h6>
+            <div class="p-3 bg-white border rounded-3 small text-secondary" style="line-height: 1.6; white-space: pre-line;">
+                @Model.CoverLetter
+            </div>
+        </div>
+    }
+
+    <!-- CV File Preview / Viewer -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Hồ sơ ứng viên (CV)</h6>
+            @if (!string.IsNullOrWhiteSpace(Model.ResumeUrl))
+            {
+                <a href="@Model.ResumeUrl" target="_blank" class="btn btn-sm btn-outline-primary" download>
+                    <i class="bi bi-download me-1"></i> Tải CV
+                </a>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ResumeUrl))
+        {
+            @if (Model.ResumeUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="border rounded-3 overflow-hidden shadow-sm" style="height: 380px;">
+                    <iframe src="@Model.ResumeUrl" class="w-100 h-100 border-0" title="CV Viewer"></iframe>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info rounded-3 p-3 small d-flex align-items-center">
+                    <i class="bi bi-file-earmark-word fs-3 me-3 text-primary"></i>
+                    <div>
+                        <div class="fw-semibold">Tập tin Word DOCX</div>
+                        <div>Nhấn vào nút bên trên để tải xuống và xem tập tin.</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-secondary rounded-3 small">Ứng viên chưa đính kèm tập tin CV.</div>
+        }
+    </div>
+
+    <!-- Interview History -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử phỏng vấn</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="openScheduleModal(@Model.Id, '@Model.FullName')">
+                <i class="bi bi-plus-lg me-1"></i> Thêm lịch
+            </button>
+        </div>
+
+        @if (schedules != null && schedules.Any())
+        {
+            <div class="list-group list-group-flush border rounded-3">
+                @foreach (var s in schedules)
+                {
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <span class="fw-bold small">Vòng @s.RoundNumber: @s.Title</span>
+                            <span class="badge @(s.Status == "Completed" ? "bg-success" : (s.Status == "Cancelled" ? "bg-danger" : "bg-warning text-dark")) small">
+                                @s.Status
+                            </span>
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="bi bi-calendar me-1"></i>@s.ScheduledTime.ToString("HH:mm dd/MM/yyyy") (@s.DurationMinutes phút)
+                            <span class="ms-2"><i class="bi bi-geo-alt me-1"></i>@s.InterviewType</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(s.InterviewerName))
+                        {
+                            <div class="small text-secondary mb-1">
+                                <i class="bi bi-person me-1"></i>Phỏng vấn bởi: <strong>@s.InterviewerName</strong>
+                            </div>
+                        }
+                        @if (s.Score.HasValue)
+                        {
+                            <div class="small fw-semibold text-success">
+                                <i class="bi bi-award me-1"></i>Điểm: @s.Score.Value.ToString("0.#") / 100 - Kết quả: @s.Result
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(s.Feedback))
+                        {
+                            <div class="small bg-light p-2 rounded mt-1 text-muted">
+                                @s.Feedback
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-muted small p-3 bg-light rounded-3 text-center">Chưa có buổi phỏng vấn nào được lên lịch.</div>
+        }
+    </div>
+</div>
+

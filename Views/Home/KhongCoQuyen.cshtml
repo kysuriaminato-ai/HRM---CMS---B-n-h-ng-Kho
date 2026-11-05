@@ -1,24 +1,11 @@
+@model ERP_HRM_CMS.Models.ErrorViewModel
 @{
     Layout = null;
-    ViewData["Title"] = "Từ chối truy cập";
+    var vm = Model ?? new ERP_HRM_CMS.Models.ErrorViewModel();
+    vm.StatusCode = 403;
+    vm.Variant = "danger";
+    vm.IconClass = "bi-shield-lock-fill";
+    vm.Title ??= "Truy cập bị giới hạn";
+    vm.Message ??= "Bạn không có quyền hạn truy cập chức năng này theo chính sách bảo mật RBAC/ACL. Hãy liên hệ Super Admin để được cấp quyền.";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="utf-8" />
-    <title>403 - Không có quyền truy cập</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
-</head>
-<body class="bg-light d-flex align-items-center justify-content-center" style="min-height: 100vh;">
-    <div class="card border-0 shadow-sm p-5 text-center" style="max-width: 480px; border-radius: 12px;">
-        <div class="mb-3 text-danger"><i class="bi bi-shield-x fs-1"></i></div>
-        <h3 class="fw-bold mb-2">Truy Cập Bị Giới Hạn</h3>
-        <p class="text-secondary small mb-4">Bạn không có quyền hạn truy cập chức năng này theo chính sách bảo mật RBAC/ACL. Hãy liên hệ SuperAdmin để được cấp quyền.</p>
-        <div class="d-flex gap-2 justify-content-center">
-            <a href="javascript:history.back()" class="btn btn-outline-dark px-3 py-2">Quay lại</a>
-            <a href="/Auth/Login" class="btn btn-dark px-3 py-2">Đăng nhập tài khoản khác</a>
-        </div>
-    </div>
-</body>
-</html>
+<partial name="~/Views/Shared/UI/_ErrorDocument.cshtml" model="vm" />

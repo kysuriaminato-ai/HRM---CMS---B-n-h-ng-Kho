@@ -1,0 +1,235 @@
+@model ERP_HRM_CMS.Services.HRM.WeeklyRosterDto
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Bảng Phân Ca Làm Việc Theo Tuần";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+    var shifts = ViewBag.ShiftSelectList as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+    var departments = ViewBag.Departments as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+
+    var prevWeek = Model.WeekStartDate.AddDays(-7);
+    var nextWeek = Model.WeekStartDate.AddDays(7);
+}
+
+<erp-page-header title="Bảng Phân Ca Tuần & Shift Roster"
+                 subtitle="Tuần từ @Model.WeekStartDate.ToString("dd/MM/yyyy") đến @Model.WeekEndDate.ToString("dd/MM/yyyy") &mdash; Lập lịch, phân ca làm việc hành chính/gãy/đêm và sao chép tuần"
+                 icon="bi-calendar-week-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Chấm công:/ChamCong/Index|Phân ca">
+    <div class="btn-group">
+        <a asp-action="PhanCa" asp-route-weekStart="@prevWeek.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-chevron-left"></i> Tuần trước
+        </a>
+        <a asp-action="PhanCa" asp-route-weekStart="@DateTime.Today.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId" class="btn btn-outline-secondary btn-sm">
+            Tuần hiện tại
+        </a>
+        <a asp-action="PhanCa" asp-route-weekStart="@nextWeek.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId" class="btn btn-outline-secondary btn-sm">
+            Tuần sau <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#copyWeekModal">
+        <i class="bi bi-copy me-1"></i> Sao chép lịch tuần trước
+    </button>
+    <a asp-action="BangCongThang" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-calendar-month me-1"></i> Bảng công tháng
+    </a>
+</erp-page-header>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Bộ lọc phòng ban -->
+<erp-filter-bar method="get">
+    <input type="hidden" name="weekStart" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" />
+    <div class="col-md-5">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="departments">
+            <option value="">-- Toàn bộ phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="bi bi-funnel-fill me-1"></i> Lọc phân ca
+        </button>
+    </div>
+</erp-filter-bar>
+
+<!-- Bảng phân ca tuần -->
+<div class="card card-enterprise shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0 fw-bold text-primary">
+            <i class="bi bi-calendar2-range me-2"></i> Danh sách Phân ca Nhân sự (@Model.EmployeeRows.Count nhân sự)
+        </h6>
+        <div class="small text-muted">
+            Nhấp chuột vào từng ô ngày để thay đổi ca làm việc nhanh
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 erp-table sticky-thead">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width: 90px;">Mã NV</th>
+                    <th style="min-width: 160px;">Họ Và Tên</th>
+                    <th style="min-width: 130px;">Phòng ban</th>
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        var d = Model.DaysOfWeek[i];
+                        bool isWeekend = d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday;
+                        <th class="text-center @(isWeekend ? "bg-warning bg-opacity-10" : "")" style="min-width: 120px;">
+                            <div class="fw-bold">
+                                @(d.DayOfWeek switch {
+                                    DayOfWeek.Monday => "Thứ Hai",
+                                    DayOfWeek.Tuesday => "Thứ Ba",
+                                    DayOfWeek.Wednesday => "Thứ Tư",
+                                    DayOfWeek.Thursday => "Thứ Năm",
+                                    DayOfWeek.Friday => "Thứ Sáu",
+                                    DayOfWeek.Saturday => "Thứ Bảy",
+                                    _ => "Chủ Nhật"
+                                })
+                            </div>
+                            <small class="text-muted font-monospace">@d.ToString("dd/MM")</small>
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.EmployeeRows.Any())
+                {
+                    foreach (var row in Model.EmployeeRows)
+                    {
+                        <tr>
+                            <td class="font-monospace fw-semibold"><code>@row.EmployeeCode</code></td>
+                            <td class="fw-bold text-dark text-nowrap">@row.FullName</td>
+                            <td class="small text-secondary text-nowrap">@row.DepartmentName</td>
+                            @for (int dayIdx = 1; dayIdx <= 7; dayIdx++)
+                            {
+                                var cell = row.DailyShifts[dayIdx];
+                                <td class="text-center p-2"
+                                    style="cursor: pointer;"
+                                    onclick="openQuickAssignModal(@row.EmployeeId, '@row.FullName', '@cell.Date.ToString("yyyy-MM-dd")', @(cell.ShiftId ?? 0))"
+                                    title="Nhấp để thay đổi ca">
+                                    <div class="p-2 rounded border @(cell.IsOvernight ? "bg-dark text-white border-dark" : (cell.IsWeekend ? "bg-light text-muted" : "bg-primary-subtle text-primary border-primary-subtle"))">
+                                        <div class="fw-bold small">@cell.ShiftCode</div>
+                                        <div style="font-size: 10px;" class="font-monospace opacity-75">@cell.ShiftTime</div>
+                                        @if (cell.IsOvernight)
+                                        {
+                                            <span class="badge bg-danger p-1" style="font-size: 8px;">Ca đêm</span>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                            Không có nhân sự nào trong danh sách phân ca.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Sao chép lịch tuần -->
+<div class="modal fade" id="copyWeekModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="CopySchedule" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="sourceWeek" value="@prevWeek.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="targetWeek" value="@Model.WeekStartDate.ToString("yyyy-MM-dd")" />
+                <input type="hidden" name="departmentId" value="@Model.DepartmentId" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="bi bi-copy me-2"></i> Sao chép lịch phân ca tuần
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle me-1"></i> Tính năng này sẽ sao chép toàn bộ phân ca của <strong>Tuần trước (@prevWeek.ToString("dd/MM") - @prevWeek.AddDays(6).ToString("dd/MM"))</strong> sang <strong>Tuần này (@Model.WeekStartDate.ToString("dd/MM") - @Model.WeekEndDate.ToString("dd/MM"))</strong> chỉ với 1 thao tác.
+                    </div>
+                    <div class="small text-secondary">
+                        Áp dụng cho: <strong>@(Model.DepartmentId.HasValue ? "Phòng ban được chọn" : "Toàn bộ nhân sự công ty")</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check2-circle me-1"></i> Thực hiện sao chép
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gán ca nhanh cho nhân viên theo ngày -->
+<div class="modal fade" id="quickAssignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <form asp-action="AssignShift" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="employeeId" id="assignEmpId" />
+                <input type="hidden" name="date" id="assignDate" />
+
+                <div class="modal-header">
+                    <h6 class="modal-title fw-bold text-primary">
+                        <i class="bi bi-clock me-1"></i> Đổi ca làm việc
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="small text-muted mb-1" id="assignEmpName"></div>
+                    <div class="small fw-bold text-dark mb-3" id="assignDateDisplay"></div>
+
+                    <label class="form-label small fw-semibold">Chọn ca làm việc mới:</label>
+                    <select name="shiftId" id="assignShiftId" class="form-select form-select-sm" asp-items="shifts" required>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-check-lg me-1"></i> Lưu ca
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openQuickAssignModal(empId, empName, dateStr, currentShiftId) {
+            document.getElementById('assignEmpId').value = empId;
+            document.getElementById('assignDate').value = dateStr;
+            document.getElementById('assignEmpName').textContent = empName;
+            document.getElementById('assignDateDisplay').textContent = 'Ngày: ' + dateStr;
+
+            const shiftSelect = document.getElementById('assignShiftId');
+            if (currentShiftId && currentShiftId > 0) {
+                shiftSelect.value = currentShiftId;
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('quickAssignModal'));
+            modal.show();
+        }
+    </script>
+}
+

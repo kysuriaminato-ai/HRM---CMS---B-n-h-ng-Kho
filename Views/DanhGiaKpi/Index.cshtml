@@ -1,0 +1,195 @@
+@model IEnumerable<ERP_HRM_CMS.Models.ViewModels.KpiReviewDto>
+@{
+    ViewData["Title"] = $"Đánh Giá Hiệu Suất KPI & Năng Lực Kỳ {ViewBag.SelectedMonth}/{ViewBag.SelectedYear}";
+    ViewData["Module"] = "hrm_kpi";
+    ViewData["BreadcrumbSection"] = "Hiệu suất & Năng lực";
+}
+
+<erp-page-header title="Đánh Giá Hiệu Suất KPI Doanh Nghiệp"
+                 subtitle="Quản lý chu trình đánh giá 3 cấp (Tự chấm - Quản lý - Phê duyệt) và xếp loại nhân sự liên thông tính thưởng C&B"
+                 icon="bi-trophy"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đánh giá KPI">
+    <a href="/DanhGiaKpi/NineBox?month=@ViewBag.SelectedMonth&year=@ViewBag.SelectedYear" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-grid-3x3-gap-fill me-1"></i> Ma trận 9-Box Talent
+    </a>
+    <a href="/DanhGiaKpi/TaoMoi" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-plus-circle me-1"></i> Khởi tạo phiếu KPI
+    </a>
+</erp-page-header>
+
+<!-- Bộ lọc tìm kiếm -->
+<erp-filter-bar method="get">
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Tháng đánh giá</label>
+        <select name="month" class="form-select form-select-sm">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == ViewBag.SelectedMonth)">Tháng @m</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Năm</label>
+        <select name="year" class="form-select form-select-sm tabular-nums">
+            @for (int y = 2024; y <= 2027; y++)
+            {
+                <option value="@y" selected="@(y == ViewBag.SelectedYear)">Năm @y</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm">
+            <option value="">-- Toàn bộ phòng ban --</option>
+            @if (ViewBag.Departments != null)
+            {
+                @foreach (var d in (IEnumerable<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>)ViewBag.Departments)
+                {
+                    <option value="@d.Id" selected="@(d.Id == ViewBag.SelectedDepartmentId)">@d.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Xếp loại</label>
+        <select name="grade" class="form-select form-select-sm">
+            <option value="">-- Tất cả --</option>
+            <option value="A+" selected="@(ViewBag.SelectedGrade == "A+")">Loại A+ (Xuất sắc - Thưởng 20%)</option>
+            <option value="A" selected="@(ViewBag.SelectedGrade == "A")">Loại A (Tốt - Thưởng 10%)</option>
+            <option value="B" selected="@(ViewBag.SelectedGrade == "B")">Loại B (Đạt - Thưởng 5%)</option>
+            <option value="C" selected="@(ViewBag.SelectedGrade == "C")">Loại C (Cần cải thiện)</option>
+            <option value="D" selected="@(ViewBag.SelectedGrade == "D")">Loại D (Không đạt)</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-filter me-1"></i>Lọc dữ liệu</button>
+        <a href="/DanhGiaKpi/Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+</erp-filter-bar>
+
+<!-- Thống kê tổng quan -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Tổng Phiếu Đánh Giá" value="@(Model?.Count() ?? 0)" icon="bi-file-earmark-text" variant="primary" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đã Phê Duyệt" value="@(Model?.Count(r => r.Status == "Approved") ?? 0)" icon="bi-check-circle" variant="success" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Đạt Xuất Sắc (A+ / A)" value="@(Model?.Count(r => r.Grade == "A+" || r.Grade == "A") ?? 0)" icon="bi-star-fill" variant="warning" />
+    </div>
+    <div class="col-6 col-md-3">
+        <erp-stat-card label="Cần Cải Thiện (C / D)" value="@(Model?.Count(r => r.Grade == "C" || r.Grade == "D") ?? 0)" icon="bi-exclamation-triangle" variant="danger" />
+    </div>
+</div>
+
+<!-- Bảng danh sách phiếu KPI -->
+<div class="card erp-card mb-4">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="fw-bold">
+            <i class="bi bi-table me-2 text-primary"></i>Danh Sách Phiếu Đánh Giá (@(Model?.Count() ?? 0) nhân sự)
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th>Nhân Viên</th>
+                    <th>Phòng Ban</th>
+                    <th>Quản Lý Trực Tiếp</th>
+                    <th class="text-center">Số Tiêu Chí</th>
+                    <th class="text-center">Điểm Tổng</th>
+                    <th class="text-center">Xếp Loại</th>
+                    <th class="text-center">9-Box Phân Bổ</th>
+                    <th class="text-center">Trạng Thái</th>
+                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int stt = 1;
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@(stt++)</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm rounded-circle bg-primary-subtle text-primary fw-bold me-2 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                        @(string.IsNullOrEmpty(item.EmployeeName) ? "E" : item.EmployeeName.Substring(0, 1))
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@item.EmployeeName</div>
+                                        <div class="small text-muted font-monospace">@item.EmployeeCode</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@item.DepartmentName</td>
+                            <td>@(item.ReviewerName ?? "---")</td>
+                            <td class="text-center tabular-nums">@item.Criteria.Count</td>
+                            <td class="text-center fw-bold tabular-nums text-primary fs-6">@item.TotalScore.ToString("F1")</td>
+                            <td class="text-center">
+                                @if (item.Grade == "A+")
+                                {
+                                    <span class="badge bg-danger text-white"><i class="bi bi-star-fill"></i> A+ (Xuất sắc)</span>
+                                }
+                                else if (item.Grade == "A")
+                                {
+                                    <span class="badge bg-success text-white">A (Tốt)</span>
+                                }
+                                else if (item.Grade == "B")
+                                {
+                                    <span class="badge bg-primary text-white">B (Đạt)</span>
+                                }
+                                else if (item.Grade == "C")
+                                {
+                                    <span class="badge bg-warning text-dark">C (Cần cải thiện)</span>
+                                }
+                                else if (item.Grade == "D")
+                                {
+                                    <span class="badge bg-secondary text-white">D (Không đạt)</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">---</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border">@item.NineBoxCategory</span>
+                            </td>
+                            <td class="text-center">
+                                @if (item.Status == "Approved")
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-all"></i> Đã duyệt</span>
+                                }
+                                else if (item.Status == "Submitted")
+                                {
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-send"></i> Chờ duyệt</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-secondary border">Bản nháp</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a href="/DanhGiaKpi/ChiTiet/@item.Id" class="btn btn-sm btn-outline-primary" title="Xem chi tiết & Đánh giá">
+                                    <i class="bi bi-eye me-1"></i> Chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                            Chưa có dữ liệu đánh giá KPI cho kỳ Tháng @ViewBag.SelectedMonth/@ViewBag.SelectedYear.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

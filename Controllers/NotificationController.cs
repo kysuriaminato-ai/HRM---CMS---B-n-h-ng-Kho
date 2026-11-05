@@ -1,7 +1,7 @@
+using ERP.Application.Common.Interfaces;
+using ERP_HRM_CMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using ERP_HRM_CMS.Services;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -9,29 +9,17 @@ namespace ERP_HRM_CMS.Controllers
     public class NotificationController : Controller
     {
         private readonly INotificationService _notificationService;
+        private readonly ICurrentUserService _currentUser;
 
-        public NotificationController(INotificationService notificationService)
+        public NotificationController(INotificationService notificationService, ICurrentUserService currentUser)
         {
             _notificationService = notificationService;
+            _currentUser = currentUser;
         }
 
-        private int? CurrentUserId
-        {
-            get
-            {
-                var val = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (int.TryParse(val, out int id)) return id;
-                return HttpContext.Session.GetInt32("UserId");
-            }
-        }
+        private int? CurrentUserId => _currentUser.UserId;
 
-        private string? CurrentUserRole
-        {
-            get
-            {
-                return User.FindFirst(ClaimTypes.Role)?.Value ?? HttpContext.Session.GetString("Role");
-            }
-        }
+        private string? CurrentUserRole => _currentUser.Roles.FirstOrDefault();
 
         [HttpGet]
         public async Task<IActionResult> Index()

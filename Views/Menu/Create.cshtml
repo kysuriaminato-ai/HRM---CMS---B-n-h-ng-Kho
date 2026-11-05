@@ -1,6 +1,6 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.MenuFormViewModel
+@model ERP_HRM_CMS.Models.ViewModels.MenuFormViewModel
 @{
-    Layout = "_AdminLayout";
+    ViewData["Module"] = "cms";
     ViewData["Title"] = Model.Id > 0 ? "Sửa Menu" : "Thêm Mới Menu";
 }
 

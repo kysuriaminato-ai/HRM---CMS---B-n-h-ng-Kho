@@ -1,0 +1,164 @@
+@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.HrDecisionListItemDto>
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Quyết định nhân sự";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+    var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.HrDecisionFilterDto;
+}
+
+<erp-page-header title="Quyết Định Nhân Sự Điện Tử"
+                 subtitle="Quản lý việc bổ nhiệm, điều chuyển, điều chỉnh lương, khen thưởng, kỷ luật và thôi việc"
+                 icon="bi-file-earmark-check-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự:/NhanSu/Index|Quyết định nhân sự">
+    <a asp-action="Create" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-plus-lg me-1"></i> Ban hành quyết định mới
+    </a>
+</erp-page-header>
+
+<!-- Bộ lọc tìm kiếm -->
+<erp-filter-bar method="get">
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Từ khóa tìm kiếm</label>
+        <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" name="keyword" value="@filter?.Keyword" class="form-control" placeholder="Số QĐ, tiêu đề, họ tên NV..." />
+        </div>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Loại quyết định</label>
+        <select name="decisionType" class="form-select form-select-sm">
+            <option value="">-- Tất cả loại --</option>
+            <option value="Appointment" selected="@(filter?.DecisionType == "Appointment")">Bổ nhiệm</option>
+            <option value="Transfer" selected="@(filter?.DecisionType == "Transfer")">Điều chuyển</option>
+            <option value="SalaryAdjustment" selected="@(filter?.DecisionType == "SalaryAdjustment")">Điều chỉnh lương</option>
+            <option value="Reward" selected="@(filter?.DecisionType == "Reward")">Khen thưởng</option>
+            <option value="Discipline" selected="@(filter?.DecisionType == "Discipline")">Kỷ luật</option>
+            <option value="Termination" selected="@(filter?.DecisionType == "Termination")">Thôi việc / Chấm dứt HĐ</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Issued" selected="@(filter?.Status == "Issued")">Đã ban hành (Chờ duyệt)</option>
+            <option value="Approved" selected="@(filter?.Status == "Approved")">Đã phê duyệt (Có hiệu lực)</option>
+            <option value="Cancelled" selected="@(filter?.Status == "Cancelled")">Đã hủy</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm" asp-items="ViewBag.Departments">
+            <option value="">-- Tất cả phòng ban --</option>
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-funnel-fill me-1"></i> Lọc dữ liệu</button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary" title="Đặt lại bộ lọc"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+</erp-filter-bar>
+
+<!-- Bảng danh sách Quyết định -->
+<div class="card erp-card">
+    <div class="table-responsive">
+        <table class="table erp-table sticky-thead mb-0 align-middle small">
+            <thead>
+                <tr>
+                    <th style="width: 130px;">Số Quyết Định</th>
+                    <th>Nhân Sự Thụ Hưởng</th>
+                    <th>Phân Loại</th>
+                    <th>Tiêu Đề / Nội Dung</th>
+                    <th>Ngày Hiệu Lực</th>
+                    <th class="text-center" style="width: 120px;">Trạng Thái</th>
+                    <th class="text-end" style="width: 130px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var d in Model)
+                    {
+                        var typeBadge = d.DecisionType switch
+                        {
+                            "Appointment" => "<span class='badge bg-primary-subtle text-primary border border-primary-subtle'>Bổ nhiệm</span>",
+                            "Transfer" => "<span class='badge bg-info-subtle text-info border border-info-subtle'>Điều chuyển</span>",
+                            "SalaryAdjustment" => "<span class='badge bg-success-subtle text-success border border-success-subtle'>Tăng/Giảm lương</span>",
+                            "Reward" => "<span class='badge bg-warning-subtle text-warning border border-warning-subtle'>Khen thưởng</span>",
+                            "Discipline" => "<span class='badge bg-danger-subtle text-danger border border-danger-subtle'>Kỷ luật</span>",
+                            "Termination" => "<span class='badge bg-dark-subtle text-dark border border-dark-subtle'>Thôi việc</span>",
+                            _ => $"<span class='badge bg-light text-dark border'>{d.DecisionType}</span>"
+                        };
+
+                        var statusBadge = d.Status switch
+                        {
+                            "Approved" => "<span class='badge bg-success text-white'><i class='bi bi-check-circle-fill me-1'></i>Đã duyệt</span>",
+                            "Issued" => "<span class='badge bg-warning text-dark'><i class='bi bi-hourglass-split me-1'></i>Chờ duyệt</span>",
+                            "Cancelled" => "<span class='badge bg-secondary text-white'>Đã hủy</span>",
+                            _ => $"<span class='badge bg-light text-muted'>{d.Status}</span>"
+                        };
+
+                        <tr>
+                            <td class="tabular-nums">
+                                <a asp-action="Details" asp-route-id="@d.Id" class="fw-bold text-decoration-none">
+                                    <code>@d.DecisionNumber</code>
+                                </a>
+                            </td>
+                            <td>
+                                <a href="/NhanSu/Details/@d.EmployeeId" class="fw-semibold text-dark text-decoration-none hover-primary">
+                                    @d.FullName
+                                </a>
+                                <small class="text-muted d-block tabular-nums">@d.EmployeeCode - @d.CurrentDepartmentName</small>
+                            </td>
+                            <td>@Html.Raw(typeBadge)</td>
+                            <td>
+                                <div class="fw-semibold text-dark text-truncate" style="max-width: 280px;" title="@d.Title">
+                                    @d.Title
+                                </div>
+                                @if (d.Amount > 0)
+                                {
+                                    <small class="text-success fw-bold tabular-nums">Số tiền: @d.Amount.ToString("N0") VNĐ</small>
+                                }
+                            </td>
+                            <td class="tabular-nums text-secondary">
+                                @d.EffectiveDate.ToString("dd/MM/yyyy")
+                            </td>
+                            <td class="text-center">@Html.Raw(statusBadge)</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@d.Id" class="btn btn-outline-secondary py-0 px-2" title="Chi tiết"><i class="bi bi-eye"></i></a>
+                                    <a asp-action="InQuyetDinh" asp-route-id="@d.Id" target="_blank" class="btn btn-outline-dark py-0 px-2" title="In QĐ chuẩn thể thức văn bản A4"><i class="bi bi-printer"></i></a>
+                                    @if (d.Status == "Issued")
+                                    {
+                                        <form asp-action="Approve" asp-route-id="@d.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn phê duyệt quyết định này? Hệ thống sẽ tự động cập nhật trạng thái nhân viên.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-success py-0 px-2" title="Phê duyệt hiệu lực"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="p-0 border-0">
+                            <erp-empty-state icon="bi-file-earmark-slash"
+                                             title="Chưa có quyết định nào"
+                                             description="Không tìm thấy quyết định nhân sự nào phù hợp với bộ lọc." />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-transparent py-3">
+            <erp-pagination current-page="@Model.PageIndex"
+                            total-pages="@Model.TotalPages"
+                            url-template='@Url.Action("Index", new { keyword = filter?.Keyword, decisionType = filter?.DecisionType, status = filter?.Status, departmentId = filter?.DepartmentId, page = "__PAGE__" })' />
+        </div>
+    }
+</div>
+

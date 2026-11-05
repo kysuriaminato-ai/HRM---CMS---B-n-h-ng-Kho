@@ -1,0 +1,395 @@
+@model ERP_HRM_CMS.Models.ViewModels.PersonalSalarySlipDetailDto
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phiếu Lương Cá Nhân - @Model.PeriodName - @Model.EmployeeName</title>
+    <link rel="stylesheet" href="~/css/admin-print.css" />
+    <style>
+        :root {
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --bg-light: #f8fafc;
+            --primary: #4338ca;
+        }
+        body {
+            font-family: var(--font-family);
+            background: #e2e8f0;
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .sheet {
+            background: #ffffff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 25mm 20mm;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            position: relative;
+        }
+        .header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .company-name {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--primary);
+        }
+        .doc-title {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .doc-title h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .doc-title .period {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 24px;
+            margin-bottom: 20px;
+            background: var(--bg-light);
+            padding: 14px 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-label {
+            color: var(--text-muted);
+        }
+        .info-val {
+            font-weight: 600;
+        }
+        .table-section {
+            margin-bottom: 18px;
+        }
+        .section-heading {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            color: var(--primary);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+        }
+        th {
+            background-color: var(--bg-light);
+            font-weight: 600;
+            text-align: left;
+        }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+        .num { font-family: 'JetBrains Mono', Consolas, monospace; }
+        .total-row {
+            font-weight: 700;
+            background: #f1f5f9;
+        }
+        .net-row {
+            font-weight: 800;
+            font-size: 15px;
+            background: #eef2ff;
+            color: var(--primary);
+        }
+        .signature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 40px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .sig-space {
+            height: 70px;
+        }
+        .no-print-bar {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 10px 18px;
+            border-radius: 8px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }
+        .btn-print {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-back {
+            background: #475569;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        @@media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .sheet {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: auto;
+                padding: 10mm;
+            }
+            .no-print-bar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print-bar">
+        <a href="javascript:window.close()" class="btn-back">Đóng</a>
+        <button onclick="window.print()" class="btn-print">In Phiếu Lương (A4)</button>
+    </div>
+
+    <div class="sheet">
+        <div class="header">
+            <div>
+                <div class="company-name">CÔNG TY CỔ PHẦN CÔNG NGHỆ VÀ THƯƠNG MẠI ERP</div>
+                <div style="font-size: 12px; color: var(--text-muted);">Phân hệ Quản trị Nguồn Nhân lực & Tiền lương</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: var(--text-muted);">
+                Mã phiếu: <strong>SLIP-@Model.Id</strong><br />
+                Ngày lập: @Model.CreatedAt.ToString("dd/MM/yyyy")
+            </div>
+        </div>
+
+        <div class="doc-title">
+            <h1>PHIẾU LƯƠNG NHÂN VIÊN</h1>
+            <div class="period">@Model.PeriodName (Tháng @Model.Month/@Model.Year)</div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Họ và tên:</span>
+                <span class="info-val">@Model.EmployeeName</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Mã nhân viên:</span>
+                <span class="info-val num">@Model.EmployeeCode</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Phòng ban:</span>
+                <span class="info-val">@Model.DepartmentName</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Chức vụ:</span>
+                <span class="info-val">@Model.PositionName</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Công chuẩn tháng:</span>
+                <span class="info-val num">@Model.StandardDays ngày</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Công thực tế:</span>
+                <span class="info-val num">@Model.ActualWorkDays.ToString("N1") ngày</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Phép hưởng lương:</span>
+                <span class="info-val num">@Model.PaidLeaveDays.ToString("N1") ngày</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Giờ tăng ca (OT):</span>
+                <span class="info-val num">@Model.OvertimeHours.ToString("N1") giờ</span>
+            </div>
+        </div>
+
+        <!-- BẢNG PHÂN RÃ THU NHẬP -->
+        <div class="table-section">
+            <div class="section-heading">I. Các Khoản Thu Nhập (Earnings)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45px;" class="text-center">STT</th>
+                        <th>Khoản mục thu nhập</th>
+                        <th style="width: 130px;" class="text-center">Căn cứ tính</th>
+                        <th style="width: 150px;" class="text-end">Số tiền (VNĐ)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td>Lương cơ bản (Hợp đồng lao động)</td>
+                        <td class="text-center num">Mức HĐ</td>
+                        <td class="text-end num">@Model.BasicSalary.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td>Lương theo ngày công thực tế</td>
+                        <td class="text-center num">@Model.ActualWorkDays.ToString("N1") công</td>
+                        <td class="text-end num">@Model.StandardWorkSalary.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td>Làm thêm giờ (Overtime 150%)</td>
+                        <td class="text-center num">@Model.OvertimeHours.ToString("N1") giờ</td>
+                        <td class="text-end num">@Model.OvertimeSalary.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">4</td>
+                        <td>Phụ cấp chức vụ & trách nhiệm</td>
+                        <td class="text-center">Cố định</td>
+                        <td class="text-end num">@Model.PositionAllowance.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">5</td>
+                        <td>Phụ cấp ăn trưa & đi lại</td>
+                        <td class="text-center">Theo công</td>
+                        <td class="text-end num">@((Model.LunchAllowance + Model.OtherAllowance).ToString("N0"))</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">6</td>
+                        <td>Thưởng hiệu suất & KPI</td>
+                        <td class="text-center">Đánh giá tháng</td>
+                        <td class="text-end num">@Model.Bonus.ToString("N0")</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="3" class="text-end">TỔNG THU NHẬP (GROSS SALARY):</td>
+                        <td class="text-end num">@Model.GrossSalary.ToString("N0")</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BẢNG KHẤU TRỪ VÀ THUẾ -->
+        <div class="table-section">
+            <div class="section-heading">II. Các Khoản Khấu Trừ & Nghĩa Vụ Thuế (Deductions & PIT)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 45px;" class="text-center">STT</th>
+                        <th>Khoản mục trích nộp / khấu trừ</th>
+                        <th style="width: 130px;" class="text-center">Tỷ lệ / Quy định</th>
+                        <th style="width: 150px;" class="text-end">Số tiền (VNĐ)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td>Bảo hiểm Xã hội (BHXH)</td>
+                        <td class="text-center num">8.0%</td>
+                        <td class="text-end num">@Model.SocialInsurance.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td>Bảo hiểm Y tế (BHYT)</td>
+                        <td class="text-center num">1.5%</td>
+                        <td class="text-end num">@Model.HealthInsurance.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">3</td>
+                        <td>Bảo hiểm Thất nghiệp (BHTN)</td>
+                        <td class="text-center num">1.0%</td>
+                        <td class="text-end num">@Model.UnemploymentInsurance.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">4</td>
+                        <td>Giảm trừ gia cảnh bản thân</td>
+                        <td class="text-center">Luật Thuế</td>
+                        <td class="text-end num">-@Model.PersonalDeduction.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">5</td>
+                        <td>Giảm trừ người phụ thuộc (@Model.DependentCount người)</td>
+                        <td class="text-center">4.4 triệu/người</td>
+                        <td class="text-end num">-@Model.DependentDeduction.ToString("N0")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">6</td>
+                        <td>Thuế thu nhập cá nhân (PIT)</td>
+                        <td class="text-center">Biểu lũy tiến</td>
+                        <td class="text-end num">@Model.PersonalIncomeTax.ToString("N0")</td>
+                    </tr>
+                    @if (Model.LatePenalty > 0)
+                    {
+                        <tr>
+                            <td class="text-center">7</td>
+                            <td>Phạt vi phạm nội quy / đi muộn</td>
+                            <td class="text-center">Theo quy chế</td>
+                            <td class="text-end num">@Model.LatePenalty.ToString("N0")</td>
+                        </tr>
+                    }
+                    <tr class="total-row">
+                        <td colspan="3" class="text-end">TỔNG KHẤU TRỪ (BẢO HIỂM + THUẾ + PHẠT):</td>
+                        <td class="text-end num">@((Model.TotalInsurance + Model.PersonalIncomeTax + Model.LatePenalty).ToString("N0"))</td>
+                    </tr>
+                    <tr class="net-row">
+                        <td colspan="3" class="text-end">THỰC LĨNH CHUYỂN KHOẢN (NET SALARY):</td>
+                        <td class="text-end num">@Model.NetSalary.ToString("N0")</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="font-size: 12px; font-style: italic; color: var(--text-muted); margin-top: 10px;">
+            * Mọi thắc mắc về bảng phân rã thu nhập và ngày công, vui lòng phản hồi về Phòng Nhân sự trong vòng 03 ngày làm việc kể từ ngày nhận phiếu.
+        </div>
+
+        <div class="signature-grid">
+            <div>
+                <strong>Người lập biểu</strong><br />
+                <span style="font-size: 11px; color: var(--text-muted);">(Ký, ghi rõ họ tên)</span>
+                <div class="sig-space"></div>
+                <strong>Phòng Kế toán - Nhân sự</strong>
+            </div>
+            <div>
+                <strong>Người nhận phiếu</strong><br />
+                <span style="font-size: 11px; color: var(--text-muted);">(Xác nhận thông tin)</span>
+                <div class="sig-space"></div>
+                <strong>@Model.EmployeeName</strong>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,10 +1,14 @@
+using System.Security.Claims;
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using ERP_HRM_CMS.Helpers;
-using System.Security.Claims;
 
 namespace ERP_HRM_CMS.Filters
 {
+    /// <summary>
+    /// Kiểm tra quyền RBAC/ACL trên Controller hoặc Action.
+    /// Hỗ trợ truyền một mã quyền hoặc nhiều mã quyền phân tách bởi dấu phẩy (logic OR: có ít nhất 1 quyền là hợp lệ).
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
     public class KiemTraQuyenAttribute : TypeFilterAttribute
     {
@@ -16,12 +20,13 @@ namespace ERP_HRM_CMS.Filters
 
     public class KiemTraQuyenFilter : IAsyncAuthorizationFilter
     {
-        private readonly string _permissionCode;
+        private readonly string[] _permissionCodes;
         private readonly IPermissionService _permissionService;
 
         public KiemTraQuyenFilter(string permissionCode, IPermissionService permissionService)
         {
-            _permissionCode = permissionCode;
+            _permissionCodes = (permissionCode ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             _permissionService = permissionService;
         }
 
@@ -33,7 +38,6 @@ namespace ERP_HRM_CMS.Filters
 
             if (!user.Identity?.IsAuthenticated ?? true)
             {
-                // Request AJAX nhận JSON 401 thay vì chuyển hướng HTML tới trang đăng nhập
                 context.Result = laAjax
                     ? JsonLoi(401, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
                     : new RedirectToActionResult("Login", "Auth", null);
@@ -48,7 +52,7 @@ namespace ERP_HRM_CMS.Filters
             }
 
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdClaim, out int userId))
+            if (!int.TryParse(userIdClaim, out int userId) || userId <= 0)
             {
                 context.Result = laAjax
                     ? JsonLoi(401, "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.")
@@ -56,10 +60,12 @@ namespace ERP_HRM_CMS.Filters
                 return;
             }
 
-            bool hasPermission = await _permissionService.HasPermissionAsync(userId, _permissionCode);
+            bool hasPermission = _permissionCodes.Length == 1
+                ? await _permissionService.HasPermissionAsync(userId, _permissionCodes[0])
+                : await _permissionService.HasAnyPermissionAsync(userId, _permissionCodes);
+
             if (!hasPermission)
             {
-                // AJAX: JSON 403. Trang thường: chuyển tới trang báo lỗi không có quyền
                 context.Result = laAjax
                     ? JsonLoi(403, "Bạn không có quyền thực hiện thao tác này.")
                     : new RedirectToActionResult("KhongCoQuyen", "Home", null);

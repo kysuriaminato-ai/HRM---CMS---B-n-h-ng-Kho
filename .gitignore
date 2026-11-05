@@ -17,3 +17,8 @@ packages/
 
 # Khóa Data Protection (chỉ dùng cục bộ khi Development)
 App_Data/
+
+
+# Nhật ký vận hành Serilog (Rolling File theo ngày)
+logs/
+**/logs/

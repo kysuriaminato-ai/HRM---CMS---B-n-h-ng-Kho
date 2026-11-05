@@ -1,0 +1,141 @@
+@model ERP_HRM_CMS.Models.ViewModels.CreateKpiReviewDto
+@{
+    ViewData["Title"] = "Khởi Tạo Phiếu Đánh Giá KPI";
+    ViewData["Module"] = "hrm_kpi";
+    ViewData["BreadcrumbSection"] = "Hiệu suất & Năng lực";
+}
+
+<erp-page-header title="Khởi Tạo Phiếu Đánh Giá KPI"
+                 subtitle="Thiết lập bộ chỉ số đánh giá hiệu suất kèm trọng số (Tổng trọng số bắt buộc = 100%)"
+                 icon="bi-plus-circle"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đánh giá KPI:/DanhGiaKpi/Index|Tạo mới">
+    <a href="/DanhGiaKpi/Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+    </a>
+</erp-page-header>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card erp-card">
+            <div class="card-body p-4">
+                <form method="post" asp-action="TaoMoi" id="kpiCreateForm">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="alert alert-danger mb-4" role="alert"></div>
+
+                    <h5 class="fw-bold text-primary mb-3"><i class="bi bi-person-badge me-2"></i>1. Thông Tin Chung & Kỳ Đánh Giá</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nhân viên được đánh giá <span class="text-danger">*</span></label>
+                            <select asp-for="EmployeeId" class="form-select" required>
+                                <option value="">-- Chọn nhân viên --</option>
+                                @if (ViewBag.Employees != null)
+                                {
+                                    @foreach (var emp in (IEnumerable<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>)ViewBag.Employees)
+                                    {
+                                        <option value="@emp.Id">@emp.EmployeeCode - @emp.FullName (@emp.DepartmentName - @emp.PositionName)</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="EmployeeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Quản lý trực tiếp (Người đánh giá) <span class="text-danger">*</span></label>
+                            <select asp-for="ReviewerId" class="form-select" required>
+                                <option value="">-- Chọn quản lý trực tiếp --</option>
+                                @if (ViewBag.Employees != null)
+                                {
+                                    @foreach (var emp in (IEnumerable<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>)ViewBag.Employees)
+                                    {
+                                        <option value="@emp.Id">@emp.EmployeeCode - @emp.FullName (@emp.PositionName)</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="ReviewerId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Tháng đánh giá <span class="text-danger">*</span></label>
+                            <select asp-for="PeriodMonth" class="form-select">
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m">Tháng @m</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Năm đánh giá <span class="text-danger">*</span></label>
+                            <input asp-for="PeriodYear" type="number" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-list-check me-2"></i>2. Bộ Tiêu Chí & Trọng Số Đánh Giá</h5>
+                        <div class="text-end">
+                            <span class="small me-2">Tổng trọng số:</span>
+                            <strong id="totalWeightBadge" class="badge bg-success fs-6 tabular-nums">100%</strong>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered align-middle" id="criteriaTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;">STT</th>
+                                    <th>Tên Tiêu Chí Đánh Giá / KPI Mục Tiêu</th>
+                                    <th style="width: 160px;" class="text-end">Trọng Số (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Criteria.Count; i++)
+                                {
+                                    <tr>
+                                        <td class="text-center font-monospace">@(i + 1)</td>
+                                        <td>
+                                            <input type="text" name="Criteria[@i].CriteriaName" value="@Model.Criteria[i].CriteriaName" class="form-control form-control-sm" required placeholder="Nhập mục tiêu KPI..." />
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" name="Criteria[@i].Weight" value="@Model.Criteria[i].Weight" class="form-control text-end weight-input" min="1" max="100" required />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/DanhGiaKpi/Index" class="btn btn-outline-secondary">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary px-4 ripple" id="btnSubmitKpi">
+                            <i class="bi bi-check-circle me-1"></i> Khởi tạo phiếu đánh giá
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function recalculateTotalWeight() {
+        let total = 0;
+        document.querySelectorAll('.weight-input').forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        const badge = document.getElementById('totalWeightBadge');
+        badge.textContent = total + '%';
+        if (Math.abs(total - 100) < 0.01) {
+            badge.className = 'badge bg-success fs-6 tabular-nums';
+        } else {
+            badge.className = 'badge bg-danger fs-6 tabular-nums';
+        }
+    }
+
+    document.querySelectorAll('.weight-input').forEach(input => {
+        input.addEventListener('input', recalculateTotalWeight);
+    });
+    recalculateTotalWeight();
+</script>
+}
+

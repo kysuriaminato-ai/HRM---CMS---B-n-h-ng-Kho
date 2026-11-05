@@ -1,0 +1,288 @@
+@model ERP_HRM_CMS.Models.ViewModels.TrainingDto
+@{
+    ViewData["Title"] = $"Học Viên Khóa: {Model.Title}";
+    ViewData["Module"] = "hrm_training";
+    ViewData["BreadcrumbSection"] = "Đào tạo & Phát triển";
+}
+
+<erp-page-header title="Quản Lý Học Viên &amp; Sát Hạch Đầu Ra"
+                 subtitle="@Model.Title (@Model.Code)"
+                 icon="bi-mortarboard"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đào tạo:/DaoTao/Index|Học viên">
+    <a href="/DaoTao/ChinhSua/@Model.Id" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i> Sửa thông tin khóa
+    </a>
+    <a href="/DaoTao/Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Quay lại
+    </a>
+    <button type="button" class="btn btn-primary btn-sm ripple" data-bs-toggle="modal" data-bs-target="#modalGanHocVien">
+        <i class="bi bi-person-plus me-1"></i> Bổ sung học viên
+    </button>
+</erp-page-header>
+
+<!-- Thẻ tổng quan khóa đào tạo -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card erp-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h4 class="fw-bold mb-1">@Model.Title</h4>
+                        <div class="text-muted small">
+                            <span class="font-monospace">@Model.Code</span> &bull; Giảng viên: <strong>@(Model.TrainerName ?? "Nội bộ")</strong> &bull; Địa điểm: <strong>@(Model.Location ?? "Tại văn phòng")</strong>
+                        </div>
+                    </div>
+                    <div>
+                        @if (Model.Status == "Completed")
+                        {
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Hoàn thành</span>
+                        }
+                        else if (Model.Status == "InProgress")
+                        {
+                            <span class="badge bg-info text-white"><i class="bi bi-play-circle"></i> Đang diễn ra</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-secondary border">Dự kiến</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="row g-3 pt-3 border-top mt-2">
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Thời gian đào tạo:</span>
+                        <strong class="tabular-nums">@Model.StartDate.ToString("dd/MM/yyyy") - @(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("dd/MM/yyyy") : "---")</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Ngân sách dự kiến:</span>
+                        <strong class="tabular-nums text-primary">@Model.Budget.ToString("N0") đ</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card erp-card text-center h-100">
+            <div class="card-body p-4 d-flex flex-column justify-content-center">
+                <span class="text-muted small fw-semibold text-uppercase mb-2">Tỷ Lệ Tốt Nghiệp / Đạt</span>
+                @{
+                    int total = Model.Participants.Count;
+                    int passed = Model.Participants.Count(p => p.Result == "Passed");
+                    double rate = total > 0 ? (passed * 100.0 / total) : 0;
+                }
+                <div class="display-5 fw-bold text-success tabular-nums mb-2">
+                    @rate.ToString("F0")%
+                </div>
+                <div class="small text-muted">
+                    Đã đạt: <strong class="text-dark">@passed</strong> / @total học viên
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng danh sách học viên -->
+<div class="card erp-card mb-4">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="fw-bold">
+            <i class="bi bi-people me-2 text-primary"></i>Danh Sách Học Viên Tham Gia (@Model.Participants.Count nhân sự)
+        </div>
+        <div class="small text-muted">
+            Học viên đạt &ge; 60 điểm sẽ tự động được cấp Chứng chỉ &amp; nâng cấp Kỹ năng hồ sơ
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th>Học Viên</th>
+                    <th>Phòng Ban</th>
+                    <th class="text-center">Điểm Thi</th>
+                    <th class="text-center">Kết Quả</th>
+                    <th>Nhận Xét / Đánh Giá</th>
+                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Participants.Any())
+                {
+                    int stt = 1;
+                    foreach (var p in Model.Participants)
+                    {
+                        <tr>
+                            <td>@(stt++)</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm rounded-circle bg-primary-subtle text-primary fw-bold me-2 d-flex align-items-center justify-content-center" style="width:34px;height:34px;">
+                                        @(string.IsNullOrEmpty(p.EmployeeName) ? "E" : p.EmployeeName.Substring(0, 1))
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@p.EmployeeName</div>
+                                        <div class="small text-muted font-monospace">@p.EmployeeCode</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@p.DepartmentName</td>
+                            <td class="text-center tabular-nums fw-bold fs-6">
+                                @(p.Score.HasValue ? p.Score.Value.ToString("F0") : "---")
+                            </td>
+                            <td class="text-center">
+                                @if (p.Result == "Passed")
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle-fill"></i> Đạt (Passed)</span>
+                                }
+                                else if (p.Result == "Failed")
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="bi bi-x-circle-fill"></i> Không đạt</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-secondary border">Đang tham gia</span>
+                                }
+                            </td>
+                            <td class="small text-muted">@(p.Comment ?? "---")</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="openGradeModal(@p.EmployeeId, '@p.EmployeeName', @(p.Score ?? 0), '@p.Result', '@p.Comment')">
+                                    <i class="bi bi-pencil-square me-1"></i> Chấm điểm
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-people fs-3 d-block mb-2"></i>
+                            Khóa học chưa có học viên nào. Nhấp "Bổ sung học viên" để gán nhân sự vào khóa.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Bổ sung học viên -->
+<div class="modal fade" id="modalGanHocVien" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-action="GanHocVien">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="TrainingId" value="@Model.Id" />
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>Bổ Sung Học Viên Vào Khóa Đào Tạo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Gán nhanh theo Phòng ban (Tùy chọn)</label>
+                        <select name="DepartmentId" class="form-select form-select-sm">
+                            <option value="">-- Chỉ định đích danh từng nhân sự phía dưới --</option>
+                            @if (ViewBag.Departments != null)
+                            {
+                                @foreach (var d in (IEnumerable<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>)ViewBag.Departments)
+                                {
+                                    <option value="@d.Id">Gán toàn bộ phòng ban: @d.Name</option>
+                                }
+                            }
+                        </select>
+                        <span class="form-text text-muted small">Nếu chọn phòng ban, tất cả nhân sự đang hoạt động của phòng ban đó sẽ được tự động thêm vào khóa</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn từng Nhân sự cụ thể</label>
+                        <select name="EmployeeIds" class="form-select" multiple size="8">
+                            @if (ViewBag.AvailableEmployees != null)
+                            {
+                                @foreach (var emp in (IEnumerable<ERP_HRM_CMS.Services.HRM.EmployeeListItemDto>)ViewBag.AvailableEmployees)
+                                {
+                                    <option value="@emp.Id">@emp.EmployeeCode - @emp.FullName (@emp.DepartmentName)</option>
+                                }
+                            }
+                        </select>
+                        <span class="form-text text-muted small">Giữ Ctrl hoặc Shift để chọn nhiều nhân sự cùng lúc</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary ripple"><i class="bi bi-check-circle me-1"></i> Bổ sung học viên</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chấm điểm học viên -->
+<div class="modal fade" id="modalChamDiem" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="ChamDiemHocVien">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="TrainingId" value="@Model.Id" />
+                <input type="hidden" name="EmployeeId" id="gradeEmployeeId" />
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-award me-2 text-primary"></i>Sát Hạch &amp; Chấm Điểm Học Viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 px-3 small mb-3">
+                        Học viên: <strong id="gradeEmployeeName"></strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Điểm sát hạch (Thang điểm 100) <span class="text-danger">*</span></label>
+                        <input type="number" name="Score" id="gradeScore" class="form-control" min="0" max="100" required />
+                        <span class="form-text small text-muted">Điểm &ge; 60 được tự động xếp loại Đạt (Passed)</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Kết quả đánh giá</label>
+                        <select name="Result" id="gradeResult" class="form-select">
+                            <option value="Passed">Đạt (Passed) - Cấp chứng chỉ &amp; Kỹ năng</option>
+                            <option value="Failed">Không đạt (Failed)</option>
+                            <option value="Attended">Đã tham gia (Chưa có kết quả)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nhận xét &amp; Đánh giá năng lực</label>
+                        <textarea name="Comment" id="gradeComment" class="form-control" rows="3" placeholder="Nhận xét sự tiến bộ, điểm mạnh, điểm cần khắc phục..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary ripple"><i class="bi bi-save me-1"></i> Lưu kết quả</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openGradeModal(empId, empName, score, result, comment) {
+        document.getElementById('gradeEmployeeId').value = empId;
+        document.getElementById('gradeEmployeeName').textContent = empName;
+        document.getElementById('gradeScore').value = score || 80;
+        document.getElementById('gradeResult').value = result || 'Passed';
+        document.getElementById('gradeComment').value = comment || '';
+
+        const modal = new bootstrap.Modal(document.getElementById('modalChamDiem'));
+        modal.show();
+    }
+
+    // Auto set Result based on score
+    document.getElementById('gradeScore').addEventListener('input', function() {
+        const val = parseFloat(this.value) || 0;
+        const resSelect = document.getElementById('gradeResult');
+        if (val >= 60) {
+            resSelect.value = 'Passed';
+        } else {
+            resSelect.value = 'Failed';
+        }
+    });
+</script>
+}

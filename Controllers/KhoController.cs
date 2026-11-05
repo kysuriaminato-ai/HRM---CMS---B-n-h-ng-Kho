@@ -1,13 +1,15 @@
+using ERP.Application.Common.Interfaces;
+using ERP.Domain.Enums;
+using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.ViewModels;
+using ERP_HRM_CMS.Services.Kho;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
-using ERP_HRM_CMS.Models.ViewModels;
-using ERP_HRM_CMS.Services.Kho;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -16,24 +18,45 @@ namespace ERP_HRM_CMS.Controllers
     {
         private readonly AppDbContext _context;
         private readonly ILogger<KhoController> _logger;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IDataScopeService _dataScope;
 
-        public KhoController(AppDbContext context, ILogger<KhoController> logger)
+        public KhoController(
+            AppDbContext context,
+            ILogger<KhoController> logger,
+            ICurrentUserService currentUser,
+            IDataScopeService dataScope)
         {
             _context = context;
             _logger = logger;
+            _currentUser = currentUser;
+            _dataScope = dataScope;
         }
 
-        private int CurrentUserId => HttpContext.Session.GetInt32("UserId") ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        private async Task<List<Branch>> GetScopedBranchesAsync()
+        {
+            var query = _context.Branches.AsQueryable();
+            if (_dataScope.GetOperationsScopeLevel() == DataScopeLevel.Branch && _currentUser.BranchId.HasValue)
+            {
+                int myBranchId = _currentUser.BranchId.Value;
+                query = query.Where(b => b.Id == myBranchId);
+            }
+            return await query.OrderBy(b => b.Name).ToListAsync();
+        }
 
         // 1. DASHBOARD BẢNG ĐIỀU KHIỂN TỒN KHO THỰC TẾ & CẢNH BÁO
         [HttpGet]
         [KiemTraQuyen("inventory.view")]
         public async Task<IActionResult> Index(int? branchId, string? keyword, bool? lowStockOnly)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
-            int selectedBranch = branchId ?? branches.FirstOrDefault()?.Id ?? 1;
+            var branches = await GetScopedBranchesAsync();
+            int? resolvedBranch = _dataScope.ResolveAllowedBranchId(branchId);
+            int selectedBranch = resolvedBranch ?? branches.FirstOrDefault()?.Id ?? 1;
 
-            var query = from inv in _context.Inventories.Include(i => i.Branch).Include(i => i.Product).ThenInclude(p => p.Category)
+            var scopedInventories = _dataScope.ApplyInventoryScope(_context.Inventories);
+            var query = from inv in scopedInventories.Include(i => i.Branch).Include(i => i.Product).ThenInclude(p => p.Category)
                         where inv.BranchId == selectedBranch
                         select new InventoryStockDto
                         {
@@ -73,7 +96,7 @@ namespace ERP_HRM_CMS.Controllers
             var tongHop = await InventoryStockService.TongHopTonKhoAsync(_context, selectedBranch);
 
             var today = VietnamTime.Today;
-            int todayTransCount = await _context.InventoryTransactions
+            int todayTransCount = await _dataScope.ApplyInventoryTransactionScope(_context.InventoryTransactions)
                 .CountAsync(t => t.BranchId == selectedBranch && t.CreatedAt >= today && t.CreatedAt < today.AddDays(1));
 
             var vm = new WarehouseDashboardViewModel
@@ -99,10 +122,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> NhapKho(int? branchId)
         {
-            await LoadDropdowns(branchId);
+            int? resolvedBranch = _dataScope.ResolveAllowedBranchId(branchId);
+            await LoadDropdowns(resolvedBranch);
             return View(new StockTransactionCreateDto
             {
-                BranchId = branchId ?? 1,
+                BranchId = resolvedBranch ?? 1,
                 TransactionType = "IN",
                 Quantity = 10,
                 UnitPrice = 0
@@ -114,6 +138,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> NhapKho(StockTransactionCreateDto dto)
         {
+            if (!_dataScope.CanAccessBranch(dto.BranchId))
+                return Forbid();
+
             if (dto.Quantity <= 0)
                 ModelState.AddModelError("Quantity", "Số lượng nhập kho phải lớn hơn 0.");
 
@@ -191,10 +218,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> XuatKho(int? branchId)
         {
-            await LoadDropdowns(branchId);
+            int? resolvedBranch = _dataScope.ResolveAllowedBranchId(branchId);
+            await LoadDropdowns(resolvedBranch);
             return View(new StockTransactionCreateDto
             {
-                BranchId = branchId ?? 1,
+                BranchId = resolvedBranch ?? 1,
                 TransactionType = "OUT",
                 Quantity = 1,
                 UnitPrice = 0
@@ -206,6 +234,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> XuatKho(StockTransactionCreateDto dto)
         {
+            if (!_dataScope.CanAccessBranch(dto.BranchId))
+                return Forbid();
+
             // Kiểm tra sơ bộ để hiện thông báo; việc trừ tồn thật sự được kiểm tra lại trong transaction bên dưới
             var inventory = await _context.Inventories
                 .AsNoTracking()
@@ -269,15 +300,17 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.view")]
         public async Task<IActionResult> LichSuGiaoDich(int? branchId, string? type, DateTime? fromDate, DateTime? toDate, string? keyword)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
-            var query = _context.InventoryTransactions
+            var branches = await GetScopedBranchesAsync();
+            int? resolvedBranch = _dataScope.ResolveAllowedBranchId(branchId);
+
+            var query = _dataScope.ApplyInventoryTransactionScope(_context.InventoryTransactions)
                 .Include(t => t.Branch)
                 .Include(t => t.Product)
                 .Include(t => t.Creator)
                 .AsQueryable();
 
-            if (branchId.HasValue && branchId > 0)
-                query = query.Where(t => t.BranchId == branchId.Value);
+            if (resolvedBranch.HasValue && resolvedBranch > 0)
+                query = query.Where(t => t.BranchId == resolvedBranch.Value);
 
             if (!string.IsNullOrWhiteSpace(type))
                 query = query.Where(t => t.TransactionType == type);
@@ -302,7 +335,7 @@ namespace ERP_HRM_CMS.Controllers
             {
                 Transactions = list,
                 Branches = branches,
-                SelectedBranchId = branchId,
+                SelectedBranchId = resolvedBranch,
                 TransactionType = type,
                 FromDate = fromDate,
                 ToDate = toDate,
@@ -313,14 +346,18 @@ namespace ERP_HRM_CMS.Controllers
                 TotalOutValue = list.Where(t => t.TransactionType == "OUT").Sum(t => t.Quantity * t.UnitPrice)
             };
 
-            ViewBag.Branches = new SelectList(branches, "Id", "Name", branchId);
+            ViewBag.Branches = new SelectList(branches, "Id", "Name", resolvedBranch);
             return View(vm);
         }
 
         // 5. API LẤY NHANH TỒN KHO VÀ GIÁ VỐN CHO AJAX
         [HttpGet]
+        [KiemTraQuyen("inventory.view,inventory.transaction,order.pos")]
         public async Task<IActionResult> LayThongTinTonKho(int productId, int branchId)
         {
+            if (!_dataScope.CanAccessBranch(branchId))
+                return Forbid();
+
             var inv = await _context.Inventories
                 .Include(i => i.Product)
                 .FirstOrDefaultAsync(i => i.ProductId == productId && i.BranchId == branchId);
@@ -345,17 +382,21 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> DieuChuyen(int? fromBranchId)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+            var fromBranches = await GetScopedBranchesAsync();
+            var allBranches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
             var products = await _context.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
 
-            ViewBag.FromBranches = new SelectList(branches, "Id", "Name", fromBranchId ?? 1);
-            ViewBag.ToBranches = new SelectList(branches, "Id", "Name", branches.Count > 1 ? branches[1].Id : 1);
+            int resolvedFrom = _dataScope.ResolveAllowedBranchId(fromBranchId) ?? fromBranches.FirstOrDefault()?.Id ?? 1;
+            int defaultTo = allBranches.FirstOrDefault(b => b.Id != resolvedFrom)?.Id ?? resolvedFrom;
+
+            ViewBag.FromBranches = new SelectList(fromBranches, "Id", "Name", resolvedFrom);
+            ViewBag.ToBranches = new SelectList(allBranches, "Id", "Name", defaultTo);
             ViewBag.Products = new SelectList(products, "Id", "Name");
 
             return View(new StockTransferDto
             {
-                FromBranchId = fromBranchId ?? 1,
-                ToBranchId = branches.Count > 1 ? branches[1].Id : 1,
+                FromBranchId = resolvedFrom,
+                ToBranchId = defaultTo,
                 Quantity = 1
             });
         }
@@ -365,6 +406,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.transaction")]
         public async Task<IActionResult> DieuChuyen(StockTransferDto dto)
         {
+            if (!_dataScope.CanAccessBranch(dto.FromBranchId))
+                return Forbid();
+
             if (dto.FromBranchId == dto.ToBranchId)
             {
                 ModelState.AddModelError("ToBranchId", "Chi nhánh nhận hàng phải khác chi nhánh xuất hàng.");
@@ -399,10 +443,11 @@ namespace ERP_HRM_CMS.Controllers
                     {
                         await dbTransaction.RollbackAsync();
                         ModelState.AddModelError("Quantity", "Tồn kho chi nhánh xuất vừa thay đổi và không còn đủ. Vui lòng kiểm tra lại.");
-                        var branchesLoi = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+                        var branchesLoi = await GetScopedBranchesAsync();
+                        var allBranchesLoi = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
                         var productsLoi = await _context.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
                         ViewBag.FromBranches = new SelectList(branchesLoi, "Id", "Name", dto.FromBranchId);
-                        ViewBag.ToBranches = new SelectList(branchesLoi, "Id", "Name", dto.ToBranchId);
+                        ViewBag.ToBranches = new SelectList(allBranchesLoi, "Id", "Name", dto.ToBranchId);
                         ViewBag.Products = new SelectList(productsLoi, "Id", "Name", dto.ProductId);
                         return View(dto);
                     }
@@ -462,10 +507,11 @@ namespace ERP_HRM_CMS.Controllers
                 }
             }
 
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+            var branches = await GetScopedBranchesAsync();
+            var allBranches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
             var products = await _context.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
             ViewBag.FromBranches = new SelectList(branches, "Id", "Name", dto.FromBranchId);
-            ViewBag.ToBranches = new SelectList(branches, "Id", "Name", dto.ToBranchId);
+            ViewBag.ToBranches = new SelectList(allBranches, "Id", "Name", dto.ToBranchId);
             ViewBag.Products = new SelectList(products, "Id", "Name", dto.ProductId);
 
             return View(dto);
@@ -474,14 +520,14 @@ namespace ERP_HRM_CMS.Controllers
         // Helper nạp dữ liệu Dropdowns
         private async Task LoadDropdowns(int? selectedBranchId)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+            var branches = await GetScopedBranchesAsync();
             var products = await _context.Products
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.Name)
                 .Select(p => new { p.Id, Display = $"{p.Name} ({p.SKU}) - Giá vốn: {p.CostPrice:N0} đ" })
                 .ToListAsync();
 
-            ViewBag.Branches = new SelectList(branches, "Id", "Name", selectedBranchId ?? 1);
+            ViewBag.Branches = new SelectList(branches, "Id", "Name", selectedBranchId ?? branches.FirstOrDefault()?.Id ?? 1);
             ViewBag.Products = new SelectList(products, "Id", "Display");
         }
 
@@ -492,10 +538,10 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.stocktaking")]
         public async Task<IActionResult> KiemKe(int? branchId)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
-            int selectedBranch = branchId ?? branches.FirstOrDefault()?.Id ?? 1;
+            var branches = await GetScopedBranchesAsync();
+            int selectedBranch = _dataScope.ResolveAllowedBranchId(branchId) ?? branches.FirstOrDefault()?.Id ?? 1;
 
-            var inventories = await _context.Inventories
+            var inventories = await _dataScope.ApplyInventoryScope(_context.Inventories)
                 .Include(i => i.Product)
                     .ThenInclude(p => p.Category)
                 .Where(i => i.BranchId == selectedBranch)
@@ -521,6 +567,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.stocktaking")]
         public async Task<IActionResult> CanBangKho(int branchId, int[] productIds, int[] actualQuantities, string[] reasons, string? note)
         {
+            if (!_dataScope.CanAccessBranch(branchId))
+                return Forbid();
+
             if (productIds == null || productIds.Length == 0)
             {
                 TempData["ErrorMessage"] = "Không có dữ liệu mặt hàng kiểm kê.";
@@ -630,11 +679,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("inventory.view")]
         public async Task<IActionResult> ExportXuatNhapTonExcel(int? branchId)
         {
-            var branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
-            int selectedBranchId = branchId ?? branches.FirstOrDefault()?.Id ?? 1;
-            var branch = branches.FirstOrDefault(b => b.Id == selectedBranchId) ?? branches.First();
+            var branches = await GetScopedBranchesAsync();
+            int selectedBranchId = _dataScope.ResolveAllowedBranchId(branchId) ?? branches.FirstOrDefault()?.Id ?? 1;
+            var branch = branches.FirstOrDefault(b => b.Id == selectedBranchId) ?? await _context.Branches.FirstAsync();
 
-            var inventories = await _context.Inventories
+            var inventories = await _dataScope.ApplyInventoryScope(_context.Inventories)
                 .Include(i => i.Product)
                     .ThenInclude(p => p.Category)
                 .Where(i => i.BranchId == selectedBranchId)

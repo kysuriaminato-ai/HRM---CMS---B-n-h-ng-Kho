@@ -1,0 +1,248 @@
+@model ERP_HRM_CMS.Models.Entities.HrDecision
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Quyết Định " + Model.DecisionNumber;
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+}
+
+<erp-page-header title="@Model.DecisionNumber"
+                 subtitle="@Model.Title"
+                 icon="bi-file-earmark-check"
+                 breadcrumbs="Dashboard:/|Nhân sự:/NhanSu/Index|Quyết định nhân sự:/QuyetDinhNhanSu/Index|@Model.DecisionNumber">
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Danh sách</a>
+        <a asp-action="InQuyetDinh" asp-route-id="@Model.Id" target="_blank" class="btn btn-outline-dark btn-sm"><i class="bi bi-printer me-1"></i> In quyết định (A4)</a>
+        @if (Model.Status == "Issued")
+        {
+            <form asp-action="Approve" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận phê duyệt và thi hành hiệu lực quyết định nhân sự này?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i> Phê duyệt hiệu lực</button>
+            </form>
+            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelDecision">
+                <i class="bi bi-x-lg me-1"></i> Hủy quyết định
+            </button>
+        }
+    </div>
+</erp-page-header>
+
+<!-- Cảnh báo tài sản khi làm thủ tục thôi việc -->
+<div id="unreturnedAssetAlert" class="alert alert-danger d-none mb-4" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+        <div>
+            <h6 class="fw-bold mb-1">CẢNH BÁO KIỂM SOÁT TÀI SẢN DOANH NGHIỆP:</h6>
+            <div id="unreturnedAssetMsg" class="small">Nhân sự này hiện vẫn đang nắm giữ trang thiết bị công ty chưa bàn giao!</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card erp-card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center pb-3 mb-3 border-bottom">
+                <div>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-2">@Model.DecisionType</span>
+                    <h5 class="fw-bold d-inline align-middle text-dark mb-0">@Model.Title</h5>
+                </div>
+                <div>
+                    @if (Model.Status == "Approved")
+                    {
+                        <span class="badge bg-success fs-6"><i class="bi bi-check-circle-fill me-1"></i>Đã phê duyệt</span>
+                    }
+                    else if (Model.Status == "Issued")
+                    {
+                        <span class="badge bg-warning text-dark fs-6"><i class="bi bi-hourglass-split me-1"></i>Chờ phê duyệt</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary fs-6">Đã hủy</span>
+                    }
+                </div>
+            </div>
+
+            <!-- Nội dung thay đổi chi tiết -->
+            <div class="row g-3 small mb-4">
+                <div class="col-md-6">
+                    <span class="text-secondary d-block">Ngày ký ban hành:</span>
+                    <strong class="tabular-nums">@Model.SignDate.ToString("dd/MM/yyyy")</strong>
+                </div>
+                <div class="col-md-6">
+                    <span class="text-secondary d-block">Ngày bắt đầu có hiệu lực:</span>
+                    <strong class="tabular-nums text-primary fs-6">@Model.EffectiveDate.ToString("dd/MM/yyyy")</strong>
+                </div>
+
+                @if (Model.OldDepartment != null || Model.NewDepartment != null)
+                {
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Phòng ban trước điều chuyển:</span>
+                        <strong>@(Model.OldDepartment?.Name ?? "-")</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Phòng ban mới được phân công:</span>
+                        <strong class="text-success">@(Model.NewDepartment?.Name ?? "-")</strong>
+                    </div>
+                }
+
+                @if (Model.OldPosition != null || Model.NewPosition != null)
+                {
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Chức danh công việc cũ:</span>
+                        <strong>@(Model.OldPosition?.Name ?? "-")</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Chức danh công việc mới:</span>
+                        <strong class="text-primary">@(Model.NewPosition?.Name ?? "-")</strong>
+                    </div>
+                }
+
+                @if (Model.OldSalary.HasValue || Model.NewSalary.HasValue)
+                {
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Mức lương cũ:</span>
+                        <strong class="tabular-nums">@(Model.OldSalary?.ToString("N0") ?? "-") đ</strong>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block">Mức lương mới điều chỉnh:</span>
+                        <strong class="tabular-nums text-success">@(Model.NewSalary?.ToString("N0") ?? "-") đ</strong>
+                    </div>
+                }
+
+                @if (Model.Amount > 0)
+                {
+                    <div class="col-12">
+                        <span class="text-secondary d-block">Số tiền Khen thưởng / Kỷ luật (tự động cộng/trừ kỳ lương):</span>
+                        <strong class="tabular-nums text-danger fs-5">@Model.Amount.ToString("N0") VNĐ</strong>
+                    </div>
+                }
+            </div>
+
+            <!-- Căn cứ & Lý do -->
+            <div class="card bg-light border-0 p-3 mb-4">
+                <span class="text-secondary small fw-semibold d-block mb-1">Căn cứ &amp; Lý do quyết định:</span>
+                <p class="mb-0 text-dark small" style="white-space: pre-line;">@(Model.Reason ?? "Căn cứ yêu cầu công tác và đề xuất của bộ phận chuyên môn.")</p>
+            </div>
+
+            <!-- Ký duyệt -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top text-secondary small">
+                <div>
+                    Người ký thẩm quyền: <strong class="text-dark">@(Model.SignerName ?? "Tổng Giám đốc")</strong> (@(Model.SignerTitle ?? "Đại diện pháp luật"))
+                </div>
+                <div>
+                    Tạo lập lúc: <span class="tabular-nums">@Model.CreatedAt.ToString("HH:mm dd/MM/yyyy")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột phải: Thông tin nhân viên & Lịch sử duyệt -->
+    <div class="col-lg-4">
+        <div class="card erp-card p-4 mb-3">
+            <h6 class="fw-bold small text-uppercase text-secondary mb-3 border-bottom pb-2">Nhân Sự Thụ Hưởng</h6>
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="avatar avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-5">
+                    @if (!string.IsNullOrWhiteSpace(Model.Employee.AvatarUrl))
+                    {
+                        <img src="@Model.Employee.AvatarUrl" class="rounded-circle w-100 h-100" style="object-fit:cover;" />
+                    }
+                    else
+                    {
+                        @(Model.Employee.FullName[..Math.Min(2, Model.Employee.FullName.Length)].ToUpper())
+                    }
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <a href="/NhanSu/Details/@Model.EmployeeId" class="text-decoration-none text-dark hover-primary">
+                            @Model.Employee.FullName
+                        </a>
+                    </h6>
+                    <span class="tabular-nums text-muted small"><code>@Model.Employee.EmployeeCode</code></span>
+                    <div class="text-primary small">@(Model.Employee.Position?.Name)</div>
+                </div>
+            </div>
+            <div class="small text-secondary">
+                <p class="mb-1"><i class="bi bi-building me-2"></i>@(Model.Employee.Department?.Name)</p>
+                <p class="mb-1"><i class="bi bi-envelope me-2"></i>@Model.Employee.Email</p>
+                <p class="mb-0 tabular-nums"><i class="bi bi-telephone me-2"></i>@(Model.Employee.Phone ?? "-")</p>
+            </div>
+        </div>
+
+        <div class="card erp-card p-4">
+            <h6 class="fw-bold small text-uppercase text-secondary mb-3 border-bottom pb-2">Trạng Thái Phê Duyệt</h6>
+            @if (Model.Status == "Approved")
+            {
+                <div class="alert alert-success small mb-0">
+                    <i class="bi bi-check-circle-fill me-1"></i> Quyết định đã được phê duyệt bởi:
+                    <strong class="d-block mt-1 text-dark">@(Model.ApprovedBy?.Username ?? "Cấp quản lý")</strong>
+                    <span class="text-muted tabular-nums">Thời điểm: @(Model.ApprovedAt?.ToString("dd/MM/yyyy HH:mm"))</span>
+                </div>
+            }
+            else if (Model.Status == "Issued")
+            {
+                <div class="alert alert-warning small mb-0">
+                    <i class="bi bi-hourglass-split me-1"></i> Quyết định đang chờ phê duyệt. Khi duyệt thành công, hệ thống sẽ:
+                    <ul class="mb-0 ps-3 mt-2">
+                        <li>Cập nhật hồ sơ nhân sự theo loại quyết định</li>
+                        <li>Ghi nhận vào lịch sử thay đổi (ChangeHistory)</li>
+                        <li>Khóa tài khoản nếu thôi việc</li>
+                        <li>Gửi thông báo SignalR tức thì</li>
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-secondary small mb-0">
+                    <i class="bi bi-x-circle-fill me-1"></i> Quyết định đã bị hủy bỏ hiệu lực.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Hủy Quyết Định -->
+<div class="modal fade" id="modalCancelDecision" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-card border-0 shadow">
+            <form asp-action="Cancel" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="modal-header bg-danger text-white">
+                    <h6 class="modal-title fw-bold"><i class="bi bi-x-octagon-fill me-2"></i>Hủy Quyết Định Nhân Sự</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-3">Vui lòng cung cấp lý do hủy bỏ quyết định @Model.DecisionNumber:</p>
+                    <textarea name="reason" class="form-control form-control-sm" rows="3" placeholder="Nhập lý do hủy..." required></textarea>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-sm btn-danger px-3">Xác nhận hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Nếu quyết định loại thôi việc (Termination), kiểm tra tài sản chưa bàn giao
+            var decisionType = '@Model.DecisionType';
+            var employeeId = @Model.EmployeeId;
+
+            if (decisionType === 'Termination') {
+                fetch('/TaiSanNhanSu/KiemTraChuaTra?employeeId=' + employeeId)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.hasUnreturned) {
+                            var alertBox = document.getElementById('unreturnedAssetAlert');
+                            var msg = document.getElementById('unreturnedAssetMsg');
+                            alertBox.classList.remove('d-none');
+                            msg.innerHTML = 'Nhân sự này hiện vẫn đang giữ <strong>' + data.count + ' tài sản</strong> công ty chưa hoàn trả bàn giao! Đề nghị thu hồi tài sản trước khi hoàn tất thủ tục thôi việc.';
+                        }
+                    })
+                    .catch(e => console.error(e));
+            }
+        });
+    </script>
+}
+

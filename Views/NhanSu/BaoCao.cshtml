@@ -1,262 +1,656 @@
-@model ERP_HRM_CMS.Models.ViewModels.HrAnalyticsViewModel
+@model ERP_HRM_CMS.Models.ViewModels.ExecutivePeopleAnalyticsDto
 @{
-    ViewData["Title"] = "Báo Cáo Phân Tích Nguồn Nhân Lực & Biến Động Nhân Sự";
-    Layout = "_HRMLayout";
+    ViewData["Title"] = "Executive People Analytics — Báo Cáo Phân Tích Nguồn Nhân Lực Cấp Điều Hành";
+    ViewData["Module"] = "hrm";
+    ViewData["BreadcrumbSection"] = "Quản lý nhân sự";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-        <h4 class="fw-bold mb-1"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Báo Cáo Phân Tích Nhân Sự & Kỷ Luật Lao Động</h4>
-        <p class="text-muted small mb-0">Thống kê cơ cấu nguồn nhân lực, tỷ lệ biến động (Turnover Rate), độ tuổi, thâm niên và phân bổ phòng ban</p>
+<erp-page-header title="Executive People Analytics"
+                 subtitle="Trung tâm phân tích nguồn nhân lực cấp điều hành, đo lường sức khỏe tổ chức và cảnh báo rủi ro HR"
+                 icon="bi-pie-chart-fill"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Executive People Analytics">
+    <a href="/NhanSu/XuatBaoCaoExcel?year=@Model.Filter.Year&quarter=@Model.Filter.Quarter&branchId=@Model.Filter.BranchId&departmentId=@Model.Filter.DepartmentId" class="btn btn-outline-success btn-sm ripple">
+        <i class="bi bi-file-earmark-excel me-1"></i> Xuất Báo Cáo Excel Đa Sheet
+    </a>
+    <a href="/NhanSu/CanhBao" class="btn btn-outline-warning btn-sm">
+        <i class="bi bi-bell me-1"></i> Trung tâm cảnh báo
+    </a>
+    <a href="/NhanSu/Dashboard" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-speedometer2 me-1"></i> HR Dashboard
+    </a>
+</erp-page-header>
+
+<!-- Bộ lọc phân tích -->
+<erp-filter-bar method="get">
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Năm phân tích</label>
+        <select name="year" class="form-select form-select-sm tabular-nums">
+            @for (int y = 2024; y <= 2027; y++)
+            {
+                <option value="@y" selected="@(y == Model.Filter.Year)">Năm @y</option>
+            }
+        </select>
     </div>
-    <div class="d-flex gap-2">
-        <a href="/ChamCong/Heatmap" class="btn btn-outline-secondary btn-sm"><i class="bi bi-grid-3x3-gap me-1"></i>Heatmap Chấm Công</a>
-        <a href="/NhanSu/Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-people me-1"></i>Danh Sách Nhân Sự</a>
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Kỳ báo cáo (Quý)</label>
+        <select name="quarter" class="form-select form-select-sm">
+            <option value="">-- Cả năm --</option>
+            <option value="1" selected="@(Model.Filter.Quarter == 1)">Quý 1 (Th1 - Th3)</option>
+            <option value="2" selected="@(Model.Filter.Quarter == 2)">Quý 2 (Th4 - Th6)</option>
+            <option value="3" selected="@(Model.Filter.Quarter == 3)">Quý 3 (Th7 - Th9)</option>
+            <option value="4" selected="@(Model.Filter.Quarter == 4)">Quý 4 (Th10 - Th12)</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Chi nhánh</label>
+        <select name="branchId" class="form-select form-select-sm">
+            <option value="">-- Toàn hệ thống --</option>
+            @if (ViewBag.Branches != null)
+            {
+                @foreach (var b in (IEnumerable<ERP_HRM_CMS.Models.Entities.Branch>)ViewBag.Branches)
+                {
+                    <option value="@b.Id" selected="@(b.Id == Model.Filter.BranchId)">@b.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm">
+            <option value="">-- Tất cả phòng ban --</option>
+            @if (ViewBag.Departments != null)
+            {
+                @foreach (var d in (IEnumerable<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>)ViewBag.Departments)
+                {
+                    <option value="@d.Id" selected="@(d.Id == Model.Filter.DepartmentId)">@d.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-filter me-1"></i>Phân tích</button>
+        <a href="/NhanSu/BaoCao" class="btn btn-sm btn-outline-secondary" title="Đặt lại"><i class="bi bi-arrow-counterclockwise"></i></a>
+    </div>
+</erp-filter-bar>
+
+<!-- 1. SÁU CHỈ SỐ KPI ĐIỀU HÀNH (COUNT-UP & TREND INDICATOR) -->
+<div class="row g-3 mb-4">
+    <!-- Card 1: Tổng nhân sự & Định biên -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Quy Mô / Định Biên</span>
+                <span class="badge bg-primary-subtle text-primary"><i class="bi bi-people-fill"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-dark mb-1">
+                <span class="counter" data-target="@Model.ActiveHeadcount">@Model.ActiveHeadcount</span> / @Model.BudgetedHeadcount
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-arrow-up-right"></i> +@Model.HeadcountGrowthRate%</span>
+                <span>đạt định biên</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Tỷ lệ biến động (Turnover Rate) -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Turnover Rate</span>
+                <span class="badge bg-danger-subtle text-danger"><i class="bi bi-arrow-left-right"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-danger mb-1">
+                @Model.TurnoverRate%
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-arrow-down-right"></i> @Model.TurnoverTrend%</span>
+                <span>so với kỳ trước</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Tỷ lệ tuyển dụng lấp đầy (Fill Rate) -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Tuyển Dụng Lấp Đầy</span>
+                <span class="badge bg-info-subtle text-info"><i class="bi bi-person-check-fill"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-info mb-1">
+                @Model.FillRate%
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-primary-subtle text-primary me-1"><i class="bi bi-arrow-up-right"></i> +@Model.FillRateTrend%</span>
+                <span>tốc độ onboarding</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Tỷ lệ chuyên cần & Đúng giờ -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Chuyên Cần &amp; Đúng Giờ</span>
+                <span class="badge bg-success-subtle text-success"><i class="bi bi-clock-history"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-success mb-1">
+                @Model.AttendanceRate%
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-arrow-up-right"></i> +@Model.AttendanceRateTrend%</span>
+                <span>kỷ luật công ca</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 5: Quỹ lương Gross & Bảo hiểm -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Quỹ Lương Gross Tháng</span>
+                <span class="badge bg-warning-subtle text-warning"><i class="bi bi-wallet2"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-dark mb-1 text-truncate" title="@Model.CurrentGrossPayroll.ToString("N0") đ">
+                @(Model.CurrentGrossPayroll >= 1000000000 ? (Model.CurrentGrossPayroll / 1000000000m).ToString("F2") + " tỷ" : (Model.CurrentGrossPayroll / 1000000m).ToString("F1") + " tr")
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-secondary-subtle text-secondary me-1 tabular-nums">+@Model.PayrollChangePercent%</span>
+                <span>BHXH: @(Model.CurrentInsuranceCost / 1000000m).ToString("F1")tr</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 6: Điểm KPI Trung Bình -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card erp-card p-3 h-100 border shadow-xs">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-semibold">Điểm KPI Doanh Nghiệp</span>
+                <span class="badge bg-primary-subtle text-primary"><i class="bi bi-trophy-fill"></i></span>
+            </div>
+            <div class="fs-4 fw-bold tabular-nums text-primary mb-1">
+                @Model.AverageKpiScore.ToString("F1") <span class="fs-6 text-muted fw-normal">/ 100</span>
+            </div>
+            <div class="small text-muted d-flex align-items-center">
+                <span class="badge bg-success-subtle text-success me-1"><i class="bi bi-arrow-up-right"></i> +@Model.AverageKpiScoreTrend</span>
+                <span>năng lực thực thi</span>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- 1. KPI CARDS TỔNG QUAN -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-sm-6">
-        <div class="erp-card p-3 d-flex align-items-center gap-3">
-            <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
-                <i class="bi bi-people-fill fs-3"></i>
+<!-- 2. HỆ THỐNG BIỂU ĐỒ CHART.JS INTERACTIVE -->
+<div class="row g-4 mb-4">
+    <!-- Chart 1: Xu hướng 12 tháng Tuyển mới vs Nghỉ việc -->
+    <div class="col-lg-7">
+        <div class="card erp-card h-100 shadow-sm">
+            <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold">
+                    <i class="bi bi-graph-up me-2 text-primary"></i>Biến Động Nhân Sự 12 Tháng Năm @Model.Filter.Year
+                </div>
+                <div class="small text-muted">
+                    Tuyển mới vs Nghỉ việc vs Tăng trưởng thuần (Net Growth)
+                </div>
             </div>
-            <div>
-                <div class="text-muted small fw-semibold">Tổng Số Nhân Sự</div>
-                <div class="fs-4 fw-bold">@Model.TotalEmployees</div>
-                <div class="small text-muted" style="font-size: 11px;">Hồ sơ lưu trữ trên hệ thống</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="erp-card p-3 d-flex align-items-center gap-3">
-            <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
-                <i class="bi bi-person-check-fill fs-3"></i>
-            </div>
-            <div>
-                <div class="text-muted small fw-semibold">Đang Hoạt Động (Active)</div>
-                <div class="fs-4 fw-bold text-success">@Model.ActiveEmployees</div>
-                <div class="small text-muted" style="font-size: 11px;">Hợp đồng lao động hợp lệ</div>
+            <div class="card-body p-3">
+                <canvas id="movementChart" style="min-height: 280px; max-height: 320px;"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="erp-card p-3 d-flex align-items-center gap-3">
-            <div class="rounded-3 p-3 bg-danger bg-opacity-10 text-danger">
-                <i class="bi bi-arrow-left-right fs-3"></i>
+
+    <!-- Chart 2: Cơ cấu chi phí nhân sự theo Phòng ban -->
+    <div class="col-lg-5">
+        <div class="card erp-card h-100 shadow-sm">
+            <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold">
+                    <i class="bi bi-cash-stack me-2 text-success"></i>Cơ Cấu Quỹ Lương &amp; Bảo Hiểm
+                </div>
+                <div class="small text-muted">Theo từng phòng ban</div>
             </div>
-            <div>
-                <div class="text-muted small fw-semibold">Tỷ Lệ Biến Động (Turnover)</div>
-                <div class="fs-4 fw-bold text-danger">@Model.TurnoverRate%</div>
-                <div class="small text-muted" style="font-size: 11px;">@Model.ResignedEmployees nhân sự đã nghỉ</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="erp-card p-3 d-flex align-items-center gap-3">
-            <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
-                <i class="bi bi-person-plus-fill fs-3"></i>
-            </div>
-            <div>
-                <div class="text-muted small fw-semibold">Tuyển Mới Năm Nay</div>
-                <div class="fs-4 fw-bold text-info">@Model.NewHiresThisYear</div>
-                <div class="small text-muted" style="font-size: 11px;">Gia nhập năm @ERP_HRM_CMS.Helpers.VietnamTime.Today.Year</div>
+            <div class="card-body p-3">
+                <canvas id="deptPayrollChart" style="min-height: 280px; max-height: 320px;"></canvas>
             </div>
         </div>
     </div>
 </div>
 
 <div class="row g-4 mb-4">
-    <!-- 2. CƠ CẤU ĐỘ TUỔI -->
+    <!-- Chart 3: Phễu Tuyển Dụng (Recruitment Funnel) -->
     <div class="col-lg-6">
-        <div class="erp-card p-4 h-100 shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Cơ Cấu Độ Tuổi Nhân Sự</h6>
-                <span class="badge bg-light text-muted border">Tổng @Model.TotalEmployees</span>
+        <div class="card erp-card h-100 shadow-sm">
+            <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold">
+                    <i class="bi bi-funnel-fill me-2 text-info"></i>Phễu Tuyển Dụng Nhân Tài (Recruitment Funnel)
+                </div>
+                <span class="badge bg-info-subtle text-info">Tỷ lệ chuyển đổi: @Model.RecruitmentFunnel.ConversionRate%</span>
             </div>
-            <p class="text-muted small mb-4">Phân tích lực lượng lao động trẻ vs chuyên gia kinh nghiệm</p>
-
-            @{
-                int tot = Model.TotalEmployees > 0 ? Model.TotalEmployees : 1;
-                int pU25 = (int)Math.Round((double)Model.AgeUnder25 / tot * 100);
-                int p2535 = (int)Math.Round((double)Model.Age25To35 / tot * 100);
-                int p3645 = (int)Math.Round((double)Model.Age36To45 / tot * 100);
-                int pO45 = (int)Math.Round((double)Model.AgeOver45 / tot * 100);
-            }
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-info fs-5 align-middle"></i> Dưới 25 tuổi (Thế hệ Gen Z)</span>
-                    <span class="font-monospace">@Model.AgeUnder25 nhân sự (@pU25%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: @pU25%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-primary fs-5 align-middle"></i> Từ 25 - 35 tuổi (Lực lượng nòng cốt)</span>
-                    <span class="font-monospace">@Model.Age25To35 nhân sự (@p2535%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: @p2535%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-success fs-5 align-middle"></i> Từ 36 - 45 tuổi (Cấp quản lý & Trưởng nhóm)</span>
-                    <span class="font-monospace">@Model.Age36To45 nhân sự (@p3645%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: @p3645%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-warning fs-5 align-middle"></i> Trên 45 tuổi (Chuyên gia cao cấp & Cố vấn)</span>
-                    <span class="font-monospace">@Model.AgeOver45 nhân sự (@pO45%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: @pO45%"></div>
-                </div>
+            <div class="card-body p-3">
+                <canvas id="funnelChart" style="min-height: 260px; max-height: 300px;"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- 3. CƠ CẤU THÂM NIÊN LÀM VIỆC -->
+    <!-- Chart 4: Tháp Thâm Niên & Xếp Loại KPI -->
     <div class="col-lg-6">
-        <div class="erp-card p-4 h-100 shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-hourglass-split me-2 text-success"></i>Cơ Cấu Thâm Niên Cống Hiến</h6>
-                <span class="badge bg-light text-muted border">Độ gắn kết</span>
+        <div class="card erp-card h-100 shadow-sm">
+            <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold">
+                    <i class="bi bi-layers-fill me-2 text-warning"></i>Tháp Thâm Niên &amp; Xếp Hạng Năng Lực
+                </div>
+                <div class="small text-muted">Độ gắn kết tổ chức</div>
             </div>
-            <p class="text-muted small mb-4">Đo lường mức độ ổn định và lòng trung thành của nhân viên</p>
-
-            @{
-                int pS1 = (int)Math.Round((double)Model.SeniorityUnder1Year / tot * 100);
-                int pS13 = (int)Math.Round((double)Model.Seniority1To3Years / tot * 100);
-                int pS35 = (int)Math.Round((double)Model.Seniority3To5Years / tot * 100);
-                int pSO5 = (int)Math.Round((double)Model.SeniorityOver5Years / tot * 100);
-            }
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-secondary fs-5 align-middle"></i> Dưới 1 năm (Mới gia nhập / Hội nhập)</span>
-                    <span class="font-monospace">@Model.SeniorityUnder1Year nhân sự (@pS1%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-secondary" role="progressbar" style="width: @pS1%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-info fs-5 align-middle"></i> Từ 1 - 3 năm (Ổn định công việc)</span>
-                    <span class="font-monospace">@Model.Seniority1To3Years nhân sự (@pS13%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: @pS13%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-primary fs-5 align-middle"></i> Từ 3 - 5 năm (Nòng cốt kinh nghiệm)</span>
-                    <span class="font-monospace">@Model.Seniority3To5Years nhân sự (@pS35%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: @pS35%"></div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <div class="d-flex justify-content-between small fw-semibold mb-1">
-                    <span><i class="bi bi-dot text-success fs-5 align-middle"></i> Trên 5 năm (Cống hiến bền vững)</span>
-                    <span class="font-monospace">@Model.SeniorityOver5Years nhân sự (@pSO5%)</span>
-                </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: @pSO5%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. PHÂN BỔ THEO PHÒNG BAN -->
-    <div class="col-lg-8">
-        <div class="erp-card p-4 h-100 shadow-sm">
-            <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-diagram-3 me-2 text-primary"></i>Phân Bổ Định Biên Nhân Sự Theo Phòng Ban</h6>
-            <div class="table-responsive">
-                <table class="table erp-table mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th>Phòng Ban</th>
-                            <th class="text-center" style="width: 150px;">Số Lượng Nhân Sự</th>
-                            <th style="width: 250px;">Tỷ Lệ Chiếm Dụng</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.DepartmentDistribution != null && Model.DepartmentDistribution.Any())
-                        {
-                            @foreach (var dept in Model.DepartmentDistribution)
-                            {
-                                int pct = (int)Math.Round((double)dept.Value / tot * 100);
-                                <tr>
-                                    <td>
-                                        <div class="fw-bold text-dark">@dept.Key</div>
-                                    </td>
-                                    <td class="text-center font-monospace fw-bold fs-6">
-                                        @dept.Value
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="progress flex-grow-1" style="height: 8px;">
-                                                <div class="progress-bar bg-primary" role="progressbar" style="width: @pct%"></div>
-                                            </div>
-                                            <span class="small font-monospace text-muted" style="min-width: 40px;">@pct%</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- 5. TỶ LỆ GIỚI TÍNH -->
-    <div class="col-lg-4">
-        <div class="erp-card p-4 h-100 shadow-sm text-center d-flex flex-column justify-content-between">
-            <div>
-                <h6 class="fw-bold mb-3 text-dark text-start"><i class="bi bi-gender-ambiguous me-2 text-warning"></i>Cơ Cấu Giới Tính</h6>
-                <div class="my-4 py-2">
-                    <div class="d-flex justify-content-center gap-4">
-                        <div class="p-3 bg-primary bg-opacity-10 rounded-circle text-primary" style="width: 80px; height: 80px; display: inline-flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-gender-male fs-1"></i>
-                        </div>
-                        <div class="p-3 bg-danger bg-opacity-10 rounded-circle text-danger" style="width: 80px; height: 80px; display: inline-flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-gender-female fs-1"></i>
-                        </div>
+            <div class="card-body p-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-6">
+                        <canvas id="seniorityChart" style="max-height: 240px;"></canvas>
+                        <div class="text-center small text-muted mt-2 fw-semibold">Tháp Thâm Niên</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="row g-2 pt-3 border-top">
-                <div class="col-6 border-end">
-                    <div class="text-muted small">Nam Giới</div>
-                    <div class="fs-4 fw-bold text-primary">@Model.MaleCount</div>
-                    <div class="small text-muted font-monospace">@((tot > 0 ? (int)Math.Round((double)Model.MaleCount / tot * 100) : 0))%</div>
-                </div>
-                <div class="col-6">
-                    <div class="text-muted small">Nữ Giới</div>
-                    <div class="fs-4 fw-bold text-danger">@Model.FemaleCount</div>
-                    <div class="small text-muted font-monospace">@((tot > 0 ? (int)Math.Round((double)Model.FemaleCount / tot * 100) : 0))%</div>
+                    <div class="col-sm-6">
+                        <canvas id="kpiDistributionChart" style="max-height: 240px;"></canvas>
+                        <div class="text-center small text-muted mt-2 fw-semibold">Phân Bổ Xếp Loại KPI</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- 3. BẢNG CẢNH BÁO HÀNH ĐỘNG SỚM CHO HR (EARLY ACTION ALERTS) -->
+<div class="card erp-card mb-4 shadow-sm">
+    <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+        <div class="fw-bold">
+            <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>Cảnh Báo Hành Động Sớm Cho HR (HR Action Matrix)
+        </div>
+        <div class="small text-muted">
+            Tự động phát hiện hợp đồng, thử việc, bằng cấp sắp hết hạn &amp; phòng ban OT quá mức
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <ul class="nav nav-tabs px-3 pt-2" id="alertTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active small fw-semibold" data-bs-toggle="tab" data-bs-target="#tabContracts">
+                    <i class="bi bi-file-earmark-text text-danger me-1"></i>Hợp đồng hết hạn 30 ngày (@Model.ExpiringContracts.Count)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link small fw-semibold" data-bs-toggle="tab" data-bs-target="#tabProbations">
+                    <i class="bi bi-person-check text-warning me-1"></i>Sắp hết thử việc (@Model.EndingProbations.Count)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link small fw-semibold" data-bs-toggle="tab" data-bs-target="#tabCerts">
+                    <i class="bi bi-award text-info me-1"></i>Chứng chỉ hết hạn (@Model.ExpiringCertificates.Count)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link small fw-semibold" data-bs-toggle="tab" data-bs-target="#tabHighOt">
+                    <i class="bi bi-clock-history text-secondary me-1"></i>Phòng ban OT cao (@Model.HighOtDepartments.Count)
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content p-3">
+            <!-- Tab Hợp đồng hết hạn -->
+            <div class="tab-pane fade show active" id="tabContracts">
+                <div class="table-responsive">
+                    <table class="table erp-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nhân Viên</th>
+                                <th>Phòng Ban</th>
+                                <th>Số Hợp Đồng</th>
+                                <th>Ngày Hết Hạn</th>
+                                <th>Thời Gian Còn Lại</th>
+                                <th class="text-end">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ExpiringContracts.Any())
+                            {
+                                foreach (var c in Model.ExpiringContracts)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@c.FullName</div>
+                                            <div class="small text-muted font-monospace">@c.EmployeeCode</div>
+                                        </td>
+                                        <td>@c.DepartmentName</td>
+                                        <td class="font-monospace">@c.ContractNumber</td>
+                                        <td class="tabular-nums">@c.EndDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            @if (c.DaysRemaining <= 7)
+                                            {
+                                                <span class="badge bg-danger text-white"><i class="bi bi-exclamation-circle me-1"></i>Còn @c.DaysRemaining ngày</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Còn @c.DaysRemaining ngày</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="/HopDong/Index?keyword=@c.EmployeeCode" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-arrow-repeat me-1"></i> Tái ký hợp đồng
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-3 text-muted small">
+                                        <i class="bi bi-shield-check text-success me-1"></i> Không có hợp đồng nào hết hạn trong 30 ngày tới.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Sắp hết thử việc -->
+            <div class="tab-pane fade" id="tabProbations">
+                <div class="table-responsive">
+                    <table class="table erp-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nhân Viên</th>
+                                <th>Phòng Ban</th>
+                                <th>Ngày Hết Hạn Thử Việc</th>
+                                <th>Thời Gian Còn Lại</th>
+                                <th class="text-end">Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.EndingProbations.Any())
+                            {
+                                foreach (var p in Model.EndingProbations)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@p.FullName</div>
+                                            <div class="small text-muted font-monospace">@p.EmployeeCode</div>
+                                        </td>
+                                        <td>@p.DepartmentName</td>
+                                        <td class="tabular-nums">@p.ProbationEndDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="badge bg-info-subtle text-info">Còn @p.DaysRemaining ngày</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="/NhanSu/Edit/@p.EmployeeId" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-check-circle me-1"></i> Đánh giá ký chính thức
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted small">
+                                        Không có nhân sự nào sắp hết hạn thử việc.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Chứng chỉ hết hạn -->
+            <div class="tab-pane fade" id="tabCerts">
+                <div class="table-responsive">
+                    <table class="table erp-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nhân Sự</th>
+                                <th>Chứng Chỉ / Bằng Cấp</th>
+                                <th>Hạn Có Hiệu Lực</th>
+                                <th>Tình Trạng</th>
+                                <th class="text-end">Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ExpiringCertificates.Any())
+                            {
+                                foreach (var cert in Model.ExpiringCertificates)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">@cert.FullName</div>
+                                            <div class="small text-muted font-monospace">@cert.EmployeeCode</div>
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">@cert.CertificateName</span></td>
+                                        <td class="tabular-nums">@cert.ExpiryDate.ToString("dd/MM/yyyy")</td>
+                                        <td><span class="badge bg-warning-subtle text-warning">Còn @cert.DaysRemaining ngày</span></td>
+                                        <td class="text-end">
+                                            <a href="/DaoTao/Index" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-mortarboard me-1"></i> Mở khóa tái đào tạo
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted small">
+                                        Không có chứng chỉ nào sắp hết hạn.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Phòng ban OT cao -->
+            <div class="tab-pane fade" id="tabHighOt">
+                <div class="table-responsive">
+                    <table class="table erp-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Phòng Ban</th>
+                                <th class="text-center">Số Lượng Nhân Sự</th>
+                                <th class="text-center">Tổng Giờ OT Ước Tính</th>
+                                <th class="text-center">Bình Quân Giờ/Người</th>
+                                <th>Đánh Giá Rủi Ro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.HighOtDepartments.Any())
+                            {
+                                foreach (var d in Model.HighOtDepartments)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@d.DepartmentName</td>
+                                        <td class="text-center tabular-nums">@d.HighOtEmployeeCount NV</td>
+                                        <td class="text-center tabular-nums fw-bold text-danger">@d.TotalOtHours.ToString("F1") giờ</td>
+                                        <td class="text-center tabular-nums fw-bold text-warning">@d.AverageOtHoursPerEmployee.ToString("F1") h/NV</td>
+                                        <td>
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                <i class="bi bi-exclamation-octagon-fill me-1"></i> Nguy cơ quá tải / Burnout
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted small">
+                                        Toàn bộ các phòng ban đều có tỷ lệ làm thêm giờ nằm trong ngưỡng an toàn lao động.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Dynamic theme detection
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+
+        // 1. Movement Chart (12 Months)
+        const moveCtx = document.getElementById('movementChart').getContext('2d');
+        const months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HeadcountMovement12Months.Select(m => m.MonthLabel)));
+        const hires = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HeadcountMovement12Months.Select(m => m.NewHires)));
+        const resigns = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HeadcountMovement12Months.Select(m => m.Resignations)));
+        const netGrowth = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HeadcountMovement12Months.Select(m => m.NetGrowth)));
+
+        new Chart(moveCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Tuyển mới',
+                        data: hires,
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Nghỉ việc',
+                        data: resigns,
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Tăng trưởng (Net)',
+                        data: netGrowth,
+                        type: 'line',
+                        borderColor: '#3b82f6',
+                        backgroundColor: '#3b82f6',
+                        tension: 0.3,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                    y: { grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } }
+                },
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+
+        // 2. Department Payroll Breakdown Chart
+        const deptCtx = document.getElementById('deptPayrollChart').getContext('2d');
+        const deptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentPayrollBreakdown.Select(d => d.DepartmentName)));
+        const baseSalaries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentPayrollBreakdown.Select(d => d.BaseSalary / 1000000m)));
+        const otSalaries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentPayrollBreakdown.Select(d => d.OtSalary / 1000000m)));
+        const insSalaries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentPayrollBreakdown.Select(d => d.EmployerInsurance / 1000000m)));
+
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: deptLabels,
+                datasets: [
+                    { label: 'Lương CB (Triệu)', data: baseSalaries, backgroundColor: '#3b82f6' },
+                    { label: 'Tăng ca OT', data: otSalaries, backgroundColor: '#f59e0b' },
+                    { label: 'BHXH Doanh nghiệp', data: insSalaries, backgroundColor: '#6366f1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } },
+                    y: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } }
+                },
+                plugins: { legend: { labels: { color: textColor } } }
+            }
+        });
+
+        // 3. Recruitment Funnel Chart
+        const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+        new Chart(funnelCtx, {
+            type: 'bar',
+            data: {
+                labels: ['1. Nộp hồ sơ', '2. Sàng lọc', '3. Phỏng vấn', '4. Đề xuất việc', '5. Trúng tuyển'],
+                datasets: [{
+                    label: 'Số lượng ứng viên',
+                    data: [
+                        @Model.RecruitmentFunnel.AppliedCount,
+                        @Model.RecruitmentFunnel.ScreeningCount,
+                        @Model.RecruitmentFunnel.InterviewCount,
+                        @Model.RecruitmentFunnel.OfferedCount,
+                        @Model.RecruitmentFunnel.HiredCount
+                    ],
+                    backgroundColor: ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                    y: { grid: { display: false }, ticks: { color: textColor } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 4. Seniority Pyramid
+        const senCtx = document.getElementById('seniorityChart').getContext('2d');
+        new Chart(senCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['< 1 năm', '1-3 năm', '3-5 năm', '5-10 năm', '> 10 năm'],
+                datasets: [{
+                    data: [
+                        @Model.SeniorityPyramid.Under1Year,
+                        @Model.SeniorityPyramid.From1To3Years,
+                        @Model.SeniorityPyramid.From3To5Years,
+                        @Model.SeniorityPyramid.From5To10Years,
+                        @Model.SeniorityPyramid.Over10Years
+                    ],
+                    backgroundColor: ['#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8', '#1e3a8a']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor, boxWidth: 12 } } }
+            }
+        });
+
+        // 5. KPI Grade Distribution
+        const kpiCtx = document.getElementById('kpiDistributionChart').getContext('2d');
+        new Chart(kpiCtx, {
+            type: 'pie',
+            data: {
+                labels: ['A+ (Xuất sắc)', 'A (Tốt)', 'B (Đạt)', 'C (Cải thiện)', 'D (Kém)'],
+                datasets: [{
+                    data: [
+                        @(Model.KpiGradeDistribution.GetValueOrDefault("A+", 0)),
+                        @(Model.KpiGradeDistribution.GetValueOrDefault("A", 0)),
+                        @(Model.KpiGradeDistribution.GetValueOrDefault("B", 0)),
+                        @(Model.KpiGradeDistribution.GetValueOrDefault("C", 0)),
+                        @(Model.KpiGradeDistribution.GetValueOrDefault("D", 0))
+                    ],
+                    backgroundColor: ['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#6b7280']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: textColor, boxWidth: 12 } } }
+            }
+        });
+    });
+</script>
+}

@@ -1,0 +1,135 @@
+@model ERP_HRM_CMS.Models.ViewModels.NineBoxTalentMatrixDto
+@{
+    ViewData["Title"] = $"Ma Trận Nhân Tài 9-Box Talent Matrix Kỳ {ViewBag.SelectedMonth}/{ViewBag.SelectedYear}";
+    ViewData["Module"] = "hrm_kpi";
+    ViewData["BreadcrumbSection"] = "Hiệu suất & Năng lực";
+    int totalCount = Model.StarTalents.Count + Model.HighPerformers.Count + Model.Specialists.Count +
+                     Model.GrowthTalents.Count + Model.CoreEmployees.Count + Model.SteadyPerformers.Count +
+                     Model.Enigmas.Count + Model.Dilemmas.Count + Model.UnderPerformers.Count;
+}
+
+<erp-page-header title="Ma Trận Nhân Tài 9-Box (Talent Matrix)"
+                 subtitle="Mô hình chuẩn hóa quản trị nhân tài toàn diện đối chiếu giữa Hiệu Suất (Performance) và Tiềm Năng (Potential)"
+                 icon="bi-grid-3x3-gap-fill"
+                 breadcrumbs="Dashboard:/|HRM:/NhanSu/Index|Đánh giá KPI:/DanhGiaKpi/Index|9-Box Matrix">
+    <a href="/DanhGiaKpi/Index?month=@ViewBag.SelectedMonth&year=@ViewBag.SelectedYear" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-list-ul me-1"></i> Xem danh sách phiếu
+    </a>
+</erp-page-header>
+
+<!-- Bộ lọc kỳ ma trận -->
+<erp-filter-bar method="get">
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Tháng đánh giá</label>
+        <select name="month" class="form-select form-select-sm">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == ViewBag.SelectedMonth)">Tháng @m</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 col-6">
+        <label class="form-label small fw-semibold mb-1">Năm</label>
+        <select name="year" class="form-select form-select-sm tabular-nums">
+            @for (int y = 2024; y <= 2027; y++)
+            {
+                <option value="@y" selected="@(y == ViewBag.SelectedYear)">Năm @y</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+        <select name="departmentId" class="form-select form-select-sm">
+            <option value="">-- Toàn bộ doanh nghiệp --</option>
+            @if (ViewBag.Departments != null)
+            {
+                @foreach (var d in (IEnumerable<ERP_HRM_CMS.Services.HRM.DepartmentFlatDto>)ViewBag.Departments)
+                {
+                    <option value="@d.Id" selected="@(d.Id == ViewBag.SelectedDepartmentId)">@d.Name</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-4 d-flex gap-1 align-items-end">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-filter me-1"></i>Phân tích 9-Box</button>
+        <a href="/DanhGiaKpi/NineBox" class="btn btn-sm btn-outline-secondary" title="Hiện tại"><i class="bi bi-calendar-event"></i></a>
+    </div>
+</erp-filter-bar>
+
+<!-- Ma trận 9-Box Grid -->
+<div class="card erp-card mb-4">
+    <div class="card-header bg-transparent py-3 d-flex justify-content-between align-items-center">
+        <div class="fw-bold">
+            <i class="bi bi-diagram-3 me-2 text-primary"></i>Phân Bổ Nhân Tài Doanh Nghiệp (Tổng số: @totalCount nhân sự)
+        </div>
+        <div class="d-flex align-items-center gap-2 small">
+            <span class="badge bg-success-subtle text-success border">Ngôi Sao &amp; Kế Thừa</span>
+            <span class="badge bg-primary-subtle text-primary border">Nòng Cốt</span>
+            <span class="badge bg-warning-subtle text-warning border">Cần Bồi Dưỡng</span>
+            <span class="badge bg-danger-subtle text-danger border">Rủi Ro</span>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        <div class="position-relative">
+            <!-- Label trục Y (Tiềm năng) -->
+            <div class="position-absolute text-muted fw-bold small text-uppercase" style="left: -28px; top: 50%; transform: rotate(-90deg) translateX(50%);">
+                &larr; Tiềm Năng Phát Triển (Potential) &rarr;
+            </div>
+
+            <div class="container-fluid p-0">
+                <!-- Hàng 1: High Potential -->
+                <div class="row g-3 mb-3">
+                    <!-- Enigmas (Rough Diamond) -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.Enigmas, new ViewDataDictionary(ViewData) { { "Title", "Rough Diamond (Ngọc Thô)" }, { "Sub", "Hiệu suất Thấp - Tiềm năng Cao" }, { "BadgeClass", "bg-warning-subtle text-warning" }, { "BorderClass", "border-warning" } })
+                    </div>
+                    <!-- Growth Talents -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.GrowthTalents, new ViewDataDictionary(ViewData) { { "Title", "Growth Talent (Phát Triển Cao)" }, { "Sub", "Hiệu suất Trung bình - Tiềm năng Cao" }, { "BadgeClass", "bg-primary-subtle text-primary" }, { "BorderClass", "border-primary" } })
+                    </div>
+                    <!-- Star -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.StarTalents, new ViewDataDictionary(ViewData) { { "Title", "Star (Ngôi Sao / Kế Thừa)" }, { "Sub", "Hiệu suất Cao - Tiềm năng Cao" }, { "BadgeClass", "bg-success text-white" }, { "BorderClass", "border-success shadow-sm" } })
+                    </div>
+                </div>
+
+                <!-- Hàng 2: Medium Potential -->
+                <div class="row g-3 mb-3">
+                    <!-- Dilemmas -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.Dilemmas, new ViewDataDictionary(ViewData) { { "Title", "Dilemma (Chưa Ổn Định)" }, { "Sub", "Hiệu suất Thấp - Tiềm năng Trung bình" }, { "BadgeClass", "bg-secondary-subtle text-secondary" }, { "BorderClass", "border-secondary" } })
+                    </div>
+                    <!-- Core Employees -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.CoreEmployees, new ViewDataDictionary(ViewData) { { "Title", "Core Employee (Nhân Lực Cốt Lõi)" }, { "Sub", "Hiệu suất Trung bình - Tiềm năng Trung bình" }, { "BadgeClass", "bg-info-subtle text-info" }, { "BorderClass", "border-info" } })
+                    </div>
+                    <!-- High Performers -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.HighPerformers, new ViewDataDictionary(ViewData) { { "Title", "High Performer (Chuyên Gia Cao)" }, { "Sub", "Hiệu suất Cao - Tiềm năng Trung bình" }, { "BadgeClass", "bg-success-subtle text-success" }, { "BorderClass", "border-success" } })
+                    </div>
+                </div>
+
+                <!-- Hàng 3: Low Potential -->
+                <div class="row g-3">
+                    <!-- UnderPerformers (Risk) -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.UnderPerformers, new ViewDataDictionary(ViewData) { { "Title", "Under Performer (Cảnh Báo / Rủi Ro)" }, { "Sub", "Hiệu suất Thấp - Tiềm năng Thấp" }, { "BadgeClass", "bg-danger text-white" }, { "BorderClass", "border-danger" } })
+                    </div>
+                    <!-- Steady Performers -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.SteadyPerformers, new ViewDataDictionary(ViewData) { { "Title", "Steady Performer (Thực Thi Ổn Định)" }, { "Sub", "Hiệu suất Trung bình - Tiềm năng Thấp" }, { "BadgeClass", "bg-light text-dark" }, { "BorderClass", "border-secondary-subtle" } })
+                    </div>
+                    <!-- Specialists -->
+                    <div class="col-md-4">
+                        @await Html.PartialAsync("_NineBoxCellPartial", Model.Specialists, new ViewDataDictionary(ViewData) { { "Title", "Specialist (Kỹ Thuật Lành Nghề)" }, { "Sub", "Hiệu suất Cao - Tiềm năng Thấp" }, { "BadgeClass", "bg-primary-subtle text-primary" }, { "BorderClass", "border-primary-subtle" } })
+                    </div>
+                </div>
+            </div>
+
+            <!-- Label trục X (Hiệu suất) -->
+            <div class="text-center text-muted fw-bold small text-uppercase mt-3">
+                &larr; Hiệu Suất Công Việc Thực Tế (Performance) &rarr;
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,251 @@
+@model ERP_HRM_CMS.Models.ViewModels.PaginatedList<ERP_HRM_CMS.Services.HRM.AssetListItemDto>
+@{
+    ViewData["Title"] = "Quản lý Tài sản Cấp phát";
+    var filter = ViewBag.Filter as ERP_HRM_CMS.Services.HRM.AssetFilterDto ?? new ERP_HRM_CMS.Services.HRM.AssetFilterDto();
+    var branches = ViewBag.Branches as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
+}
+
+<div class="content-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-subtle mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Quản lý Tài sản Doanh nghiệp</li>
+                </ol>
+            </nav>
+            <h1 class="page-title mb-0">Quản lý Cấp phát & Thu hồi Tài sản</h1>
+            <p class="text-secondary small mb-0">Theo dõi vòng đời tài sản công ty (Laptop, Màn hình, Thiết bị) từ cấp phát đến thu hồi khi nghỉ việc</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="CapPhat" class="btn btn-primary shadow-sm">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Bàn giao Cấp phát
+            </a>
+            <a asp-action="CreateAsset" class="btn btn-outline-primary">
+                <i class="bi bi-plus-circle me-1"></i> Thêm tài sản mới
+            </a>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card card-enterprise shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Từ khóa tìm kiếm</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="keyword" class="form-control" placeholder="Mã TS, Tên, Serial, Tên NV..." value="@filter.Keyword" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Loại tài sản</label>
+                <select name="assetType" class="form-select">
+                    <option value="">-- Tất cả loại --</option>
+                    <option value="Laptop" selected="@(filter.AssetType == "Laptop")">Laptop</option>
+                    <option value="Monitor" selected="@(filter.AssetType == "Monitor")">Màn hình</option>
+                    <option value="AccessCard" selected="@(filter.AssetType == "AccessCard")">Thẻ từ / Ra vào</option>
+                    <option value="Uniform" selected="@(filter.AssetType == "Uniform")">Đồng phục</option>
+                    <option value="Mobile" selected="@(filter.AssetType == "Mobile")">Điện thoại</option>
+                    <option value="Other" selected="@(filter.AssetType == "Other")">Khác</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-secondary">Trạng thái</label>
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="Available" selected="@(filter.Status == "Available")">Sẵn sàng (Kho)</option>
+                    <option value="Assigned" selected="@(filter.Status == "Assigned")">Đang cấp phát</option>
+                    <option value="Maintenance" selected="@(filter.Status == "Maintenance")">Đang bảo trì/Sửa</option>
+                    <option value="Liquidated" selected="@(filter.Status == "Liquidated")">Đã thanh lý</option>
+                    <option value="Lost" selected="@(filter.Status == "Lost")">Thất lạc / Mất</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary">Chi nhánh</label>
+                <select name="branchId" class="form-select" asp-items="branches">
+                    <option value="">-- Toàn công ty --</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Lọc
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Đặt lại bộ lọc">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Danh sách tài sản -->
+<div class="card card-enterprise shadow-sm">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0 fw-bold text-primary">
+            <i class="bi bi-laptop me-2"></i> Danh sách Tài sản Doanh nghiệp (@Model.TotalCount)
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 erp-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 130px;">Mã tài sản</th>
+                    <th>Tên tài sản</th>
+                    <th>Loại</th>
+                    <th>Serial No</th>
+                    <th>Trạng thái</th>
+                    <th>Đang bàn giao cho</th>
+                    <th>Ngày cấp</th>
+                    <th class="text-end" style="width: 140px;">Nguyên giá</th>
+                    <th class="text-center" style="width: 120px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold text-decoration-none">
+                                    <code>@item.AssetCode</code>
+                                </a>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@item.AssetName</div>
+                                @if (!string.IsNullOrEmpty(item.Specification))
+                                {
+                                    <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;">@item.Specification</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@item.AssetType</span>
+                            </td>
+                            <td>
+                                <span class="font-monospace small">@(item.SerialNumber ?? "—")</span>
+                            </td>
+                            <td>
+                                @switch (item.Status)
+                                {
+                                    case "Available":
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i> Sẵn sàng (Kho)
+                                        </span>
+                                        break;
+                                    case "Assigned":
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                            <i class="bi bi-person-check me-1"></i> Đang cấp phát
+                                        </span>
+                                        break;
+                                    case "Maintenance":
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                            <i class="bi bi-tools me-1"></i> Bảo trì
+                                        </span>
+                                        break;
+                                    case "Liquidated":
+                                        <span class="badge bg-secondary-subtle text-secondary border">
+                                            <i class="bi bi-archive me-1"></i> Đã thanh lý
+                                        </span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-danger-subtle text-danger border">@item.Status</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                @if (item.CurrentEmployeeId.HasValue)
+                                {
+                                    <div class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-person-badge text-primary"></i>
+                                        <a asp-controller="NhanSu" asp-action="Details" asp-route-id="@item.CurrentEmployeeId" class="fw-semibold text-decoration-none">
+                                            @item.CurrentEmployeeName
+                                        </a>
+                                        <span class="text-muted small">(@item.CurrentEmployeeCode)</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Trong kho</span>
+                                }
+                            </td>
+                            <td>
+                                @(item.CurrentAssignedDate?.ToString("dd/MM/yyyy") ?? "—")
+                            </td>
+                            <td class="text-end tabular-nums fw-semibold">
+                                @item.PurchasePrice.ToString("N0") đ
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-secondary" title="Chi tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    @if (item.Status == "Available")
+                                    {
+                                        <a asp-action="CapPhat" asp-route-assetId="@item.Id" class="btn btn-outline-primary" title="Cấp phát cho nhân viên">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                            Không tìm thấy tài sản nào phù hợp với bộ lọc hiện tại.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalCount bản ghi)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-keyword="@filter.Keyword" asp-route-assetType="@filter.AssetType"
+                       asp-route-status="@filter.Status" asp-route-branchId="@filter.BranchId">Trước</a>
+                </li>
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@i"
+                           asp-route-keyword="@filter.Keyword" asp-route-assetType="@filter.AssetType"
+                           asp-route-status="@filter.Status" asp-route-branchId="@filter.BranchId">@i</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-keyword="@filter.Keyword" asp-route-assetType="@filter.AssetType"
+                       asp-route-status="@filter.Status" asp-route-branchId="@filter.BranchId">Sau</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+

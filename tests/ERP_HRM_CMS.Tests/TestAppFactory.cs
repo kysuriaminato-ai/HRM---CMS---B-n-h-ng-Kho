@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Hosting;
 
 namespace ERP_HRM_CMS.Tests
 {
@@ -20,6 +21,7 @@ namespace ERP_HRM_CMS.Tests
 
         private static readonly object ResetLock = new();
         private static bool _databaseReset;
+        private static bool _enterpriseHrmScriptsExecuted;
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -36,6 +38,58 @@ namespace ERP_HRM_CMS.Tests
                     ResetTestDatabase();
                     _databaseReset = true;
                 }
+            }
+        }
+
+        protected override IHost CreateHost(IHostBuilder builder)
+        {
+            var host = base.CreateHost(builder);
+            EnsureEnterpriseHrmApplied();
+            return host;
+        }
+
+        private static void EnsureEnterpriseHrmApplied()
+        {
+            lock (ResetLock)
+            {
+                if (_enterpriseHrmScriptsExecuted) return;
+
+                var dir = AppContext.BaseDirectory;
+                while (dir != null && !File.Exists(Path.Combine(dir, "ERP_HRM_CMS.sln")))
+                {
+                    dir = Directory.GetParent(dir)?.FullName;
+                }
+                if (dir == null) return;
+
+                var v601Path = Path.Combine(dir, "db", "scripts", "V6_01_EnterpriseHRM_Schema_And_Indexes.sql");
+                var v602Path = Path.Combine(dir, "db", "scripts", "V6_02_EnterpriseHRM_SeedData.sql");
+
+                using var conn = new SqlConnection(TestConnectionString);
+                conn.Open();
+
+                ExecuteSqlScript(conn, v601Path);
+                ExecuteSqlScript(conn, v602Path);
+
+                _enterpriseHrmScriptsExecuted = true;
+            }
+        }
+
+        private static void ExecuteSqlScript(SqlConnection connection, string scriptPath)
+        {
+            if (!File.Exists(scriptPath)) return;
+            var scriptText = File.ReadAllText(scriptPath);
+            var batches = System.Text.RegularExpressions.Regex.Split(
+                scriptText,
+                @"^\s*GO\s*$",
+                System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            foreach (var batch in batches)
+            {
+                var trimmed = batch.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed)) continue;
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = trimmed;
+                cmd.ExecuteNonQuery();
             }
         }
 

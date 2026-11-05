@@ -1,0 +1,248 @@
+@model ERP_HRM_CMS.Services.HRM.HrDecisionPrintModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>In Quyết Định - @Model.DecisionNumber</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/admin-print.css" />
+    <style>
+        @@page {
+            size: A4 portrait;
+            margin: 20mm 20mm 20mm 25mm;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13pt;
+            line-height: 1.5;
+            color: #000;
+            background: #f8fafc;
+        }
+        .print-container {
+            max-width: 210mm;
+            margin: 20px auto;
+            background: #fff;
+            padding: 25mm 20mm 20mm 25mm;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+        .header-table td {
+            vertical-align: top;
+            padding: 0;
+        }
+        .company-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            text-transform: uppercase;
+        }
+        .national-header {
+            text-align: center;
+        }
+        .national-title {
+            font-weight: bold;
+            font-size: 11pt;
+            text-transform: uppercase;
+        }
+        .national-motto {
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        .line-short {
+            width: 100px;
+            height: 1px;
+            background: #000;
+            margin: 3px auto 0 auto;
+        }
+        .doc-number {
+            font-size: 11pt;
+            margin-top: 6px;
+        }
+        .doc-date {
+            font-style: italic;
+            font-size: 12pt;
+            margin-top: 6px;
+        }
+        .main-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 15pt;
+            text-transform: uppercase;
+            margin-top: 25px;
+            margin-bottom: 4px;
+        }
+        .sub-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 13pt;
+            margin-bottom: 25px;
+        }
+        .grounds-p {
+            font-style: italic;
+            margin-bottom: 6px;
+            text-align: justify;
+            text-indent: 25px;
+        }
+        .decide-command {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            text-transform: uppercase;
+            margin: 20px 0;
+        }
+        .article {
+            margin-bottom: 12px;
+            text-align: justify;
+            text-indent: 25px;
+        }
+        .footer-table {
+            width: 100%;
+            margin-top: 35px;
+            page-break-inside: avoid;
+        }
+        .footer-table td {
+            vertical-align: top;
+        }
+        .recipients {
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        .signer-box {
+            text-align: center;
+            font-size: 12pt;
+        }
+        @@media print {
+            body {
+                background: #fff;
+            }
+            .print-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print bg-dark text-white p-2 text-center sticky-top">
+        <button class="btn btn-primary btn-sm me-2" onclick="window.print()">
+            <i class="bi bi-printer-fill me-1"></i> In Quyết Định (A4) / Lưu PDF
+        </button>
+        <button class="btn btn-outline-light btn-sm" onclick="window.close()">Đóng</button>
+    </div>
+
+    <div class="print-container">
+        <!-- Bảng đầu trang chuẩn thể thức hành chính Việt Nam -->
+        <table class="header-table">
+            <tr>
+                <td style="width: 45%; text-align: center;">
+                    <div class="company-header">@Model.CompanyName</div>
+                    <div class="line-short"></div>
+                    <div class="doc-number">Số: <strong>@Model.DecisionNumber</strong></div>
+                </td>
+                <td style="width: 55%; text-align: center;">
+                    <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                    <div class="national-motto">Độc lập - Tự do - Hạnh phúc</div>
+                    <div class="line-short"></div>
+                    <div class="doc-date">@Model.SignLocation, ngày @Model.SignDate.Day tháng @Model.SignDate.Month năm @Model.SignDate.Year</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Tiêu đề quyết định -->
+        <div class="main-title">QUYẾT ĐỊNH</div>
+        <div class="sub-title">@Model.Title</div>
+
+        <!-- Căn cứ pháp lý -->
+        <p class="grounds-p">- Căn cứ Bộ luật Lao động số 45/2019/QH14 được Quốc hội nước CHXHCN Việt Nam thông qua ngày 20/11/2019;</p>
+        <p class="grounds-p">- Căn cứ Luật Doanh nghiệp số 59/2020/QH14 và Điều lệ tổ chức hoạt động của @Model.CompanyName;</p>
+        <p class="grounds-p">- Căn cứ Hợp đồng lao động và hồ sơ nhân sự của cán bộ công nhân viên;</p>
+        <p class="grounds-p">- Xét yêu cầu phát triển sản xuất kinh doanh và đề nghị của Trưởng phòng Nhân sự;</p>
+
+        <!-- Lệnh quyết định -->
+        <div class="decide-command">TỔNG GIÁM ĐỐC QUYẾT ĐỊNH:</div>
+
+        <!-- Điều 1 -->
+        <div class="article">
+            <strong>Điều 1.</strong> 
+            @if (Model.DecisionType == "Appointment")
+            {
+                <span>Nay bổ nhiệm Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>) giữ chức vụ <strong>@(Model.NewPositionName ?? Model.PositionName)</strong> thuộc @Model.DepartmentName.</span>
+            }
+            else if (Model.DecisionType == "Transfer")
+            {
+                <span>Nay điều chuyển Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>) từ đơn vị <strong>@(Model.OldDepartmentName ?? Model.DepartmentName)</strong> sang nhận nhiệm vụ công tác tại <strong>@(Model.NewDepartmentName ?? "Đơn vị mới")</strong>@(string.IsNullOrWhiteSpace(Model.NewPositionName) ? "." : $", đảm nhiệm chức danh {Model.NewPositionName}.")</span>
+            }
+            else if (Model.DecisionType == "SalaryAdjustment")
+            {
+                <span>Nay điều chỉnh mức tiền lương lao động đối với Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>), chức danh: @Model.PositionName thuộc @Model.DepartmentName. Mức lương mới áp dụng là <strong>@(Model.NewSalary?.ToString("N0") ?? "Theo quy chế") VNĐ/tháng</strong> (Mức cũ: @(Model.OldSalary?.ToString("N0") ?? "-") VNĐ).</span>
+            }
+            else if (Model.DecisionType == "Reward")
+            {
+                <span>Khen thưởng thành tích xuất sắc đối với Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>), chức vụ @Model.PositionName. Mức tiền thưởng: <strong>@Model.Amount.ToString("N0") VNĐ</strong> (trả cùng kỳ lương gần nhất).</span>
+            }
+            else if (Model.DecisionType == "Discipline")
+            {
+                <span>Thi hành hình thức kỷ luật lao động đối với Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>) do vi phạm nội quy doanh nghiệp. Xử lý phạt tiền: <strong>@Model.Amount.ToString("N0") VNĐ</strong> khấu trừ vào kỳ lương.</span>
+            }
+            else if (Model.DecisionType == "Termination")
+            {
+                <span>Chấm dứt hợp đồng lao động và giải quyết chế độ thôi việc đối với Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>), chức danh: @Model.PositionName thuộc @Model.DepartmentName.</span>
+            }
+            else
+            {
+                <span>Áp dụng quyết định nhân sự đối với Ông/Bà <strong>@Model.EmployeeName</strong> (Mã NV: <strong>@Model.EmployeeCode</strong>) theo trích yếu nêu trên.</span>
+            }
+        </div>
+
+        <!-- Điều 2 -->
+        <div class="article">
+            <strong>Điều 2.</strong> 
+            @if (Model.DecisionType == "Termination")
+            {
+                <span>Ông/Bà @Model.EmployeeName có trách nhiệm bàn giao toàn bộ công việc, hồ sơ tài liệu, mã truy cập hệ thống và các tài sản, trang thiết bị được công ty giao quản lý cho bộ phận có liên quan trước ngày hiệu lực. Các quyền lợi bảo hiểm và chế độ thôi việc được giải quyết theo quy định của pháp luật lao động hiện hành.</span>
+            }
+            else
+            {
+                <span>Ông/Bà @Model.EmployeeName được hưởng các chế độ lương bổng, phụ cấp trách nhiệm, quyền hạn và nghĩa vụ tương ứng với chức danh, vị trí công tác theo đúng Quy chế quản lý nội bộ của Công ty.</span>
+            }
+        </div>
+
+        <!-- Điều 3 -->
+        <div class="article">
+            <strong>Điều 3.</strong> Quyết định này có hiệu lực thi hành kể từ ngày <strong>@Model.EffectiveDate.ToString("dd/MM/yyyy")</strong>. Các ông/bà Trưởng phòng Nhân sự, Trưởng phòng Kế toán - Tài chính, Trưởng các đơn vị có liên quan và ông/bà @Model.EmployeeName chịu trách nhiệm thi hành Quyết định này./.
+        </div>
+
+        <!-- Bảng chân trang: Nơi nhận & Chữ ký -->
+        <table class="footer-table">
+            <tr>
+                <td style="width: 50%;" class="recipients">
+                    <strong><em>Nơi nhận:</em></strong><br />
+                    - Như Điều 3;<br />
+                    - Ban Giám đốc (để b/c);<br />
+                    - Phòng KT-TC (để t/h);<br />
+                    - Lưu: VT, HS (02b).
+                </td>
+                <td style="width: 50%;" class="signer-box">
+                    <strong style="text-transform: uppercase;">@Model.SignerTitle</strong><br />
+                    <em>(Ký tên và đóng dấu)</em>
+                    <div style="height: 80px;"></div>
+                    <strong style="text-transform: uppercase;">@Model.SignerName</strong>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
+

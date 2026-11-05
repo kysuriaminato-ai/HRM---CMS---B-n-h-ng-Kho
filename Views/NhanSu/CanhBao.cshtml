@@ -1,0 +1,303 @@
+@model ERP_HRM_CMS.Services.HRM.HrSmartAlertsDto
+@{
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Cảnh Báo Nhân Sự Thông Minh";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+}
+
+<erp-page-header title="Trung Tâm Cảnh Báo Nhân Sự Thông Minh"
+                 subtitle="Tự động phát hiện hợp đồng sắp đáo hạn, thử việc sắp kết thúc, chứng chỉ cần gia hạn và sinh nhật trong tháng"
+                 icon="bi-bell-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự:/NhanSu/Index|Cảnh báo">
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Danh sách nhân sự</a>
+    <a href="/HopDong/Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-text me-1"></i> Quản lý Hợp đồng</a>
+</erp-page-header>
+
+<!-- Bento Grid Thống kê cảnh báo -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card erp-card p-3 border-start border-4 border-danger h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-secondary small fw-semibold">HĐ Sắp Hết Hạn (&le;30d)</span>
+                    <h3 class="fw-bold mb-0 text-danger tabular-nums mt-1">@Model.ExpiringContracts.Count</h3>
+                </div>
+                <div class="avatar avatar-md bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center fs-4">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Có <strong class="text-danger tabular-nums">@Model.ExpiringContracts.Count(c => c.UrgencyLevel == "Critical")</strong> hợp đồng còn dưới 7 ngày!
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card erp-card p-3 border-start border-4 border-warning h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-secondary small fw-semibold">Thử Việc Sắp Hết Hạn</span>
+                    <h3 class="fw-bold mb-0 text-warning tabular-nums mt-1">@Model.EndingProbations.Count</h3>
+                </div>
+                <div class="avatar avatar-md bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center fs-4">
+                    <i class="bi bi-person-check"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Cần đánh giá ký hợp đồng chính thức
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card erp-card p-3 border-start border-4 border-info h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-secondary small fw-semibold">Chứng Chỉ Sắp Hết Hạn</span>
+                    <h3 class="fw-bold mb-0 text-info tabular-nums mt-1">@Model.ExpiringCertificates.Count</h3>
+                </div>
+                <div class="avatar avatar-md bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center fs-4">
+                    <i class="bi bi-patch-exclamation"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Cần gia hạn chứng chỉ chuyên môn
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card erp-card p-3 border-start border-4 border-success h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-secondary small fw-semibold">Sinh Nhật Tháng Này</span>
+                    <h3 class="fw-bold mb-0 text-success tabular-nums mt-1">@Model.BirthdaysInMonth.Count</h3>
+                </div>
+                <div class="avatar avatar-md bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center fs-4">
+                    <i class="bi bi-cake2"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-muted small">
+                Sinh nhật trong tháng @DateTime.Today.Month
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs Chi Tiết Các Cảnh Báo -->
+<erp-tabs active-tab="tabAlertContracts">
+    <!-- TAB 1: HỢP ĐỒNG SẮP HẾT HẠN -->
+    <erp-tab id="tabAlertContracts" label="Hợp đồng sắp hết hạn (@Model.ExpiringContracts.Count)" icon="bi-file-earmark-medical">
+        <div class="card erp-card">
+            <div class="table-responsive">
+                <table class="table erp-table align-middle mb-0 small">
+                    <thead>
+                        <tr>
+                            <th>Mức Độ</th>
+                            <th>Mã NV</th>
+                            <th>Họ và Tên</th>
+                            <th>Phòng Ban</th>
+                            <th>Số Hợp Đồng</th>
+                            <th>Ngày Hết Hạn</th>
+                            <th class="text-center">Thời Gian Còn Lại</th>
+                            <th class="text-end">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ExpiringContracts.Any())
+                        {
+                            foreach (var c in Model.ExpiringContracts)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (c.UrgencyLevel == "Critical")
+                                        {
+                                            <span class="badge bg-danger text-white"><i class="bi bi-exclamation-octagon-fill me-1"></i>Khẩn cấp (&le;7d)</span>
+                                        }
+                                        else if (c.UrgencyLevel == "Warning")
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle-fill me-1"></i>Cảnh báo (&le;15d)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info-subtle text-info">Sắp hết hạn (&le;30d)</span>
+                                        }
+                                    </td>
+                                    <td class="tabular-nums"><code>@c.EmployeeCode</code></td>
+                                    <td class="fw-semibold">@c.EmployeeName</td>
+                                    <td>@c.DepartmentName</td>
+                                    <td class="tabular-nums"><code>@c.ContractNumber</code></td>
+                                    <td class="tabular-nums fw-bold text-danger">@c.EndDate?.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-center tabular-nums">
+                                        <span class="fw-bold @(c.DaysLeft <= 7 ? "text-danger" : "text-dark")">@c.DaysLeft ngày</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="/HopDong/Create?employeeId=@c.ContractId" class="btn btn-sm btn-primary py-0 px-2 me-1" title="Tái ký hợp đồng">Tái ký HĐ</a>
+                                        <a href="/HopDong/InHopDong/@c.ContractId" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2" title="In hợp đồng hiện tại"><i class="bi bi-printer"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check-circle text-success fs-3 d-block mb-1"></i>
+                                    Không có hợp đồng lao động nào sắp hết hạn trong 30 ngày tới.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </erp-tab>
+
+    <!-- TAB 2: THỬ VIỆC SẮP KẾT THÚC -->
+    <erp-tab id="tabAlertProbation" label="Thử việc sắp kết thúc (@Model.EndingProbations.Count)" icon="bi-person-check">
+        <div class="card erp-card">
+            <div class="table-responsive">
+                <table class="table erp-table align-middle mb-0 small">
+                    <thead>
+                        <tr>
+                            <th>Mã NV</th>
+                            <th>Họ và Tên</th>
+                            <th>Phòng Ban</th>
+                            <th>Vị Trí Thử Việc</th>
+                            <th>Ngày Bắt Đầu</th>
+                            <th>Ngày Kết Thúc (Dự kiến)</th>
+                            <th class="text-center">Số Ngày Còn Lại</th>
+                            <th class="text-end">Quyết Định</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.EndingProbations.Any())
+                        {
+                            foreach (var p in Model.EndingProbations)
+                            {
+                                <tr>
+                                    <td class="tabular-nums"><code>@p.EmployeeCode</code></td>
+                                    <td class="fw-semibold">@p.FullName</td>
+                                    <td>@p.DepartmentName</td>
+                                    <td>@p.PositionName</td>
+                                    <td class="tabular-nums">@p.HireDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="tabular-nums fw-bold text-primary">@p.ExpectedProbationEndDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-center tabular-nums">
+                                        <span class="badge @(p.DaysLeft <= 5 ? "bg-danger" : "bg-warning text-dark")">
+                                            @(p.DaysLeft <= 0 ? "Đến hạn hôm nay" : $"Còn {p.DaysLeft} ngày")
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="/QuyetDinhNhanSu/Create?employeeId=@p.EmployeeId&type=Appointment" class="btn btn-sm btn-success py-0 px-2 me-1" title="Ký chính thức / Bổ nhiệm">Ký chính thức</a>
+                                        <a href="/NhanSu/Details/@p.EmployeeId" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Xem hồ sơ"><i class="bi bi-eye"></i></a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">Không có nhân viên nào sắp kết thúc thời gian thử việc.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </erp-tab>
+
+    <!-- TAB 3: CHỨNG CHỈ HẾT HẠN -->
+    <erp-tab id="tabAlertCerts" label="Chứng chỉ cần gia hạn (@Model.ExpiringCertificates.Count)" icon="bi-patch-exclamation">
+        <div class="card erp-card">
+            <div class="table-responsive">
+                <table class="table erp-table align-middle mb-0 small">
+                    <thead>
+                        <tr>
+                            <th>Mã NV</th>
+                            <th>Nhân Sự Thụ Hưởng</th>
+                            <th>Tên Chứng Chỉ Hành Nghề</th>
+                            <th>Ngày Hết Hạn</th>
+                            <th class="text-center">Còn Lại</th>
+                            <th class="text-end">Chi Tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.ExpiringCertificates.Any())
+                        {
+                            foreach (var cert in Model.ExpiringCertificates)
+                            {
+                                <tr>
+                                    <td class="tabular-nums"><code>@cert.EmployeeCode</code></td>
+                                    <td class="fw-semibold">@cert.FullName</td>
+                                    <td><strong>@cert.CertificateName</strong></td>
+                                    <td class="tabular-nums text-danger fw-bold">@cert.ExpiryDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-center tabular-nums">
+                                        <span class="badge bg-warning-subtle text-dark">@cert.DaysLeft ngày</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="/NhanSu/Details/@cert.EmployeeId?tab=skills" class="btn btn-sm btn-outline-primary py-0 px-2">Cập nhật</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Tất cả chứng chỉ hành nghề của nhân sự đều còn hiệu lực dài hạn.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </erp-tab>
+
+    <!-- TAB 4: SINH NHẬT TRONG THÁNG -->
+    <erp-tab id="tabAlertBirthdays" label="Sinh nhật tháng @DateTime.Today.Month (@Model.BirthdaysInMonth.Count)" icon="bi-cake2">
+        <div class="card erp-card p-4">
+            @if (Model.BirthdaysInMonth.Any())
+            {
+                <div class="row g-3">
+                    @foreach (var b in Model.BirthdaysInMonth)
+                    {
+                        <div class="col-md-4">
+                            <div class="card erp-card p-3 border h-100 bg-light">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar avatar-md bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                                        @if (!string.IsNullOrWhiteSpace(b.AvatarUrl))
+                                        {
+                                            <img src="@b.AvatarUrl" class="rounded-circle w-100 h-100" style="object-fit:cover;" />
+                                        }
+                                        else
+                                        {
+                                            @b.FullName[..Math.Min(2, b.FullName.Length)].ToUpper()
+                                        }
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold mb-0 text-dark">@b.FullName</h6>
+                                        <div class="text-secondary small">@b.DepartmentName</div>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <span class="badge bg-success-subtle text-success"><i class="bi bi-calendar-heart me-1"></i>Ngày @b.Day/@DateTime.Today.Month</span>
+                                            <span class="text-muted small">Tuổi: @b.Age</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <a href="/NhanSu/Details/@b.EmployeeId" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Gửi lời chúc"><i class="bi bi-envelope-heart text-danger"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-balloon fs-2 d-block mb-1"></i>
+                    Không có nhân sự nào có ngày sinh nhật trong tháng này.
+                </div>
+            }
+        </div>
+    </erp-tab>
+</erp-tabs>
+

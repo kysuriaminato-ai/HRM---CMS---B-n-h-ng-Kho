@@ -1,11 +1,12 @@
+using ERP.Application.Common.Interfaces;
+using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -13,13 +14,15 @@ namespace ERP_HRM_CMS.Controllers
     public class CongNoController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly ICurrentUserService _currentUser;
 
-        public CongNoController(AppDbContext context)
+        public CongNoController(AppDbContext context, ICurrentUserService currentUser)
         {
             _context = context;
+            _currentUser = currentUser;
         }
 
-        private int CurrentUserId => HttpContext.Session.GetInt32("UserId") ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
 
         // 1. DASHBOARD CÔNG NỢ & BÁO CÁO TUỔI NỢ (AGING REPORT)
         [HttpGet]
@@ -39,7 +42,7 @@ namespace ERP_HRM_CMS.Controllers
             if (!string.IsNullOrWhiteSpace(status))
             {
                 if (WorkflowStatusCodes.TryParse(WorkflowStatusCodes.Debt, status, out var debtStatus))
-                query = query.Where(d => d.Status == debtStatus);
+                    query = query.Where(d => d.Status == debtStatus);
             }
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -74,7 +77,7 @@ namespace ERP_HRM_CMS.Controllers
                 }
             }
 
-            var allRecords = await _context.DebtRecords.ToListAsync();
+            var allRecords = await _context.DebtRecords.AsNoTracking().ToListAsync();
             var filteredRecords = await query.OrderByDescending(d => d.CreatedAt).ToListAsync();
 
             // Tính toán số liệu Dashboard

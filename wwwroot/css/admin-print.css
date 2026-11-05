@@ -1,0 +1,196 @@
+/* ==========================================================================
+   ADMIN PRINT & PDF STYLESHEET 2026
+   Tối ưu in ấn khổ giấy A4 / A4 Ngang sắc nét cho Phiếu Lương, Hợp Đồng,
+   Quyết Định Nhân Sự & Sơ Yếu Lý Lịch. Ẩn hoàn toàn UI thừa khi nhấn In (Ctrl+P).
+   ========================================================================== */
+
+@page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+}
+
+@page landscape-a4 {
+    size: A4 landscape;
+    margin: 10mm 12mm 10mm 12mm;
+}
+
+@media print {
+    /* 1. Ẩn toàn bộ thành phần điều hướng, layout thừa */
+    .erp-sidebar,
+    .erp-topbar,
+    .erp-footer,
+    .erp-toast-container,
+    .erp-notif-dropdown,
+    .command-palette-modal,
+    .org-controls-bar,
+    .breadcrumb,
+    .btn,
+    .erp-filter-bar,
+    .pagination,
+    .d-print-none,
+    nav,
+    aside,
+    #sidebarOverlay {
+        display: none !important;
+    }
+
+    /* 2. Thiết lập lại body & container chuẩn in */
+    html, body {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        font-family: 'Times New Roman', 'Be Vietnam Pro', serif !important;
+        font-size: 11pt !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .erp-main-content,
+    .erp-content-wrapper,
+    .erp-page-content,
+    .container,
+    .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* 3. Văn bản in ấn chính thức */
+    .print-document {
+        width: 100% !important;
+        padding: 0 !important;
+        background: #FFFFFF !important;
+        page-break-after: always;
+        break-after: page;
+    }
+
+    .print-document:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+
+    /* Tiêu ngữ Quốc gia */
+    .print-national-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .print-national-title {
+        font-size: 12pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .print-national-motto {
+        font-size: 11pt;
+        font-weight: bold;
+    }
+
+    .print-national-line {
+        width: 140px;
+        height: 1px;
+        background: #000;
+        margin: 6px auto 0 auto;
+    }
+
+    /* Tiêu đề văn bản in */
+    .print-doc-title {
+        font-size: 15pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        text-align: center;
+        margin: 24px 0 16px 0;
+    }
+
+    .print-doc-subtitle {
+        font-size: 11pt;
+        font-style: italic;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    /* Bảng biểu in ấn sắc nét */
+    .print-table,
+    .table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 16px !important;
+        font-size: 10pt !important;
+    }
+
+    .print-table th,
+    .print-table td,
+    .table th,
+    .table td {
+        border: 1px solid #000000 !important;
+        padding: 6px 8px !important;
+        color: #000000 !important;
+        background-color: transparent !important;
+    }
+
+    .print-table thead th,
+    .table thead th {
+        font-weight: bold !important;
+        background-color: #F0F0F0 !important;
+        text-align: center !important;
+    }
+
+    /* Tránh ngắt trang giữa hàng / bảng / khối chữ ký */
+    tr,
+    .print-no-break,
+    .print-signatures {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Khối chữ ký chuẩn doanh nghiệp */
+    .print-signatures {
+        display: flex !important;
+        justify-content: space-between !important;
+        margin-top: 36px !important;
+        text-align: center !important;
+    }
+
+    .print-signature-box {
+        width: 30% !important;
+        display: inline-block !important;
+    }
+
+    .print-sign-role {
+        font-weight: bold !important;
+        text-transform: uppercase !important;
+        margin-bottom: 4px !important;
+        font-size: 10.5pt !important;
+    }
+
+    .print-sign-note {
+        font-style: italic !important;
+        font-size: 9pt !important;
+        margin-bottom: 60px !important;
+    }
+
+    .print-sign-name {
+        font-weight: bold !important;
+        font-size: 10.5pt !important;
+    }
+
+    /* Phiếu lương thu gọn */
+    .payslip-box {
+        border: 1px solid #000 !important;
+        padding: 15px !important;
+        border-radius: 4px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .tabular-nums {
+        font-family: 'Courier New', Courier, monospace !important;
+        font-weight: 600 !important;
+    }
+}
+

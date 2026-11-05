@@ -1,0 +1,50 @@
+@model IEnumerable<ERP_HRM_CMS.Models.ViewModels.NineBoxItemDto>
+@{
+    string title = ViewData["Title"]?.ToString() ?? "";
+    string sub = ViewData["Sub"]?.ToString() ?? "";
+    string badgeClass = ViewData["BadgeClass"]?.ToString() ?? "bg-light";
+    string borderClass = ViewData["BorderClass"]?.ToString() ?? "border";
+    var items = Model?.ToList() ?? new List<ERP_HRM_CMS.Models.ViewModels.NineBoxItemDto>();
+}
+
+<div class="card h-100 @borderClass border-2 shadow-xs" style="min-height: 200px;">
+    <div class="card-header bg-transparent py-2 px-3 d-flex justify-content-between align-items-center">
+        <div>
+            <div class="fw-bold small text-truncate">@title</div>
+            <div class="text-muted" style="font-size: 11px;">@sub</div>
+        </div>
+        <span class="badge @badgeClass rounded-pill tabular-nums">@items.Count</span>
+    </div>
+    <div class="card-body p-2 overflow-auto" style="max-height: 220px;">
+        @if (items.Any())
+        {
+            <div class="d-flex flex-column gap-2">
+                @foreach (var emp in items)
+                {
+                    <a href="/DanhGiaKpi/ChiTiet/@emp.KpiReviewId" class="text-decoration-none text-dark p-2 rounded bg-light-subtle border d-flex align-items-center justify-content-between hover-shadow">
+                        <div class="d-flex align-items-center text-truncate">
+                            <div class="avatar-xs rounded-circle bg-primary-subtle text-primary fw-bold me-2 d-flex align-items-center justify-content-center" style="width:26px;height:26px;font-size:11px;">
+                                @(string.IsNullOrEmpty(emp.EmployeeName) ? "E" : emp.EmployeeName.Substring(0, 1))
+                            </div>
+                            <div class="text-truncate">
+                                <div class="fw-semibold small text-truncate" style="max-width: 140px;">@emp.EmployeeName</div>
+                                <div class="text-muted font-monospace" style="font-size: 10px;">@emp.DepartmentName</div>
+                            </div>
+                        </div>
+                        <div class="text-end text-nowrap ms-1">
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 10px;">P:@emp.PerformanceScore.ToString("F0") | Pot:@emp.PotentialScore.ToString("F0")</span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted py-4" style="font-size: 12px;">
+                <i class="bi bi-dash-circle d-block mb-1"></i>
+                Không có nhân sự
+            </div>
+        }
+    </div>
+</div>
+

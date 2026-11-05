@@ -5,6 +5,22 @@ namespace ERP_HRM_CMS.Models.ViewModels
 {
     public class ExecutiveDashboardViewModel
     {
+        // Cờ phân quyền hiển thị từng khối dữ liệu (Zero-Trust Widget Gating)
+        public bool CanViewSalesKpi { get; set; }
+        public bool CanViewHrKpi { get; set; }
+        public bool CanViewApprovalsKpi { get; set; }
+        public bool CanViewInventoryKpi { get; set; }
+        public bool CanViewDebtKpi { get; set; }
+        public bool CanViewAuditFeed { get; set; }
+        public bool CanUsePos { get; set; }
+        public bool IsSelfServiceView { get; set; }
+        public string ScopeBadgeLabel { get; set; } = "Cá nhân";
+
+        // Dữ liệu tự phục vụ dành cho vai trò EMPLOYEE
+        public int MyWorkDaysThisMonth { get; set; }
+        public int MyPendingLeavesCount { get; set; }
+        public decimal MyApprovedLeaveDaysThisYear { get; set; }
+
         // KPI Cards Data
         public decimal MonthlyRevenue { get; set; }
         public double RevenueGrowthPercent { get; set; }

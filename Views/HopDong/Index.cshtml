@@ -1,70 +1,94 @@
-﻿@model ERP_HRM_CMS.Models.ViewModels.ContractListViewModel
+@model ERP_HRM_CMS.Models.ViewModels.ContractListViewModel
 @{
-    Layout = "_HRMLayout";
-    ViewData["Title"] = "Quản Trị Hợp Đồng Lao Động";
+    ViewData["Module"] = "hrm";
+    ViewData["Title"] = "Hợp đồng lao động";
+    ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
+    int totalContracts = Model.Contracts.Count;
+    int activeContracts = Model.Contracts.Count(c => c.Status == "Active");
+    int expiringCount = Model.ExpiringContracts.Count;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold mb-1">Hợp Đồng Lao Động</h4>
-        <p class="text-secondary small mb-0">Theo dõi, ký kết mới và cảnh báo thời hạn gia hạn hợp đồng</p>
-    </div>
-    <a href="/HopDong/Create" class="btn btn-erp-black">
-        <i class="bi bi-file-earmark-plus me-1"></i> Soạn Thảo Hợp Đồng
+<erp-page-header title="Hợp Đồng Lao Động"
+                 subtitle="Quản lý ký kết, theo dõi thời hạn pháp lý và gia hạn hợp đồng nhân sự"
+                 icon="bi-file-earmark-text-fill"
+                 breadcrumbs="Dashboard:/|Nhân sự & Chấm công:/NhanSu/Index|Hợp đồng lao động">
+    <a href="/HopDong/Create" class="btn btn-primary btn-sm ripple">
+        <i class="bi bi-file-earmark-plus me-1"></i> Soạn thảo hợp đồng mới
     </a>
+</erp-page-header>
+
+<!-- Thống kê hợp đồng -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <erp-stat-card label="Tổng Hợp Đồng" value="@totalContracts" icon="bi-file-earmark-text" variant="primary" />
+    </div>
+    <div class="col-6 col-md-4">
+        <erp-stat-card label="Đang Hiệu Lực" value="@activeContracts" icon="bi-check2-circle" variant="success" />
+    </div>
+    <div class="col-12 col-md-4">
+        <erp-stat-card label="Sắp Hết Hạn (&le;30 Ngày)" value="@expiringCount" icon="bi-clock-history" variant="@(expiringCount > 0 ? "warning" : "neutral")" />
+    </div>
 </div>
 
 <!-- Khối cảnh báo hợp đồng sắp hết hạn -->
 @if (Model.ExpiringContracts.Any())
 {
-    <div class="alert alert-warning border-warning erp-card p-3 mb-4">
-        <div class="d-flex align-items-center gap-2 mb-2 text-dark fw-bold">
-            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-            <span>CẢNH BÁO: CÓ @Model.ExpiringContracts.Count HỢP ĐỒNG SẮP HẾT HẠN (TRONG 30 NGÀY TỚI)</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-sm erp-table mb-0 bg-white">
-                <thead>
-                    <tr>
-                        <th>Số Hợp Đồng</th>
-                        <th>Nhân Viên</th>
-                        <th>Phòng Ban</th>
-                        <th>Ngày Hết Hạn</th>
-                        <th class="text-end">Xử Lý</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var exp in Model.ExpiringContracts)
-                    {
+    <div class="card erp-card border-warning mb-4 shadow-sm" style="background-color: var(--erp-warning-subtle);">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center gap-2 mb-2 fw-bold" style="color: var(--erp-warning-text);">
+                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                <span class="text-uppercase">Cảnh báo: Có @Model.ExpiringContracts.Count hợp đồng lao động sắp hết hạn trong 30 ngày tới</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm erp-table mb-0 bg-transparent">
+                    <thead>
                         <tr>
-                            <td><code>@exp.ContractNumber</code></td>
-                            <td><a href="/NhanSu/Details/@exp.EmployeeId" class="text-dark fw-bold">@exp.Employee?.FullName</a></td>
-                            <td>@exp.Employee?.Department?.Name</td>
-                            <td class="text-danger fw-bold">@(exp.EndDate?.ToString("dd/MM/yyyy"))</td>
-                            <td class="text-end">
-                                <a href="/HopDong/Create?employeeId=@exp.EmployeeId" class="btn btn-sm btn-dark py-0 px-2" style="font-size: 11px;">Tái ký</a>
-                            </td>
+                            <th style="width: 130px;">Số Hợp Đồng</th>
+                            <th>Nhân Viên</th>
+                            <th>Phòng Ban</th>
+                            <th class="tabular-nums">Ngày Hết Hạn</th>
+                            <th class="text-end" style="width: 100px;">Hành Động</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var exp in Model.ExpiringContracts)
+                        {
+                            <tr>
+                                <td class="tabular-nums"><code>@exp.ContractNumber</code></td>
+                                <td>
+                                    <a href="/NhanSu/Details/@exp.EmployeeId" class="fw-bold text-decoration-none text-primary">
+                                        @exp.Employee?.FullName
+                                    </a>
+                                </td>
+                                <td>@exp.Employee?.Department?.Name</td>
+                                <td class="text-danger fw-bold tabular-nums">@(exp.EndDate?.ToString("dd/MM/yyyy"))</td>
+                                <td class="text-end">
+                                    <a href="/HopDong/Create?employeeId=@exp.EmployeeId" class="btn btn-sm btn-outline-warning py-0 px-2 fw-semibold">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Tái ký
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 }
 
-<div class="erp-card">
+<div class="card erp-card">
     <div class="table-responsive">
-        <table class="table erp-table mb-0 align-middle">
+        <table class="table erp-table sticky-thead mb-0 align-middle">
             <thead>
                 <tr>
-                    <th>Số HĐ</th>
-                    <th>Nhân Viên Ký</th>
+                    <th class="sticky-col-1" style="width: 130px;">Số HĐ</th>
+                    <th class="sticky-col-2">Nhân Viên Ký</th>
                     <th>Loại Hợp Đồng</th>
                     <th>Ngày Ký</th>
                     <th>Thời Hạn Hiệu Lực</th>
-                    <th>Lương Đóng BH</th>
+                    <th class="text-end">Lương Đóng BH</th>
                     <th class="text-center">Trạng Thái</th>
-                    <th class="text-end">Thao Tác</th>
+                    <th class="text-end sticky-col-actions" style="width: 120px;">Thao Tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,37 +96,43 @@
                 {
                     foreach (var c in Model.Contracts)
                     {
+                        var statusVariant = c.Status == "Active" ? "success" : "neutral";
+                        var statusLabel = c.Status == "Active" ? "Hiệu lực" : "Chấm dứt";
+
                         <tr>
-                            <td><code>@c.ContractNumber</code></td>
-                            <td>
-                                <a href="/NhanSu/Details/@c.EmployeeId" class="text-dark fw-bold text-decoration-none">@c.Employee?.FullName</a>
-                                <div class="small text-muted">@c.Employee?.EmployeeCode</div>
+                            <td class="sticky-col-1 tabular-nums fw-semibold">
+                                <code>@c.ContractNumber</code>
                             </td>
-                            <td>@c.ContractType</td>
-                            <td class="small">@c.SignDate.ToString("dd/MM/yyyy")</td>
-                            <td class="small">
-                                @c.StartDate.ToString("dd/MM/yyyy") - @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")
+                            <td class="sticky-col-2">
+                                <a href="/NhanSu/Details/@c.EmployeeId" class="fw-bold text-decoration-none text-primary">
+                                    @c.Employee?.FullName
+                                </a>
+                                <div class="small text-muted tabular-nums">@c.Employee?.EmployeeCode</div>
                             </td>
-                            <td class="small">@c.InsuranceSalary.ToString("N0") đ</td>
+                            <td><span class="badge bg-light text-dark border">@c.ContractType</span></td>
+                            <td class="small tabular-nums">@c.SignDate.ToString("dd/MM/yyyy")</td>
+                            <td class="small tabular-nums">
+                                @c.StartDate.ToString("dd/MM/yyyy") &rarr; @(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")
+                            </td>
+                            <td class="small text-end tabular-nums fw-semibold">
+                                @c.InsuranceSalary.ToString("N0") đ
+                            </td>
                             <td class="text-center">
+                                <erp-status-badge variant="@statusVariant" label="@statusLabel" dot="true" />
+                            </td>
+                            <td class="text-end sticky-col-actions">
                                 @if (c.Status == "Active")
                                 {
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">Hiệu lực</span>
+                                    <form asp-action="ChamDutHopDong" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn chấm dứt hợp đồng này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2" title="Chấm dứt hợp đồng">
+                                            <i class="bi bi-x-circle me-1"></i>Chấm dứt
+                                        </button>
+                                    </form>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-light text-muted border">Chấm dứt</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                @if (c.Status == "Active")
-                                {
-                                    <form asp-action="ChamDutHopDong" asp-route-id="@c.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn chấm dứt hợp đồng này?');">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-erp-outline text-danger py-1 px-2" title="Chấm dứt">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
+                                    <span class="text-muted small">&mdash;</span>
                                 }
                             </td>
                         </tr>
@@ -110,7 +140,15 @@
                 }
                 else
                 {
-                    <tr><td colspan="8" class="text-center text-muted py-4">Chưa có hợp đồng nào trong hệ thống.</td></tr>
+                    <tr>
+                        <td colspan="8" class="p-0 border-0">
+                            <erp-empty-state icon="bi-file-earmark-x"
+                                             title="Chưa có hợp đồng nào"
+                                             description="Hệ thống chưa ghi nhận hợp đồng lao động nào."
+                                             action-text="Soạn thảo hợp đồng"
+                                             action-url="/HopDong/Create" />
+                        </td>
+                    </tr>
                 }
             </tbody>
         </table>

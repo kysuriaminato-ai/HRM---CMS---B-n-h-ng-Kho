@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace ERP_HRM_CMS.Services.Payroll
 {
     /// <summary>
@@ -42,8 +46,17 @@ namespace ERP_HRM_CMS.Services.Payroll
         /// <summary>Phụ cấp chức vụ (chịu thuế).</summary>
         public decimal PositionAllowance { get; init; }
 
-        /// <summary>Thưởng (chịu thuế).</summary>
+        /// <summary>Thưởng cố định / thỏa thuận (chịu thuế).</summary>
         public decimal Bonus { get; init; }
+
+        /// <summary>Thưởng hiệu suất KPI theo kỳ (từ KpiReviews đã duyệt).</summary>
+        public decimal KpiBonus { get; set; } = 0;
+
+        /// <summary>Khen thưởng từ Quyết định nhân sự (HrDecisions loại Reward).</summary>
+        public decimal DecisionReward { get; set; } = 0;
+
+        /// <summary>Khấu trừ kỷ luật từ Quyết định nhân sự (HrDecisions loại Discipline).</summary>
+        public decimal DecisionDiscipline { get; set; } = 0;
 
         /// <summary>Số người phụ thuộc còn hiệu lực trong kỳ.</summary>
         public int DependentCount { get; init; }
@@ -60,6 +73,10 @@ namespace ERP_HRM_CMS.Services.Payroll
         public decimal StandardWorkSalary { get; init; }
         public decimal OvertimeSalary { get; init; }
         public decimal AllowanceTotal { get; init; }
+        public decimal KpiBonus { get; init; }
+        public decimal DecisionReward { get; init; }
+        public decimal DecisionDiscipline { get; init; }
+        public decimal TotalBonus { get; init; }
         public decimal Gross { get; init; }
 
         // Bảo hiểm
@@ -122,9 +139,12 @@ namespace ERP_HRM_CMS.Services.Payroll
                 .Where(a => a.IsTaxExempt)
                 .Sum(a => a.TaxExemptLimit is decimal limit ? Math.Min(a.Amount, limit) : a.Amount);
 
-            decimal gross = standardWorkSalary + overtimeSalary + input.PositionAllowance + allowanceTotal + input.Bonus;
+            // 3. Tổng thưởng: Bonus + KpiBonus + DecisionReward
+            decimal totalBonus = input.Bonus + input.KpiBonus + input.DecisionReward;
 
-            // 3. Bảo hiểm: lương đóng BH không vượt trần = hệ số × lương cơ sở của kỳ
+            decimal gross = standardWorkSalary + overtimeSalary + input.PositionAllowance + allowanceTotal + totalBonus;
+
+            // 4. Bảo hiểm: lương đóng BH không vượt trần = hệ số × lương cơ sở của kỳ
             decimal insuranceCap = Money(rules.InsuranceCapMultiplier * rules.StatutoryBaseSalary);
             decimal declared = input.DeclaredInsuranceSalary ?? input.BaseSalary;
             decimal insuranceBase = Math.Max(0m, Math.Min(declared, insuranceCap));
@@ -143,17 +163,19 @@ namespace ERP_HRM_CMS.Services.Payroll
             decimal employerSocial = erPension + erSick;
             decimal employerTotal = employerSocial + erHealth + erUnemployment + erAccident;
 
-            // 4. Phạt đi muộn
+            // 5. Phạt đi muộn
             decimal latePenalty = LatePenalty(input.TotalLateMinutes, rules.LateBlockMinutes, rules.LateAmountPerBlock);
 
-            // 5. Thuế TNCN: trừ phần miễn thuế, bảo hiểm người lao động đóng, giảm trừ bản thân và người phụ thuộc
+            // 6. Thuế TNCN: trừ phần miễn thuế, bảo hiểm người lao động đóng, giảm trừ bản thân và người phụ thuộc
             decimal personalDeduction = rules.PersonalDeduction;
             decimal dependentDeduction = rules.DependentDeduction * input.DependentCount;
             decimal nonTaxable = taxExemptAllowance + employeeTotal + personalDeduction + dependentDeduction;
             decimal taxableIncome = Money(Math.Max(0m, gross - nonTaxable));
             decimal pit = Money(ProgressivePit(taxableIncome, rules.PitBrackets));
 
-            decimal net = Money(gross - employeeTotal - pit - latePenalty);
+            // 7. Thực lĩnh: Gross trừ các khoản bảo hiểm NLĐ, thuế TNCN, phạt đi muộn và trừ kỷ luật từ QĐ
+            decimal totalDeductions = employeeTotal + pit + latePenalty + input.DecisionDiscipline;
+            decimal net = Money(Math.Max(0m, gross - totalDeductions));
 
             return new PayrollResult
             {
@@ -161,6 +183,10 @@ namespace ERP_HRM_CMS.Services.Payroll
                 StandardWorkSalary = standardWorkSalary,
                 OvertimeSalary = overtimeSalary,
                 AllowanceTotal = allowanceTotal,
+                KpiBonus = input.KpiBonus,
+                DecisionReward = input.DecisionReward,
+                DecisionDiscipline = input.DecisionDiscipline,
+                TotalBonus = totalBonus,
                 Gross = Money(gross),
                 InsuranceCap = insuranceCap,
                 InsuranceBase = insuranceBase,

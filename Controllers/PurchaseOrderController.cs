@@ -1,13 +1,16 @@
+using ERP.Application.Common.Interfaces;
+using ERP.Domain.Enums;
+using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.Enums;
+using ERP_HRM_CMS.Services;
+using ERP_HRM_CMS.Services.Kho;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using ERP_HRM_CMS.Data;
-using ERP_HRM_CMS.Filters;
-using ERP_HRM_CMS.Models.Entities;
-using ERP_HRM_CMS.Services;
 
 namespace ERP_HRM_CMS.Controllers
 {
@@ -16,21 +19,42 @@ namespace ERP_HRM_CMS.Controllers
     {
         private readonly AppDbContext _context;
         private readonly INotificationService _notificationService;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IDataScopeService _dataScope;
 
-        public PurchaseOrderController(AppDbContext context, INotificationService notificationService)
+        public PurchaseOrderController(
+            AppDbContext context,
+            INotificationService notificationService,
+            ICurrentUserService currentUser,
+            IDataScopeService dataScope)
         {
             _context = context;
             _notificationService = notificationService;
+            _currentUser = currentUser;
+            _dataScope = dataScope;
         }
 
-        private int CurrentUserId => HttpContext.Session.GetInt32("UserId") ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        private async Task<List<Branch>> GetScopedBranchesAsync()
+        {
+            var query = _context.Branches.AsQueryable();
+            if (_dataScope.GetOperationsScopeLevel() == DataScopeLevel.Branch && _currentUser.BranchId.HasValue)
+            {
+                int myBranchId = _currentUser.BranchId.Value;
+                query = query.Where(b => b.Id == myBranchId);
+            }
+            return await query.OrderBy(b => b.Name).ToListAsync();
+        }
 
         // 1. DANH SÁCH ĐƠN MUA HÀNG (PO)
         [HttpGet]
         [KiemTraQuyen("scm.po.view")]
         public async Task<IActionResult> Index(string? keyword, string? status, int? supplierId, int? branchId)
         {
-            var query = _context.PurchaseOrders
+            int? resolvedBranch = _dataScope.ResolveAllowedBranchId(branchId);
+
+            var query = _dataScope.ApplyPurchaseOrderScope(_context.PurchaseOrders)
                 .Include(p => p.Supplier)
                 .Include(p => p.Branch)
                 .Include(p => p.Creator)
@@ -57,9 +81,9 @@ namespace ERP_HRM_CMS.Controllers
                 query = query.Where(p => p.SupplierId == supplierId.Value);
             }
 
-            if (branchId.HasValue && branchId.Value > 0)
+            if (resolvedBranch.HasValue && resolvedBranch.Value > 0)
             {
-                query = query.Where(p => p.BranchId == branchId.Value);
+                query = query.Where(p => p.BranchId == resolvedBranch.Value);
             }
 
             var orders = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
@@ -67,9 +91,9 @@ namespace ERP_HRM_CMS.Controllers
             ViewBag.Keyword = keyword;
             ViewBag.Status = status;
             ViewBag.SupplierId = supplierId;
-            ViewBag.BranchId = branchId;
+            ViewBag.BranchId = resolvedBranch;
             ViewBag.Suppliers = await _context.Suppliers.OrderBy(s => s.Name).ToListAsync();
-            ViewBag.Branches = await _context.Branches.OrderBy(b => b.Name).ToListAsync();
+            ViewBag.Branches = await GetScopedBranchesAsync();
 
             ViewBag.TotalAmount = orders.Sum(p => p.FinalAmount);
             ViewBag.PendingCount = orders.Count(p => p.Status == PurchaseOrderStatus.PendingApproval);
@@ -84,8 +108,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("scm.po.manage")]
         public async Task<IActionResult> Create(int? supplierId)
         {
+            var branches = await GetScopedBranchesAsync();
             ViewBag.Suppliers = new SelectList(await _context.Suppliers.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync(), "Id", "Name", supplierId);
-            ViewBag.Branches = new SelectList(await _context.Branches.OrderBy(b => b.Name).ToListAsync(), "Id", "Name");
+            ViewBag.Branches = new SelectList(branches, "Id", "Name");
             ViewBag.Products = await _context.Products.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
 
             var po = new PurchaseOrder
@@ -93,7 +118,8 @@ namespace ERP_HRM_CMS.Controllers
                 POCode = $"PO{VietnamTime.Now:yyMMddHHmm}",
                 OrderDate = VietnamTime.Today,
                 ExpectedDeliveryDate = VietnamTime.Today.AddDays(3),
-                SupplierId = supplierId ?? 0
+                SupplierId = supplierId ?? 0,
+                BranchId = branches.FirstOrDefault()?.Id ?? 1
             };
 
             return View(po);
@@ -105,6 +131,9 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("scm.po.manage")]
         public async Task<IActionResult> Create(PurchaseOrder model, int[] productIds, int[] quantities, decimal[] unitPrices)
         {
+            if (!_dataScope.CanAccessBranch(model.BranchId))
+                return Forbid();
+
             if (productIds == null || productIds.Length == 0)
             {
                 TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một mặt hàng để đặt mua.";
@@ -165,7 +194,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("scm.po.view")]
         public async Task<IActionResult> ChiTiet(long id)
         {
-            var po = await _context.PurchaseOrders
+            var po = await _dataScope.ApplyPurchaseOrderScope(_context.PurchaseOrders)
                 .Include(p => p.Supplier)
                 .Include(p => p.Branch)
                 .Include(p => p.Creator)
@@ -184,7 +213,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("scm.po.manage")]
         public async Task<IActionResult> DuyetDon(long id)
         {
-            var po = await _context.PurchaseOrders
+            var po = await _dataScope.ApplyPurchaseOrderScope(_context.PurchaseOrders)
                 .Include(p => p.Supplier)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -214,13 +243,13 @@ namespace ERP_HRM_CMS.Controllers
             return RedirectToAction(nameof(ChiTiet), new { id });
         }
 
-        // 6. XÁC NHẬN HÀNG VỀ KHO (TỰ ĐỘNG CỘNG TỒN KHO & GHI NHẬN CÔNG NỢ PHẢI TRẢ NCC)
+        // 6. XÁC NHẬN HÀNG VỀ KHO (TỰ ĐỘNG CỘNG TỒN KHO NGUYÊN TỬ & GHI NHẬN CÔNG NỢ PHẢI TRẢ NCC)
         [HttpPost]
         [ValidateAntiForgeryToken]
         [KiemTraQuyen("scm.po.manage")]
         public async Task<IActionResult> NhanHang(long id)
         {
-            var po = await _context.PurchaseOrders
+            var po = await _dataScope.ApplyPurchaseOrderScope(_context.PurchaseOrders)
                 .Include(p => p.Supplier)
                 .Include(p => p.Branch)
                 .Include(p => p.PurchaseOrderDetails)
@@ -242,13 +271,14 @@ namespace ERP_HRM_CMS.Controllers
                 po.ReceivedDate = VietnamTime.Now;
                 po.DebtAmount = po.FinalAmount - po.PaidAmount;
 
-                // 1. Tự động tăng tồn kho thực tế tại chi nhánh
+                // 1. Tự động tăng tồn kho thực tế tại chi nhánh bằng câu lệnh UPDATE nguyên tử (không mất cập nhật khi đồng thời)
                 foreach (var item in po.PurchaseOrderDetails)
                 {
-                    var inv = await _context.Inventories.FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.BranchId == po.BranchId);
-                    if (inv == null)
+                    bool daCongTon = await InventoryStockService.CongTonAsync(
+                        _context, po.BranchId, item.ProductId, item.Quantity, VietnamTime.Now);
+                    if (!daCongTon)
                     {
-                        inv = new Inventory
+                        _context.Inventories.Add(new Inventory
                         {
                             ProductId = item.ProductId,
                             BranchId = po.BranchId,
@@ -256,13 +286,7 @@ namespace ERP_HRM_CMS.Controllers
                             MinStockAlert = 5,
                             MaxStockLimit = 1000,
                             UpdatedAt = VietnamTime.Now
-                        };
-                        _context.Inventories.Add(inv);
-                    }
-                    else
-                    {
-                        inv.StockQuantity += item.Quantity;
-                        inv.UpdatedAt = VietnamTime.Now;
+                        });
                     }
 
                     // Ghi nhận lịch sử thẻ kho (InventoryTransaction)
@@ -331,7 +355,7 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("scm.po.manage")]
         public async Task<IActionResult> HuyDon(long id, string? reason)
         {
-            var po = await _context.PurchaseOrders.FindAsync(id);
+            var po = await _dataScope.ApplyPurchaseOrderScope(_context.PurchaseOrders).FirstOrDefaultAsync(p => p.Id == id);
             if (po == null) return NotFound();
 
             if (po.Status == PurchaseOrderStatus.Received)

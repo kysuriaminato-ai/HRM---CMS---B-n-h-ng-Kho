@@ -1,387 +1,172 @@
-# UI Guide — ERP HRM · CMS · Bán hàng Kho
+# UI Guide — ERP HRM · CMS · Bán hàng & Kho (Giai đoạn A)
 
-> Tài liệu quy ước giao diện, bảng màu, class CSS và component dùng chung.
-> Cập nhật: Phiên 3 (2026-11-04)
-
----
-
-## 1. Bảng màu (CSS Variables)
-
-Tất cả màu sắc được khai báo trên `:root` trong `enterprise-theme.css`.
-Dark mode tự động đảo qua `[data-bs-theme="dark"]`.
-
-### 1.1 Màu chính (Brand)
-
-| Token                  | Light           | Dark            | Dùng cho                     |
-|------------------------|-----------------|-----------------|------------------------------|
-| `--erp-primary`        | `#2563EB`       | `#3B82F6`       | Nút chính, link, badge       |
-| `--erp-primary-hover`  | `#1D4ED8`       | `#60A5FA`       | Hover nút chính              |
-| `--erp-primary-subtle` | `rgba(37,99,235,0.08)` | `rgba(59,130,246,0.15)` | Nền nhẹ  |
-
-### 1.2 Trạng thái (Semantic)
-
-| Token              | Light     | Dark      | Dùng cho                       |
-|--------------------|-----------|-----------|--------------------------------|
-| `--erp-success`    | `#10B981` | `#34D399` | Thành công, tăng trưởng        |
-| `--erp-danger`     | `#EF4444` | `#F87171` | Lỗi, cảnh báo nghiêm trọng    |
-| `--erp-warning`    | `#F59E0B` | `#FBBF24` | Cảnh báo, chờ duyệt           |
-| `--erp-info`       | `#06B6D4` | `#22D3EE` | Thông tin, gợi ý               |
-
-### 1.3 Nền & Viền
-
-| Token                  | Mô tả                          |
-|------------------------|---------------------------------|
-| `--erp-bg-body`        | Nền trang chính                 |
-| `--erp-bg-card`        | Nền card / bảng                 |
-| `--erp-bg-sidebar`     | Nền sidebar (gradient tối)      |
-| `--erp-border-color`   | Viền mặc định                   |
-| `--erp-text-primary`   | Màu chữ chính                   |
-| `--erp-text-muted`     | Màu chữ phụ                     |
-
-### 1.4 Shadow
-
-| Token                   | Dùng cho                       |
-|-------------------------|--------------------------------|
-| `--erp-card-shadow`     | Shadow mặc định cho card       |
-| `--erp-elevated-shadow` | Shadow nâng cao (hover-lift)   |
+> Tài liệu chuẩn hóa Design Tokens, Layout hợp nhất, 12 Shared Components, Micro-interactions và quy ước giao diện quản trị.
+> Cập nhật: Giai đoạn A (2026-11-04) — Xem trực tiếp tại `/UI/Styleguide` (Super Admin).
 
 ---
 
-## 2. Font chữ
+## 1. Hệ thống Design Tokens (`wwwroot/css/enterprise-theme.css`)
 
-```css
---erp-font-main: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
---erp-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-```
+Tất cả giá trị màu sắc, bo góc, khoảng cách, đổ bóng và tốc độ chuyển động được khai báo tập trung qua CSS Custom Properties (`--erp-*`).
+**Tuyệt đối không hard-code mã màu `#hex`, `rgb(...)`, `rgba(...)` trực tiếp trong các View `.cshtml`.**
 
-- **Be Vietnam Pro** — Font chính, hỗ trợ tiếng Việt đầy đủ.
-- **JetBrains Mono** — Font monospace cho số liệu, code.
-- Weight sử dụng: 300 (light), 400 (regular), 500 (medium), 600 (semibold), 700 (bold), 800 (extrabold).
+### 1.1 Chế độ Sáng / Tối (Light / Dark Mode)
+- Mặc định `:root` là chế độ Sáng (`Light`).
+- Chế độ Tối kích hoạt khi `html[data-theme="dark"]`, `html[data-bs-theme="dark"]` hoặc `.dark-mode`.
+- Anti-FOUC script trong `<head>` của `_Layout.cshtml` và `_ErrorDocument.cshtml` đọc `localStorage.getItem('erp-theme')` (fallback `prefers-color-scheme: dark`) trước khi render.
 
----
+### 1.2 Màu nhấn theo phân hệ (`[data-module]`)
+Mỗi phân hệ tự động ghi đè `--erp-primary`, `--erp-primary-rgb`, `--erp-primary-hover`, `--erp-primary-subtle` cho cả Light & Dark mode:
 
-## 3. Layout — Sidebar + Topbar
+| `ViewData["Module"]` | Thuộc tính HTML                 | Ý nghĩa phân hệ        | Tông màu chủ đạo  |
+|----------------------|---------------------------------|------------------------|-------------------|
+| `"system"`           | `data-module="system"`          | Hệ thống & Tổng quan   | Royal Blue        |
+| `"hrm"`              | `data-module="hrm"`             | Nhân sự & Chấm công    | Indigo            |
+| `"payroll"`          | `data-module="payroll"`         | Lương & Phúc lợi       | Emerald           |
+| `"sales"`            | `data-module="sales"`           | Bán hàng, POS & Công nợ| Teal / Cyan       |
+| `"warehouse"`        | `data-module="warehouse"`       | Kho vận & Mua hàng PO  | Amber / Orange    |
+| `"cms"`              | `data-module="cms"`             | Nội dung & Giao diện   | Violet            |
 
-### 3.1 Cấu trúc HTML
-
-```
-<html lang="vi" [data-bs-theme] [class="sidebar-collapsed"]>
-  <body>
-    <aside class="erp-sidebar">         ← 260px, thu gọn 68px
-    <div class="erp-main-content">
-      <header class="erp-topbar">        ← sticky, 60px
-      <div class="erp-content-wrapper">
-        <main class="erp-page-content"> ← @RenderBody()
-      </div>
-      <footer class="erp-footer">
-    </div>
-  </body>
-</html>
-```
-
-### 3.2 Sidebar toggle
-
-- **Desktop**: Nút `#sidebarCollapseBtn` ở đáy sidebar → class `sidebar-collapsed` trên `<html>`.
-- **Mobile** (≤991px): Nút hamburger `#sidebarMobileBtn` → class `show` trên sidebar + overlay.
-- Trạng thái lưu `localStorage('erp_sidebar_collapsed')`.
-- Sidebar collapsed: icon tooltip hiện tên menu via `data-tooltip`.
-
-### 3.3 Active sidebar item
-
-JS tự phát hiện URL path hiện tại, so khớp `data-path` trên `.erp-nav-item`, chọn best-match (path dài nhất khớp).
-
-### 3.4 Dark / Light mode
-
-- Toggle qua `window.toggleTheme()` (enterprise-theme.js).
-- Lưu `localStorage('erp_theme')` + cookie `erp_theme` (cho server-side).
-- Anti-FOUC: inline `<script>` trong `<head>` đọc theme trước render.
-- CSS: `[data-bs-theme="dark"]` + `.dark-mode` class.
+### 1.3 Nhóm Token nền tảng
+- **Surface & Text**: `--erp-bg-body`, `--erp-bg-card`, `--erp-bg-surface`, `--erp-bg-subtle`, `--erp-bg-hover`, `--erp-bg-sidebar`, `--erp-text-main`, `--erp-text-secondary`, `--erp-text-muted`, `--erp-border-color`, `--erp-border-strong`.
+- **Semantic**: `--erp-success`, `--erp-warning`, `--erp-danger`, `--erp-info`, `--erp-purple` (mỗi màu đều có biến thể `-rgb`, `-hover`, `-subtle`).
+- **Spacing**: `--erp-space-1` (`4px`) → `--erp-space-12` (`48px`).
+- **Border Radius**: `--erp-radius-xs` (`4px`), `sm` (`6px`), `md` (`8px`), `lg` (`12px`), `xl` (`16px`), `2xl` (`20px`), `full` (`9999px`).
+- **Shadow**: `--erp-shadow-xs`, `sm`, `md`, `lg`, `xl`, `--erp-card-shadow`, `--erp-elevated-shadow`.
+- **Motion**: `--erp-duration-instant` (`80ms`), `fast` (`150ms`), `normal` (`240ms`), `slow` (`380ms`), `slower` (`550ms`); `--erp-ease-default`, `out`, `in`, `spring`.
 
 ---
 
-## 4. Shared Components
+## 2. Layout Hợp Nhất (`Views/Shared/_Layout.cshtml`)
 
-### 4.1 Stat Card (Thẻ thống kê)
-
-```html
-<div class="stat-card hover-lift">
-    <div class="stat-card-body">
-        <div class="stat-card-label">Doanh thu tháng</div>
-        <div class="stat-card-value">
-            <span class="count-up" data-target="125000000" data-suffix=" đ">0</span>
-        </div>
-        <div class="stat-card-trend up">
-            <i class="bi bi-arrow-up-right me-1"></i>12% vs tháng trước
-        </div>
-    </div>
-    <div class="stat-card-icon primary">
-        <i class="bi bi-currency-dollar"></i>
-    </div>
-</div>
-```
-
-**Thuộc tính `count-up`:**
-
-| Attribute       | Mô tả                          | Mặc định |
-|-----------------|---------------------------------|----------|
-| `data-target`   | Giá trị đích (số)              | bắt buộc |
-| `data-prefix`   | Tiền tố (VD: "$")              | `""`     |
-| `data-suffix`   | Hậu tố (VD: " đ")             | `""`     |
-| `data-decimals` | Số chữ số thập phân            | `0`      |
-| `data-duration` | Thời gian animation (ms)       | `1200`   |
-
-**Biến thể icon:** `primary`, `success`, `warning`, `danger`, `info`, `purple`
-
-**Trend:** `.stat-card-trend.up` (xanh) / `.stat-card-trend.down` (đỏ)
-
-### 4.2 Data Table
-
-```html
-<div class="erp-table-wrapper">
-    <div class="erp-table-toolbar">
-        <span class="erp-table-toolbar-title">Tiêu đề</span>
-        <div><!-- Nút hành động --></div>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead><tr><th>...</th></tr></thead>
-            <tbody>...</tbody>
-        </table>
-    </div>
-</div>
-```
-
-### 4.3 Empty State
-
-```html
-<div class="erp-empty-state">
-    <div class="erp-empty-state-icon"><i class="bi bi-inbox"></i></div>
-    <div class="erp-empty-state-title">Chưa có dữ liệu</div>
-    <div class="erp-empty-state-desc">Mô tả ngắn gọn</div>
-</div>
-```
-
-### 4.4 Floating Label Form
-
-```html
-<div class="erp-floating-group">
-    <input type="text" class="erp-floating-input" id="ten" placeholder=" " required />
-    <label for="ten" class="erp-floating-label">Họ và tên</label>
-</div>
-```
-
-Label tự nổi lên khi input focus hoặc có giá trị (`:not(:placeholder-shown)`).
-
-### 4.5 Button Loading
-
-```html
-<button class="btn btn-primary ripple" id="saveBtn">
-    <i class="bi bi-check-lg me-1"></i>Lưu
-</button>
-```
-
-```javascript
-// Bật loading
-ERP.btnLoading(document.getElementById('saveBtn'));
-// Tắt loading
-ERP.btnReset(document.getElementById('saveBtn'));
-```
-
-### 4.6 Confirm Modal
-
-```javascript
-ERP.confirm({
-    title: 'Xóa bản ghi?',
-    message: 'Hành động này không thể hoàn tác.',
-    confirmText: 'Xóa',
-    cancelText: 'Hủy',
-    variant: 'danger'   // 'danger' | 'warning'
-}).then(function(ok) {
-    if (ok) { /* thực hiện xóa */ }
-});
-```
-
-### 4.7 Toast (Thông báo nổi)
-
-**Server-side** (TempData):
-```csharp
-TempData["SuccessMessage"] = "Lưu thành công!";
-TempData["ErrorMessage"] = "Có lỗi xảy ra.";
-```
-
-**Client-side** (JavaScript):
-```javascript
-ERP.toast('Đã lưu thành công!', 'success');   // success | danger | warning | info
-```
-
-Toast tự biến mất sau 5 giây.
-
-### 4.8 Badges
-
-```html
-<span class="erp-badge erp-badge-success">Hoạt động</span>
-<span class="erp-badge erp-badge-danger erp-badge-dot">Nghỉ việc</span>
-```
-
-Biến thể: `erp-badge-primary`, `erp-badge-success`, `erp-badge-danger`, `erp-badge-warning`, `erp-badge-info`, `erp-badge-neutral`
-
-Thêm `erp-badge-dot` để có dấu chấm tròn phía trước.
-
-### 4.9 Skeleton Loading
-
-```html
-<div class="skeleton skeleton-card"></div>
-<div class="skeleton skeleton-line" style="width:80%"></div>
-<div class="skeleton skeleton-line" style="width:60%"></div>
-<div class="skeleton skeleton-circle"></div>
-```
-
-### 4.10 Tabs
-
-```html
-<div class="erp-tabs">
-    <button class="erp-tab active">Tab 1</button>
-    <button class="erp-tab">Tab 2</button>
-</div>
-```
+- **Tất cả View quản trị** dùng chung `Views/Shared/_Layout.cshtml` (mặc định qua `Views/_ViewStart.cshtml`) và chỉ cần khai báo `ViewData["Module"] = "hrm" | "payroll" | "sales" | "warehouse" | "cms" | "system"`.
+- **Trang công khai** (`Views/Public/*`) tiếp tục dùng riêng `Views/Shared/_PublicLayout.cshtml`.
+- **Accordion Sidebar**: các nhóm chức năng đóng/mở mượt bằng CSS Grid (`0fr → 1fr`), tự động mở nhóm chứa trang hiện tại và lưu trạng thái vào `localStorage('erp_sidebar_groups')`.
+- **Topbar**: hiển thị huy hiệu phân hệ hiện tại (`.erp-module-pill`), tìm kiếm nhanh `Ctrl+K`, thông báo thời gian thực SignalR, nút chuyển Sáng/Tối Circular Reveal và Avatar người dùng.
 
 ---
 
-## 5. Animation Classes
+## 3. Bộ 12 Shared UI Components (Tag Helpers & Partial Views)
 
-Tất cả animation tôn trọng `prefers-reduced-motion: reduce`.
+Đã đăng ký toàn cục qua `@addTagHelper *, ERP_HRM_CMS` trong `Views/_ViewImports.cshtml`:
 
-### 5.1 Entrance
-
-| Class          | Hiệu ứng                       |
-|----------------|---------------------------------|
-| `.fade-in`     | Mờ → rõ (0.4s)                 |
-| `.slide-up`    | Trượt lên + mờ → rõ (0.5s)     |
-| `.slide-up-sm` | Trượt lên nhẹ (0.35s)           |
-
-### 5.2 Stagger (Hiệu ứng so le)
-
-Thêm class `stagger-list` vào container. Các phần tử con sẽ xuất hiện lần lượt (delay 60ms mỗi item, tối đa 8 item).
-
-```html
-<div class="row stagger-list">
-    <div class="col-md-3"><!-- card 1, delay 0ms --></div>
-    <div class="col-md-3"><!-- card 2, delay 60ms --></div>
-    <div class="col-md-3"><!-- card 3, delay 120ms --></div>
-    <div class="col-md-3"><!-- card 4, delay 180ms --></div>
-</div>
-```
-
-### 5.3 Hover
-
-| Class          | Hiệu ứng                        |
-|----------------|----------------------------------|
-| `.hover-lift`  | Nâng lên 3px + shadow khi hover  |
-| `.hover-grow`  | Phóng to 1.02x khi hover         |
-
-### 5.4 Ripple (Hiệu ứng sóng nhấn)
-
-Thêm class `ripple` vào button. Các `.btn-primary`, `.btn-success`, `.btn-danger`, `.btn-warning` tự động có ripple.
-
-### 5.5 Scroll Reveal
-
-```html
-<div class="reveal">Xuất hiện khi cuộn tới</div>
-<div class="reveal-left">Trượt từ trái</div>
-<div class="reveal-right">Trượt từ phải</div>
-<div class="reveal-scale">Phóng to</div>
-```
-
-JS (IntersectionObserver) sẽ thêm `.revealed` khi phần tử vào viewport.
-
-### 5.6 Chart Container
-
-```html
-<div class="chart-container">
-    <canvas id="myChart"></canvas>
-</div>
-```
-
-Tự động fade-in khi tải.
-
-### 5.7 Utility
-
-| Class       | Hiệu ứng                  |
-|-------------|----------------------------|
-| `.pulse`    | Nhấp nháy liên tục         |
-| `.spin`     | Xoay 360° liên tục         |
+1. **PageHeader** (`<erp-page-header>` / `Views/Shared/UI/_PageHeader.cshtml`):
+   ```html
+   <erp-page-header title="Danh sách nhân sự"
+                    subtitle="Quản lý hồ sơ, phòng ban và hợp đồng"
+                    icon="bi-people"
+                    breadcrumbs="Tổng quan:/Home/Index|Nhân sự">
+       <a href="/NhanSu/Create" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Thêm mới</a>
+   </erp-page-header>
+   ```
+2. **StatCard** (`<erp-stat-card>` / `Views/Shared/UI/_StatCard.cshtml`):
+   ```html
+   <erp-stat-card label="Doanh thu tháng" count-up-target="125000000" suffix=" đ"
+                  trend="+12.5%" trend-dir="up" icon="bi-currency-dollar" variant="primary" />
+   ```
+3. **FilterBar** (`<erp-filter-bar>`):
+   ```html
+   <erp-filter-bar target-table="empTable" action-url="/NhanSu/TableData" search-placeholder="Tìm tên, mã NV...">
+       <select name="deptId" class="form-select form-select-sm w-auto">...</select>
+   </erp-filter-bar>
+   ```
+4. **DataTable AJAX** (`<erp-data-table>` + `Views/Shared/UI/_Pagination.cshtml`):
+   ```html
+   <erp-data-table id="empTable" title="Hồ sơ nhân viên" ajax-url="/NhanSu/TableData"
+                   page-index="1" total-pages="5" total-count="48" page-size="10"
+                   sort-by="code" sort-dir="asc">
+       <table class="table table-hover align-middle mb-0">
+           <thead><tr><th data-sort="code">Mã NV</th>...</tr></thead>
+           <tbody>...</tbody>
+       </table>
+   </erp-data-table>
+   ```
+5. **EmptyState** (`<erp-empty-state>` / `Views/Shared/UI/_EmptyState.cshtml`)
+6. **Skeleton** (`<erp-skeleton type="card|list|table|avatar" rows="3" />`)
+7. **ConfirmModal** (`<erp-confirm-modal>` / `Views/Shared/UI/_ConfirmModal.cshtml` / thuộc tính `data-erp-confirm="..."`)
+8. **Drawer** (`<erp-drawer id="..." title="..." position="end|start" size="sm|md|lg">` + `<erp-drawer-footer>`)
+9. **Tabs trượt indicator** (`<erp-tabs>` + `<erp-tab id="..." title="..." icon="..." badge="..." active="true">`)
+10. **Status Badge chuẩn `WorkflowStatuses`** (`<erp-status-badge status="@item.Status" workflow="PurchaseOrder" show-icon="true" />`) — ánh xạ qua `Helpers/WorkflowStatusUiHelper.cs` cho toàn bộ 5 enum trong `Models/Enums/WorkflowStatuses.cs` (`PurchaseOrderStatus`, `DebtStatus`, `LeaveRequestStatus`, `PayrollPeriodStatus`, `SalarySlipStatus`).
+11. **Avatar** (`<erp-avatar name="Nguyễn Văn A" src="..." size="xs|sm|md|lg|xl" status="online|busy|away|offline" />`)
+12. **Timeline** (`<erp-timeline>` + `<erp-timeline-item title="..." time="..." actor="..." variant="success" icon="bi-check-lg">`)
 
 ---
 
-## 6. JavaScript API — `window.ERP`
+## 4. Hiệu ứng & JavaScript API (`admin-animations.css`, `admin-ui.js`, `enterprise-theme.js`)
 
-| Method                     | Mô tả                                       |
-|----------------------------|----------------------------------------------|
-| `ERP.btnLoading(btn)`      | Bật loading cho button                       |
-| `ERP.btnReset(btn)`        | Tắt loading cho button                       |
-| `ERP.confirm({...})`       | Hiện modal xác nhận, trả về Promise<boolean> |
-| `ERP.toast(msg, variant)`  | Hiện toast thông báo                         |
+Mọi hiệu ứng đều kiểm tra và tôn trọng `prefers-reduced-motion: reduce`:
 
-Các hàm global từ `enterprise-theme.js`:
-
-| Method                     | Mô tả                                       |
-|----------------------------|----------------------------------------------|
-| `window.toggleTheme()`     | Đổi dark/light mode                         |
-| `window.openCommandPalette()` | Mở command palette (Ctrl+K)              |
-
----
-
-## 7. File Structure
-
-```
-wwwroot/
-├── css/
-│   ├── enterprise-theme.css    ← Biến CSS, base styles, dark mode
-│   ├── admin-components.css    ← Sidebar, topbar, stat cards, forms, tables, badges
-│   ├── admin-animations.css    ← Keyframes, stagger, hover, ripple, scroll reveal
-│   └── site.css                ← Legacy styles
-├── js/
-│   ├── security.js             ← XSS escape (HRM.escapeHtml)
-│   ├── enterprise-theme.js     ← Theme toggle, command palette
-│   ├── enterprise-notifications.js ← SignalR notifications
-│   ├── admin-ui.js             ← Sidebar, ripple, count-up, scroll reveal, toast, confirm
-│   └── site.js                 ← Legacy scripts
-Views/Shared/
-├── _Layout.cshtml              ← Layout chính: sidebar + topbar (Dashboard, mặc định)
-├── _HRMLayout.cshtml           ← Layout HR (có sidebar riêng)
-├── _AdminLayout.cshtml         ← Layout CMS/Permissions
-├── _SalesLayout.cshtml         ← Layout bán hàng
-├── _WarehouseLayout.cshtml     ← Layout kho
-└── _PublicLayout.cshtml        ← Layout trang công khai
-```
+| API / Class                                 | Chức năng                                                                 |
+|---------------------------------------------|---------------------------------------------------------------------------|
+| `window.toggleTheme(event)`                 | Chuyển Sáng/Tối kèm hiệu ứng lan tròn **Circular Reveal** từ vị trí bấm   |
+| `window.setErpModule(module)`               | Đổi màu nhấn `data-module` động và phát sự kiện `erp:modulechange`        |
+| `ERP.themeColor('--erp-primary')`           | Đọc giá trị token CSS hiện hành cho Chart.js / Canvas                     |
+| `ERP.withViewTransition(fn)`                | Bọc cập nhật DOM bằng View Transitions API (có fallback an toàn)          |
+| `ERP.toast(msg, variant, durationMs)`       | Toast có thanh đếm ngược (progress bar), tự tạm dừng khi rê chuột (hover) |
+| `ERP.confirm(options)` / `[data-erp-confirm]`| Hộp thoại xác nhận dùng chung trả về `Promise<boolean>`                   |
+| `ERP.drawer.open(id)` / `ERP.drawer.close(id)`| Đóng/mở ngăn kéo trượt (hỗ trợ phím `ESC` & backdrop)                   |
+| `ERP.shake(el)`                             | Rung cảnh báo khi form/input không hợp lệ                                 |
+| `ERP.successTick(container, label)`         | Vẽ dấu tích SVG hoàn tất thao tác                                         |
+| `ERP.staggerRows(container)`                | Hiệu ứng xuất hiện tuần tự cho các dòng `tbody > tr`                      |
 
 ---
 
-## 8. Responsive Breakpoints
-
-| Breakpoint    | Hành vi                                          |
-|---------------|--------------------------------------------------|
-| ≥1200px (xl)  | Sidebar mở rộng 260px, 6 cột stat cards         |
-| ≥992px (lg)   | Sidebar hiển thị, có thể thu gọn                |
-| ≤991.98px     | Sidebar ẩn, mở qua hamburger + overlay           |
-| ≤575.98px     | Topbar compact, stat card full-width              |
+## 5. Trang Lỗi & Kiểm Định Giao Diện
+- **Trang lỗi chuẩn hóa**: `Views/Shared/Error403.cshtml`, `Error404.cshtml`, `Error500.cshtml`, `Error.cshtml`, `Views/Auth/AccessDenied.cshtml`, `Views/Home/KhongCoQuyen.cshtml` (dùng chung `Views/Shared/UI/_ErrorDocument.cshtml`, hỗ trợ đầy đủ Light/Dark mode và giữ nguyên HTTP Status Code).
+- **UI Styleguide**: `/UI/Styleguide` (`Controllers/UIController.cs`) — chỉ cho phép tài khoản **Super Admin** truy cập (xác thực trực tiếp qua `ISuperAdminService`).
 
 ---
 
-## 9. Quy ước đặt tên
+## 6. Hệ Thống HRM Workspace Components (Phiên 3)
 
-- **CSS class prefix**: `erp-` cho component (VD: `erp-sidebar`, `erp-toast-alert`)
-- **CSS variable prefix**: `--erp-` cho tất cả custom properties
-- **JS namespace**: `window.ERP` cho API mới, `window.HRM` cho security utils cũ
-- **HTML data attributes**: `data-path`, `data-target`, `data-tooltip`, `data-bs-theme`
-- **BEM-lite**: `stat-card-body`, `stat-card-icon`, `stat-card-trend`
+### 6.1 Theme "Nordic People & Indigo Slate" & Chuẩn WCAG AA
+- **Độ tương phản chuẩn WCAG AA**:
+  - Light mode: `--erp-text-main: #0F172A`, `--erp-text-secondary: #334155`, `--erp-text-muted: #475569` (tương phản > 4.5:1 trên nền trắng và `#F8FAFC`).
+  - Dark mode: `--erp-text-main: #F8FAFC`, `--erp-text-secondary: #CBD5E1`, `--erp-text-muted: #94A3B8` (tương phản > 5.5:1 trên nền `#0B0F19` và `#111827`).
+  - Màu nhấn trạng thái đạt chuẩn: `--erp-success-text`, `--erp-warning-text`, `--erp-danger-text`, `--erp-info-text` chống chói/mờ.
+- **Tabular Nums cho số liệu (`tabular-nums`)**:
+  - Mọi con số tiền tệ, giờ công, ngày tháng, mã NV và tỷ lệ phần trăm tự động căn hàng thẳng tắp nhờ `font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;`.
+  - Hỗ trợ qua các class `.tabular-nums`, `.col-number`, `.col-currency`, `.col-hours`, `.stat-value`.
 
----
+### 6.2 Table & UI Density Switcher (Comfortable vs Compact)
+- Nút chuyển đổi nhanh trực tiếp trên Topbar (`#densityToggleBtn`), lưu trạng thái vào `localStorage('erp_density')` và cookie `erp_density`:
+  - `Comfortable`: Chiều cao dòng chuẩn 48px, khoảng đệm rộng rãi phục vụ thao tác chuột thông thường.
+  - `Compact`: Chiều cao dòng 32px-34px, font-size `0.8125rem`, tối ưu cho chuyên viên nhân sự và kế toán theo dõi bảng công, bảng lương nhiều cột.
+- Hỗ trợ cuộn ngang cố định:
+  - `sticky-thead`: Cố định tiêu đề bảng khi cuộn dọc.
+  - `sticky-col-1` / `sticky-col-2`: Cố định cột Mã NV và Họ tên khi cuộn ngang màn hình.
+  - `sticky-col-actions`: Cố định cột Thao tác ở mép phải.
 
-## 10. Accessibility
+### 6.3 Bento Dashboard Grid (`wwwroot/css/hrm-workspace.css`)
+- Bố cục lưới 12 cột đáp ứng (`.erp-bento-grid`, `.bento-col-12`, `.bento-col-8`, `.bento-col-6`, `.bento-col-4`, `.bento-col-3`).
+- Hiệu ứng viền sáng tinh tế `.border-glow`, nâng thẻ khi hover `.hover-lift` và skeleton tải dữ liệu `.bento-shimmer`.
 
-- **Focus visible**: Tất cả interactive elements có focus ring (`outline: 2px solid var(--erp-primary)`)
-- **prefers-reduced-motion**: Tất cả animation/transition bị tắt khi người dùng bật giảm chuyển động
-- **aria-label**: Nút mobile toggle, breadcrumb navigation
-- **Semantic HTML**: `<nav>`, `<main>`, `<header>`, `<footer>`, `<aside>`
-- **Color contrast**: Đảm bảo tỷ lệ tương phản ≥4.5:1 cho text thường
+### 6.4 Interactive Org Chart (Sơ đồ cây tổ chức)
+- Hiển thị cây phân cấp phòng ban với thẻ lãnh đạo `.org-node-card` (avatar, tên, chức danh, mã phòng, số lượng nhân sự biên chế).
+- Hỗ trợ thu gọn/mở rộng nhánh con `.org-toggle-btn` có hiệu ứng mượt mà.
+- Khung nhìn tương tác `.erp-org-viewport` hỗ trợ phóng to/thu nhỏ (`zoom-in`, `zoom-out`, `zoom-reset`) và kéo chuột để di chuyển (drag-to-pan).
+- API khởi tạo: `ERP.orgChart.init()`.
+
+### 6.5 ATS Kanban Board (Pipeline Tuyển Dụng)
+- Bố cục cột ngang `.erp-kanban-board` cuộn độc lập `.kanban-column-body`.
+- Thẻ ứng viên `.kanban-card` hiển thị điểm đánh giá (0-100), tag vị trí tuyển dụng, avatar và ngày nộp.
+- Tương tác kéo-thả HTML5 Drag & Drop mượt mà kèm hiệu ứng nhấc thẻ nghiêng `.is-dragging` (`transform: rotate(2.5deg) scale(1.02);`), tự động cập nhật bộ đếm `.kanban-counter` trên đầu cột.
+- API khởi tạo: `ERP.kanban.init()`.
+
+### 6.6 Calendar & Shift Matrix Grid
+- Ma trận theo dõi ngày công thực tế theo ngày trong tháng `.erp-shift-matrix-container`.
+- Ô ca làm việc trực quan `.erp-shift-cell` với mã trạng thái phân màu:
+  - `shift-ontime`: Đúng giờ (P - xanh lá).
+  - `shift-late`: Đi muộn / về sớm (L - hổ phách).
+  - `shift-leave`: Nghỉ phép (V - xanh dương).
+  - `shift-ot`: Tăng ca (OT - chàm).
+  - `shift-trip`: Công tác (CT - xanh ngọc).
+  - `shift-absent`: Vắng mặt (X - đỏ).
+  - `shift-weekend`: Cuối tuần (- xám).
+- Thanh chú giải trạng thái trực quan `.shift-legend-bar`.
+
+### 6.7 Print & PDF Stylesheet (`wwwroot/css/admin-print.css`)
+- Tối ưu định dạng in chuẩn khổ A4 dọc và A4 ngang:
+  - Ẩn 100% thanh bên (sidebar), thanh trên (topbar), nút bấm, phân trang, thông báo toast khi in.
+  - Bố cục văn bản chuẩn: Quốc hiệu Tiêu ngữ, tiêu đề văn bản in `.print-doc-title`, bảng số liệu sắc nét `.print-table`, và khung chữ ký 3 bên `.print-signatures` (Người lập biểu, Kế toán trưởng, Giám đốc / Người lao động).
+  - Kiểm soát ngắt trang hoàn hảo `break-inside: avoid`.
