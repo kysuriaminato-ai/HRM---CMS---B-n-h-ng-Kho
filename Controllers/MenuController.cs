@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
+using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.ViewModels;
 
@@ -25,10 +26,12 @@ namespace ERP_HRM_CMS.Controllers
         {
             var menus = await _context.Menus
                 .Include(m => m.Parent)
+                .Include(m => m.SubMenus)
                 .OrderBy(m => m.Position)
                 .ThenBy(m => m.OrderIndex)
                 .ToListAsync();
 
+            ViewBag.IsSuperAdmin = LaSuperAdmin();
             return View(menus);
         }
 
@@ -99,24 +102,129 @@ namespace ERP_HRM_CMS.Controllers
             return View("Create", model);
         }
 
+        /// <summary>
+        /// Sửa tên Menu trực tiếp (Quick Rename) - Hỗ trợ cả AJAX và Form POST.
+        /// Cho phép Admin Tổng và người có quyền menu.edit sửa tên ngay trên danh sách.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [KiemTraQuyen("menu.delete")]
-        public async Task<IActionResult> Delete(int id)
+        [KiemTraQuyen("menu.edit")]
+        public async Task<IActionResult> DoiTen(int id, [FromForm] string title)
         {
-            var menu = await _context.Menus.Include(m => m.SubMenus).FirstOrDefaultAsync(m => m.Id == id);
-            if (menu == null) return NotFound();
-
-            if (menu.SubMenus.Any())
+            if (string.IsNullOrWhiteSpace(title))
             {
-                TempData["ErrorMessage"] = "Không thể xóa menu cha đang chứa các mục menu con!";
+                if (LaYeuCauAjax()) return Json(new { success = false, message = "Tên menu không được để trống!" });
+                TempData["ErrorMessage"] = "Tên menu không được để trống!";
                 return RedirectToAction(nameof(Index));
             }
 
+            var menu = await _context.Menus.FindAsync(id);
+            if (menu == null)
+            {
+                if (LaYeuCauAjax()) return Json(new { success = false, message = "Không tìm thấy menu!" });
+                return NotFound();
+            }
+
+            string tenCu = menu.Title;
+            menu.Title = title.Trim();
+            menu.UpdatedAt = VietnamTime.Now;
+            menu.UpdatedBy = User.Identity?.Name ?? "Admin";
+
+            await _context.SaveChangesAsync();
+
+            if (LaYeuCauAjax())
+            {
+                return Json(new { success = true, message = $"Đã đổi tên menu từ '{tenCu}' sang '{menu.Title}' thành công!", title = menu.Title });
+            }
+
+            TempData["SuccessMessage"] = $"Đã đổi tên menu thành '{menu.Title}' thành công!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Xóa Menu - Admin Tổng được phép xóa bất kỳ menu nào, kể cả menu cha có menu con (xóa đệ quy).
+        /// Hỗ trợ cả AJAX JSON và Form POST.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("menu.delete")]
+        public async Task<IActionResult> Delete(int id, bool force = false)
+        {
+            var menu = await _context.Menus
+                .Include(m => m.SubMenus)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (menu == null)
+            {
+                if (LaYeuCauAjax()) return Json(new { success = false, message = "Không tìm thấy mục menu cần xóa!" });
+                return NotFound();
+            }
+
+            bool isSuper = LaSuperAdmin();
+
+            if (menu.SubMenus.Any())
+            {
+                if (isSuper || force)
+                {
+                    // Admin Tổng: Xóa đệ quy toàn bộ menu con
+                    await XoaMenuDeQuyAsync(menu.Id);
+                }
+                else
+                {
+                    string msg = "Không thể xóa menu cha đang chứa các mục menu con! Vui lòng xóa menu con trước hoặc đăng nhập bằng Admin Tổng.";
+                    if (LaYeuCauAjax()) return Json(new { success = false, message = msg });
+                    TempData["ErrorMessage"] = msg;
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            string tenMenu = menu.Title;
             _context.Menus.Remove(menu);
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Đã xóa mục Menu thành công!";
+
+            if (LaYeuCauAjax())
+            {
+                return Json(new { success = true, message = $"Đã xóa mục Menu '{tenMenu}' thành công!" });
+            }
+
+            TempData["SuccessMessage"] = $"Đã xóa mục Menu '{tenMenu}' thành công!";
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>Xóa đệ quy toàn bộ menu con</summary>
+        private async Task XoaMenuDeQuyAsync(int parentId)
+        {
+            var children = await _context.Menus
+                .Include(m => m.SubMenus)
+                .Where(m => m.ParentId == parentId)
+                .ToListAsync();
+
+            foreach (var child in children)
+            {
+                if (child.SubMenus.Any())
+                {
+                    await XoaMenuDeQuyAsync(child.Id);
+                }
+                _context.Menus.Remove(child);
+            }
+        }
+
+        /// <summary>Kiểm tra quyền Admin Tổng / SuperAdmin</summary>
+        private bool LaSuperAdmin()
+        {
+            return User.IsInRole("SUPERADMIN") ||
+                   User.IsInRole("SuperAdmin") ||
+                   string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(User.Identity?.Name, "admin", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(User.Identity?.Name, "quantritong", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool LaYeuCauAjax()
+        {
+            var req = Request;
+            if (req == null) return false;
+            return string.Equals(req.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase) ||
+                   req.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>Liên kết theo bài viết: URL được sinh từ slug, không nhận từ người dùng.</summary>

@@ -2,31 +2,56 @@
 @{
     ViewData["Module"] = "cms";
     ViewData["Title"] = "Quản Trị Menu Đa Cấp";
+    bool isSuperAdmin = (ViewBag.IsSuperAdmin as bool?) ?? false;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
-        <h4 class="fw-bold mb-1">Cấu Trúc Menu Website</h4>
-        <p class="text-secondary small mb-0">Quản lý các thanh điều hướng và liên kết trang</p>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h4 class="fw-bold mb-0">Cấu Trúc Menu Website</h4>
+            @if (isSuperAdmin)
+            {
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">
+                    <i class="bi bi-shield-check me-1"></i> Admin Tổng
+                </span>
+            }
+        </div>
+        <p class="text-secondary small mb-0">Quản lý hệ thống thanh điều hướng, cấu trúc cây menu đa cấp và liên kết trang</p>
     </div>
-    <a href="/Menu/Create" class="btn btn-erp-black">
-        <i class="bi bi-plus-lg me-1"></i> Thêm Mục Menu
-    </a>
+    <div class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm" style="max-width: 250px;">
+            <span class="input-group-text bg-body border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="menuSearchInput" class="form-control border-start-0" placeholder="Lọc nhanh tên menu..." />
+        </div>
+        <a href="/Menu/Create" class="btn btn-erp-black btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Thêm Mục Menu
+        </a>
+    </div>
 </div>
+
+@if (isSuperAdmin)
+{
+    <div class="alert alert-primary d-flex align-items-center justify-content-between py-2 px-3 mb-3 small rounded-3 border-0 bg-primary-subtle text-primary">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-lightning-charge-fill fs-6"></i>
+            <span><strong>Đặc quyền Admin Tổng:</strong> Bạn có thể bấm nút <i class="bi bi-pencil-square"></i> để <strong>sửa tên menu trực tiếp</strong> tại chỗ, hoặc bấm <i class="bi bi-trash"></i> để <strong>xóa bất kỳ menu nào</strong> (kể cả menu cha có chứa menu con).</span>
+        </div>
+    </div>
+}
 
 <div class="erp-card">
     <div class="table-responsive">
-        <table class="table erp-table mb-0">
+        <table class="table erp-table mb-0" id="tableMenu">
             <thead>
                 <tr>
-                    <th style="width: 60px;">STT</th>
-                    <th>Tiêu Đề</th>
+                    <th style="width: 60px;">ID</th>
+                    <th>Tiêu Đề Menu</th>
                     <th>Loại Liên Kết</th>
                     <th>Đường Dẫn (URL)</th>
                     <th>Vị Trí</th>
                     <th>Thứ Tự</th>
                     <th class="text-center">Trạng Thái</th>
-                    <th class="text-end" style="width: 140px;">Thao Tác</th>
+                    <th class="text-end" style="width: 170px;">Thao Tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,22 +59,36 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr>
-                            <td>@item.Id</td>
-                            <td class="fw-semibold">
-                                @if (item.ParentId != null)
-                                {
-                                    <span class="text-muted me-2">└──</span>
-                                }
-                                @if (!string.IsNullOrEmpty(item.IconClass))
-                                {
-                                    <i class="@item.IconClass me-1"></i>
-                                }
-                                @item.Title
+                        int subCount = item.SubMenus?.Count ?? 0;
+                        <tr id="row-menu-@item.Id" data-id="@item.Id" data-title="@item.Title" data-subcount="@subCount">
+                            <td class="text-muted">#@item.Id</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (item.ParentId != null)
+                                    {
+                                        <span class="text-muted ms-3 me-1">└──</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.IconClass))
+                                    {
+                                        <i class="@item.IconClass text-secondary"></i>
+                                    }
+                                    <span class="fw-semibold menu-title-text" id="title-text-@item.Id">@item.Title</span>
+                                    @if (subCount > 0)
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border rounded-pill small" title="@subCount menu con">
+                                            @subCount con
+                                        </span>
+                                    }
+                                    <button type="button" class="btn btn-link p-0 text-muted btn-quick-rename ms-1" 
+                                            onclick="openRenameModal(@item.Id, '@Html.Raw(Html.Encode(item.Title))')" 
+                                            title="Sửa nhanh tên menu">
+                                        <i class="bi bi-pencil-square small"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td><span class="badge bg-light text-dark border">@item.LinkType</span></td>
-                            <td><code class="small">@item.CustomUrl</code></td>
-                            <td>@item.Position</td>
+                            <td><code class="small text-truncate d-inline-block" style="max-width: 220px;" title="@item.CustomUrl">@item.CustomUrl</code></td>
+                            <td><span class="badge bg-secondary-subtle text-dark border">@item.Position</span></td>
                             <td>@item.OrderIndex</td>
                             <td class="text-center">
                                 @if (item.IsActive)
@@ -62,11 +101,21 @@
                                 }
                             </td>
                             <td class="text-end">
-                                <a href="/Menu/Edit/@item.Id" class="btn btn-sm btn-erp-outline py-1 px-2"><i class="bi bi-pencil"></i></a>
-                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa menu này?');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-erp-outline py-1 px-2 text-danger"><i class="bi bi-trash"></i></button>
-                                </form>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-erp-outline py-1 px-2" 
+                                            onclick="openRenameModal(@item.Id, '@Html.Raw(Html.Encode(item.Title))')" 
+                                            title="Sửa tên menu">
+                                        <i class="bi bi-pencil-square text-primary"></i>
+                                    </button>
+                                    <a href="/Menu/Edit/@item.Id" class="btn btn-erp-outline py-1 px-2" title="Cấu hình liên kết & vị trí">
+                                        <i class="bi bi-sliders"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-erp-outline py-1 px-2 text-danger" 
+                                            onclick="confirmDeleteMenu(@item.Id, '@Html.Raw(Html.Encode(item.Title))', @subCount)" 
+                                            title="Xóa menu">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -74,10 +123,244 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Chưa có mục menu nào. Hãy tạo mới ngay!</td>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary"></i>
+                            Chưa có mục menu nào trong hệ thống. Hãy bấm <strong>"Thêm Mục Menu"</strong> để khởi tạo!
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
 </div>
+
+@* Modal Đổi Tên Menu Nhanh *@
+<div class="modal fade" id="modalDoiTenMenu" tabindex="-1" aria-labelledby="modalDoiTenMenuLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-card border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h6 class="modal-title fw-bold" id="modalDoiTenMenuLabel">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Đổi Tên Menu
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <form id="formDoiTenMenu" onsubmit="submitRenameMenu(event)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="renameMenuId" name="id" value="" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="renameMenuTitle" class="form-label small fw-semibold">Tên / Tiêu Đề Mới (*)</label>
+                        <input type="text" class="form-control" id="renameMenuTitle" name="title" required autocomplete="off" />
+                        <div class="form-text small">Tên hiển thị trực quan của liên kết menu trên trang web.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light-subtle">
+                    <button type="button" class="btn btn-sm btn-erp-outline" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-sm btn-erp-black" id="btnSaveRename">
+                        <i class="bi bi-check2 me-1"></i> Lưu Thay Đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modal Xác Nhận Xóa Menu *@
+<div class="modal fade" id="modalXoaMenu" tabindex="-1" aria-labelledby="modalXoaMenuLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content erp-card border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h6 class="modal-title fw-bold text-danger" id="modalXoaMenuLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Xác Nhận Xóa Menu
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-2" id="deleteConfirmText">Bạn có chắc chắn muốn xóa mục menu này không?</p>
+                <div id="deleteWarningSub" class="alert alert-warning small py-2 px-3 mb-0 mt-3 d-none">
+                    <i class="bi bi-exclamation-circle-fill me-1"></i>
+                    <strong>Lưu ý Admin Tổng:</strong> Menu này có menu con. Khi xác nhận, hệ thống sẽ <strong>xóa luôn toàn bộ các menu con</strong> thuộc về menu này.
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light-subtle">
+                <button type="button" class="btn btn-sm btn-erp-outline" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-sm btn-danger" id="btnConfirmDelete" onclick="executeDeleteMenu()">
+                    <i class="bi bi-trash me-1"></i> Xóa Vĩnh Viễn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var renameModal = null;
+        var deleteModal = null;
+        var pendingDeleteId = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('modalDoiTenMenu');
+            if (modalEl) renameModal = new bootstrap.Modal(modalEl);
+
+            var delEl = document.getElementById('modalXoaMenu');
+            if (delEl) deleteModal = new bootstrap.Modal(delEl);
+
+            // Tìm kiếm nhanh trên bảng
+            var searchInput = document.getElementById('menuSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    var filter = this.value.toLowerCase().trim();
+                    var rows = document.querySelectorAll('#tableMenu tbody tr[data-id]');
+                    rows.forEach(function (row) {
+                        var title = (row.getAttribute('data-title') || '').toLowerCase();
+                        row.style.display = title.includes(filter) ? '' : 'none';
+                    });
+                });
+            }
+        });
+
+        function openRenameModal(id, title) {
+            document.getElementById('renameMenuId').value = id;
+            var titleInput = document.getElementById('renameMenuTitle');
+            titleInput.value = title;
+            if (renameModal) {
+                renameModal.show();
+                setTimeout(function () { titleInput.focus(); titleInput.select(); }, 400);
+            }
+        }
+
+        function submitRenameMenu(e) {
+            e.preventDefault();
+            var id = document.getElementById('renameMenuId').value;
+            var title = document.getElementById('renameMenuTitle').value.trim();
+            var token = document.querySelector('#formDoiTenMenu input[name="__RequestVerificationToken"]').value;
+
+            if (!title) {
+                alert('Vui lòng nhập tên menu!');
+                return;
+            }
+
+            var btn = document.getElementById('btnSaveRename');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang lưu...';
+
+            var formData = new FormData();
+            formData.append('id', id);
+            formData.append('title', title);
+            formData.append('__RequestVerificationToken', token);
+
+            fetch('/Menu/DoiTen', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Lưu Thay Đổi';
+                if (data.success) {
+                    // Cập nhật DOM trực tiếp
+                    var textEl = document.getElementById('title-text-' + id);
+                    if (textEl) textEl.textContent = data.title || title;
+                    var rowEl = document.getElementById('row-menu-' + id);
+                    if (rowEl) rowEl.setAttribute('data-title', data.title || title);
+
+                    if (renameModal) renameModal.hide();
+
+                    if (window.ERP && window.ERP.toast) {
+                        window.ERP.toast.success(data.message || 'Đổi tên menu thành công!');
+                    } else {
+                        showToast(data.message || 'Đổi tên menu thành công!', 'success');
+                    }
+                } else {
+                    alert(data.message || 'Không thể đổi tên menu!');
+                }
+            })
+            .catch(function (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Lưu Thay Đổi';
+                alert('Có lỗi kết nối: ' + err.message);
+            });
+        }
+
+        function confirmDeleteMenu(id, title, subCount) {
+            pendingDeleteId = id;
+            var textEl = document.getElementById('deleteConfirmText');
+            var warnEl = document.getElementById('deleteWarningSub');
+
+            textEl.innerHTML = 'Bạn có chắc chắn muốn xóa mục menu <strong>"' + escapeHtml(title) + '"</strong> (#ID ' + id + ')?';
+
+            if (subCount > 0) {
+                warnEl.classList.remove('d-none');
+            } else {
+                warnEl.classList.add('d-none');
+            }
+
+            if (deleteModal) deleteModal.show();
+        }
+
+        function executeDeleteMenu() {
+            if (!pendingDeleteId) return;
+
+            var id = pendingDeleteId;
+            var btn = document.getElementById('btnConfirmDelete');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xóa...';
+
+            var token = document.querySelector('#formDoiTenMenu input[name="__RequestVerificationToken"]').value;
+            var formData = new FormData();
+            formData.append('id', id);
+            formData.append('force', 'true');
+            formData.append('__RequestVerificationToken', token);
+
+            fetch('/Menu/Delete', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1"></i> Xóa Vĩnh Viễn';
+                if (deleteModal) deleteModal.hide();
+
+                if (data.success) {
+                    var rowEl = document.getElementById('row-menu-' + id);
+                    if (rowEl) {
+                        rowEl.style.transition = 'all 0.3s ease';
+                        rowEl.style.opacity = '0';
+                        setTimeout(function () { rowEl.remove(); }, 350);
+                    }
+
+                    if (window.ERP && window.ERP.toast) {
+                        window.ERP.toast.success(data.message || 'Đã xóa mục menu thành công!');
+                    } else {
+                        showToast(data.message || 'Đã xóa mục menu thành công!', 'success');
+                    }
+                } else {
+                    alert(data.message || 'Không thể xóa mục menu!');
+                }
+            })
+            .catch(function (err) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash me-1"></i> Xóa Vĩnh Viễn';
+                alert('Có lỗi khi xóa menu: ' + err.message);
+            });
+        }
+
+        function showToast(msg, type) {
+            var div = document.createElement('div');
+            div.className = 'position-fixed bottom-0 end-0 p-3';
+            div.style.zIndex = '9999';
+            div.innerHTML = '<div class="toast show align-items-center text-bg-' + (type === 'success' ? 'dark' : 'danger') + ' border-0">' +
+                '<div class="d-flex"><div class="toast-body">' + escapeHtml(msg) + '</div>' +
+                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
+            document.body.appendChild(div);
+            setTimeout(function () { div.remove(); }, 4000);
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+    </script>
+}
