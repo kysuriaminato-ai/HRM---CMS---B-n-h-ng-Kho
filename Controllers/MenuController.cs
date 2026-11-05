@@ -127,8 +127,6 @@ namespace ERP_HRM_CMS.Controllers
 
             string tenCu = menu.Title;
             menu.Title = title.Trim();
-            menu.UpdatedAt = VietnamTime.Now;
-            menu.UpdatedBy = User.Identity?.Name ?? "Admin";
 
             await _context.SaveChangesAsync();
 

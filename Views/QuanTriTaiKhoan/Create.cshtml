@@ -1,11 +1,22 @@
 @model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
 @{
-    ViewData["Title"] = "Tạo tài khoản";
+    ViewData["Title"] = "Cấp tài khoản cho nhân viên";
 }
 
-<h4 class="fw-bold mb-3">Tạo tài khoản</h4>
-<div class="card shadow-sm border-0">
-    <div class="card-body p-4" style="max-width: 640px;">
-        @await Html.PartialAsync("_TaiKhoanForm", Model)
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">Cấp Tài Khoản Cho Nhân Viên</h4>
+                <p class="text-muted small mb-0">Tạo tài khoản đăng nhập và cấu hình các chức năng menu cho phép nhân viên được xem.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Danh sách tài khoản
+            </a>
+        </div>
+
+        <div class="erp-card shadow-sm border p-4">
+            @await Html.PartialAsync("_TaiKhoanForm", Model)
+        </div>
     </div>
 </div>

@@ -12,7 +12,7 @@ using ERP_HRM_CMS.Services.Security;
 namespace ERP_HRM_CMS.Controllers
 {
     /// <summary>
-    /// Quản lý tài khoản: duyệt đăng ký, tạo tài khoản, gán vai trò, khóa và đặt lại mật khẩu.
+    /// Quản lý tài khoản: duyệt đăng ký, tạo tài khoản cho nhân viên, cấu hình ẩn/hiện menu chức năng, gán vai trò, khóa và đặt lại mật khẩu.
     /// Quyền "auth.user.manage" để vào trang; "auth.user.resetpassword" để đặt lại mật khẩu.
     /// Tài khoản quản trị tổng (IsSuperAdmin hoặc vai trò SUPERADMIN) chỉ SuperAdmin được thao tác.
     /// </summary>
@@ -23,11 +23,13 @@ namespace ERP_HRM_CMS.Controllers
         private const string ThongBaoBaoVe = "Chỉ SuperAdmin mới được thao tác trên tài khoản quản trị tổng.";
         private readonly AppDbContext _context;
         private readonly ISuperAdminService _superAdmin;
+        private readonly IPermissionService _permissionService;
 
-        public QuanTriTaiKhoanController(AppDbContext context, ISuperAdminService superAdmin)
+        public QuanTriTaiKhoanController(AppDbContext context, ISuperAdminService superAdmin, IPermissionService permissionService)
         {
             _context = context;
             _superAdmin = superAdmin;
+            _permissionService = permissionService;
         }
 
         [HttpGet]
@@ -35,6 +37,7 @@ namespace ERP_HRM_CMS.Controllers
         {
             var query = _context.Users
                 .Include(u => u.Employee)
+                    .ThenInclude(e => e!.Department)
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .AsQueryable();
@@ -51,8 +54,11 @@ namespace ERP_HRM_CMS.Controllers
                 Items = users.Select(u => new TaiKhoanIndexItem
                 {
                     Id = u.Id,
+                    EmployeeId = u.EmployeeId,
+                    EmployeeCode = u.Employee?.EmployeeCode,
                     Username = u.Username,
                     FullName = u.Employee != null ? u.Employee.FullName : null,
+                    DepartmentName = u.Employee?.Department?.Name,
                     IsActive = u.IsActive,
                     IsSuperAdmin = u.IsSuperAdmin,
                     LastLoginAt = u.LastLoginAt,
@@ -67,31 +73,51 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int? empId)
         {
+            var employees = await LoadEmployeeOptionsAsync();
+            var defaultFeatures = MenuFeatureDefinitions.GetAllFeatures();
+
             var vm = new TaiKhoanFormViewModel
             {
                 IsActive = true,
-                Roles = await LoadRolesAsync(new List<int>())
+                EmployeeId = empId,
+                Password = "Admin@123456",
+                Roles = await LoadRolesAsync(new List<int>()),
+                Employees = employees,
+                MenuFeatures = defaultFeatures
             };
+
+            if (empId.HasValue)
+            {
+                var emp = await _context.Employees.Include(e => e.Department).FirstOrDefaultAsync(e => e.Id == empId.Value);
+                if (emp != null)
+                {
+                    vm.EmployeeFullName = emp.FullName;
+                    vm.EmployeeCode = emp.EmployeeCode;
+                    vm.DepartmentName = emp.Department?.Name;
+                    vm.Username = emp.EmployeeCode.ToLower();
+                }
+            }
+
             return View(vm);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(TaiKhoanFormViewModel model, List<int>? roleIds)
+        public async Task<IActionResult> Create(TaiKhoanFormViewModel model, List<int>? roleIds, List<string>? featureCodes)
         {
             string tenDangNhap = (model.Username ?? string.Empty).Trim();
             var chon = (roleIds ?? new List<int>()).Distinct().ToList();
 
-            string? loi;
+            string? loi = null;
             if (tenDangNhap.Length < 3 || tenDangNhap.Length > 50)
             {
                 loi = "Tên đăng nhập từ 3 đến 50 ký tự.";
             }
             else if (await _context.Users.AnyAsync(u => u.Username == tenDangNhap))
             {
-                loi = "Tên đăng nhập đã tồn tại.";
+                loi = "Tên đăng nhập đã tồn tại trong hệ thống.";
             }
             else
             {
@@ -100,10 +126,17 @@ namespace ERP_HRM_CMS.Controllers
 
             loi ??= await KiemTraVaiTroAsync(chon);
 
+            if (model.EmployeeId.HasValue && await _context.Users.AnyAsync(u => u.EmployeeId == model.EmployeeId.Value))
+            {
+                loi = "Nhân viên này đã được cấp tài khoản trên hệ thống!";
+            }
+
             if (loi != null)
             {
                 ModelState.AddModelError(string.Empty, loi);
                 model.Roles = await LoadRolesAsync(chon);
+                model.Employees = await LoadEmployeeOptionsAsync();
+                model.MenuFeatures = MenuFeatureDefinitions.GetAllFeatures();
                 return View(model);
             }
 
@@ -115,8 +148,17 @@ namespace ERP_HRM_CMS.Controllers
                 PasswordHash = MatKhauHelper.HashPassword(model.Password!, salt),
                 IsActive = model.IsActive,
                 IsSuperAdmin = false,
+                MustChangePassword = model.MustChangePassword,
+                EmployeeId = model.EmployeeId,
                 CreatedAt = VietnamTime.Now
             };
+
+            // Nếu không chọn vai trò nào, mặc định cấp vai trò EMPLOYEE
+            if (!chon.Any())
+            {
+                var empRole = await _context.Roles.FirstOrDefaultAsync(r => r.Code == "EMPLOYEE");
+                if (empRole != null) chon.Add(empRole.Id);
+            }
 
             foreach (var roleId in chon)
             {
@@ -126,7 +168,13 @@ namespace ERP_HRM_CMS.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}'.";
+            // Cấu hình danh sách Menu / Chức năng được phép xem
+            if (featureCodes != null && featureCodes.Any())
+            {
+                await CapNhatQuyenMenuChoUserAsync(user.Id, featureCodes);
+            }
+
+            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}' cho nhân viên thành công.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -140,6 +188,8 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var user = await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e!.Department)
                 .Include(u => u.UserRoles)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
@@ -151,10 +201,15 @@ namespace ERP_HRM_CMS.Controllers
             var vm = new TaiKhoanFormViewModel
             {
                 Id = user.Id,
+                EmployeeId = user.EmployeeId,
+                EmployeeFullName = user.Employee?.FullName,
+                EmployeeCode = user.Employee?.EmployeeCode,
+                DepartmentName = user.Employee?.Department?.Name,
                 Username = user.Username,
                 IsActive = user.IsActive,
                 IsSuperAdmin = user.IsSuperAdmin,
-                Roles = await LoadRolesAsync(user.UserRoles.Select(ur => ur.RoleId).ToList())
+                Roles = await LoadRolesAsync(user.UserRoles.Select(ur => ur.RoleId).ToList()),
+                Employees = await LoadEmployeeOptionsAsync()
             };
             return View(vm);
         }
@@ -201,15 +256,16 @@ namespace ERP_HRM_CMS.Controllers
                 model.Username = user.Username;
                 model.IsSuperAdmin = user.IsSuperAdmin;
                 model.Roles = await LoadRolesAsync(chon);
+                model.Employees = await LoadEmployeeOptionsAsync();
                 return View(model);
             }
 
-            // Tính trước khi thay đổi để biết có cần thu hồi phiên không
             bool doiKichHoat = user.IsActive != model.IsActive;
             bool doiVaiTro = !user.UserRoles.Select(ur => ur.RoleId).OrderBy(x => x)
                 .SequenceEqual(chon.OrderBy(x => x));
 
             user.IsActive = model.IsActive;
+            user.EmployeeId = model.EmployeeId;
 
             foreach (var ur in user.UserRoles.Where(ur => !chon.Contains(ur.RoleId)).ToList())
             {
@@ -221,7 +277,6 @@ namespace ERP_HRM_CMS.Controllers
                 user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = roleId });
             }
 
-            // Đổi trạng thái hoặc vai trò: thu hồi mọi phiên đang đăng nhập của tài khoản
             if (doiKichHoat || doiVaiTro)
             {
                 user.SecurityStamp = Guid.NewGuid();
@@ -231,6 +286,180 @@ namespace ERP_HRM_CMS.Controllers
 
             TempData["ThongBao"] = $"Đã cập nhật tài khoản '{user.Username}'.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // ════════════════════════════════════════════════════════════════════════════════
+        // MÀN HÌNH CẤU HÌNH MENU & ẨN/HIỆN CHỨC NĂNG DÀNH RIÊNG CHO NHÂN VIÊN
+        // ════════════════════════════════════════════════════════════════════════════════
+        [HttpGet]
+        public async Task<IActionResult> MenuNhanVien(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e!.Department)
+                .Include(u => u.Employee)
+                    .ThenInclude(e => e!.Position)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null) return NotFound();
+
+            var allFeatures = MenuFeatureDefinitions.GetAllFeatures();
+            var effectivePerms = (await _permissionService.GetEffectivePermissionsAsync(user.Id))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var f in allFeatures)
+            {
+                if (user.IsSuperAdmin)
+                {
+                    f.Checked = true;
+                }
+                else
+                {
+                    f.Checked = f.PermissionCodes.Any(code => effectivePerms.Contains(code));
+                }
+            }
+
+            var vm = new MenuNhanVienViewModel
+            {
+                UserId = user.Id,
+                EmployeeId = user.EmployeeId,
+                Username = user.Username,
+                FullName = user.Employee?.FullName ?? user.Username,
+                EmployeeCode = user.Employee?.EmployeeCode,
+                DepartmentName = user.Employee?.Department?.Name,
+                PositionName = user.Employee?.Position?.Name,
+                IsSuperAdmin = user.IsSuperAdmin,
+                Features = allFeatures
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MenuNhanVien(int userId, List<string>? featureCodes)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound();
+
+            if (user.IsSuperAdmin)
+            {
+                TempData["LoiDuyet"] = "Tài khoản Admin Tổng luôn có toàn quyền và không thể bị giới hạn menu.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var selectedCodes = featureCodes ?? new List<string>();
+            await CapNhatQuyenMenuChoUserAsync(user.Id, selectedCodes);
+
+            user.SecurityStamp = Guid.NewGuid();
+            await _context.SaveChangesAsync();
+
+            TempData["ThongBao"] = $"Đã cập nhật cấu hình menu hiển thị cho nhân viên '{user.Username}'. Khi đăng nhập, nhân viên chỉ xem được các chức năng Admin Tổng đã cấp!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task CapNhatQuyenMenuChoUserAsync(int userId, List<string> activeFeatureCodes)
+        {
+            var allFeatures = MenuFeatureDefinitions.GetAllFeatures();
+            var allPerms = await _context.Permissions.ToListAsync();
+            var permByCode = allPerms.ToDictionary(p => p.Code.ToLowerInvariant(), p => p);
+
+            var grantedPermCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var deniedPermCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var f in allFeatures)
+            {
+                if (activeFeatureCodes.Contains(f.Code, StringComparer.OrdinalIgnoreCase))
+                {
+                    foreach (var c in f.PermissionCodes) grantedPermCodes.Add(c);
+                }
+                else
+                {
+                    foreach (var c in f.PermissionCodes) deniedPermCodes.Add(c);
+                }
+            }
+
+            foreach (var code in grantedPermCodes)
+            {
+                deniedPermCodes.Remove(code);
+            }
+
+            var existingUserPerms = await _context.UserPermissions.Where(up => up.UserId == userId).ToListAsync();
+
+            // 1. Cấp quyền các chức năng được chọn
+            foreach (var code in grantedPermCodes)
+            {
+                if (permByCode.TryGetValue(code.ToLowerInvariant(), out var p))
+                {
+                    var up = existingUserPerms.FirstOrDefault(x => x.PermissionId == p.Id);
+                    if (up != null)
+                    {
+                        up.IsGranted = true;
+                        up.AssignedAt = VietnamTime.Now;
+                    }
+                    else
+                    {
+                        _context.UserPermissions.Add(new UserPermission
+                        {
+                            UserId = userId,
+                            PermissionId = p.Id,
+                            IsGranted = true,
+                            AssignedAt = VietnamTime.Now
+                        });
+                    }
+                }
+            }
+
+            // 2. Chặn quyền các chức năng bị ẩn
+            foreach (var code in deniedPermCodes)
+            {
+                if (permByCode.TryGetValue(code.ToLowerInvariant(), out var p))
+                {
+                    var up = existingUserPerms.FirstOrDefault(x => x.PermissionId == p.Id);
+                    if (up != null)
+                    {
+                        up.IsGranted = false;
+                        up.AssignedAt = VietnamTime.Now;
+                    }
+                    else
+                    {
+                        _context.UserPermissions.Add(new UserPermission
+                        {
+                            UserId = userId,
+                            PermissionId = p.Id,
+                            IsGranted = false,
+                            AssignedAt = VietnamTime.Now
+                        });
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<List<EmployeeSelectOption>> LoadEmployeeOptionsAsync()
+        {
+            var existingEmpUserIds = (await _context.Users
+                .Where(u => u.EmployeeId != null)
+                .Select(u => u.EmployeeId!.Value)
+                .ToListAsync())
+                .ToHashSet();
+
+            return await _context.Employees
+                .Include(e => e.Department)
+                .Include(e => e.Position)
+                .Where(e => e.Status != "Resigned")
+                .OrderBy(e => e.EmployeeCode)
+                .Select(e => new EmployeeSelectOption
+                {
+                    Id = e.Id,
+                    EmployeeCode = e.EmployeeCode,
+                    FullName = e.FullName,
+                    DepartmentName = e.Department.Name,
+                    PositionName = e.Position.Name,
+                    Email = e.Email,
+                    HasAccount = existingEmpUserIds.Contains(e.Id)
+                }).ToListAsync();
         }
 
         [HttpPost]
@@ -253,20 +482,14 @@ namespace ERP_HRM_CMS.Controllers
             user.SecurityStamp = Guid.NewGuid();
             await _context.SaveChangesAsync();
 
-            TempData["ThongBao"] = $"Đã duyệt tài khoản '{user.Username}'. Vui lòng gán vai trò.";
-            return RedirectToAction(nameof(Edit), new { id });
+            TempData["ThongBao"] = $"Đã duyệt và kích hoạt tài khoản '{user.Username}'.";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Lock(int id)
         {
-            if (id == CurrentUserId())
-            {
-                TempData["LoiDuyet"] = "Không thể khóa chính tài khoản đang đăng nhập.";
-                return RedirectToAction(nameof(Index));
-            }
-
             if (await LaTaiKhoanBiBaoVeAsync(id))
             {
                 TempData["LoiDuyet"] = ThongBaoBaoVe;
@@ -283,7 +506,13 @@ namespace ERP_HRM_CMS.Controllers
                 return NotFound();
             }
 
-            if (await LaSuperAdminCuoiCungAsync(user, false, new List<int>()))
+            if (user.Id == CurrentUserId())
+            {
+                TempData["LoiDuyet"] = "Không thể tự khóa tài khoản của chính mình.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (await LaSuperAdminCuoiCungAsync(user, false, user.UserRoles.Select(ur => ur.RoleId).ToList()))
             {
                 TempData["LoiDuyet"] = "Hệ thống phải luôn còn ít nhất một SuperAdmin đang hoạt động.";
                 return RedirectToAction(nameof(Index));
@@ -297,11 +526,9 @@ namespace ERP_HRM_CMS.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        /// <summary>Đặt lại mật khẩu. Quyền riêng "auth.user.resetpassword"; ghi AuditLog; thu hồi mọi phiên cũ.</summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpGet]
         [KiemTraQuyen("auth.user.resetpassword")]
-        public async Task<IActionResult> ResetPassword(int id, string? matKhauMoi)
+        public async Task<IActionResult> ResetPassword(int id)
         {
             if (await LaTaiKhoanBiBaoVeAsync(id))
             {
@@ -315,44 +542,54 @@ namespace ERP_HRM_CMS.Controllers
                 return NotFound();
             }
 
-            string? loi = MatKhauHelper.KiemTraDoManh(matKhauMoi);
+            ViewBag.Username = user.Username;
+            ViewBag.UserId = user.Id;
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [KiemTraQuyen("auth.user.resetpassword")]
+        public async Task<IActionResult> ResetPassword(int id, string? newPassword)
+        {
+            if (await LaTaiKhoanBiBaoVeAsync(id))
+            {
+                TempData["LoiDuyet"] = ThongBaoBaoVe;
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            string? loi = MatKhauHelper.KiemTraDoManh(newPassword);
             if (loi != null)
             {
-                TempData["LoiDuyet"] = loi;
-                return RedirectToAction(nameof(Edit), new { id });
+                ModelState.AddModelError(string.Empty, loi);
+                ViewBag.Username = user.Username;
+                ViewBag.UserId = user.Id;
+                return View();
             }
 
             string salt = MatKhauHelper.GenerateSalt();
             user.PasswordSalt = salt;
-            user.PasswordHash = MatKhauHelper.HashPassword(matKhauMoi!, salt);
+            user.PasswordHash = MatKhauHelper.HashPassword(newPassword!, salt);
+            user.MustChangePassword = true;
             user.SecurityStamp = Guid.NewGuid();
-
-            // Ghi nhật ký riêng cho thao tác nhạy cảm (không ghi mật khẩu vào nhật ký)
-            _context.AuditLogs.Add(new AuditLog
-            {
-                UserId = CurrentUserId(),
-                Username = User.Identity?.Name,
-                Action = "RESET_PASSWORD",
-                EntityName = "User",
-                RecordId = user.Id.ToString(),
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                CreatedAt = VietnamTime.Now
-            });
 
             await _context.SaveChangesAsync();
 
-            TempData["ThongBao"] = $"Đã đặt lại mật khẩu cho '{user.Username}'. Các phiên đăng nhập cũ của tài khoản này đã bị thu hồi.";
-            return RedirectToAction(nameof(Edit), new { id });
+            TempData["ThongBao"] = $"Đã đặt lại mật khẩu cho tài khoản '{user.Username}'. Yêu cầu đổi mật khẩu ở lần đăng nhập tới.";
+            return RedirectToAction(nameof(Index));
         }
-
-        // ===== Hàm hỗ trợ =====
 
         private int CurrentUserId()
         {
             return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
         }
 
-        /// <summary>Tài khoản quản trị tổng chỉ SuperAdmin được thao tác (kiểm tra từ database).</summary>
         private async Task<bool> LaTaiKhoanBiBaoVeAsync(int targetId)
         {
             int nguoiThaoTac = CurrentUserId();
@@ -364,7 +601,6 @@ namespace ERP_HRM_CMS.Controllers
             return await _superAdmin.LaTaiKhoanQuanTriTongAsync(targetId);
         }
 
-        /// <summary>Chỉ SuperAdmin mới được gán vai trò SuperAdmin (kiểm tra từ database).</summary>
         private async Task<string?> KiemTraVaiTroAsync(List<int> roleIds)
         {
             var codes = await _context.Roles
@@ -381,9 +617,6 @@ namespace ERP_HRM_CMS.Controllers
             return null;
         }
 
-        /// <summary>
-        /// Trả về true nếu thay đổi sẽ làm mất SuperAdmin hoạt động cuối cùng của hệ thống.
-        /// </summary>
         private async Task<bool> LaSuperAdminCuoiCungAsync(User user, bool sauKhiSuaActive, List<int> sauKhiSuaRoleIds)
         {
             bool laSuperHienTai = user.IsSuperAdmin || user.UserRoles.Any(ur => ur.Role.Code == SuperAdminService.MaVaiTroSuperAdmin);

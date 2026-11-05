@@ -1,4 +1,5 @@
 @inject ERP_HRM_CMS.Data.AppDbContext Db
+@inject ERP_HRM_CMS.Helpers.IPermissionService PermService
 @{
     var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP");
     var fullName = Context.Session.GetString("FullName") ?? User.Identity?.Name ?? "Quản trị viên";
@@ -7,6 +8,26 @@
         || User.IsInRole("SuperAdmin")
         || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase);
 
+    int currentUserId = int.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int uid) ? uid : 0;
+    var userPerms = (isAuth && !isSuperAdmin && currentUserId > 0)
+        ? (await PermService.GetEffectivePermissionsAsync(currentUserId)).ToHashSet(StringComparer.OrdinalIgnoreCase)
+        : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    bool CanView(params string[] codes)
+    {
+        if (isSuperAdmin) return true;
+        if (!isAuth) return false;
+        if (codes == null || codes.Length == 0) return true;
+        return codes.Any(c => userPerms.Contains(c));
+    }
+
+    bool showHrm = isSuperAdmin || CanView("hrm.employee.view", "hrm.employee.manage", "hrm.attendance.view", "hrm.attendance.manage", "hrm.leave.view", "hrm.leave.approve", "report.hrm");
+    bool showPayroll = isSuperAdmin || CanView("hrm.payroll.view", "hrm.payroll.manage");
+    bool showSales = isSuperAdmin || CanView("order.pos", "order.view", "order.manage", "product.view", "product.manage", "debt.view", "report.sales");
+    bool showWarehouse = isSuperAdmin || CanView("inventory.view", "inventory.transaction", "inventory.stocktaking", "scm.po.view", "scm.po.manage", "scm.supplier.view", "scm.supplier.manage");
+    bool showCms = isSuperAdmin || CanView("content.view", "content.create", "menu.view", "layout.manage");
+    bool showSystem = isSuperAdmin || CanView("auth.matrix.view", "auth.user.manage");
+
     var controllerName = (ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty).ToLowerInvariant();
     var rawModule = ViewData["Module"]?.ToString()?.Trim().ToLowerInvariant();
     var module = rawModule switch
@@ -14,7 +35,7 @@
         "hrm" or "payroll" or "sales" or "warehouse" or "cms" or "system" => rawModule,
         _ => controllerName switch
         {
-            "nhansu" or "phongban" or "hopdong" or "chamcong" or "dontu" or "tuyendung" => "hrm",
+            "nhansu" or "phongban" or "hopdong" or "chamcong" or "dontu" or "tuyendung" or "danhgiakpi" or "daotao" or "quyetdinhnhansu" or "taisannhansu" => "hrm",
             "bangluong" => "payroll",
             "banhang" or "donhang" or "sanpham" or "danhmuc" or "congno" or "giohang" => "sales",
             "kho" or "purchaseorder" or "supplier" => "warehouse",
@@ -86,272 +107,374 @@
         </div>
 
         <nav class="erp-sidebar-nav" id="sidebarNav">
-            @* — Tổng quan — *@
-            <a href="/" class="erp-nav-item" data-path="/">
-                <i class="bi bi-grid-1x2"></i>
-                <span class="nav-label">Dashboard tổng quan</span>
-            </a>
+            @* — Tổng quan (Dashboard) — *@
+            @if (isSuperAdmin || CanView("report.hrm", "report.sales", "hrm.employee.view", "order.view"))
+            {
+                <a href="/" class="erp-nav-item" data-path="/">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span class="nav-label">Dashboard tổng quan</span>
+                </a>
+            }
 
             @* — Cổng tự phục vụ nhân viên (ESS Portal) — *@
-            <a href="/CongNhanVien" class="erp-nav-item @(controllerName == "selfservice" || controllerName == "congnhanvien" ? "active" : "")" data-path="/CongNhanVien">
-                <i class="bi bi-person-workspace text-primary"></i>
-                <span class="nav-label fw-semibold">Cổng Nhân Viên (ESS)</span>
-            </a>
+            @if (isSuperAdmin || CanView("hrm.self.service"))
+            {
+                <a href="/CongNhanVien" class="erp-nav-item @(controllerName == "selfservice" || controllerName == "congnhanvien" ? "active" : "")" data-path="/CongNhanVien">
+                    <i class="bi bi-person-workspace text-primary"></i>
+                    <span class="nav-label fw-semibold">Cổng Nhân Viên (ESS)</span>
+                </a>
+            }
 
             @* — 1. Nhân sự (HRM) — *@
-            <div class="erp-nav-group @(module == "hrm" ? "open" : "")" data-group="hrm">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "hrm" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-people"></i> Nhân sự &amp; Chấm công</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/NhanSu/Dashboard" class="erp-nav-item" data-path="/NhanSu/Dashboard">
-                            <i class="bi bi-speedometer2"></i>
-                            <span class="nav-label">Dashboard Nhân sự</span>
-                        </a>
-                        <a href="/NhanSu/Index" class="erp-nav-item" data-path="/NhanSu">
-                            <i class="bi bi-person-badge"></i>
-                            <span class="nav-label">Hồ sơ nhân sự</span>
-                        </a>
-                        <a href="/PhongBan/Index" class="erp-nav-item" data-path="/PhongBan">
-                            <i class="bi bi-diagram-3"></i>
-                            <span class="nav-label">Phòng ban &amp; Org Chart</span>
-                        </a>
-                        <a href="/HopDong/Index" class="erp-nav-item" data-path="/HopDong">
-                            <i class="bi bi-file-earmark-text"></i>
-                            <span class="nav-label">Hợp đồng lao động</span>
-                        </a>
-                        <a href="/QuyetDinhNhanSu/Index" class="erp-nav-item" data-path="/QuyetDinhNhanSu">
-                            <i class="bi bi-award"></i>
-                            <span class="nav-label">Quyết định nhân sự</span>
-                        </a>
-                        <a href="/TaiSanNhanSu/Index" class="erp-nav-item" data-path="/TaiSanNhanSu">
-                            <i class="bi bi-laptop"></i>
-                            <span class="nav-label">Tài sản cấp phát</span>
-                        </a>
-                        <a href="/TuyenDung/Index" class="erp-nav-item" data-path="/TuyenDung">
-                            <i class="bi bi-briefcase"></i>
-                            <span class="nav-label">Tuyển dụng ATS</span>
-                        </a>
-                        <a href="/TuyenDung/Kanban" class="erp-nav-item" data-path="/TuyenDung/Kanban">
-                            <i class="bi bi-kanban"></i>
-                            <span class="nav-label">Pipeline ứng viên</span>
-                        </a>
-                        <a href="/TuyenDung/Onboarding" class="erp-nav-item" data-path="/TuyenDung/Onboarding">
-                            <i class="bi bi-person-check"></i>
-                            <span class="nav-label">Onboarding / Offboarding</span>
-                        </a>
-                        <a href="/NhanSu/CanhBao" class="erp-nav-item" data-path="/NhanSu/CanhBao">
-                            <i class="bi bi-bell"></i>
-                            <span class="nav-label">Cảnh báo nhân sự</span>
-                        </a>
-                        <a href="/ChamCong/Index" class="erp-nav-item" data-path="/ChamCong/Index">
-                            <i class="bi bi-calendar2-check"></i>
-                            <span class="nav-label">Chấm công ngày</span>
-                        </a>
-                        <a href="/ChamCong/BangCongThang" class="erp-nav-item" data-path="/ChamCong/BangCongThang">
-                            <i class="bi bi-calendar-month"></i>
-                            <span class="nav-label">Bảng công &amp; Shift Matrix</span>
-                        </a>
-                        <a href="/ChamCong/Heatmap" class="erp-nav-item" data-path="/ChamCong/Heatmap">
-                            <i class="bi bi-grid-3x3-gap"></i>
-                            <span class="nav-label">Heatmap chấm công</span>
-                        </a>
-                        <a href="/ChamCong/CaLamViec" class="erp-nav-item" data-path="/ChamCong/CaLamViec">
-                            <i class="bi bi-clock-history"></i>
-                            <span class="nav-label">Định nghĩa ca làm</span>
-                        </a>
-                        <a href="/ChamCong/PhanCa" class="erp-nav-item" data-path="/ChamCong/PhanCa">
-                            <i class="bi bi-calendar-week"></i>
-                            <span class="nav-label">Phân ca tuần (Roster)</span>
-                        </a>
-                        <a href="/DonTu/Index" class="erp-nav-item" data-path="/DonTu">
-                            <i class="bi bi-file-earmark-check"></i>
-                            <span class="nav-label">Đơn từ &amp; Phê duyệt</span>
-                        </a>
-                        <a href="/DonTu/QuyPhepNam" class="erp-nav-item" data-path="/DonTu/QuyPhepNam">
-                            <i class="bi bi-wallet2"></i>
-                            <span class="nav-label">Quỹ phép năm (BLLĐ)</span>
-                        </a>
-                        <a href="/DonTu/GiaiTrinh" class="erp-nav-item" data-path="/DonTu/GiaiTrinh">
-                            <i class="bi bi-patch-question"></i>
-                            <span class="nav-label">Giải trình chấm công</span>
-                        </a>
-                        <a href="/NhanSu/BaoCao" class="erp-nav-item" data-path="/NhanSu/BaoCao">
-                            <i class="bi bi-pie-chart"></i>
-                            <span class="nav-label">People Analytics &amp; Báo cáo</span>
-                        </a>
-                        <a href="/DanhGiaKpi/Index" class="erp-nav-item" data-path="/DanhGiaKpi">
-                            <i class="bi bi-trophy"></i>
-                            <span class="nav-label">Đánh giá KPI</span>
-                        </a>
-                        <a href="/DanhGiaKpi/NineBox" class="erp-nav-item" data-path="/DanhGiaKpi/NineBox">
-                            <i class="bi bi-grid-3x3-gap-fill"></i>
-                            <span class="nav-label">Ma trận 9-Box Talent</span>
-                        </a>
-                        <a href="/DaoTao/Index" class="erp-nav-item" data-path="/DaoTao">
-                            <i class="bi bi-mortarboard"></i>
-                            <span class="nav-label">Đào tạo nội bộ (LMS)</span>
-                        </a>
+            @if (showHrm)
+            {
+                <div class="erp-nav-group @(module == "hrm" ? "open" : "")" data-group="hrm">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "hrm" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-people"></i> Nhân sự &amp; Chấm công</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("report.hrm"))
+                            {
+                                <a href="/NhanSu/Dashboard" class="erp-nav-item" data-path="/NhanSu/Dashboard">
+                                    <i class="bi bi-speedometer2"></i>
+                                    <span class="nav-label">Dashboard Nhân sự</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.employee.view"))
+                            {
+                                <a href="/NhanSu/Index" class="erp-nav-item" data-path="/NhanSu">
+                                    <i class="bi bi-person-badge"></i>
+                                    <span class="nav-label">Hồ sơ nhân sự</span>
+                                </a>
+                                <a href="/PhongBan/Index" class="erp-nav-item" data-path="/PhongBan">
+                                    <i class="bi bi-diagram-3"></i>
+                                    <span class="nav-label">Phòng ban &amp; Org Chart</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.employee.manage"))
+                            {
+                                <a href="/HopDong/Index" class="erp-nav-item" data-path="/HopDong">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    <span class="nav-label">Hợp đồng lao động</span>
+                                </a>
+                                <a href="/QuyetDinhNhanSu/Index" class="erp-nav-item" data-path="/QuyetDinhNhanSu">
+                                    <i class="bi bi-award"></i>
+                                    <span class="nav-label">Quyết định nhân sự</span>
+                                </a>
+                                <a href="/TaiSanNhanSu/Index" class="erp-nav-item" data-path="/TaiSanNhanSu">
+                                    <i class="bi bi-laptop"></i>
+                                    <span class="nav-label">Tài sản cấp phát</span>
+                                </a>
+                                <a href="/TuyenDung/Index" class="erp-nav-item" data-path="/TuyenDung">
+                                    <i class="bi bi-briefcase"></i>
+                                    <span class="nav-label">Tuyển dụng ATS</span>
+                                </a>
+                                <a href="/TuyenDung/Kanban" class="erp-nav-item" data-path="/TuyenDung/Kanban">
+                                    <i class="bi bi-kanban"></i>
+                                    <span class="nav-label">Pipeline ứng viên</span>
+                                </a>
+                                <a href="/TuyenDung/Onboarding" class="erp-nav-item" data-path="/TuyenDung/Onboarding">
+                                    <i class="bi bi-person-check"></i>
+                                    <span class="nav-label">Onboarding / Offboarding</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.employee.view"))
+                            {
+                                <a href="/NhanSu/CanhBao" class="erp-nav-item" data-path="/NhanSu/CanhBao">
+                                    <i class="bi bi-bell"></i>
+                                    <span class="nav-label">Cảnh báo nhân sự</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.attendance.view"))
+                            {
+                                <a href="/ChamCong/Index" class="erp-nav-item" data-path="/ChamCong/Index">
+                                    <i class="bi bi-calendar2-check"></i>
+                                    <span class="nav-label">Chấm công ngày</span>
+                                </a>
+                                <a href="/ChamCong/BangCongThang" class="erp-nav-item" data-path="/ChamCong/BangCongThang">
+                                    <i class="bi bi-calendar-month"></i>
+                                    <span class="nav-label">Bảng công &amp; Shift Matrix</span>
+                                </a>
+                                <a href="/ChamCong/Heatmap" class="erp-nav-item" data-path="/ChamCong/Heatmap">
+                                    <i class="bi bi-grid-3x3-gap"></i>
+                                    <span class="nav-label">Heatmap chấm công</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.attendance.manage"))
+                            {
+                                <a href="/ChamCong/CaLamViec" class="erp-nav-item" data-path="/ChamCong/CaLamViec">
+                                    <i class="bi bi-clock-history"></i>
+                                    <span class="nav-label">Định nghĩa ca làm</span>
+                                </a>
+                                <a href="/ChamCong/PhanCa" class="erp-nav-item" data-path="/ChamCong/PhanCa">
+                                    <i class="bi bi-calendar-week"></i>
+                                    <span class="nav-label">Phân ca tuần (Roster)</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.leave.view", "hrm.leave.approve", "hrm.self.service"))
+                            {
+                                <a href="/DonTu/Index" class="erp-nav-item" data-path="/DonTu">
+                                    <i class="bi bi-file-earmark-check"></i>
+                                    <span class="nav-label">Đơn từ &amp; Phê duyệt</span>
+                                </a>
+                                <a href="/DonTu/QuyPhepNam" class="erp-nav-item" data-path="/DonTu/QuyPhepNam">
+                                    <i class="bi bi-wallet2"></i>
+                                    <span class="nav-label">Quỹ phép năm (BLLĐ)</span>
+                                </a>
+                                <a href="/DonTu/GiaiTrinh" class="erp-nav-item" data-path="/DonTu/GiaiTrinh">
+                                    <i class="bi bi-patch-question"></i>
+                                    <span class="nav-label">Giải trình chấm công</span>
+                                </a>
+                            }
+                            @if (CanView("report.hrm"))
+                            {
+                                <a href="/NhanSu/BaoCao" class="erp-nav-item" data-path="/NhanSu/BaoCao">
+                                    <i class="bi bi-pie-chart"></i>
+                                    <span class="nav-label">People Analytics &amp; Báo cáo</span>
+                                </a>
+                            }
+                            @if (CanView("hrm.employee.manage"))
+                            {
+                                <a href="/DanhGiaKpi/Index" class="erp-nav-item" data-path="/DanhGiaKpi">
+                                    <i class="bi bi-trophy"></i>
+                                    <span class="nav-label">Đánh giá KPI</span>
+                                </a>
+                                <a href="/DanhGiaKpi/NineBox" class="erp-nav-item" data-path="/DanhGiaKpi/NineBox">
+                                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                                    <span class="nav-label">Ma trận 9-Box Talent</span>
+                                </a>
+                                <a href="/DaoTao/Index" class="erp-nav-item" data-path="/DaoTao">
+                                    <i class="bi bi-mortarboard"></i>
+                                    <span class="nav-label">Đào tạo nội bộ (LMS)</span>
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             @* — 2. Tiền lương (Payroll) — *@
-            <div class="erp-nav-group @(module == "payroll" ? "open" : "")" data-group="payroll">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "payroll" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-cash-stack"></i> Tiền lương</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/BangLuong/Index" class="erp-nav-item" data-path="/BangLuong">
-                            <i class="bi bi-wallet2"></i>
-                            <span class="nav-label">Bảng lương &amp; Chi trả</span>
-                        </a>
+            @if (showPayroll)
+            {
+                <div class="erp-nav-group @(module == "payroll" ? "open" : "")" data-group="payroll">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "payroll" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-cash-stack"></i> Tiền lương</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("hrm.payroll.view", "hrm.payroll.manage"))
+                            {
+                                <a href="/BangLuong/Index" class="erp-nav-item" data-path="/BangLuong">
+                                    <i class="bi bi-wallet2"></i>
+                                    <span class="nav-label">Bảng lương &amp; Chi trả</span>
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             @* — 3. Bán hàng & POS (Sales) — *@
-            <div class="erp-nav-group @(module == "sales" ? "open" : "")" data-group="sales">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "sales" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-bag-check"></i> Bán hàng &amp; POS</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/BanHang/POS" class="erp-nav-item" data-path="/BanHang">
-                            <i class="bi bi-cart3"></i>
-                            <span class="nav-label">POS bán hàng</span>
-                        </a>
-                        <a href="/DonHang/Dashboard" class="erp-nav-item" data-path="/DonHang/Dashboard">
-                            <i class="bi bi-graph-up-arrow"></i>
-                            <span class="nav-label">Dashboard doanh số</span>
-                        </a>
-                        <a href="/DonHang/Index" class="erp-nav-item" data-path="/DonHang">
-                            <i class="bi bi-receipt"></i>
-                            <span class="nav-label">Đơn hàng</span>
-                        </a>
-                        <a href="/SanPham/Index" class="erp-nav-item" data-path="/SanPham">
-                            <i class="bi bi-tags"></i>
-                            <span class="nav-label">Sản phẩm</span>
-                        </a>
-                        <a href="/DanhMuc/Index" class="erp-nav-item" data-path="/DanhMuc">
-                            <i class="bi bi-diagram-2"></i>
-                            <span class="nav-label">Danh mục ngành hàng</span>
-                        </a>
-                        <a href="/CongNo/Index" class="erp-nav-item" data-path="/CongNo">
-                            <i class="bi bi-cash-coin"></i>
-                            <span class="nav-label">Quản trị công nợ</span>
-                        </a>
+            @if (showSales)
+            {
+                <div class="erp-nav-group @(module == "sales" ? "open" : "")" data-group="sales">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "sales" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-bag-check"></i> Bán hàng &amp; POS</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("order.pos"))
+                            {
+                                <a href="/BanHang/POS" class="erp-nav-item" data-path="/BanHang">
+                                    <i class="bi bi-cart3"></i>
+                                    <span class="nav-label">POS bán hàng</span>
+                                </a>
+                            }
+                            @if (CanView("order.view", "report.sales"))
+                            {
+                                <a href="/DonHang/Dashboard" class="erp-nav-item" data-path="/DonHang/Dashboard">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                    <span class="nav-label">Dashboard doanh số</span>
+                                </a>
+                            }
+                            @if (CanView("order.view"))
+                            {
+                                <a href="/DonHang/Index" class="erp-nav-item" data-path="/DonHang">
+                                    <i class="bi bi-receipt"></i>
+                                    <span class="nav-label">Đơn hàng</span>
+                                </a>
+                            }
+                            @if (CanView("product.view"))
+                            {
+                                <a href="/SanPham/Index" class="erp-nav-item" data-path="/SanPham">
+                                    <i class="bi bi-tags"></i>
+                                    <span class="nav-label">Sản phẩm</span>
+                                </a>
+                                <a href="/DanhMuc/Index" class="erp-nav-item" data-path="/DanhMuc">
+                                    <i class="bi bi-diagram-2"></i>
+                                    <span class="nav-label">Danh mục ngành hàng</span>
+                                </a>
+                            }
+                            @if (CanView("debt.view"))
+                            {
+                                <a href="/CongNo/Index" class="erp-nav-item" data-path="/CongNo">
+                                    <i class="bi bi-cash-coin"></i>
+                                    <span class="nav-label">Quản trị công nợ</span>
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             @* — 4. Kho vận & Mua hàng (Warehouse) — *@
-            <div class="erp-nav-group @(module == "warehouse" ? "open" : "")" data-group="warehouse">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "warehouse" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-box-seam"></i> Kho vận &amp; Mua hàng</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/Kho/Index" class="erp-nav-item" data-path="/Kho/Index">
-                            <i class="bi bi-boxes"></i>
-                            <span class="nav-label">Tồn kho thực tế</span>
-                        </a>
-                        <a href="/Kho/NhapKho" class="erp-nav-item" data-path="/Kho/NhapKho">
-                            <i class="bi bi-box-arrow-in-down"></i>
-                            <span class="nav-label">Phiếu nhập kho</span>
-                        </a>
-                        <a href="/Kho/XuatKho" class="erp-nav-item" data-path="/Kho/XuatKho">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                            <span class="nav-label">Phiếu xuất kho</span>
-                        </a>
-                        <a href="/Kho/DieuChuyen" class="erp-nav-item" data-path="/Kho/DieuChuyen">
-                            <i class="bi bi-arrow-left-right"></i>
-                            <span class="nav-label">Điều chuyển kho</span>
-                        </a>
-                        <a href="/Kho/KiemKe" class="erp-nav-item" data-path="/Kho/KiemKe">
-                            <i class="bi bi-clipboard2-check"></i>
-                            <span class="nav-label">Kiểm kê kho</span>
-                        </a>
-                        <a href="/PurchaseOrder/Index" class="erp-nav-item" data-path="/PurchaseOrder">
-                            <i class="bi bi-journal-bookmark"></i>
-                            <span class="nav-label">Đơn mua hàng (PO)</span>
-                        </a>
-                        <a href="/Supplier/Index" class="erp-nav-item" data-path="/Supplier">
-                            <i class="bi bi-truck"></i>
-                            <span class="nav-label">Nhà cung cấp</span>
-                        </a>
+            @if (showWarehouse)
+            {
+                <div class="erp-nav-group @(module == "warehouse" ? "open" : "")" data-group="warehouse">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "warehouse" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-box-seam"></i> Kho vận &amp; Mua hàng</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("inventory.view"))
+                            {
+                                <a href="/Kho/Index" class="erp-nav-item" data-path="/Kho/Index">
+                                    <i class="bi bi-boxes"></i>
+                                    <span class="nav-label">Tồn kho thực tế</span>
+                                </a>
+                            }
+                            @if (CanView("inventory.transaction"))
+                            {
+                                <a href="/Kho/NhapKho" class="erp-nav-item" data-path="/Kho/NhapKho">
+                                    <i class="bi bi-box-arrow-in-down"></i>
+                                    <span class="nav-label">Phiếu nhập kho</span>
+                                </a>
+                                <a href="/Kho/XuatKho" class="erp-nav-item" data-path="/Kho/XuatKho">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                    <span class="nav-label">Phiếu xuất kho</span>
+                                </a>
+                                <a href="/Kho/DieuChuyen" class="erp-nav-item" data-path="/Kho/DieuChuyen">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span class="nav-label">Điều chuyển kho</span>
+                                </a>
+                            }
+                            @if (CanView("inventory.stocktaking"))
+                            {
+                                <a href="/Kho/KiemKe" class="erp-nav-item" data-path="/Kho/KiemKe">
+                                    <i class="bi bi-clipboard2-check"></i>
+                                    <span class="nav-label">Kiểm kê kho</span>
+                                </a>
+                            }
+                            @if (CanView("scm.po.view"))
+                            {
+                                <a href="/PurchaseOrder/Index" class="erp-nav-item" data-path="/PurchaseOrder">
+                                    <i class="bi bi-journal-bookmark"></i>
+                                    <span class="nav-label">Đơn mua hàng (PO)</span>
+                                </a>
+                            }
+                            @if (CanView("scm.supplier.view"))
+                            {
+                                <a href="/Supplier/Index" class="erp-nav-item" data-path="/Supplier">
+                                    <i class="bi bi-truck"></i>
+                                    <span class="nav-label">Nhà cung cấp</span>
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             @* — 5. Nội dung CMS — *@
-            <div class="erp-nav-group @(module == "cms" ? "open" : "")" data-group="cms">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "cms" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-newspaper"></i> Nội dung CMS</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/Content/Index" class="erp-nav-item" data-path="/Content">
-                            <i class="bi bi-file-richtext"></i>
-                            <span class="nav-label">Bài viết</span>
-                        </a>
-                        <a href="/Menu/Index" class="erp-nav-item" data-path="/Menu">
-                            <i class="bi bi-list-stars"></i>
-                            <span class="nav-label">Menu điều hướng</span>
-                        </a>
-                        <a href="/LayoutConfig/Index" class="erp-nav-item" data-path="/LayoutConfig">
-                            <i class="bi bi-layout-wtf"></i>
-                            <span class="nav-label">Cấu hình giao diện</span>
-                        </a>
+            @if (showCms)
+            {
+                <div class="erp-nav-group @(module == "cms" ? "open" : "")" data-group="cms">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "cms" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-newspaper"></i> Nội dung CMS</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("content.view"))
+                            {
+                                <a href="/Content/Index" class="erp-nav-item" data-path="/Content">
+                                    <i class="bi bi-file-richtext"></i>
+                                    <span class="nav-label">Bài viết</span>
+                                </a>
+                            }
+                            @if (CanView("menu.view"))
+                            {
+                                <a href="/Menu/Index" class="erp-nav-item" data-path="/Menu">
+                                    <i class="bi bi-list-stars"></i>
+                                    <span class="nav-label">Menu điều hướng</span>
+                                </a>
+                            }
+                            @if (CanView("layout.manage"))
+                            {
+                                <a href="/LayoutConfig/Index" class="erp-nav-item" data-path="/LayoutConfig">
+                                    <i class="bi bi-layout-wtf"></i>
+                                    <span class="nav-label">Cấu hình giao diện</span>
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             @* — 6. Hệ thống (System) — *@
-            <div class="erp-nav-group @(module == "system" ? "open" : "")" data-group="system">
-                <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "system" ? "true" : "false")">
-                    <span class="erp-nav-group-label"><i class="bi bi-gear"></i> Hệ thống</span>
-                    <i class="bi bi-chevron-down erp-nav-chevron"></i>
-                </button>
-                <div class="erp-nav-group-body">
-                    <div class="erp-nav-group-inner">
-                        <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item" data-path="/PhanQuyen">
-                            <i class="bi bi-shield-lock"></i>
-                            <span class="nav-label">Phân quyền RBAC/ACL</span>
-                        </a>
-                        @if (isSuperAdmin)
-                        {
-                            <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item" data-path="/QuanTriTaiKhoan">
-                                <i class="bi bi-person-gear"></i>
-                                <span class="nav-label">Quản lý tài khoản</span>
+            @if (showSystem)
+            {
+                <div class="erp-nav-group @(module == "system" ? "open" : "")" data-group="system">
+                    <button type="button" class="erp-nav-group-toggle" aria-expanded="@(module == "system" ? "true" : "false")">
+                        <span class="erp-nav-group-label"><i class="bi bi-gear"></i> Hệ thống</span>
+                        <i class="bi bi-chevron-down erp-nav-chevron"></i>
+                    </button>
+                    <div class="erp-nav-group-body">
+                        <div class="erp-nav-group-inner">
+                            @if (CanView("auth.matrix.view"))
+                            {
+                                <a href="/PhanQuyen/MaTranPhanQuyen" class="erp-nav-item" data-path="/PhanQuyen">
+                                    <i class="bi bi-shield-lock"></i>
+                                    <span class="nav-label">Phân quyền RBAC/ACL</span>
+                                </a>
+                            }
+                            @if (isSuperAdmin || CanView("auth.user.manage"))
+                            {
+                                <a href="/QuanTriTaiKhoan/Index" class="erp-nav-item" data-path="/QuanTriTaiKhoan">
+                                    <i class="bi bi-person-gear"></i>
+                                    <span class="nav-label">Quản lý tài khoản</span>
+                                </a>
+                            }
+                            @if (isSuperAdmin)
+                            {
+                                <a href="/VaiTro/Index" class="erp-nav-item" data-path="/VaiTro">
+                                    <i class="bi bi-key"></i>
+                                    <span class="nav-label">Nhóm quyền</span>
+                                </a>
+                                <a href="/UI/Styleguide" class="erp-nav-item" data-path="/UI/Styleguide">
+                                    <i class="bi bi-palette2"></i>
+                                    <span class="nav-label">UI Styleguide</span>
+                                </a>
+                            }
+                            @if (CanView("auth.view"))
+                            {
+                                <a href="/AuditLog/Index" class="erp-nav-item" data-path="/AuditLog">
+                                    <i class="bi bi-shield-check"></i>
+                                    <span class="nav-label">Audit Trail</span>
+                                </a>
+                            }
+                            <a href="/Notification/Index" class="erp-nav-item" data-path="/Notification">
+                                <i class="bi bi-bell"></i>
+                                <span class="nav-label">Thông báo</span>
                             </a>
-                            <a href="/VaiTro/Index" class="erp-nav-item" data-path="/VaiTro">
-                                <i class="bi bi-key"></i>
-                                <span class="nav-label">Nhóm quyền</span>
-                            </a>
-                            <a href="/UI/Styleguide" class="erp-nav-item" data-path="/UI/Styleguide">
-                                <i class="bi bi-palette2"></i>
-                                <span class="nav-label">UI Styleguide</span>
-                            </a>
-                        }
-                        <a href="/AuditLog/Index" class="erp-nav-item" data-path="/AuditLog">
-                            <i class="bi bi-shield-check"></i>
-                            <span class="nav-label">Audit Trail</span>
-                        </a>
-                        <a href="/Notification/Index" class="erp-nav-item" data-path="/Notification">
-                            <i class="bi bi-bell"></i>
-                            <span class="nav-label">Thông báo</span>
-                        </a>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         </nav>
 
         <div class="erp-sidebar-footer">

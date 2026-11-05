@@ -1,0 +1,167 @@
+@model ERP_HRM_CMS.Models.ViewModels.MenuNhanVienViewModel
+@{
+    ViewData["Title"] = "Cấu hình Menu Nhân Viên";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <h4 class="fw-bold mb-0">Cấu Hình Ẩn / Hiện Menu Nhân Viên</h4>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Admin Tổng</span>
+                </div>
+                <p class="text-muted small mb-0">Thiết lập các mục menu được phép hiển thị trên thanh Sidebar khi nhân viên đăng nhập.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Danh sách tài khoản
+            </a>
+        </div>
+
+        @* Card thông tin nhân viên *@
+        <div class="erp-card p-3 mb-4 bg-body border shadow-sm">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-4" style="width: 52px; height: 52px;">
+                        <i class="bi bi-person"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">
+                            @Model.FullName
+                            @if (!string.IsNullOrEmpty(Model.EmployeeCode))
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary border ms-1">@Model.EmployeeCode</span>
+                            }
+                        </h5>
+                        <div class="text-muted small mt-1">
+                            <span><i class="bi bi-person-fill text-muted me-1"></i> Tài khoản: <strong>@Model.Username</strong></span>
+                            @if (!string.IsNullOrEmpty(Model.DepartmentName))
+                            {
+                                <span class="ms-3"><i class="bi bi-building text-muted me-1"></i> Phòng ban: <strong>@Model.DepartmentName</strong></span>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.PositionName))
+                            {
+                                <span class="ms-3"><i class="bi bi-award text-muted me-1"></i> Chức vụ: <strong>@Model.PositionName</strong></span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                @if (Model.IsSuperAdmin)
+                {
+                    <span class="badge bg-danger fs-6 px-3 py-2">
+                        <i class="bi bi-shield-check me-1"></i> Tài khoản Admin Tổng (Luôn xem toàn bộ menu)
+                    </span>
+                }
+            </div>
+        </div>
+
+        @if (Model.IsSuperAdmin)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                Tài khoản này là <strong>Admin Tổng (SuperAdmin)</strong> nên luôn có toàn quyền xem tất cả các menu trong hệ thống mà không thể bị giới hạn.
+            </div>
+        }
+        else
+        {
+            <form asp-action="MenuNhanVien" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" value="@Model.UserId" />
+
+                <div class="erp-card border shadow-sm p-4 mb-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 pb-3 border-bottom">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-layout-text-sidebar text-primary me-2"></i>Danh sách chức năng menu Sidebar
+                            </h6>
+                            <small class="text-muted">Gạt công tắc BẬT để hiển thị menu, TẮT để ẩn menu khỏi nhân viên này.</small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-dark" onclick="toggleAll(true)">
+                                <i class="bi bi-check-all me-1"></i> Cho xem tất cả
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="setOnlyEss()">
+                                <i class="bi bi-person-workspace me-1"></i> Chỉ Cổng ESS &amp; Đơn từ
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="toggleAll(false)">
+                                <i class="bi bi-x me-1"></i> Ẩn toàn bộ
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        @foreach (var grp in Model.Features.GroupBy(f => f.Group))
+                        {
+                            <div class="col-12 mt-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-dark-subtle text-dark border px-2.5 py-1">@grp.Key</span>
+                                    <hr class="flex-grow-1 my-0 text-muted" />
+                                </div>
+                            </div>
+                            @foreach (var f in grp)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card h-100 border p-3 bg-body shadow-sm feature-card @(f.Checked ? "border-primary-subtle bg-primary-subtle-10" : "")">
+                                        <div class="form-check form-switch d-flex justify-content-between align-items-start gap-2 ps-0">
+                                            <div class="w-100 pe-2">
+                                                <label class="form-check-label fw-bold d-block text-dark cursor-pointer" for="feat_@f.Code">
+                                                    <i class="@f.Icon text-primary me-1.5"></i> @f.Name
+                                                </label>
+                                                <div class="text-muted small mt-1" style="font-size: 0.8rem; line-height: 1.35;">
+                                                    @f.Description
+                                                </div>
+                                            </div>
+                                            <input class="form-check-input feature-switch fs-5 mt-0 cursor-pointer" 
+                                                   type="checkbox" 
+                                                   name="featureCodes" 
+                                                   value="@f.Code" 
+                                                   id="feat_@f.Code" 
+                                                   checked="@f.Checked"
+                                                   onchange="onSwitchChange(this)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-dark btn-lg px-4">
+                        <i class="bi bi-check-circle-fill me-2"></i> Lưu Cấu Hình Menu Cho Nhân Viên
+                    </button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function onSwitchChange(checkbox) {
+            var card = checkbox.closest('.feature-card');
+            if (checkbox.checked) {
+                card.classList.add('border-primary-subtle');
+            } else {
+                card.classList.remove('border-primary-subtle');
+            }
+        }
+
+        function toggleAll(status) {
+            document.querySelectorAll('.feature-switch').forEach(function(sw) {
+                sw.checked = status;
+                onSwitchChange(sw);
+            });
+        }
+
+        function setOnlyEss() {
+            document.querySelectorAll('.feature-switch').forEach(function(sw) {
+                sw.checked = (sw.value === 'ess' || sw.value === 'hrm_leave');
+                onSwitchChange(sw);
+            });
+        }
+    </script>
+}

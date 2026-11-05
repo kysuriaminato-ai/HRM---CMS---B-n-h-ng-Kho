@@ -5,81 +5,149 @@
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-        <h4 class="fw-bold mb-0">Quản lý tài khoản</h4>
-        <small class="text-muted">Duyệt đăng ký, tạo tài khoản, gán vai trò và khóa tài khoản.</small>
+        <h4 class="fw-bold mb-0">Quản lý tài khoản &amp; Phân quyền Menu</h4>
+        <small class="text-muted">Tạo tài khoản nhân viên, cấu hình ẩn/hiện chức năng menu, duyệt và khóa tài khoản.</small>
     </div>
-    <a class="btn btn-dark" asp-action="Create"><i class="bi bi-person-plus me-1"></i> Tạo tài khoản</a>
+    <div class="d-flex gap-2">
+        <a class="btn btn-dark" asp-action="Create">
+            <i class="bi bi-person-plus me-1"></i> Cấp tài khoản cho nhân viên
+        </a>
+    </div>
 </div>
 
 @if (TempData["ThongBao"] is string tb)
 {
-    <div class="alert alert-success py-2">@tb</div>
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@tb
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 @if (TempData["LoiDuyet"] is string loi)
 {
-    <div class="alert alert-danger py-2">@loi</div>
+    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>@loi
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 }
 
 <div class="d-flex gap-2 mb-3">
-    <a class="btn btn-sm btn-outline-dark @(ViewBag.Loc == null ? "active" : "")" asp-action="Index">Tất cả</a>
+    <a class="btn btn-sm btn-outline-dark @(ViewBag.Loc == null ? "active" : "")" asp-action="Index">Tất cả tài khoản (@Model.Items.Count)</a>
     <a class="btn btn-sm btn-outline-dark @(ViewBag.Loc == "khoa" ? "active" : "")" asp-action="Index" asp-route-loc="khoa">
         Chờ duyệt / Đã khóa (@Model.SoChoDuyet)
     </a>
 </div>
 
-<div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th>Tên đăng nhập</th>
-                <th>Họ tên</th>
-                <th>Vai trò</th>
-                <th>Trạng thái</th>
-                <th>Đăng nhập gần nhất</th>
-                <th class="text-end">Thao tác</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var u in Model.Items)
-        {
-            <tr>
-                <td class="fw-semibold">
-                    @u.Username
-                    @if (u.IsSuperAdmin)
-                    {
-                        <span class="badge bg-danger ms-1">Admin chính</span>
-                    }
-                </td>
-                <td>@(u.FullName ?? "—")</td>
-                <td>@(u.RoleNames.Count == 0 ? "Chưa có vai trò" : string.Join(", ", u.RoleNames))</td>
-                <td>
-                    @if (u.IsActive)
-                    {
-                        <span class="badge bg-success">Hoạt động</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Chờ duyệt / Đã khóa</span>
-                    }
-                </td>
-                <td>@(u.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
-                <td class="text-end">
-                    <a class="btn btn-sm btn-outline-dark" asp-action="Edit" asp-route-id="@u.Id">Sửa</a>
-                    @if (!u.IsActive)
-                    {
-                        <form asp-action="Approve" asp-route-id="@u.Id" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <form asp-action="Lock" asp-route-id="@u.Id" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Khóa</button>
-                        </form>
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+<div class="erp-card">
+    <div class="table-responsive">
+        <table class="table erp-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Tên đăng nhập</th>
+                    <th>Nhân viên liên kết</th>
+                    <th>Phòng ban</th>
+                    <th>Vai trò</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th>Đăng nhập gần nhất</th>
+                    <th class="text-end" style="width: 280px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (Model.Items != null && Model.Items.Any())
+            {
+                foreach (var u in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-semibold">
+                            @u.Username
+                            @if (u.IsSuperAdmin)
+                            {
+                                <span class="badge bg-danger ms-1">Admin Tổng</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(u.FullName))
+                            {
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <i class="bi bi-person-badge text-primary"></i>
+                                    <span><strong>[@u.EmployeeCode]</strong> @u.FullName</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic">— Tài khoản hệ thống —</span>
+                            }
+                        </td>
+                        <td>
+                            @(u.DepartmentName ?? "—")
+                        </td>
+                        <td>
+                            @if (u.RoleNames.Count == 0)
+                            {
+                                <span class="badge bg-light text-muted border">Chưa có vai trò</span>
+                            }
+                            else
+                            {
+                                foreach (var r in u.RoleNames)
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border me-1">@r</span>
+                                }
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (u.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Hoạt động</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-muted border">Đã khóa</span>
+                            }
+                        </td>
+                        <td><small class="text-muted">@(u.LastLoginAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập")</small></td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                @if (!u.IsSuperAdmin)
+                                {
+                                    <a class="btn btn-outline-primary" asp-action="MenuNhanVien" asp-route-id="@u.Id" title="Cấu hình ẩn/hiện chức năng menu cho nhân viên này">
+                                        <i class="bi bi-layout-text-sidebar me-1"></i> Cấu hình Menu
+                                    </a>
+                                }
+                                <a class="btn btn-outline-dark" asp-action="Edit" asp-route-id="@u.Id" title="Chỉnh sửa thông tin">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                @if (!u.IsActive)
+                                {
+                                    <form asp-action="Approve" asp-route-id="@u.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success" title="Mở khóa tài khoản">
+                                            <i class="bi bi-unlock"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else if (!u.IsSuperAdmin)
+                                {
+                                    <form asp-action="Lock" asp-route-id="@u.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn khóa tài khoản này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger" title="Khóa tài khoản">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
+                        Không có tài khoản nào phù hợp với bộ lọc.
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
 </div>

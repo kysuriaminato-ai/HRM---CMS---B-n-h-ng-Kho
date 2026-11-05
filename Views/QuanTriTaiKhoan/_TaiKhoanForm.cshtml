@@ -3,7 +3,8 @@
     var isEdit = Model.Id > 0;
 }
 
-<form asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+<form asp-action="@(isEdit ? "Edit" : "Create")" method="post" id="formTaiKhoan">
+    @Html.AntiForgeryToken()
     @if (isEdit)
     {
         <input type="hidden" asp-for="Id" />
@@ -12,45 +13,194 @@
 
     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
 
+    @* 1. Chọn Nhân Viên Liên Kết *@
     <div class="mb-3">
-        <label class="form-label fw-semibold">Tên đăng nhập</label>
-        @if (isEdit)
+        <label asp-for="EmployeeId" class="form-label fw-semibold">
+            <i class="bi bi-person-badge text-primary me-1"></i> Nhân viên liên kết
+        </label>
+        @if (isEdit && Model.EmployeeId.HasValue)
         {
-            <input class="form-control" value="@Model.Username" disabled />
+            <div class="p-2 border rounded bg-light-subtle d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                <span><strong>[@Model.EmployeeCode]</strong> @Model.EmployeeFullName — @Model.DepartmentName</span>
+                <input type="hidden" asp-for="EmployeeId" />
+            </div>
         }
         else
         {
-            <input asp-for="Username" class="form-control" autocomplete="off" />
+            <select asp-for="EmployeeId" class="form-select" id="selectEmployee" onchange="onEmployeeSelected(this)">
+                <option value="">-- Tài khoản hệ thống / Không liên kết nhân sự --</option>
+                @if (Model.Employees != null)
+                {
+                    foreach (var emp in Model.Employees)
+                    {
+                        <option value="@emp.Id" 
+                                data-code="@emp.EmployeeCode" 
+                                data-fullname="@emp.FullName" 
+                                data-dept="@emp.DepartmentName"
+                                data-hasaccount="@(emp.HasAccount ? "true" : "false")"
+                                selected="@(Model.EmployeeId == emp.Id)">
+                            [@emp.EmployeeCode] @emp.FullName - @emp.DepartmentName (@emp.PositionName) @(emp.HasAccount ? " [Đã có TK]" : "")
+                        </option>
+                    }
+                }
+            </select>
+            <div class="form-text small">Chọn nhân sự để cấp tài khoản. Hệ thống sẽ tự động liên kết hồ sơ và gợi ý tên đăng nhập.</div>
         }
     </div>
 
-    @if (!isEdit)
-    {
-    <div class="mb-3">
-        <label asp-for="Password" class="form-label fw-semibold">Mật khẩu ban đầu</label>
-        <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
-        <div class="form-text">Tối thiểu 8 ký tự, gồm cả chữ và số.</div>
+    @* 2. Tên Đăng Nhập & Mật Khẩu *@
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <label asp-for="Username" class="form-label fw-semibold">Tên đăng nhập (*)</label>
+            @if (isEdit)
+            {
+                <input class="form-control bg-light" value="@Model.Username" disabled />
+            }
+            else
+            {
+                <input asp-for="Username" class="form-control" id="inputUsername" placeholder="ví dụ: an.nguyen hoặc nv005" required autocomplete="off" />
+            }
+        </div>
+        <div class="col-md-6">
+            @if (!isEdit)
+            {
+                <label asp-for="Password" class="form-label fw-semibold">Mật khẩu ban đầu (*)</label>
+                <div class="input-group">
+                    <input asp-for="Password" type="text" class="form-control font-monospace" id="inputPassword" value="@(Model.Password ?? "Admin@123456")" required />
+                    <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPass()" title="Sinh mật khẩu ngẫu nhiên">
+                        <i class="bi bi-shuffle"></i>
+                    </button>
+                </div>
+                <div class="form-text small">Mặc định: <code>Admin@123456</code> (tối thiểu 8 ký tự, có chữ và số).</div>
+            }
+        </div>
     </div>
-    }
 
-    <div class="form-check form-switch mb-3">
-        <input asp-for="IsActive" class="form-check-input" />
-        <label asp-for="IsActive" class="form-check-label">Kích hoạt tài khoản</label>
-    </div>
-
-    <div class="mb-3">
-        <label class="form-label fw-semibold">Vai trò</label>
-        @foreach (var r in Model.Roles)
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="form-check form-switch pt-2">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" checked="@Model.IsActive" />
+                <label asp-for="IsActive" class="form-check-label fw-semibold">Kích hoạt tài khoản ngay</label>
+            </div>
+        </div>
+        @if (!isEdit)
         {
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="roleIds" id="role_@r.Id" value="@r.Id" checked="@r.Checked" />
-                <label class="form-check-label" for="role_@r.Id">
-                    @r.Name <small class="text-muted">(@r.Code)</small>
-                </label>
+            <div class="col-md-6">
+                <div class="form-check form-switch pt-2">
+                    <input asp-for="MustChangePassword" class="form-check-input" type="checkbox" />
+                    <label asp-for="MustChangePassword" class="form-check-label">Bắt buộc đổi mật khẩu ở lần đăng nhập đầu</label>
+                </div>
             </div>
         }
     </div>
 
-    <button type="submit" class="btn btn-dark">Lưu</button>
-    <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+    @* 3. Vai Trò Hệ Thống (Roles) *@
+    <div class="mb-4">
+        <label class="form-label fw-semibold d-block">Vai trò chính (Roles)</label>
+        <div class="row g-2">
+            @foreach (var r in Model.Roles)
+            {
+                <div class="col-md-6">
+                    <div class="form-check border rounded p-2 ps-4 bg-body">
+                        <input class="form-check-input" type="checkbox" name="roleIds" id="role_@r.Id" value="@r.Id" checked="@r.Checked" />
+                        <label class="form-check-label w-100" for="role_@r.Id">
+                            <strong class="d-block">@r.Name</strong>
+                            <small class="text-muted">Mã: @r.Code</small>
+                        </label>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* 4. Bảng Phân Quyền Ẩn/Hiện Menu Trực Tiếp Khi Tạo Tài Khoản *@
+    @if (!isEdit && Model.MenuFeatures != null && Model.MenuFeatures.Any())
+    {
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <label class="form-label fw-bold mb-0 text-primary">
+                        <i class="bi bi-layout-text-sidebar me-1"></i> Chức năng Menu cho phép nhân viên xem
+                    </label>
+                    <small class="text-muted d-block">Nhân viên khi đăng nhập vào hệ thống CHỈ xem được các menu mà bạn tích chọn bên dưới.</small>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="toggleAllFeatures(true)">Chọn tất cả</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setEssOnly()">Chỉ Cổng ESS</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="toggleAllFeatures(false)">Bỏ chọn hết</button>
+                </div>
+            </div>
+
+            <div class="row g-2 border rounded p-3 bg-light-subtle">
+                @foreach (var group in Model.MenuFeatures.GroupBy(f => f.Group))
+                {
+                    <div class="col-12 mt-2">
+                        <span class="badge bg-secondary-subtle text-secondary fw-bold">@group.Key</span>
+                    </div>
+                    @foreach (var f in group)
+                    {
+                        <div class="col-md-6">
+                            <div class="card h-100 border p-2 bg-body">
+                                <div class="form-check form-switch d-flex align-items-start gap-2">
+                                    <input class="form-check-input feature-checkbox mt-1" type="checkbox" 
+                                           name="featureCodes" value="@f.Code" id="feat_@f.Code" 
+                                           checked="@f.Checked" />
+                                    <label class="form-check-label w-100 cursor-pointer" for="feat_@f.Code">
+                                        <div class="fw-semibold small"><i class="@f.Icon text-primary me-1"></i> @f.Name</div>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">@f.Description</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 justify-content-end mt-4">
+        <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+        <button type="submit" class="btn btn-dark px-4">
+            <i class="bi bi-check-lg me-1"></i> @(isEdit ? "Lưu thay đổi" : "Tạo tài khoản")
+        </button>
+    </div>
 </form>
+
+<script>
+    function onEmployeeSelected(select) {
+        var opt = select.options[select.selectedIndex];
+        if (!opt || !opt.value) return;
+
+        var code = opt.getAttribute('data-code');
+        var fullname = opt.getAttribute('data-fullname');
+        var usernameInput = document.getElementById('inputUsername');
+
+        if (usernameInput && !usernameInput.value) {
+            // Tự sinh username: mã nhân viên viết thường, ví dụ: nv005
+            usernameInput.value = code.toLowerCase();
+        }
+    }
+
+    function generateRandomPass() {
+        var chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@@#$%";
+        var pass = "";
+        for (var i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        pass += "1aA@@";
+        document.getElementById('inputPassword').value = pass;
+    }
+
+    function toggleAllFeatures(checked) {
+        document.querySelectorAll('.feature-checkbox').forEach(function(cb) {
+            cb.checked = checked;
+        });
+    }
+
+    function setEssOnly() {
+        document.querySelectorAll('.feature-checkbox').forEach(function(cb) {
+            cb.checked = (cb.value === 'ess');
+        });
+    }
+</script>
