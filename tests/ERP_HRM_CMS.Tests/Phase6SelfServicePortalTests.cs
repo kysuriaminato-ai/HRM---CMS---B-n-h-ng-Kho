@@ -204,17 +204,21 @@ namespace ERP_HRM_CMS.Tests
             using (var scope = _factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var period = new PayrollPeriod
+                var period = await db.PayrollPeriods.FirstOrDefaultAsync(p => p.Month == 11 && p.Year == 2026);
+                if (period == null)
                 {
-                    Name = $"Kỳ lương ESS Test {Guid.NewGuid():N}"[..25],
-                    Month = 11,
-                    Year = 2026,
-                    StandardWorkDays = 22,
-                    Status = PayrollPeriodStatus.Draft,
-                    CreatedAt = VietnamTime.Now
-                };
-                db.PayrollPeriods.Add(period);
-                await db.SaveChangesAsync();
+                    period = new PayrollPeriod
+                    {
+                        Name = $"Kỳ lương ESS Test {Guid.NewGuid():N}"[..25],
+                        Month = 11,
+                        Year = 2026,
+                        StandardWorkDays = 22,
+                        Status = PayrollPeriodStatus.Draft,
+                        CreatedAt = VietnamTime.Now
+                    };
+                    db.PayrollPeriods.Add(period);
+                    await db.SaveChangesAsync();
+                }
 
                 var slipA = new SalarySlip
                 {

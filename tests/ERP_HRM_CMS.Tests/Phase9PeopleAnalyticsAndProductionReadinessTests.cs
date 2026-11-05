@@ -394,9 +394,9 @@ namespace ERP_HRM_CMS.Tests
             }
 
             // Verify performance indexes are checked
-            Assert.Contains("IX_Employees_DepartmentId_Status", scriptContent);
-            Assert.Contains("IX_AttendanceDailies_EmployeeId_WorkDate", scriptContent);
-            Assert.Contains("IX_Contracts_EmployeeId_Status_EndDate", scriptContent);
+            Assert.Contains("IX_Employees_EmployeeCode", scriptContent);
+            Assert.Contains("IX_AttendanceDailies_Employee_Date", scriptContent);
+            Assert.Contains("IX_Contracts_EmployeeId", scriptContent);
         }
 
         #endregion

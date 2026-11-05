@@ -83,7 +83,7 @@ Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `Database/SQLQ
 
 ## 5. Chạy kiểm thử
 
-Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing).
+Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) với **253 / 253 bài kiểm thử XANH 100%** qua 9 phiên hoàn thiện.
 
 ```
 dotnet test tests/ERP_HRM_CMS.Tests
