@@ -58,7 +58,39 @@ namespace ERP_HRM_CMS.Data
                         );
                         INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
                         VALUES (@baseline, N'8.0.0');
-                    END;",
+                    END;
+
+                    -- Đảm bảo các ràng buộc và chỉ mục tồn tại trên database cũ để EF Core DROP CONSTRAINT an toàn
+                    IF OBJECT_ID(N'dbo.Departments', N'U') IS NOT NULL 
+                       AND OBJECT_ID(N'dbo.FK_Departments_Departments_ParentId', N'F') IS NULL
+                    BEGIN
+                        ALTER TABLE [dbo].[Departments] WITH NOCHECK ADD CONSTRAINT [FK_Departments_Departments_ParentId] FOREIGN KEY([ParentId]) REFERENCES [dbo].[Departments]([Id]);
+                    END
+
+                    IF OBJECT_ID(N'dbo.Departments', N'U') IS NOT NULL 
+                       AND OBJECT_ID(N'dbo.FK_Departments_Branches_BranchId', N'F') IS NULL
+                    BEGIN
+                        ALTER TABLE [dbo].[Departments] WITH NOCHECK ADD CONSTRAINT [FK_Departments_Branches_BranchId] FOREIGN KEY([BranchId]) REFERENCES [dbo].[Branches]([Id]);
+                    END
+
+                    IF OBJECT_ID(N'dbo.Warehouses', N'U') IS NOT NULL 
+                       AND OBJECT_ID(N'dbo.FK_Warehouses_Branches_BranchId', N'F') IS NULL
+                    BEGIN
+                        ALTER TABLE [dbo].[Warehouses] WITH NOCHECK ADD CONSTRAINT [FK_Warehouses_Branches_BranchId] FOREIGN KEY([BranchId]) REFERENCES [dbo].[Branches]([Id]);
+                    END
+
+                    IF OBJECT_ID(N'dbo.Employees', N'U') IS NOT NULL 
+                       AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Employees_DepartmentId' AND object_id = OBJECT_ID(N'dbo.Employees'))
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX [IX_Employees_DepartmentId] ON [dbo].[Employees]([DepartmentId]);
+                    END
+
+                    IF OBJECT_ID(N'dbo.Candidates', N'U') IS NOT NULL 
+                       AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Candidates_JobPostingId' AND object_id = OBJECT_ID(N'dbo.Candidates'))
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX [IX_Candidates_JobPostingId] ON [dbo].[Candidates]([JobPostingId]);
+                    END
+",
                     new Microsoft.Data.SqlClient.SqlParameter("@baseline", baseline));
             }
 
