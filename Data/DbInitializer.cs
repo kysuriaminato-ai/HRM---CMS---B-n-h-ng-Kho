@@ -184,6 +184,7 @@ namespace ERP_HRM_CMS.Data
             await SeedSalesAndInventoryDataAsync(context);
             await SeedScmDataAsync(context);
             await SeedHrmAdvancedDataAsync(context);
+            await Seed200EmployeesAsync(context);
         }
 
         private static async Task SeedAuthAndPermissionsAsync(AppDbContext context)
@@ -639,22 +640,39 @@ namespace ERP_HRM_CMS.Data
         /// </summary>
         private static async Task AssignDemoRolesAsync(AppDbContext context)
         {
-            var demoRoles = new Dictionary<string, string>
+            var demoUsers = new (string Username, string RoleCode)[]
             {
-                ["superadmin"] = "SUPERADMIN",
-                ["qtvp"] = "HR_MANAGER",
-                ["hr_manager"] = "HR_MANAGER",
-                ["salestaff"] = "SALES_STAFF",
-                ["sales_staff"] = "SALES_STAFF",
-                ["warehouse"] = "WAREHOUSE_STAFF",
-                ["warehouse_staff"] = "WAREHOUSE_STAFF"
+                ("superadmin", "SUPERADMIN"),
+                ("ketoan", "ADMIN_BANGLUONG"),
+                ("qtvp", "HR_MANAGER"),
+                ("hr_manager", "HR_MANAGER"),
+                ("salestaff", "SALES_STAFF"),
+                ("sales_staff", "SALES_STAFF"),
+                ("warehouse", "WAREHOUSE_STAFF"),
+                ("warehouse_staff", "WAREHOUSE_STAFF")
             };
 
-            foreach (var (username, roleCode) in demoRoles)
+            foreach (var (username, roleCode) in demoUsers)
             {
-                var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
                 var role = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == roleCode.ToUpper());
-                if (user == null || role == null) continue;
+                if (role == null) continue;
+
+                var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
+                if (user == null)
+                {
+                    string salt = MatKhauHelper.GenerateSalt();
+                    user = new User
+                    {
+                        Username = username,
+                        PasswordSalt = salt,
+                        PasswordHash = MatKhauHelper.HashPassword("Admin@123456", salt),
+                        IsActive = true,
+                        IsSuperAdmin = (roleCode == "SUPERADMIN"),
+                        CreatedAt = VietnamTime.Now
+                    };
+                    context.Users.Add(user);
+                    await context.SaveChangesAsync();
+                }
 
                 if (!await context.UserRoles.AnyAsync(ur => ur.UserId == user.Id && ur.RoleId == role.Id))
                 {
@@ -1147,6 +1165,263 @@ namespace ERP_HRM_CMS.Data
                 }
 
                 context.StocktakingSheets.Add(sheet);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Nạp 200 nhân sự thực tế với đầy đủ hồ sơ chi tiết, hợp đồng lao động và quỹ phép năm.
+        /// Đảm bảo tính lũy tiến (idempotent), tự bù đủ 200 nhân viên nếu cơ sở dữ liệu có ít hơn 200.
+        /// </summary>
+        public static async Task Seed200EmployeesAsync(AppDbContext context)
+        {
+            int currentCount = await context.Employees.CountAsync();
+            if (currentCount >= 200) return;
+
+            var branchHN = await context.Branches.FirstOrDefaultAsync(b => b.Code == "CN-HN") ?? await context.Branches.FirstAsync();
+            var branchHCM = await context.Branches.FirstOrDefaultAsync(b => b.Code == "CN-HCM") ?? branchHN;
+
+            // Bổ sung đầy đủ phòng ban thực tế nếu chưa có
+            var extraDepts = new List<Department>
+            {
+                new Department { BranchId = branchHN.Id, Code = "PB-MKT", Name = "Phòng Marketing & Truyền Thông", IsActive = true },
+                new Department { BranchId = branchHN.Id, Code = "PB-KT", Name = "Phòng Tài Chính - Kế Toán", IsActive = true },
+                new Department { BranchId = branchHN.Id, Code = "PB-CSKH", Name = "Phòng Chăm Sóc Khách Hàng", IsActive = true },
+                new Department { BranchId = branchHCM.Id, Code = "PB-CN-HCM", Name = "Chi Nhánh Miền Nam", IsActive = true }
+            };
+
+            foreach (var d in extraDepts)
+            {
+                if (!await context.Departments.AnyAsync(x => x.Code == d.Code))
+                {
+                    context.Departments.Add(d);
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // Bổ sung các chức danh thực tế nếu chưa có
+            var extraPositions = new List<Position>
+            {
+                new Position { Code = "TP-IT", Name = "Trưởng Phòng Công Nghệ", BaseSalary = 30000000, AllowanceRate = 0.25m, IsActive = true },
+                new Position { Code = "DEV-SR", Name = "Kỹ Sư Phần Mềm Cao Cấp", BaseSalary = 24000000, AllowanceRate = 0.15m, IsActive = true },
+                new Position { Code = "DEV-JR", Name = "Kỹ Sư Phần Mềm", BaseSalary = 14000000, AllowanceRate = 0.1m, IsActive = true },
+                new Position { Code = "TP-KD", Name = "Trưởng Phòng Kinh Doanh", BaseSalary = 26000000, AllowanceRate = 0.25m, IsActive = true },
+                new Position { Code = "TP-KT", Name = "Kế Toán Trưởng", BaseSalary = 25000000, AllowanceRate = 0.2m, IsActive = true },
+                new Position { Code = "NV-KT", Name = "Chuyên Viên Kế Toán", BaseSalary = 13000000, AllowanceRate = 0.1m, IsActive = true },
+                new Position { Code = "TP-MKT", Name = "Trưởng Phòng Marketing", BaseSalary = 23000000, AllowanceRate = 0.2m, IsActive = true },
+                new Position { Code = "NV-MKT", Name = "Chuyên Viên Marketing", BaseSalary = 12000000, AllowanceRate = 0.1m, IsActive = true },
+                new Position { Code = "NV-HR", Name = "Chuyên Viên Tuyển Dụng & C&B", BaseSalary = 13000000, AllowanceRate = 0.1m, IsActive = true },
+                new Position { Code = "NV-CSKH", Name = "Chuyên Viên Chăm Sóc Khách Hàng", BaseSalary = 11000000, AllowanceRate = 0.08m, IsActive = true }
+            };
+
+            foreach (var p in extraPositions)
+            {
+                if (!await context.Positions.AnyAsync(x => x.Code == p.Code))
+                {
+                    context.Positions.Add(p);
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // Đảm bảo có loại nghỉ phép năm
+            var annualLeave = await context.LeaveTypes.FirstOrDefaultAsync(lt => lt.Code == "ANNUAL_LEAVE" || lt.Code == "ANNUAL");
+            if (annualLeave == null)
+            {
+                annualLeave = new LeaveType
+                {
+                    Code = "ANNUAL_LEAVE",
+                    Name = "Nghỉ phép năm",
+                    MaxDaysPerYear = 12,
+                    IsPaid = true,
+                    AllowHalfDay = true,
+                    Description = "Nghỉ phép năm hưởng nguyên lương theo Bộ luật Lao động",
+                    IsActive = true
+                };
+                context.LeaveTypes.Add(annualLeave);
+                await context.SaveChangesAsync();
+            }
+
+            var depts = await context.Departments.ToListAsync();
+            var positions = await context.Positions.ToListAsync();
+            var existingCodes = (await context.Employees.Select(e => e.EmployeeCode).ToListAsync()).ToHashSet();
+            var existingEmails = (await context.Employees.Select(e => e.Email).ToListAsync()).ToHashSet();
+
+            var lastNames = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý", "Đào", "Đoàn", "Mai", "Trịnh" };
+            var maleNames = new[] {
+                "Văn Hùng", "Minh Tuấn", "Hoàng Long", "Quang Huy", "Tuấn Anh",
+                "Đức Thắng", "Quốc Bảo", "Hữu Thắng", "Tiến Dũng", "Trọng Nghĩa",
+                "Đình Trọng", "Văn Nam", "Hải Đăng", "Thành Đạt", "Việt Anh",
+                "Xuân Bách", "Minh Triết", "Phúc Thịnh", "Duy Khang", "Nhật Minh"
+            };
+            var femaleNames = new[] {
+                "Thị Mai", "Thị Hương", "Thu Hà", "Ngọc Anh", "Thùy Linh",
+                "Thanh Huyền", "Bích Ngọc", "Phương Thảo", "Mỹ Linh", "Khánh Vy",
+                "Lan Anh", "Quỳnh Nga", "Diệu Linh", "Hoài Thương", "Kim Oanh",
+                "Tuyết Mai", "Ánh Tuyết", "Cẩm Tú", "Thảo Nguyên", "Bảo Trâm"
+            };
+            var banks = new[] { "Techcombank", "Vietcombank", "MB Bank", "BIDV", "VPBank", "ACB", "TPBank" };
+            var addresses = new[] {
+                "Cầu Giấy, Hà Nội", "Đống Đa, Hà Nội", "Thanh Xuân, Hà Nội", "Nam Từ Liêm, Hà Nội",
+                "Quận 1, TP. HCM", "Quận Bình Thạnh, TP. HCM", "Quận Tân Bình, TP. HCM", "TP. Thủ Đức, TP. HCM",
+                "Hải Châu, Đà Nẵng", "Ngô Quyền, Hải Phòng", "TP. Bắc Ninh"
+            };
+
+            var newEmployees = new List<Employee>();
+
+            for (int i = 1; i <= 200; i++)
+            {
+                string code = $"NV{i:D3}";
+                if (existingCodes.Contains(code)) continue;
+
+                bool isMale = (i % 2 != 0);
+                string gender = isMale ? "Nam" : "Nữ";
+                string lastName = lastNames[(i - 1) % lastNames.Length];
+                string middleAndFirst = isMale
+                    ? maleNames[(i / 2) % maleNames.Length]
+                    : femaleNames[(i / 2) % femaleNames.Length];
+                string fullName = $"{lastName} {middleAndFirst}";
+
+                string email = $"nv{i:D3}@tienphong.vn";
+                int emailSuffix = 1;
+                while (existingEmails.Contains(email))
+                {
+                    email = $"nv{i:D3}.{emailSuffix}@tienphong.vn";
+                    emailSuffix++;
+                }
+                existingEmails.Add(email);
+
+                var dept = depts[i % depts.Count];
+                var pos = positions[i % positions.Count];
+
+                // Phân bổ trạng thái: ~85% Active, ~8% Probation, ~7% Resigned
+                string status;
+                DateTime hireDate;
+                if (i % 15 == 0)
+                {
+                    status = "Resigned";
+                    hireDate = new DateTime(2021 + (i % 4), 1 + (i % 12), 1 + (i % 26));
+                }
+                else if (i % 10 == 0)
+                {
+                    status = "Probation";
+                    hireDate = VietnamTime.Today.AddDays(-(i % 45) - 5);
+                }
+                else
+                {
+                    status = "Active";
+                    hireDate = new DateTime(2021 + (i % 5), 1 + (i % 12), 1 + (i % 26));
+                }
+
+                var emp = new Employee
+                {
+                    EmployeeCode = code,
+                    FullName = fullName,
+                    Gender = gender,
+                    DateOfBirth = new DateTime(1986 + (i % 16), 1 + ((i * 3) % 12), 1 + ((i * 5) % 27)),
+                    Email = email,
+                    Phone = $"09{80000000 + i}",
+                    IdentityCard = $"enc:v1:0{i:D11}",
+                    DepartmentId = dept.Id,
+                    PositionId = pos.Id,
+                    Status = status,
+                    HireDate = hireDate,
+                    CreatedAt = hireDate
+                };
+
+                newEmployees.Add(emp);
+            }
+
+            // Lưu Employee theo từng đợt để lấy Id
+            for (int chunk = 0; chunk < newEmployees.Count; chunk += 50)
+            {
+                var batch = newEmployees.Skip(chunk).Take(50).ToList();
+                context.Employees.AddRange(batch);
+                await context.SaveChangesAsync();
+
+                foreach (var emp in batch)
+                {
+                    int empId = emp.Id;
+                    int i = int.TryParse(emp.EmployeeCode.Replace("NV", ""), out int num) ? num : empId;
+                    var empPos = positions.FirstOrDefault(p => p.Id == emp.PositionId) ?? positions.First();
+
+                    // 1. EmployeeDetail
+                    context.EmployeeDetails.Add(new EmployeeDetail
+                    {
+                        EmployeeId = empId,
+                        CurrentAddress = addresses[i % addresses.Length],
+                        BankAccountNumber = $"190333{i:D6}",
+                        BankName = banks[i % banks.Length],
+                        EmergencyContactName = $"Người thân {emp.FullName.Split(' ').FirstOrDefault()}",
+                        EmergencyContactPhone = $"090{7000000 + i}",
+                        EducationLevel = (i % 5 == 0) ? "Thạc sĩ" : ((i % 7 == 0) ? "Cao đẳng" : "Đại học")
+                    });
+
+                    // 2. Contract
+                    decimal basicSal = empPos.BaseSalary > 0 ? empPos.BaseSalary : 12000000m;
+                    string contractType;
+                    DateTime? endDate = null;
+                    string contractStatus = "Active";
+
+                    if (emp.Status == "Probation")
+                    {
+                        contractType = "Hợp đồng thử việc 60 ngày";
+                        endDate = emp.HireDate.AddDays(60);
+                        basicSal = Math.Round(basicSal * 0.85m, 0);
+                    }
+                    else if (emp.Status == "Resigned")
+                    {
+                        contractType = "Hợp đồng đã thanh lý";
+                        contractStatus = "Terminated";
+                        endDate = emp.HireDate.AddYears(1);
+                    }
+                    else
+                    {
+                        if (i % 3 == 0)
+                        {
+                            contractType = "Hợp đồng lao động không thời hạn";
+                            endDate = null;
+                        }
+                        else
+                        {
+                            contractType = "Hợp đồng lao động xác định thời hạn 12 tháng";
+                            endDate = emp.HireDate.AddYears(1);
+                        }
+                    }
+
+                    context.Contracts.Add(new Contract
+                    {
+                        EmployeeId = empId,
+                        ContractNumber = $"HDLD-{emp.EmployeeCode}",
+                        ContractType = contractType,
+                        StartDate = emp.HireDate,
+                        EndDate = endDate,
+                        BasicSalary = basicSal,
+                        InsuranceSalary = Math.Min(basicSal, 20000000m),
+                        Status = contractStatus,
+                        SignDate = emp.HireDate,
+                        CreatedAt = emp.HireDate
+                    });
+
+                    // 3. EmployeeLeaveBalance
+                    if (annualLeave != null)
+                    {
+                        decimal seniority = (2026 - emp.HireDate.Year >= 5) ? 1.00m : 0.00m;
+                        decimal used = emp.Status == "Probation" ? 0.00m : (decimal)(i % 5);
+                        context.EmployeeLeaveBalances.Add(new EmployeeLeaveBalance
+                        {
+                            EmployeeId = empId,
+                            Year = 2026,
+                            LeaveTypeId = annualLeave.Id,
+                            StandardDays = 12.00m,
+                            SeniorityBonusDays = seniority,
+                            CarriedOverDays = (i % 3 == 0) ? 1.50m : 0.00m,
+                            UsedDays = used,
+                            RemainingDays = Math.Max(0m, 12.00m + seniority - used),
+                            CreatedAt = emp.HireDate
+                        });
+                    }
+                }
+
                 await context.SaveChangesAsync();
             }
         }
