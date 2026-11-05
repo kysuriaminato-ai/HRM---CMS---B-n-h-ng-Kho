@@ -50,14 +50,47 @@ namespace ERP_HRM_CMS.Data
             if (await context.Database.CanConnectAsync())
             {
                 await context.Database.ExecuteSqlRawAsync(@"
-                    IF OBJECT_ID(N'dbo.__EFMigrationsHistory') IS NULL AND OBJECT_ID(N'dbo.Users') IS NOT NULL
+                    -- Đồng bộ bảng lịch sử EF Migrations với database đã có sẵn bảng nghiệp vụ
+                    IF OBJECT_ID(N'dbo.Users') IS NOT NULL
                     BEGIN
-                        CREATE TABLE dbo.__EFMigrationsHistory (
-                            MigrationId nvarchar(150) NOT NULL PRIMARY KEY,
-                            ProductVersion nvarchar(32) NOT NULL
-                        );
-                        INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
-                        VALUES (@baseline, N'8.0.0');
+                        IF OBJECT_ID(N'dbo.__EFMigrationsHistory') IS NULL
+                        BEGIN
+                            CREATE TABLE dbo.__EFMigrationsHistory (
+                                MigrationId nvarchar(150) NOT NULL PRIMARY KEY,
+                                ProductVersion nvarchar(32) NOT NULL
+                            );
+                        END;
+
+                        -- 1. Baseline migration
+                        IF NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = @baseline)
+                        BEGIN
+                            INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                            VALUES (@baseline, N'8.0.0');
+                        END;
+
+                        -- 2. AddSeedHistory
+                        IF OBJECT_ID(N'dbo.SeedHistories', N'U') IS NOT NULL
+                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104082158_AddSeedHistory')
+                        BEGIN
+                            INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                            VALUES (N'20261104082158_AddSeedHistory', N'8.0.0');
+                        END;
+
+                        -- 3. V6_00_Security_And_Architecture
+                        IF (COL_LENGTH(N'dbo.Products', N'UnitId') IS NOT NULL OR COL_LENGTH(N'dbo.Users', N'MustChangePassword') IS NOT NULL)
+                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104175015_V6_00_Security_And_Architecture')
+                        BEGIN
+                            INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                            VALUES (N'20261104175015_V6_00_Security_And_Architecture', N'8.0.0');
+                        END;
+
+                        -- 4. V6_01_EnterpriseHRM_Schema_And_Indexes
+                        IF OBJECT_ID(N'dbo.EmployeeLeaveBalances', N'U') IS NOT NULL
+                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes')
+                        BEGIN
+                            INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
+                            VALUES (N'20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes', N'8.0.0');
+                        END;
                     END;
 
                     -- Đảm bảo các ràng buộc và chỉ mục tồn tại trên database cũ để EF Core DROP CONSTRAINT an toàn
