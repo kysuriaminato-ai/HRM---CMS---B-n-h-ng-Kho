@@ -1,0 +1,712 @@
+/* ==========================================================================
+   L'AURA NOIR - HAUTE PARFUMERIE LUXURY THEME
+   Chuyên biệt cho website bán nước hoa cao cấp hàng đầu
+   Đặc trưng: Tông đen nhung quý phái, vàng Champagne vương giả,
+   kết hợp hệ thống "CHUYỂN ĐỘNG TĨNH" (ambient micro-animations) siêu mượt.
+   ========================================================================== */
+
+:root {
+    --pf-bg-dark: #08090d;
+    --pf-bg-surface: #0e1118;
+    --pf-bg-card: rgba(18, 22, 32, 0.82);
+    --pf-card-hover: rgba(26, 32, 48, 0.95);
+    --pf-gold: #d4af37;
+    --pf-gold-light: #f7e8bd;
+    --pf-gold-gradient: linear-gradient(135deg, #d4af37 0%, #f7e8bd 50%, #aa8624 100%);
+    --pf-gold-border: rgba(212, 175, 55, 0.22);
+    --pf-gold-border-hover: rgba(212, 175, 55, 0.65);
+    --pf-gold-glow: rgba(212, 175, 55, 0.35);
+    --pf-rose: #d87093;
+    --pf-amber: #e69d45;
+    --pf-text-primary: #fcfbfa;
+    --pf-text-secondary: #c2c7d0;
+    --pf-text-muted: #88909f;
+    --pf-radius-lg: 20px;
+    --pf-radius-md: 14px;
+    --pf-radius-sm: 8px;
+    --pf-font-serif: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+    --pf-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --pf-transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Body Styles */
+body.pf-luxury-body {
+    background-color: var(--pf-bg-dark);
+    color: var(--pf-text-primary);
+    font-family: var(--pf-font-sans);
+    line-height: 1.65;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 15% 20%, rgba(212, 175, 55, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 65%, rgba(230, 157, 69, 0.04) 0%, transparent 45%);
+    background-attachment: fixed;
+}
+
+/* ==========================================================================
+   HỆ THỐNG "CHUYỂN ĐỘNG TĨNH" (AMBIENT MICRO-ANIMATIONS)
+   ========================================================================== */
+
+/* 1. Hiệu ứng bồng bềnh tĩnh lơ lửng của chai nước hoa */
+@keyframes pfFloatBottle {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-12px) rotate(1.2deg);
+    }
+}
+
+.pf-float-bottle {
+    animation: pfFloatBottle 6s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+
+/* 2. Hiệu ứng vòng hào quang tỏa hương nhịp nhàng (Aura Breathing) */
+@keyframes pfAuraPulse {
+    0%, 100% {
+        transform: scale(0.92);
+        opacity: 0.45;
+        filter: blur(45px);
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.85;
+        filter: blur(60px);
+    }
+}
+
+.pf-aura-pulse {
+    animation: pfAuraPulse 7s ease-in-out infinite;
+}
+
+/* 3. Làn sương khói hương thơm lan tỏa mờ ảo (Perfume Mist Drift) */
+@keyframes pfMistDrift {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.35;
+    }
+    50% {
+        transform: translate(25px, -15px) scale(1.08);
+        opacity: 0.65;
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.35;
+    }
+}
+
+.pf-mist-layer {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0) 70%);
+    filter: blur(40px);
+    animation: pfMistDrift 10s ease-in-out infinite;
+}
+
+/* 4. Ánh kim vàng quét qua nhãn mác & nút bấm (Gold Specular Sweep) */
+@keyframes pfGoldShimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.pf-gold-shimmer-btn {
+    background: linear-gradient(90deg, #aa8624 0%, #f7e8bd 25%, #d4af37 50%, #f7e8bd 75%, #aa8624 100%);
+    background-size: 200% auto;
+    color: #0b0c10 !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border: none;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+    transition: var(--pf-transition);
+}
+
+.pf-gold-shimmer-btn:hover {
+    animation: pfGoldShimmer 2s linear infinite;
+    box-shadow: 0 6px 28px rgba(212, 175, 55, 0.6);
+    transform: translateY(-2px);
+}
+
+/* 5. Nhịp thở viền vàng tĩnh của thẻ sản phẩm */
+@keyframes pfBorderBreathe {
+    0%, 100% {
+        border-color: rgba(212, 175, 55, 0.18);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        border-color: rgba(212, 175, 55, 0.45);
+        box-shadow: 0 10px 35px rgba(212, 175, 55, 0.15);
+    }
+}
+
+.pf-breathe-card {
+    animation: pfBorderBreathe 5s ease-in-out infinite;
+}
+
+/* 6. Marquee chạy chữ liên tục êm đềm */
+@keyframes pfMarqueeScroll {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+}
+
+.pf-marquee-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    background: #06070a;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    padding: 9px 0;
+}
+
+.pf-marquee-content {
+    display: inline-block;
+    white-space: nowrap;
+    animation: pfMarqueeScroll 28s linear infinite;
+}
+
+.pf-marquee-content:hover {
+    animation-play-state: paused;
+}
+
+/* 7. Hiệu ứng giọt hương tỏa sóng nhấp nháy trên Tháp Mùi Hương */
+@keyframes pfPyramidPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(212, 175, 55, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+    }
+}
+
+.pf-pulse-node {
+    animation: pfPyramidPulse 2.5s infinite;
+}
+
+/* 8. Lấp lánh logo ngôi sao & vương miện */
+@keyframes pfSparkle {
+    0%, 100% { opacity: 0.6; transform: scale(0.95); }
+    50% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 6px #f7e8bd); }
+}
+
+.pf-sparkle-icon {
+    animation: pfSparkle 3s ease-in-out infinite;
+    display: inline-block;
+}
+
+/* ==========================================================================
+   HEADER & NAVIGATION
+   ========================================================================== */
+
+.pf-top-bar {
+    background: #050608;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.82rem;
+    padding: 6px 0;
+    color: var(--pf-text-secondary);
+}
+
+.pf-navbar {
+    background: rgba(10, 12, 18, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--pf-gold-border);
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    transition: var(--pf-transition);
+}
+
+.pf-brand-name {
+    font-family: var(--pf-font-serif);
+    font-size: 1.55rem;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    background: var(--pf-gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    text-decoration: none !important;
+}
+
+.pf-brand-subtitle {
+    font-size: 0.65rem;
+    letter-spacing: 0.28em;
+    color: var(--pf-text-muted);
+    text-transform: uppercase;
+    display: block;
+    margin-top: -3px;
+}
+
+.pf-nav-link {
+    color: var(--pf-text-secondary) !important;
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 8px 16px !important;
+    border-radius: var(--pf-radius-sm);
+    transition: var(--pf-transition);
+    text-transform: uppercase;
+    position: relative;
+}
+
+.pf-nav-link:hover, .pf-nav-link.active {
+    color: var(--pf-gold-light) !important;
+}
+
+.pf-nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--pf-gold);
+    transition: var(--pf-transition);
+    transform: translateX(-50%);
+}
+
+.pf-nav-link:hover::after, .pf-nav-link.active::after {
+    width: 60%;
+}
+
+.pf-erp-badge-link {
+    border: 1px solid var(--pf-gold);
+    color: var(--pf-gold) !important;
+    background: rgba(212, 175, 55, 0.08);
+    padding: 7px 18px !important;
+    border-radius: 30px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--pf-transition);
+    text-decoration: none;
+}
+
+.pf-erp-badge-link:hover {
+    background: var(--pf-gold);
+    color: #000 !important;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   HERO SHOWCASE SECTION
+   ========================================================================== */
+
+.pf-hero-section {
+    position: relative;
+    padding: 80px 0 100px;
+    overflow: hidden;
+    background: radial-gradient(circle at 60% 40%, #151a28 0%, #08090d 80%);
+}
+
+.pf-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: var(--pf-gold-light);
+    padding: 6px 18px;
+    border-radius: 30px;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.pf-hero-title {
+    font-family: var(--pf-font-serif);
+    font-size: clamp(2.4rem, 5vw, 4.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+}
+
+.pf-hero-title span.pf-gold-text {
+    background: var(--pf-gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.pf-hero-desc {
+    font-size: 1.15rem;
+    color: var(--pf-text-secondary);
+    max-width: 580px;
+    margin-bottom: 36px;
+    line-height: 1.8;
+}
+
+.pf-hero-visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pf-hero-bottle-img {
+    max-width: 440px;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 35px rgba(212, 175, 55, 0.25));
+    border-radius: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.pf-hero-aura {
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.35) 0%, rgba(230, 157, 69, 0.15) 50%, transparent 70%);
+    z-index: 1;
+}
+
+.pf-hero-floating-card {
+    position: absolute;
+    background: rgba(14, 17, 24, 0.9);
+    border: 1px solid var(--pf-gold-border);
+    backdrop-filter: blur(12px);
+    border-radius: var(--pf-radius-md);
+    padding: 14px 20px;
+    z-index: 3;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+.pf-card-tl { top: 10%; left: 0%; }
+.pf-card-br { bottom: 8%; right: 2%; }
+
+/* ==========================================================================
+   CARDS & PRODUCTS GRID
+   ========================================================================== */
+
+.pf-section-head {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.pf-eyebrow {
+    font-size: 0.82rem;
+    letter-spacing: 0.25em;
+    color: var(--pf-gold);
+    text-transform: uppercase;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.pf-section-title {
+    font-family: var(--pf-font-serif);
+    font-size: clamp(2rem, 3.2vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--pf-text-primary);
+}
+
+.pf-card {
+    background: var(--pf-bg-card);
+    border: 1px solid var(--pf-gold-border);
+    border-radius: var(--pf-radius-lg);
+    overflow: hidden;
+    transition: var(--pf-transition);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.pf-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--pf-gold-border-hover);
+    background: var(--pf-card-hover);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.pf-card-thumb-wrap {
+    position: relative;
+    overflow: hidden;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
+    background: #0d0f16;
+}
+
+.pf-card-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pf-card:hover .pf-card-thumb {
+    transform: scale(1.08);
+}
+
+.pf-badge-hot {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(10, 12, 18, 0.85);
+    border: 1px solid var(--pf-gold);
+    color: var(--pf-gold-light);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 4px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+.pf-badge-concentration {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(212, 175, 55, 0.18);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--pf-gold-light);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    z-index: 2;
+}
+
+.pf-card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.pf-brand-origin {
+    font-size: 0.75rem;
+    color: var(--pf-gold);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.pf-prod-title {
+    font-family: var(--pf-font-serif);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--pf-text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+    transition: color 0.2s ease;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 2.8em;
+}
+
+.pf-prod-title:hover {
+    color: var(--pf-gold-light);
+}
+
+.pf-scent-notes-preview {
+    font-size: 0.82rem;
+    color: var(--pf-text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 2px solid var(--pf-gold);
+    padding: 6px 12px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.pf-price-box {
+    margin-top: auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.pf-price-current {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--pf-gold-light);
+}
+
+.pf-price-old {
+    font-size: 0.9rem;
+    color: var(--pf-text-muted);
+    text-decoration: line-through;
+}
+
+.pf-btn-add-cart {
+    width: 100%;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid var(--pf-gold);
+    color: var(--pf-gold-light);
+    font-weight: 600;
+    padding: 11px 16px;
+    border-radius: var(--pf-radius-sm);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--pf-transition);
+}
+
+.pf-btn-add-cart:hover {
+    background: var(--pf-gold);
+    color: #08090d;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.45);
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   INTERACTIVE SCENT PYRAMID (THÁP 3 TẦNG HƯƠNG)
+   ========================================================================== */
+
+.pf-pyramid-section {
+    padding: 90px 0;
+    background: linear-gradient(180deg, #08090d 0%, #10131d 50%, #08090d 100%);
+    position: relative;
+    border-top: 1px solid rgba(212, 175, 55, 0.12);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+.pf-pyramid-layer {
+    background: rgba(18, 22, 32, 0.85);
+    border: 1px solid var(--pf-gold-border);
+    border-radius: var(--pf-radius-md);
+    padding: 24px 30px;
+    margin-bottom: 20px;
+    position: relative;
+    transition: var(--pf-transition);
+}
+
+.pf-pyramid-layer:hover {
+    border-color: var(--pf-gold);
+    background: rgba(26, 32, 48, 0.95);
+    transform: translateX(8px);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+}
+
+.pf-layer-top { width: 70%; margin-left: auto; margin-right: auto; }
+.pf-layer-mid { width: 85%; margin-left: auto; margin-right: auto; }
+.pf-layer-base { width: 100%; }
+
+.pf-layer-badge {
+    background: var(--pf-gold-gradient);
+    color: #0b0c10;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    padding: 4px 14px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   SCENT FILTER TABS
+   ========================================================================== */
+
+.pf-filter-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 45px;
+}
+
+.pf-filter-btn {
+    background: rgba(18, 22, 32, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--pf-text-secondary);
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: var(--pf-transition);
+}
+
+.pf-filter-btn:hover, .pf-filter-btn.active {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: var(--pf-gold);
+    color: var(--pf-gold-light);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+}
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+
+.pf-footer {
+    background: #050609;
+    border-top: 1px solid var(--pf-gold-border);
+    padding: 80px 0 40px;
+    color: var(--pf-text-muted);
+}
+
+.pf-footer-title {
+    font-family: var(--pf-font-serif);
+    color: var(--pf-text-primary);
+    font-size: 1.25rem;
+    margin-bottom: 24px;
+    letter-spacing: 0.05em;
+}
+
+.pf-footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pf-footer-links li {
+    margin-bottom: 12px;
+}
+
+.pf-footer-links a {
+    color: var(--pf-text-secondary);
+    text-decoration: none;
+    transition: var(--pf-transition);
+    font-size: 0.9rem;
+}
+
+.pf-footer-links a:hover {
+    color: var(--pf-gold-light);
+    padding-left: 6px;
+}
+
+/* Toast Add To Cart Notification */
+.pf-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: rgba(14, 18, 26, 0.96);
+    border: 1px solid var(--pf-gold);
+    border-radius: var(--pf-radius-md);
+    padding: 16px 24px;
+    z-index: 9999;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 175, 55, 0.35);
+    display: none;
+    align-items: center;
+    gap: 16px;
+    backdrop-filter: blur(12px);
+    animation: pfFloatBottle 4s ease-in-out infinite;
+}

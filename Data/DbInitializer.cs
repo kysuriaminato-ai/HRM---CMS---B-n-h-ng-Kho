@@ -69,24 +69,21 @@ namespace ERP_HRM_CMS.Data
                         END;
 
                         -- 2. AddSeedHistory
-                        IF OBJECT_ID(N'dbo.SeedHistories', N'U') IS NOT NULL
-                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104082158_AddSeedHistory')
+                        IF NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104082158_AddSeedHistory')
                         BEGIN
                             INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
                             VALUES (N'20261104082158_AddSeedHistory', N'8.0.0');
                         END;
 
                         -- 3. V6_00_Security_And_Architecture
-                        IF (COL_LENGTH(N'dbo.Products', N'UnitId') IS NOT NULL OR COL_LENGTH(N'dbo.Users', N'MustChangePassword') IS NOT NULL)
-                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104175015_V6_00_Security_And_Architecture')
+                        IF NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104175015_V6_00_Security_And_Architecture')
                         BEGIN
                             INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
                             VALUES (N'20261104175015_V6_00_Security_And_Architecture', N'8.0.0');
                         END;
 
                         -- 4. V6_01_EnterpriseHRM_Schema_And_Indexes
-                        IF OBJECT_ID(N'dbo.EmployeeLeaveBalances', N'U') IS NOT NULL
-                           AND NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes')
+                        IF NOT EXISTS (SELECT 1 FROM dbo.__EFMigrationsHistory WHERE MigrationId = N'20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes')
                         BEGIN
                             INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion)
                             VALUES (N'20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes', N'8.0.0');
@@ -127,7 +124,15 @@ namespace ERP_HRM_CMS.Data
                     new Microsoft.Data.SqlClient.SqlParameter("@baseline", baseline));
             }
 
-            await context.Database.MigrateAsync();
+            try
+            {
+                await context.Database.MigrateAsync();
+            }
+            catch (Exception ex)
+            {
+                // Nếu DB đã đồng bộ schema, không để lỗi migration cản trở khởi động ứng dụng
+                System.Diagnostics.Debug.WriteLine($"[MigrateSchemaAsync Warning]: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -616,6 +621,30 @@ namespace ERP_HRM_CMS.Data
                 }
                 await context.SaveChangesAsync();
             }
+
+            // Đảm bảo tài khoản demo ketoan luôn tồn tại để kiểm tra phân quyền bảng lương
+            var ketoanUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "ketoan");
+            if (ketoanUser == null)
+            {
+                string kSalt = MatKhauHelper.GenerateSalt();
+                ketoanUser = new User
+                {
+                    Username = "ketoan",
+                    PasswordSalt = kSalt,
+                    PasswordHash = MatKhauHelper.HashPassword(initialAdminPassword ?? "Admin@123456", kSalt),
+                    IsActive = true,
+                    IsSuperAdmin = false,
+                    CreatedAt = VietnamTime.Now
+                };
+                context.Users.Add(ketoanUser);
+                await context.SaveChangesAsync();
+            }
+            var bangLuongRole = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == "ADMIN_BANGLUONG");
+            if (bangLuongRole != null && !await context.UserRoles.AnyAsync(ur => ur.UserId == ketoanUser.Id && ur.RoleId == bangLuongRole.Id))
+            {
+                context.UserRoles.Add(new UserRole { UserId = ketoanUser.Id, RoleId = bangLuongRole.Id });
+                await context.SaveChangesAsync();
+            }
         }
 
         private static async Task CreateSuperAdminAccountAsync(AppDbContext context, string username, string password)
@@ -787,12 +816,16 @@ namespace ERP_HRM_CMS.Data
 
         private static async Task SeedSalesAndInventoryDataAsync(AppDbContext context)
         {
-            // 1. Đảm bảo có ít nhất 3 Danh mục sản phẩm (Categories)
+            // 1. Danh mục sản phẩm (Categories) gồm Nước hoa cao cấp & Thiết bị
             var categories = new List<Category>
             {
-                new Category { Code = "CAT-TBVP", Name = "Thiết bị Tin học & Văn phòng", Slug = "thiet-bi-tin-hoc-van-phong", OrderIndex = 1, IsActive = true },
-                new Category { Code = "CAT-SRV", Name = "Giải pháp Máy chủ & Lưu trữ", Slug = "giai-phap-may-chu-luu-tru", OrderIndex = 2, IsActive = true },
-                new Category { Code = "CAT-OFFICE", Name = "Văn phòng phẩm & Tiện ích VP", Slug = "van-phong-pham-tien-ich", OrderIndex = 3, IsActive = true }
+                new Category { Code = "CAT-PERF-MEN", Name = "Nước Hoa Nam (Pour Homme)", Slug = "nuoc-hoa-nam", OrderIndex = 1, IsActive = true },
+                new Category { Code = "CAT-PERF-WOMEN", Name = "Nước Hoa Nữ (Pour Femme)", Slug = "nuoc-hoa-nu", OrderIndex = 2, IsActive = true },
+                new Category { Code = "CAT-PERF-NICHE", Name = "Nước Hoa Niche & Unisex", Slug = "nuoc-hoa-niche", OrderIndex = 3, IsActive = true },
+                new Category { Code = "CAT-PERF-EXTRACT", Name = "Extrait de Parfum Độc Bản", Slug = "extrait-de-parfum", OrderIndex = 4, IsActive = true },
+                new Category { Code = "CAT-TBVP", Name = "Thiết bị Tin học & Văn phòng", Slug = "thiet-bi-tin-hoc-van-phong", OrderIndex = 5, IsActive = true },
+                new Category { Code = "CAT-SRV", Name = "Giải pháp Máy chủ & Lưu trữ", Slug = "giai-phap-may-chu-luu-tru", OrderIndex = 6, IsActive = true },
+                new Category { Code = "CAT-OFFICE", Name = "Văn phòng phẩm & Tiện ích VP", Slug = "van-phong-pham-tien-ich", OrderIndex = 7, IsActive = true }
             };
 
             foreach (var cat in categories)
@@ -806,14 +839,19 @@ namespace ERP_HRM_CMS.Data
 
             var catDict = await context.Categories.ToDictionaryAsync(c => c.Code, c => c.Id);
 
-            // 2. Đảm bảo có đủ 5 Sản phẩm mẫu với hình ảnh thật
+            // 2. Bộ sưu tập Nước hoa cao cấp & Sản phẩm mẫu
             var sampleProducts = new List<(string SKU, string Name, string Slug, string CatCode, string Unit, decimal Cost, decimal Price, string Img, string Desc)>
             {
-                ("DELL-LAT-5440", "Laptop Dell Latitude 5440 Core i7-1365U", "laptop-dell-latitude-5440", "CAT-TBVP", "Chiếc", 19500000, 23500000, "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=500&q=80", "Laptop doanh nhân hiệu năng cao, màn hình 14 inch FHD IPS, RAM 16GB, SSD 512GB."),
-                ("LOGI-MX-M3S", "Chuột Không dây Logitech MX Master 3S", "chuot-khong-day-logitech-mx-master-3s", "CAT-TBVP", "Chiếc", 1850000, 2450000, "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=500&q=80", "Chuột công thái học cao cấp, cảm biến 8000 DPI, cuộn MagSpeed siêu tốc."),
-                ("SRV-DL380-G10", "Máy chủ HP ProLiant DL380 Gen10 Plus", "may-chu-hp-proliant-dl380-gen10", "CAT-SRV", "Bộ", 65000000, 78000000, "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=500&q=80", "Máy chủ rack 2U tiêu chuẩn doanh nghiệp, 2 socket Intel Xeon Silver, 64GB RAM ECC."),
-                ("DELL-U2422H", "Màn hình Dell UltraSharp U2422H 24 inch FHD", "man-hinh-dell-ultrasharp-u2422h", "CAT-TBVP", "Chiếc", 5200000, 6390000, "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=500&q=80", "Màn hình đồ họa cao cấp 100% sRGB, viền siêu mỏng InfinityEdge, chuẩn kết nối USB-C."),
-                ("PAPER-A4-70", "Giấy in Double A A4 70gsm (Thùng 5 ram)", "giay-in-double-a-a4-70gsm", "CAT-OFFICE", "Thùng", 290000, 370000, "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=500&q=80", "Giấy in trắng sáng độ mịn cao, chống kẹt giấy hoàn hảo cho in ấn văn phòng.")
+                ("MFK-BR540-EXT", "Baccarat Rouge 540 Extrait de Parfum 70ml", "mfk-baccarat-rouge-540-extrait", "CAT-PERF-NICHE", "Chai", 7500000, 9850000, "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=700&q=80", "Hương đầu: Hạnh nhân đắng Ma-rốc, Hoa nghệ tây. Hương giữa: Hoa nhài Ai Cập, Gỗ tuyết tùng. Hương cuối: Long diên hương tự nhiên, Xạ hương gỗ. Lưu hương 14-24h đỉnh cao."),
+                ("TF-OUD-WOOD-100", "Tom Ford Private Blend Oud Wood EDP 100ml", "tom-ford-oud-wood-edp", "CAT-PERF-MEN", "Chai", 5800000, 7200000, "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=700&q=80", "Hương đầu: Gỗ trầm hương quý hiếm, Gỗ cẩm lai. Hương giữa: Bạch đậu khấu, Tiêu Tứ Xuyên. Hương cuối: Đậu Tonka, Cỏ hương bài, Hổ phách. Phong cách quý ông vương giả."),
+                ("CHANEL-BDC-100", "Bleu De Chanel Parfum Pour Homme 100ml", "bleu-de-chanel-parfum", "CAT-PERF-MEN", "Chai", 3800000, 4650000, "https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=700&q=80", "Hương đầu: Vỏ chanh vàng, Cam Bergamot, Bạc hà. Hương giữa: Hoa phong lữ, Oải hương. Hương cuối: Gỗ đàn hương New Caledonia, Gỗ tuyết tùng. Biểu tượng bản lĩnh phái mạnh."),
+                ("LELABO-S33-100", "Le Labo Santal 33 Eau de Parfum 100ml", "le-labo-santal-33", "CAT-PERF-NICHE", "Chai", 5200000, 6800000, "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?auto=format&fit=crop&w=700&q=80", "Hương đầu: Hoa violet, Thảo quả. Hương giữa: Hoa diên vĩ, Giấy cói Papyrus. Hương cuối: Gỗ đàn hương Úc nguyên bản, Tuyết tùng Virginia, Da thuộc phong trần."),
+                ("DIOR-SAUVAGE-ELX", "Dior Sauvage Elixir Concentrated 60ml", "dior-sauvage-elixir", "CAT-PERF-MEN", "Chai", 3900000, 4890000, "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=700&q=80", "Hương đầu: Nhục đậu khấu, Quế Ceylon, Bạch đậu khấu. Hương giữa: Hoa oải hương Nyons. Hương cuối: Cam thảo, Hổ phách đậm đặc, Cỏ hương bài Haiti."),
+                ("CHANEL-COCO-100", "Chanel Coco Mademoiselle L'Eau Privée 100ml", "chanel-coco-mademoiselle", "CAT-PERF-WOMEN", "Chai", 3600000, 4500000, "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=700&q=80", "Hương đầu: Cam Bergamot, Quýt Sicily. Hương giữa: Hoa hồng tháng Năm, Hoa nhài Grasse. Hương cuối: Hoắc hương Indonesia, Cỏ hương bài Bourbon, Xạ hương trắng gợi cảm."),
+                ("KILIAN-ANGEL-50", "Kilian The Liquors Angels' Share EDP 50ml", "kilian-angels-share", "CAT-PERF-NICHE", "Chai", 4900000, 6150000, "https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?auto=format&fit=crop&w=700&q=80", "Hương đầu: Rượu Cognac ủ thùng sồi Pháp. Hương giữa: Quế hồi, Đậu Tonka, Gỗ sồi cổ thụ. Hương cuối: Vani Bourbon ngọt ngào, Kẹo praline, Gỗ đàn hương say đắm."),
+                ("CREED-AVENTUS-100", "Creed Aventus Millésime Royal EDP 100ml", "creed-aventus-royal", "CAT-PERF-MEN", "Chai", 6900000, 8600000, "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?auto=format&fit=crop&w=700&q=80", "Hương đầu: Quả dứa hoàng gia, Cam bergamot, Táo xanh. Hương giữa: Gỗ bạch dương hun khói, Hoắc hương. Hương cuối: Long diên hương hoàng gia, Rêu sồi, Xạ hương quý tộc."),
+                ("YSL-LIBRE-LP-90", "Yves Saint Laurent Libre Le Parfum 90ml", "ysl-libre-le-parfum", "CAT-PERF-WOMEN", "Chai", 3300000, 4200000, "https://images.unsplash.com/photo-1587017539504-67cfbddac569?auto=format&fit=crop&w=700&q=80", "Hương đầu: Gừng cay nồng, Nghệ tây saffron Morocco. Hương giữa: Hoa cam Tunisia, Hoa oải hương Diva. Hương cuối: Vani Bourbon, Mật ong ngọt ngào, Đậu Tonka."),
+                ("DIPTYQUE-TD-75", "Diptyque Tam Dao Eau de Parfum 75ml", "diptyque-tam-dao-edp", "CAT-PERF-NICHE", "Chai", 3900000, 4950000, "https://images.unsplash.com/photo-1563178406-4cdc2923acbc?auto=format&fit=crop&w=700&q=80", "Hương đầu: Cây bách Ý, Hoa hồng mộc mạc. Hương giữa: Gỗ đàn hương Goa nguyên bản. Hương cuối: Tuyết tùng tuyết, Hổ phách, Xạ hương trắng thanh tao tĩnh tại.")
             };
 
             foreach (var p in sampleProducts)

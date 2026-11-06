@@ -56,14 +56,21 @@ namespace ERP_HRM_CMS.Controllers
                 .Include(c => c.Author)
                 .Where(c => c.Status == "Published")
                 .OrderByDescending(c => c.CreatedAt)
-                .Take(4)
+                .Take(6)
                 .ToListAsync();
 
-            ViewBag.FeaturedProducts = await _context.Products
+            var dbProducts = await _context.Products
                 .Include(p => p.Category)
                 .Where(p => p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
-                .Take(6)
+                .Take(24)
+                .ToListAsync();
+
+            ViewBag.FeaturedProducts = dbProducts;
+
+            ViewBag.Categories = await _context.Categories
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.OrderIndex)
                 .ToListAsync();
 
             // Lấy thêm tin tuyển dụng nổi bật đang mở cho trang chủ

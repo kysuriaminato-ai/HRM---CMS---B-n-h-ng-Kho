@@ -1,69 +1,263 @@
 @inject ERP_HRM_CMS.Data.AppDbContext Db
-@{ var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP"); }
+@{ var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "L'AURA NOIR ERP"); }
 @model ERP_HRM_CMS.Models.ViewModels.LoginViewModel
 @{
     Layout = null;
-    ViewData["Title"] = "Đăng nhập hệ thống";
+    ViewData["Title"] = "Cổng Quản Trị Hệ Thống - L'AURA NOIR";
 }
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-bs-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - @brand</title>
+    
+    <!-- Google Fonts & Bootstrap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="~/css/perfume-luxury.css" rel="stylesheet" />
+
     <style>
-        body { background-color: #F8F9FA; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.04); width: 100%; max-width: 440px; padding: 40px; }
-        .brand-badge { display: inline-block; background: #000; color: #fff; font-weight: 700; font-size: 13px; letter-spacing: 1px; padding: 4px 10px; border-radius: 6px; margin-bottom: 20px; }
-        .btn-dark-main { background-color: #000; color: #fff; border: none; border-radius: 8px; padding: 12px; font-weight: 600; font-size: 14px; width: 100%; }
-        .btn-dark-main:hover { background-color: #262626; color: #fff; }
+        :root {
+            --login-gold: #d4af37;
+            --login-gold-light: #f7e8bd;
+        }
+        body {
+            background-color: #08090d;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            color: #fcfbfa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(230, 157, 69, 0.06) 0%, transparent 45%);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 1050px;
+            background: rgba(14, 18, 26, 0.88);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(212, 175, 55, 0.12);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .login-hero {
+            background: linear-gradient(135deg, rgba(14, 18, 26, 0.7) 0%, rgba(8, 9, 13, 0.95) 100%),
+                        url('https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat;
+            padding: 50px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .login-hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at center, rgba(212, 175, 55, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .login-form-pane {
+            padding: 50px 45px;
+        }
+
+        .form-control {
+            background: rgba(22, 27, 39, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background: rgba(26, 32, 48, 0.95);
+            border-color: var(--login-gold);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-gold-login {
+            background: linear-gradient(135deg, #d4af37 0%, #f7e8bd 50%, #aa8624 100%);
+            border: none;
+            color: #0b0c10;
+            font-weight: 700;
+            padding: 13px;
+            border-radius: 10px;
+            letter-spacing: 0.05em;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+        }
+
+        .btn-gold-login:hover {
+            box-shadow: 0 6px 28px rgba(212, 175, 55, 0.6);
+            transform: translateY(-2px);
+            color: #000;
+        }
+
+        .brand-badge {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            color: var(--login-gold-light);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            padding: 5px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <div class="text-center">
-            <span class="brand-badge">@brand 2026</span>
-            <h4 class="fw-bold text-dark mb-1">Cổng Đăng Nhập</h4>
-            <p class="text-muted small mb-4">Hệ thống Điều hành & Nhân sự Tích hợp</p>
-        </div>
+    <div class="login-wrapper">
+        <div class="row g-0">
+            <!-- Cột trái: Hình ảnh thương hiệu & Chuyển động tĩnh -->
+            <div class="col-lg-6 login-hero d-none d-lg-flex">
+                <div class="position-relative" style="z-index: 2;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-droplet-half fs-3 text-warning"></i>
+                        <span class="fs-4 fw-bold font-serif" style="letter-spacing: 0.1em; color: var(--login-gold);">L'AURA NOIR</span>
+                    </div>
+                    <span class="brand-badge">HAUTE PARFUMERIE • PARIS</span>
+                    <h3 class="font-serif fw-bold text-light mt-3" style="line-height: 1.3;">
+                        Hệ Thống Quản Trị Doanh Nghiệp, Bán Hàng & Nhân Sự Tập Trung
+                    </h3>
+                    <p class="text-secondary small mt-3" style="line-height: 1.8;">
+                        Nền tảng vận hành đồng bộ hóa từ khâu quản lý kho nước hoa cao cấp, đơn hàng POS đa chi nhánh đến hồ sơ nhân sự, bảng lương và phân quyền menu chi tiết.
+                    </p>
+                </div>
 
-        @if (TempData["ThongBao"] is string thongBao)
-        {
-            <div class="alert alert-success py-2 small mb-3">@thongBao</div>
-        }
+                <div class="position-relative" style="z-index: 2;">
+                    <!-- Badge cam kết -->
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(14, 18, 26, 0.85); border: 1px solid rgba(212, 175, 55, 0.25);">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-shield-lock-fill fs-3 text-warning"></i>
+                            <div>
+                                <strong class="d-block text-light small">Bảo Mật Cấp Doanh Nghiệp 2026</strong>
+                                <span class="text-secondary small">Mã hóa dữ liệu nhân sự, CCCD & xác thực 2 lớp</span>
+                            </div>
+                        </div>
+                    </div>
 
-        <form asp-action="Login" method="post">
-            <input type="hidden" asp-for="ReturnUrl" />
-
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
-
-            <div class="mb-3">
-                <label asp-for="Username" class="form-label small fw-semibold text-secondary"></label>
-                <input asp-for="Username" class="form-control" placeholder="Tên đăng nhập" autofocus autocomplete="username" />
-                <span asp-validation-for="Username" class="text-danger small"></span>
+                    <div class="d-flex justify-content-between align-items-center text-secondary small">
+                        <span><i class="bi bi-check-circle-fill text-warning me-1"></i>Phiên bản ERP 2026</span>
+                        <a href="/" class="text-warning text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Về Trang Bán Nước Hoa</a>
+                    </div>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label small fw-semibold text-secondary"></label>
-                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" autocomplete="current-password" />
-                <span asp-validation-for="Password" class="text-danger small"></span>
+            <!-- Cột phải: Form Đăng Nhập -->
+            <div class="col-lg-6 login-form-pane">
+                <div class="text-center mb-4">
+                    <div class="d-lg-none mb-3">
+                        <i class="bi bi-droplet-half fs-2 text-warning"></i>
+                        <h4 class="font-serif fw-bold text-warning mb-0">L'AURA NOIR</h4>
+                    </div>
+                    <span class="brand-badge">CỔNG NỘI BỘ ERP / CMS</span>
+                    <h3 class="font-serif fw-bold text-light">Đăng Nhập Hệ Thống</h3>
+                    <p class="text-secondary small">Vui lòng nhập tài khoản được cấp quyền để tiếp tục</p>
+                </div>
+
+                @if (TempData["ThongBao"] is string thongBao)
+                {
+                    <div class="alert alert-success py-2 small mb-3 border-0" style="background: rgba(5, 150, 105, 0.2); color: #34d399;">
+                        <i class="bi bi-check-circle me-1"></i> @thongBao
+                    </div>
+                }
+
+                <form asp-action="Login" method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3 border-0" style="background: rgba(220, 38, 38, 0.2); color: #f87171;"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Username" class="form-label small fw-semibold text-secondary">Tên đăng nhập:</label>
+                        <div class="position-relative">
+                            <input asp-for="Username" class="form-control ps-4" placeholder="Nhập tên đăng nhập (admin / ketoan...)" autofocus autocomplete="username" />
+                            <i class="bi bi-person position-absolute text-muted" style="left: 12px; top: 12px;"></i>
+                        </div>
+                        <span asp-validation-for="Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label small fw-semibold text-secondary">Mật khẩu:</label>
+                        <div class="position-relative">
+                            <input asp-for="Password" id="passwordInput" type="password" class="form-control ps-4 pe-5" placeholder="Nhập mật khẩu..." autocomplete="current-password" />
+                            <i class="bi bi-key position-absolute text-muted" style="left: 12px; top: 12px;"></i>
+                            <button type="button" class="btn btn-link position-absolute end-0 top-0 text-secondary text-decoration-none h-100 px-3" onclick="togglePassword()">
+                                <i class="bi bi-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input bg-dark border-secondary" />
+                            <label asp-for="RememberMe" class="form-check-label small text-secondary">Ghi nhớ phiên đăng nhập</label>
+                        </div>
+                        <a href="javascript:alert('Vui lòng liên hệ Quản trị tổng hoặc phòng IT để cấp lại mật khẩu.')" class="small text-warning text-decoration-none">
+                            Quên mật khẩu?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn btn-gold-login">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> ĐĂNG NHẬP HỆ THỐNG
+                    </button>
+                </form>
+
+                <!-- Thẻ demo nhanh -->
+                <div class="mt-4 p-3 rounded-3 text-secondary small" style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(212,175,55,0.25);">
+                    <div class="text-warning fw-bold mb-1"><i class="bi bi-info-circle me-1"></i>Tài khoản đăng nhập mẫu:</div>
+                    <div class="d-flex justify-content-between">
+                        <span>Quản trị tổng: <strong>admin</strong></span>
+                        <span>Mật khẩu: <strong>Admin@123456</strong></span>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span>Kế toán & Lương: <strong>ketoan</strong></span>
+                        <span>Mật khẩu: <strong>Admin@123456</strong></span>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="/" class="text-secondary text-decoration-none small hover-gold">
+                        <i class="bi bi-house me-1"></i> Quay lại Cửa Hàng Nước Hoa L'Aura Noir
+                    </a>
+                </div>
             </div>
-
-            <div class="form-check mb-4">
-                <input asp-for="RememberMe" class="form-check-input" />
-                <label asp-for="RememberMe" class="form-check-label small text-secondary"></label>
-            </div>
-
-            <button type="submit" class="btn btn-dark-main">
-                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
-            </button>
-        </form>
-
-        <div class="text-center mt-4 small">
-            Chưa có tài khoản? <a asp-action="Register" class="fw-semibold text-dark">Đăng ký</a>
         </div>
     </div>
+
+    <script>
+        function togglePassword() {
+            var input = document.getElementById('passwordInput');
+            var icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    </script>
 </body>
 </html>
