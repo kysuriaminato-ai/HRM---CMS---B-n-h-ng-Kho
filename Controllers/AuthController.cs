@@ -190,8 +190,9 @@ namespace ERP_HRM_CMS.Controllers
 
             if (await _context.Users.AnyAsync(u => u.Username == tenDangNhap))
             {
-                ModelState.AddModelError(nameof(model.Username), "Tên đăng nhập đã được sử dụng. Vui lòng chọn tên khác.");
-                return View(model);
+                MatKhauHelper.VerifyDummy(model.Password);
+                TempData["ThongBao"] = ThongBaoDangKyChung;
+                return RedirectToAction(nameof(Login));
             }
 
             string salt = MatKhauHelper.GenerateSalt();
@@ -200,7 +201,7 @@ namespace ERP_HRM_CMS.Controllers
                 Username = tenDangNhap,
                 PasswordSalt = salt,
                 PasswordHash = MatKhauHelper.HashPassword(model.Password, salt),
-                IsActive = true, // Kích hoạt ngay để khách hàng / thành viên có thể đăng nhập tức thì
+                IsActive = false,
                 IsSuperAdmin = false,
                 CreatedAt = VietnamTime.Now
             };
@@ -215,7 +216,7 @@ namespace ERP_HRM_CMS.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            TempData["ThongBao"] = "Chúc mừng! Đăng ký tài khoản thành công. Bạn có thể đăng nhập ngay bây giờ.";
+            TempData["ThongBao"] = ThongBaoDangKyChung;
             return RedirectToAction(nameof(Login));
         }
 
