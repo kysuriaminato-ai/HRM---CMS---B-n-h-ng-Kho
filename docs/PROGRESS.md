@@ -1,10 +1,10 @@
 # Tiến độ dự án — ERP_HRM_CMS Enterprise
 
-Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN B – Nâng lên .NET 10 LTS (`net10.0`), Build 0 Warning / 0 Error và Test 255/255 XANH 100%**)
+Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN C1 – ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` và Vai trò Khách hàng (`CUSTOMER`), Build 0 Warning / 0 Error và Test 261/261 XANH 100%**)
 
 ---
 
-## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (CẬP NHẬT TẠI PHIÊN B)
+## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (CẬP NHẬT TẠI PHIÊN C1)
 
 | Phiên | Phân hệ / Mục tiêu | Trạng thái thực tế | Kiểm thử tự động |
 | :--- | :--- | :---: | :---: |
@@ -19,6 +19,62 @@ Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN B – Nâng lên .NE
 | **Phiên 9** | Executive People Analytics, Tối Ưu Hiệu Năng & Sẵn Sàng Production | **Hoàn tất** | 100% Pass |
 | **Phiên A** | Đối Soát Tài Liệu, Đóng Nợ P0 (`P0-02`, `P0-04`), Khử 15 Warning & Dọn Repo | **Hoàn tất** | 249 / 255 ca thực thi (2/2 test Phiên A xanh) |
 | **Phiên B** | Nâng Lên **.NET 10 LTS (`net10.0`)**, Đồng Bộ Gói 10.0.14, Build & Test Xanh | **Hoàn tất** | **255 / 255 ca thực thi XANH 100% (0 Warning, 0 Error)** |
+| **Phiên C1** | **ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` & Vai Trò `CUSTOMER`** | **Hoàn tất** | **261 / 261 ca thực thi XANH 100% (0 Warning, 0 Error)** |
+
+---
+
+## CHI TIẾT KẾT QUẢ PHIÊN C1: ASP.NET CORE IDENTITY VÀ VAI TRÒ KHÁCH HÀNG (CUSTOMER) (2026-11-08)
+
+### 1. Báo cáo hiện trạng trước khi sửa code (Nhiệm vụ 1)
+- **Các thành phần xác thực & phân quyền đã rà soát:**
+  - `Controllers/AuthController.cs`: xử lý `Login`, `Logout`, `Register`, `ChangePassword`, `SignInUserPrincipalAsync`, `RedirectBasedOnRole`.
+  - `Helpers/MatKhauHelper.cs`: băm PBKDF2-SHA256 100.000 vòng (salt 16 byte), kiểm chứng SHA-256 hex 64 ký tự cũ (`IsLegacyHash`), `VerifyDummy`, `KiemTraDoManh`, `GenerateTemporaryPassword`.
+  - `Services/LoginThrottleService.cs` & `src/ERP.Domain/Entities/LoginAttempt.cs`: khóa tạm thời theo cặp `(Username, IpAddress)` sau 5 lần sai (`FailuresBeforeLockout = 5`), thời gian khóa lũy tiến 1 → 2 → 4 → 8 → 16 → tối đa 30 phút (`MaxLockout`), tự xóa sau 24 giờ (`ForgetAfter`).
+  - `Services/Security/CookieSecurityStampValidator.cs`: kiểm tra `IsActive` và `SecurityStamp` từ database trên mỗi request (`OnValidatePrincipal`).
+  - `src/ERP.Infrastructure/Security/PermissionService.cs`: tính quyền hiệu lực từ `IsSuperAdmin`, `Roles` -> `RolePermissions` và `UserPermissions` (`IsGranted`), có cache qua `IAppCacheService`.
+  - `src/ERP.Domain/Entities/AuthEntities.cs`: thực thể `User`, `Role`, `Module`, `Permission`, `UserRole`, `RolePermission`, `UserPermission`.
+  - `Data/DbInitializer.cs` & `Program.cs`: khởi tạo vai trò/quyền qua `SeedHistory`, tài khoản `admin` & `quantritong`, cấu hình Cookie `ERP_HRM_CMS_AuthCookie`.
+- **Danh sách mọi nơi đọc/ghi các thuộc tính bảo mật (đúng tên thuộc tính trong code):**
+  - `PasswordHash` & `PasswordSalt`: `src/ERP.Domain/Entities/AuthEntities.cs`, `Controllers/AuthController.cs` (`Login`, `Register`, `ChangePassword`), `Controllers/QuanTriTaiKhoanController.cs` (`TaoMoi`, `DatLaiMatKhau`), `Data/DbInitializer.cs` (`SeedAdminAccountsAsync`, `CreateSuperAdminAccountAsync`, `AssignDemoRolesAsync`), `Services/HRM/EmployeeService.cs` (`CreateEmployeeAsync`, `CreateQuickAccountAsync`), `Services/HRM/SelfServicePortalService.cs` (`VerifyPasswordAsync`), và các file test (`TestHelpers.cs`, `Phase1ArchitectureAndSecurityTests.cs`, `Phase4CoreHrm360Tests.cs`, `Phase5AttendanceAndLeaveTests.cs`, `Phase6SelfServicePortalTests.cs`, `UiPhaseATests.cs`).
+  - `IsSuperAdmin`: `src/ERP.Domain/Entities/AuthEntities.cs`, `Controllers/AuthController.cs`, `Controllers/BanHangController.cs`, `Controllers/DonTuController.cs`, `Controllers/HomeController.cs`, `Controllers/MenuController.cs`, `Controllers/QuanTriTaiKhoanController.cs`, `Data/DbInitializer.cs`, `Filters/KiemTraQuyenAttribute.cs`, `Models/ViewModels/TaiKhoanViewModels.cs`, `Services/HRM/LeaveManagementService.cs`, `Services/Security/SuperAdminService.cs`, `src/ERP.Application/Common/Interfaces/ICurrentUserService.cs`, `src/ERP.Application/Common/Security/DataScopeService.cs`, `LeaveApprovalPolicy.cs`, `PosDiscountPolicy.cs`, `src/ERP.Infrastructure/Identity/CurrentUserService.cs`, `src/ERP.Infrastructure/Security/PermissionService.cs`.
+  - `IsActive`: `src/ERP.Domain/Entities/AuthEntities.cs`, `Controllers/AuthController.cs` (`Login`, `Register`, `ChangePassword`), `Controllers/QuanTriTaiKhoanController.cs`, `Data/DbInitializer.cs`, `Services/HRM/EmployeeService.cs`, `Services/HRM/HrDecisionService.cs`, `Services/Security/CookieSecurityStampValidator.cs`, `Services/Security/SuperAdminService.cs`, `src/ERP.Infrastructure/Security/PermissionService.cs`.
+  - `MustChangePassword`: `src/ERP.Domain/Entities/AuthEntities.cs`, `Controllers/AuthController.cs`, `Controllers/QuanTriTaiKhoanController.cs`, `Models/ViewModels/TaiKhoanViewModels.cs`, `Services/HRM/EmployeeService.cs`, `src/ERP.Application/Common/Interfaces/ICurrentUserService.cs`, `src/ERP.Infrastructure/Identity/CurrentUserService.cs`, `src/ERP.Infrastructure/Middleware/MustChangePasswordMiddleware.cs`.
+  - `SecurityStamp`: `src/ERP.Domain/Entities/AuthEntities.cs`, `src/ERP.Infrastructure/Persistence/AppDbContext.cs`, `Controllers/AuthController.cs` (`ChangePassword`, `SignInUserPrincipalAsync`), `Controllers/QuanTriTaiKhoanController.cs` (`Sua`, `KhoaMoKhoa`, `LuuPhanQuyen`, `GanNhanhVaiTro`, `DatLaiMatKhau`), `Services/HRM/EmployeeService.cs`, `Services/HRM/HrDecisionService.cs`, `Services/Security/CookieSecurityStampValidator.cs`, `src/ERP.Application/Common/Interfaces/ICurrentUserService.cs`.
+  - `EmployeeId`: `src/ERP.Domain/Entities/AuthEntities.cs`, `src/ERP.Infrastructure/Persistence/AppDbContext.cs` (`IX_Users_EmployeeId`), `Controllers/AuthController.cs`, `Controllers/QuanTriTaiKhoanController.cs`, `Services/HRM/EmployeeService.cs`, `Services/HRM/HrDecisionService.cs`, `src/ERP.Application/Common/Interfaces/ICurrentUserService.cs`, `src/ERP.Infrastructure/Identity/CurrentUserService.cs`, cùng các controller/service HRM truy vấn theo nhân viên.
+  - `LockedUntilUtc` & `FailedCount`: `src/ERP.Domain/Entities/LoginAttempt.cs`, `Services/LoginThrottleService.cs` (`GetRemainingLockoutAsync`, `RecordFailureAsync`, `ClearAsync`), `tests/ERP_HRM_CMS.Tests/VietnamTimeTests.cs`.
+- **Các file test liên quan:** `AuthTests.cs`, `LoginThrottleTests.cs`, `SecurityTests.cs`, `SecurityHardeningTests.cs`, `SeedGuardTests.cs`, `RoleSeedTests.cs`, `PermissionSeedOnceTests.cs`, `PasswordPolicyTests.cs`, `Phase1ArchitectureAndSecurityTests.cs`.
+
+### 2. Các hạng mục đã triển khai trong Phiên C1
+1. **Tích hợp ASP.NET Core Identity (`AppUser` / `User : IdentityUser<int>`)**:
+   - Thêm gói `Microsoft.Extensions.Identity.Stores` (`10.0.14`) vào `ERP.Domain` và `Microsoft.AspNetCore.Identity.EntityFrameworkCore` (`10.0.14`) vào `ERP.Infrastructure` (vẫn đảm bảo `CleanArchitecture_DependencyRule_IsStrictlyEnforced` xanh 100%).
+   - Cho `User` (cùng alias toàn cục `AppUser`) kế thừa `IdentityUser<int>`, giữ nguyên kiểu khóa `int` và toàn bộ các cột nghiệp vụ hiện có.
+   - Cho `AppDbContext` kế thừa `IdentityUserContext<User, int, IdentityUserClaim<int>, IdentityUserLogin<int>, IdentityUserToken<int>>`, giữ nguyên các bảng `Roles`, `UserRoles`, `Permissions`, `RolePermissions`, `UserPermissions` làm nguồn phân quyền duy nhất.
+2. **Xây dựng `LegacyCompatiblePasswordHasher : IPasswordHasher<User>`**:
+   - Hỗ trợ đồng thời: (1) Hash chuẩn Identity v3 (`PBKDF2-HMAC-SHA512`), (2) Hash PBKDF2-SHA256 cũ (`MatKhauHelper` + `PasswordSalt`), (3) Hash SHA-256 hex 64 ký tự cũ.
+   - Trả về `PasswordVerificationResult.SuccessRehashNeeded` khi đăng nhập thành công với hash cũ để `AuthController.Login` tự động nâng cấp lên chuẩn Identity v3.
+3. **Migration `20261107185412_PhaseC1_AspNetCoreIdentity_And_CustomerRole`**:
+   - Tạo bảng `AspNetUsers`, `AspNetUserClaims`, `AspNetUserLogins`, `AspNetUserTokens`.
+   - Copy nguyên vẹn 100% dữ liệu từ bảng `Users` sang `AspNetUsers` (giữ `Id`, `EmployeeId`, `Username`, `PasswordHash`, `PasswordSalt`, `IsActive`, `IsSuperAdmin`, `MustChangePassword`, `SecurityStamp`, `LastLoginAt`, `CreatedAt`).
+   - **Không xóa bảng `Users` trong Phiên C1**; có đầy đủ `Up` và `Down`.
+4. **Cơ chế Cookie xác thực duy nhất & Khóa đăng nhập**:
+   - Dùng duy nhất `CookieAuthenticationDefaults.AuthenticationScheme` (`ERP_HRM_CMS_AuthCookie`) kèm `CookieSecurityStampValidator.ValidateAsync`, không sinh hai cookie song song.
+   - Kết hợp `IdentityOptions.Lockout` (`AccessFailedCount`, `LockoutEnd` trên `AspNetUsers`) và `LoginThrottleService` (bảng `LoginAttempts` khóa theo `Username + IP`, 5 lần sai, khóa tăng dần tối đa 30 phút).
+5. **Vai trò `CUSTOMER`**:
+   - Seed vai trò `CUSTOMER` (idempotent qua `SeedHistory` với khóa `ROLE:CUSTOMER`), không có quyền quản trị nào (`0` permission).
+   - Đăng ký công khai (`POST /Auth/Register`) gán vai trò `CUSTOMER` thay cho `EMPLOYEE` và kích hoạt ngay (`IsActive = true`).
+   - Cập nhật `RedirectBasedOnRole`: `CUSTOMER` chuyển hướng về `/`, `EMPLOYEE` về `/CongNhanVien`, `SUPERADMIN` và các nhóm admin về đúng trang quản trị.
+
+### 3. Số liệu kiểm chứng Migration & Đăng nhập Rehash trên `ERP_HRM_CMS_DB_COPY`
+- **Sao lưu & tạo bản sao:** Đã sao lưu `ERP_HRM_CMS_DB` ra `ERP_HRM_CMS_DB_c1.bak` và khôi phục thành `ERP_HRM_CMS_DB_COPY`.
+- **Đối chiếu số dòng sau khi chạy `dotnet ef database update` trên `ERP_HRM_CMS_DB_COPY`:**
+  - Số dòng bảng `Users`: **12 dòng**
+  - Số dòng bảng `AspNetUsers`: **12 dòng**
+  - Số dòng khớp toàn bộ (`Id`, `Username`, `PasswordHash`, `PasswordSalt`, `SecurityStamp`): **12 / 12 dòng (100%)**.
+- **Kiểm chứng đăng nhập bằng mật khẩu cũ & tự động Rehash trên `ERP_HRM_CMS_DB_COPY`:**
+  - `admin` (`SUPERADMIN`): Đăng nhập `302 Found` → `/PhanQuyen/MaTranPhanQuyen` | Hash nâng cấp từ PBKDF2 cũ (44 ký tự `mBaziiyX...`) sang Identity v3 (84 ký tự `AQAAAAIA...`).
+  - `quantritong` (`SUPERADMIN`): Đăng nhập `302 Found` → `/PhanQuyen/MaTranPhanQuyen` | Hash nâng cấp từ PBKDF2 cũ (44 ký tự `dhEb9P6L...`) sang Identity v3 (84 ký tự `AQAAAAIA...`).
+  - `nhanvien_c1` (`EMPLOYEE`): Đăng nhập `302 Found` → `/CongNhanVien` | Hash nâng cấp từ PBKDF2 cũ (44 ký tự `mBaziiyX...`) sang Identity v3 (84 ký tự `AQAAAAIA...`).
+  - `NVBH` (`SALES_STAFF` - tài khoản thường): Đăng nhập `302 Found` → `/BanHang/POS` | Hash nâng cấp từ PBKDF2 cũ (44 ký tự `xpt1cwNo...`) sang Identity v3 (84 ký tự `AQAAAAIA...`).
 
 ---
 

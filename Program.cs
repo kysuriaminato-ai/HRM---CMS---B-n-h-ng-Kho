@@ -11,9 +11,11 @@ using ERP_HRM_CMS.Services.HRM;
 using ERP_HRM_CMS.Services.Payroll;
 using ERP_HRM_CMS.Services.Printing;
 using ERP_HRM_CMS.Services.Security;
+using ERP_HRM_CMS.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,9 +101,36 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// 5. Cấu hình Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// 5. Cấu hình ASP.NET Core Identity (AppUser : IdentityUser<int>) và Cookie Authentication duy nhất
+// (Giữ bảng Roles, UserRoles, Permissions, RolePermissions, UserPermissions hiện có làm nguồn phân quyền; không dùng IdentityRole)
+builder.Services.AddSingleton<IPasswordHasher<User>, LegacyCompatiblePasswordHasher>();
+builder.Services.AddIdentityCore<User>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+
+        // Lockout của Identity theo ADR-004 mục 2.2: 5 lần sai, khóa tăng dần (cùng LoginThrottleService tối đa 30 phút), không khóa vĩnh viễn
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = LoginThrottleService.FailuresBeforeLockout;
+        options.Lockout.DefaultLockoutTimeSpan = LoginThrottleService.BaseLockout;
+
+        options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddSignInManager<SignInManager<User>>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.Cookie.Name = "ERP_HRM_CMS_AuthCookie";
         options.LoginPath = "/Auth/Login";

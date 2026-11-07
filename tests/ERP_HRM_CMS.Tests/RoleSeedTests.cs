@@ -41,6 +41,20 @@ namespace ERP_HRM_CMS.Tests
 
             Assert.Contains("SALES_DIRECTOR", codes);
             Assert.Contains("EMPLOYEE", codes);
+            Assert.Contains("CUSTOMER", codes);
+        }
+
+        [Fact]
+        public async Task Customer_Role_Has_Zero_Management_Permissions_And_Recorded_In_SeedHistory()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var codes = await PermissionCodesOfAsync("CUSTOMER");
+            bool hasSeedHistory = await db.SeedHistories.AnyAsync(h => h.SeedKey == "ROLE:CUSTOMER");
+
+            Assert.Empty(codes);
+            Assert.True(hasSeedHistory);
         }
 
         [Fact]

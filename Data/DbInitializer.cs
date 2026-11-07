@@ -330,15 +330,21 @@ namespace ERP_HRM_CMS.Data
                 new Role { Code = "ADMIN_BANGLUONG", Name = "Quản lý lương", Description = "Tính lương, bảng lương và phiếu lương", IsSystem = false },
                 new Role { Code = "ADMIN_KHO", Name = "Quản lý kho & mua hàng", Description = "Tồn kho, nhập xuất, đơn mua hàng và nhà cung cấp", IsSystem = false },
                 new Role { Code = "BRANCH_MANAGER", Name = "Quản lý Chi nhánh", Description = "Quản lý vận hành, nhân sự, bán hàng và kho trong phạm vi chi nhánh", IsSystem = false },
-                new Role { Code = "DEPARTMENT_HEAD", Name = "Trưởng phòng ban", Description = "Quản lý nhân sự, chấm công và duyệt đơn từ trong phạm vi phòng ban", IsSystem = false }
+                new Role { Code = "DEPARTMENT_HEAD", Name = "Trưởng phòng ban", Description = "Quản lý nhân sự, chấm công và duyệt đơn từ trong phạm vi phòng ban", IsSystem = false },
+                new Role { Code = "CUSTOMER", Name = "Khách hàng", Description = "Khách hàng mua sắm trực tuyến, không có quyền quản trị", IsSystem = false }
             };
 
+            const string vaiTroCustomerSeedKey = "ROLE:CUSTOMER";
             foreach (var r in roles)
             {
                 if (!await context.Roles.AnyAsync(x => x.Code.ToUpper() == r.Code.ToUpper()))
                 {
                     context.Roles.Add(r);
                 }
+            }
+            if (!await context.SeedHistories.AnyAsync(h => h.SeedKey == vaiTroCustomerSeedKey))
+            {
+                context.SeedHistories.Add(new SeedHistory { SeedKey = vaiTroCustomerSeedKey });
             }
             await context.SaveChangesAsync();
 
@@ -361,6 +367,8 @@ namespace ERP_HRM_CMS.Data
             ("SALES_DIRECTOR", p => p.Code.StartsWith("order.") || p.Code == "product.view" || p.Code == "report.sales"),
             // EMPLOYEE chỉ có quyền tự phục vụ
             ("EMPLOYEE", p => p.Code == "hrm.self.service"),
+            // CUSTOMER (Khách hàng mua sắm công khai): không có quyền quản trị nào
+            ("CUSTOMER", _ => false),
             // WAREHOUSE_STAFF có quyền xem và nhập xuất kho
             ("WAREHOUSE_STAFF", p => p.Code.StartsWith("inventory.") || p.Code == "product.view"),
             ("ADMIN_MENU", p => p.Code.StartsWith("menu.") || p.Code == "product.view"),

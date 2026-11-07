@@ -1,21 +1,54 @@
+global using AppUser = ERP_HRM_CMS.Models.Entities.User;
 using ERP_HRM_CMS.Helpers;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ERP_HRM_CMS.Models.Entities
 {
-    [Table("Users")]
-    public class User
+    /// <summary>
+    /// Thực thể tài khoản người dùng kế thừa <see cref="IdentityUser{TKey}"/> với khóa chính kiểu <see cref="int"/>.
+    /// Giữ nguyên toàn bộ cột nghiệp vụ hiện có (EmployeeId, Username, PasswordHash, PasswordSalt, IsActive, IsSuperAdmin,
+    /// MustChangePassword, SecurityStamp, LastLoginAt, CreatedAt) để không gãy khóa ngoại (UserRoles, Notifications, AuditLogs...).
+    /// </summary>
+    [Table("AspNetUsers")]
+    public class User : IdentityUser<int>
     {
-        [Key]
-        public int Id { get; set; }
         public int? EmployeeId { get; set; }
+
         [Required, MaxLength(50)]
-        public string Username { get; set; } = string.Empty;
-        [Required, MaxLength(256)]
-        public string PasswordHash { get; set; } = string.Empty;
+        public string Username
+        {
+            get => base.UserName ?? string.Empty;
+            set
+            {
+                var normalized = value ?? string.Empty;
+                base.UserName = normalized;
+                base.NormalizedUserName = normalized.ToUpperInvariant();
+            }
+        }
+
+        public override string? UserName
+        {
+            get => base.UserName ?? string.Empty;
+            set
+            {
+                var normalized = value ?? string.Empty;
+                base.UserName = normalized;
+                base.NormalizedUserName = normalized.ToUpperInvariant();
+            }
+        }
+
+        [Required, MaxLength(512)]
+        public new string PasswordHash
+        {
+            get => base.PasswordHash ?? string.Empty;
+            set => base.PasswordHash = value ?? string.Empty;
+        }
+
         [Required, MaxLength(100)]
         public string PasswordSalt { get; set; } = string.Empty;
+
         public bool IsActive { get; set; } = true;
         public bool IsSuperAdmin { get; set; } = false;
         /// <summary>Bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên (ví dụ sau khi cấp tài khoản nhanh hoặc reset mật khẩu).</summary>
@@ -27,9 +60,20 @@ namespace ERP_HRM_CMS.Models.Entities
             set => MustChangePassword = value;
         }
         /// <summary>Đổi giá trị khi thay đổi IsActive, vai trò, IsSuperAdmin hoặc mật khẩu; cookie bị thu hồi nếu lệch.</summary>
-        public Guid SecurityStamp { get; set; } = Guid.NewGuid();
+        public new Guid SecurityStamp
+        {
+            get => Guid.TryParse(base.SecurityStamp, out var g) ? g : Guid.Empty;
+            set => base.SecurityStamp = value.ToString();
+        }
         public DateTime? LastLoginAt { get; set; }
         public DateTime CreatedAt { get; set; } = VietnamTime.Now;
+
+        public User()
+        {
+            base.SecurityStamp = Guid.NewGuid().ToString();
+            base.ConcurrencyStamp = Guid.NewGuid().ToString();
+            base.LockoutEnabled = true;
+        }
 
         [ForeignKey("EmployeeId")]
         public virtual Employee? Employee { get; set; }
@@ -132,5 +176,3 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual Permission Permission { get; set; } = null!;
     }
 }
-
-

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Security.Claims;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.Enums;
@@ -9,7 +11,7 @@ using ERP.Application.Common.Interfaces;
 
 namespace ERP_HRM_CMS.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityUserContext<User, int, IdentityUserClaim<int>, IdentityUserLogin<int>, IdentityUserToken<int>>
     {
         private readonly IHttpContextAccessor? _httpContextAccessor;
         private readonly IDataProtectionProvider _dataProtectionProvider;
@@ -47,7 +49,7 @@ namespace ERP_HRM_CMS.Data
         }
 
         // Phân hệ Auth & Phân quyền
-        public DbSet<User> Users => Set<User>();
+        public override DbSet<User> Users => Set<User>();
         public DbSet<Role> Roles => Set<Role>();
         public DbSet<Module> Modules => Set<Module>();
         public DbSet<Permission> Permissions => Set<Permission>();
@@ -227,7 +229,12 @@ namespace ERP_HRM_CMS.Data
                 .IsUnique();
 
             // Indexes duy nhất (Unique Constraints) bảo vệ tính toàn vẹn dữ liệu
+            modelBuilder.Entity<User>().ToTable("AspNetUsers");
+            modelBuilder.Entity<User>().Ignore(u => u.UserName);
             modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+            modelBuilder.Entity<User>().Property(u => u.NormalizedUserName).HasMaxLength(256);
+            modelBuilder.Entity<User>().Property(u => u.Email).HasMaxLength(256);
+            modelBuilder.Entity<User>().Property(u => u.NormalizedEmail).HasMaxLength(256);
             // Bản ghi cũ (trước khi có SecurityStamp) nhận giá trị ngẫu nhiên khi migration thêm cột
             modelBuilder.Entity<User>().Property(u => u.SecurityStamp).HasDefaultValueSql("NEWID()");
 
