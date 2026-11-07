@@ -43,7 +43,7 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet]
+        [HttpGet, HttpHead]
         public async Task<IActionResult> Index()
         {
             // Đọc các khối đang kích hoạt theo thứ tự OrderIndex

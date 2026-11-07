@@ -1,14 +1,18 @@
 @model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
 @{
-    ViewData["Title"] = "Cấp tài khoản cho nhân viên";
+    ViewData["Title"] = "Cấp tài khoản Admin Con & Phân quyền Menu";
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-10 col-xl-9">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <div>
-                <h4 class="fw-bold mb-1">Cấp Tài Khoản Cho Nhân Viên</h4>
-                <p class="text-muted small mb-0">Tạo tài khoản đăng nhập và cấu hình các chức năng menu cho phép nhân viên được xem.</p>
+                <h4 class="fw-bold mb-1">
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Cấp Tài Khoản Admin Con & Phân Quyền Menu
+                </h4>
+                <p class="text-muted small mb-0">
+                    Tạo tài khoản quản trị viên phân quyền (Admin Con). Admin Tổng cho phép truy cập phần nào thì tài khoản Admin Con sẽ <strong>chỉ hiện đúng phần đó</strong>, không hiện đầy đủ menu như Admin Tổng.
+                </p>
             </div>
             <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Danh sách tài khoản

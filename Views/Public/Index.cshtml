@@ -1,292 +1,292 @@
 @model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
 @{
     Layout = "_PublicLayout";
-    ViewData["Title"] = "Tuyệt Tác Nước Hoa Niche & Cao Cấp Chính Hãng";
-    ViewData["Description"] = "Khám phá thế giới nước hoa Haute Parfumerie: Chanel, Tom Ford, Baccarat Rouge 540, Le Labo, Creed, Kilian. Nhập khẩu 100% Pháp và Ý.";
+    ViewData["Title"] = "Tuyệt Tác Trang Sức Kim Cương & Haute Joaillerie";
+    ViewData["Description"] = "AURA BRILLIANCE - Thương hiệu trang sức kim cương tự nhiên chuẩn GIA quốc tế, bạch kim Platinum 950 và vàng 18K độc bản.";
 
     var dbProducts = ViewBag.FeaturedProducts as List<ERP_HRM_CMS.Models.Entities.Product> ?? new List<ERP_HRM_CMS.Models.Entities.Product>();
     var categories = ViewBag.Categories as List<ERP_HRM_CMS.Models.Entities.Category> ?? new List<ERP_HRM_CMS.Models.Entities.Category>();
 
-    // Danh sách 10 tuyệt phẩm nước hoa cao cấp chuẩn quốc tế với đầy đủ nốt hương 3 tầng
-    var luxuryPerfumes = new[]
+    // Bộ sưu tập 10 tuyệt phẩm trang sức kim cương cao cấp với chuẩn GIA quốc tế
+    var luxuryJewelry = new[]
     {
         new {
-            Id = 101,
-            Sku = "MFK-BR540-EXT",
-            Name = "Maison Francis Kurkdjian Baccarat Rouge 540 Extrait",
-            Category = "nuoc-hoa-niche",
-            CategoryName = "Tuyệt Tác Niche",
-            Concentration = "Extrait de Parfum 30%",
-            Origin = "Paris, Pháp",
-            Volume = "70ml",
-            Price = 9850000m,
-            OldPrice = 11200000m,
-            Image = "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Hạnh nhân đắng Ma-rốc, Hoa nghệ tây Grandiflorum",
-            HeartNotes = "Hoa nhài Ai Cập Grandiflorum, Gỗ tuyết tùng Virginia",
-            BaseNotes = "Long diên hương tự nhiên Ambergris, Xạ hương gỗ quý",
-            Longevity = "16 - 24 Giờ",
-            Projection = "Bán kính 2.5 Mét",
-            Badge = "TOP 1 BEST SELLER"
+            Id = 201,
+            Sku = "JW-RING-SOLITAIRE",
+            Name = "Nhẫn Kim Cương Solitaire Brilliant Cut 1.5 Carat",
+            Category = "nhan-kim-cuong",
+            CategoryName = "Nhẫn Kim Cương",
+            Material = "Bạch Kim Platinum 950",
+            Carat = "1.50 Carat",
+            Color = "Nước D (Tuyệt đối)",
+            Clarity = "VVS1 (Siêu tinh khiết)",
+            Cut = "Triple Excellent (3EX)",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 185000000m,
+            OldPrice = 210000000m,
+            Image = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-248910291",
+            Badge = "KIỆT TÁC CẦU HÔN",
+            Desc = "Kim cương chủ 1.50 Carat nước D, giác cắt giác tròn 57 mặt chuẩn xác, phản chiếu ánh lửa 7 màu rực rỡ trên ổ nhẫn Platinum 950 vuốt 6 chấu thanh mảnh."
         },
         new {
-            Id = 102,
-            Sku = "TF-OUD-WOOD-100",
-            Name = "Tom Ford Private Blend Oud Wood Eau de Parfum",
-            Category = "nuoc-hoa-nam",
-            CategoryName = "Nước Hoa Nam",
-            Concentration = "Eau de Parfum",
-            Origin = "New York / London",
-            Volume = "100ml",
-            Price = 7200000m,
-            OldPrice = 8100000m,
-            Image = "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Gỗ trầm hương quý hiếm Oud, Gỗ cẩm lai Brazil",
-            HeartNotes = "Bạch đậu khấu, Tiêu Tứ Xuyên, Gỗ đàn hương",
-            BaseNotes = "Đậu Tonka, Cỏ hương bài Haiti, Hổ phách đen",
-            Longevity = "12 - 16 Giờ",
-            Projection = "Bán kính 2 Mét",
-            Badge = "QUÝ ÔNG VƯƠNG GIẢ"
+            Id = 202,
+            Sku = "JW-BRACE-TENNIS",
+            Name = "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum",
+            Category = "vong-tay-lac-tay",
+            CategoryName = "Vòng & Lắc Tay",
+            Material = "Bạch Kim Platinum 950",
+            Carat = "5.00 Carat (55 Viên)",
+            Color = "Nước E - F",
+            Clarity = "VVS2 - VS1",
+            Cut = "Round Brilliant 3EX",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 145000000m,
+            OldPrice = 168000000m,
+            Image = "https://images.unsplash.com/photo-1611591475152-4783113837af?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-739182390",
+            Badge = "BIỂU TƯỢNG ĐẲNG CẤP",
+            Desc = "Dải kim cương chạy liền mạch 55 viên tinh tuyển đồng màu, khoá kép bảo hiểm công nghệ Thụy Sĩ ôm trọn cổ tay thanh thoát của quý cô quý phái."
         },
         new {
-            Id = 103,
-            Sku = "LELABO-S33-100",
-            Name = "Le Labo Santal 33 Eau de Parfum (Biểu Tượng Niche)",
-            Category = "nuoc-hoa-niche",
-            CategoryName = "Tuyệt Tác Niche",
-            Concentration = "Eau de Parfum",
-            Origin = "Grasse / New York",
-            Volume = "100ml",
-            Price = 6800000m,
-            OldPrice = 7500000m,
-            Image = "https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Hoa diên vĩ Iris, Thảo quả, Hoa tím Violet",
-            HeartNotes = "Giấy cói Papyrus, Da thuộc phong trần, Bạch đậu khấu",
-            BaseNotes = "Gỗ đàn hương Úc nguyên bản, Tuyết tùng, Hổ phách",
-            Longevity = "14 - 18 Giờ",
-            Projection = "Bán kính 2 Mét",
-            Badge = "ICONIC NICHE"
+            Id = 203,
+            Sku = "JW-NECK-HEART",
+            Name = "Dây Chuyền Mặt Kim Cương Halo Heart Diamond 1.2ct",
+            Category = "day-chuyen-mat-day",
+            CategoryName = "Dây Chuyền & Mặt Dây",
+            Material = "Vàng Trắng 18K (Au750)",
+            Carat = "1.20 Carat Chủ + 0.45ct Tấm",
+            Color = "Nước D",
+            Clarity = "VVS2",
+            Cut = "Heart Brilliant Cut",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 98000000m,
+            OldPrice = 115000000m,
+            Image = "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-550291821",
+            Badge = "TRÁI TIM VĨNH CỬU",
+            Desc = "Viên kim cương hình trái tim hoàn mỹ được bao bọc bởi dải kim cương tấm viền kép lộng lẫy, truyền tải thông điệp tình yêu son sắt trường tồn."
         },
         new {
-            Id = 104,
-            Sku = "CHANEL-BDC-100",
-            Name = "Bleu De Chanel Parfum Pour Homme (Bản Đậm Đặc)",
-            Category = "nuoc-hoa-nam",
-            CategoryName = "Nước Hoa Nam",
-            Concentration = "Parfum (Pure Perfume)",
-            Origin = "Paris, Pháp",
-            Volume = "100ml",
-            Price = 4650000m,
-            OldPrice = 5200000m,
-            Image = "https://images.unsplash.com/photo-1547887537-6158d64c35b3?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Vỏ chanh vàng Ý, Cam Bergamot, Bạc hà tuyết",
-            HeartNotes = "Hoa phong lữ, Hoa oải hương Nyons, Dứa nhiệt đới",
-            BaseNotes = "Gỗ đàn hương New Caledonia, Tuyết tùng, Hổ phách Iso-E",
-            Longevity = "12 - 14 Giờ",
-            Projection = "Bán kính 1.8 Mét",
-            Badge = "BẢN LĨNH PHÁI MẠNH"
+            Id = 204,
+            Sku = "JW-EARR-EMERALD",
+            Name = "Bông Tai Kim Cương Emerald Cut Drop Earrings 2.0ct",
+            Category = "bong-tai-cao-cap",
+            CategoryName = "Bông Tai Cao Cấp",
+            Material = "Bạch Kim Platinum 950",
+            Carat = "2.00 Carat (Cặp 1.0ct x 2)",
+            Color = "Nước E",
+            Clarity = "VVS1",
+            Cut = "Emerald Step Cut",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 125000000m,
+            OldPrice = 142000000m,
+            Image = "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-829104812",
+            Badge = "QUÝ TỘC HOÀNG GIA",
+            Desc = "Giác cắt ngọc lục bảo Emerald Cut trong suốt như mặt gương hồ thu, buông lơi duyên dáng theo từng cử chỉ xoay đầu của chủ nhân."
         },
         new {
-            Id = 105,
-            Sku = "DIOR-SAUVAGE-ELX",
-            Name = "Dior Sauvage Elixir Ultra-Concentrated",
-            Category = "nuoc-hoa-nam",
-            CategoryName = "Nước Hoa Nam",
-            Concentration = "Elixir Pure Extrait",
-            Origin = "Paris, Pháp",
-            Volume = "60ml",
-            Price = 4890000m,
-            OldPrice = 5500000m,
-            Image = "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Nhục đậu khấu, Quế Ceylon, Bạch đậu khấu, Bưởi chùm",
-            HeartNotes = "Hoa oải hương Nyons AOP đậm đặc",
-            BaseNotes = "Cam thảo, Hổ phách đậm đặc, Cỏ hương bài Haiti, Hoắc hương",
-            Longevity = "16 - 24 Giờ",
-            Projection = "Bán kính 3 Mét",
-            Badge = "MÃNH THÚ ĐÊM"
+            Id = 205,
+            Sku = "JW-RING-ROYAL",
+            Name = "Nhẫn Kim Cương Hoàng Gia Cung Điện Royal Halo 2.0ct",
+            Category = "nhan-kim-cuong",
+            CategoryName = "Nhẫn Kim Cương",
+            Material = "Bạch Kim 950 & Vàng Vàng 18K",
+            Carat = "2.05 Carat Chủ (GIA D/FL)",
+            Color = "Nước D Tuyệt Đối",
+            Clarity = "FL (Flawless Hoàn Hảo)",
+            Cut = "Cushion Modified Brilliant",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 220000000m,
+            OldPrice = 255000000m,
+            Image = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-190284711",
+            Badge = "ĐỘC BẢN CUNG ĐIỆN",
+            Desc = "Tuyệt phẩm kim cương 2.05 Carat nước D độ tinh khiết không tì vết Flawless, lấy cảm hứng từ vương miện hoàng gia châu Âu thế kỷ 19."
         },
         new {
-            Id = 106,
-            Sku = "CHANEL-COCO-100",
-            Name = "Chanel Coco Mademoiselle L'Eau Privée & Intense",
-            Category = "nuoc-hoa-nu",
-            CategoryName = "Nước Hoa Nữ",
-            Concentration = "Eau de Parfum Intense",
-            Origin = "Paris, Pháp",
-            Volume = "100ml",
-            Price = 4500000m,
-            OldPrice = 5100000m,
-            Image = "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Cam Sicily, Cam Bergamot Calabria, Quýt hồng",
-            HeartNotes = "Hoa hồng tháng Năm Grasse, Hoa nhài Sambac kiêu sa",
-            BaseNotes = "Hoắc hương Indonesia, Đậu Tonka, Vani Madagascar, Xạ hương trắng",
-            Longevity = "12 - 15 Giờ",
-            Projection = "Bán kính 2 Mét",
-            Badge = "NỮ HOÀNG QUYẾN RŨ"
+            Id = 206,
+            Sku = "JW-BANGLE-ROSE",
+            Name = "Vòng Kiềng Bản Liền Vàng Hồng 18K Nạm Kim Cương Pave",
+            Category = "vong-tay-lac-tay",
+            CategoryName = "Vòng & Lắc Tay",
+            Material = "Vàng Hồng 18K Ý (Au750)",
+            Carat = "3.20 Carat Kim Cương Tấm",
+            Color = "Nước F",
+            Clarity = "VS1",
+            Cut = "Micro Pave Setting",
+            Origin = "Ý (Made in Italy)",
+            Price = 86000000m,
+            OldPrice = 98000000m,
+            Image = "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-620194827",
+            Badge = "THỜI THƯỢNG HIỆN ĐẠI",
+            Desc = "Sắc vàng hồng ấm áp kết hợp kỹ thuật nạm chìm Micro Pave tỉ mỉ, tôn vinh nét đẹp thanh tao, sang trọng trong mọi dịp xuất hiện."
         },
         new {
-            Id = 107,
-            Sku = "KILIAN-ANGEL-50",
-            Name = "Kilian The Liquors Angels' Share Eau de Parfum",
-            Category = "nuoc-hoa-niche",
-            CategoryName = "Tuyệt Tác Niche",
-            Concentration = "Eau de Parfum",
-            Origin = "Paris, Pháp",
-            Volume = "50ml",
-            Price = 6150000m,
-            OldPrice = 6900000m,
-            Image = "https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Rượu Cognac hảo hạng ủ trong thùng gỗ sồi Pháp",
-            HeartNotes = "Quế Ceylon, Đậu Tonka, Gỗ sồi cổ thụ, Hạnh nhân",
-            BaseNotes = "Vani Bourbon, Kẹo hạt Praline, Gỗ đàn hương creamy",
-            Longevity = "14 - 18 Giờ",
-            Projection = "Bán kính 2 Mét",
-            Badge = "SAY ĐẮM NỒNG NÀN"
+            Id = 207,
+            Sku = "JW-NECK-PEAR",
+            Name = "Dây Chuyền Kim Cương Giọt Nước Pear Shaped 1.8 Carat",
+            Category = "day-chuyen-mat-day",
+            CategoryName = "Dây Chuyền & Mặt Dây",
+            Material = "Bạch Kim Platinum 950",
+            Carat = "1.80 Carat Chủ + 0.60ct Phụ",
+            Color = "Nước D",
+            Clarity = "VVS1",
+            Cut = "Pear Brilliant 3EX",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 165000000m,
+            OldPrice = 190000000m,
+            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-440192830",
+            Badge = "GIỌT LỆ NỮ THẦN",
+            Desc = "Giác cắt hình giọt nước kiêu sa kéo dài đường nét cổ kiêu hãnh, phản xạ ánh sáng mạnh mẽ tựa như tinh tú trên bầu trời đêm."
         },
         new {
-            Id = 108,
-            Sku = "CREED-AVENTUS-100",
-            Name = "Creed Aventus Millésime Royal Pour Homme",
-            Category = "nuoc-hoa-nam",
-            CategoryName = "Nước Hoa Nam",
-            Concentration = "Millésime Royal EDP",
-            Origin = "Paris / London (Từ 1760)",
-            Volume = "100ml",
-            Price = 8600000m,
-            OldPrice = 9700000m,
-            Image = "https://images.unsplash.com/photo-1595425970377-c9703cf48b6d?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Quả dứa hoàng gia, Cam bergamot, Quả lý chua đen, Táo",
-            HeartNotes = "Gỗ bạch dương hun khói, Hoắc hương, Hoa hồng Ma-rốc",
-            BaseNotes = "Long diên hương hoàng gia, Rêu sồi, Xạ hương, Vani",
-            Longevity = "14 - 20 Giờ",
-            Projection = "Bán kính 2.5 Mét",
-            Badge = "ĐẾ VƯƠNG HOÀNG GIA"
+            Id = 208,
+            Sku = "JW-EARR-STUDS",
+            Name = "Bông Tai Nụ Kim Cương Classic Solitaire Studs 1.0 Carat",
+            Category = "bong-tai-cao-cap",
+            CategoryName = "Bông Tai Cao Cấp",
+            Material = "Vàng Trắng 18K (Au750)",
+            Carat = "1.00 Carat (0.50ct x 2)",
+            Color = "Nước E",
+            Clarity = "VVS2",
+            Cut = "Round Brilliant 3EX",
+            Origin = "Kim Cương Tự Nhiên GIA",
+            Price = 58000000m,
+            OldPrice = 68000000m,
+            Image = "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-910283741",
+            Badge = "THANH LỊCH MỖI NGÀY",
+            Desc = "Mẫu hoa tai nụ kinh điển không bao giờ lỗi mốt, thích hợp diện hàng ngày nơi công sở cũng như trong các buổi dạ tiệc ấm cúng."
         },
         new {
-            Id = 109,
-            Sku = "YSL-LIBRE-LP-90",
-            Name = "Yves Saint Laurent Libre Le Parfum (Phiên Bản Vàng)",
-            Category = "nuoc-hoa-nu",
-            CategoryName = "Nước Hoa Nữ",
-            Concentration = "Le Parfum (Đậm Đặc Nhất)",
-            Origin = "Paris, Pháp",
-            Volume = "90ml",
-            Price = 4200000m,
-            OldPrice = 4800000m,
-            Image = "https://images.unsplash.com/photo-1587017539504-67cfbddac569?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Gừng ấm nồng, Nghệ tây Saffron Morocco, Quýt hồng",
-            HeartNotes = "Hoa cam Tunisia, Hoa oải hương Diva Pháp tinh khiết",
-            BaseNotes = "Vani Bourbon Madagascar, Mật ong ngọt ngào, Cỏ hương bài",
-            Longevity = "12 - 16 Giờ",
-            Projection = "Bán kính 2 Mét",
-            Badge = "TỰ DO KIÊU HÃNH"
+            Id = 209,
+            Sku = "JW-WEDDING-BAND",
+            Name = "Cặp Nhẫn Cưới Đôi Vàng Trắng 18K Khắc Laser Tình Yêu",
+            Category = "nhan-kim-cuong",
+            CategoryName = "Nhẫn Kim Cương",
+            Material = "Vàng Trắng 18K & Kim Cương",
+            Carat = "0.35 Carat Nhẫn Nữ, 0.20ct Nam",
+            Color = "Nước D",
+            Clarity = "VVS1",
+            Cut = "Princess & Round Cut",
+            Origin = "Thiết Kế Riêng Theo Đôi",
+            Price = 42000000m,
+            OldPrice = 49000000m,
+            Image = "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GIA-391028472",
+            Badge = "KỶ VẬT TRĂM NĂM",
+            Desc = "Thiết kế lòng nhẫn công thái học đeo êm ái, hỗ trợ khắc dấu vân tay, ngày cưới và tên lồng laser công nghệ Thụy Sĩ vĩnh cửu."
         },
         new {
-            Id = 110,
-            Sku = "DIPTYQUE-TD-75",
-            Name = "Diptyque Tam Dao Eau de Parfum (Hương Gỗ Trầm Mặc)",
-            Category = "nuoc-hoa-niche",
-            CategoryName = "Tuyệt Tác Niche",
-            Concentration = "Eau de Parfum",
-            Origin = "Paris, Pháp",
-            Volume = "75ml",
-            Price = 4950000m,
-            OldPrice = 5600000m,
-            Image = "https://images.unsplash.com/photo-1563178406-4cdc2923acbc?auto=format&fit=crop&w=700&q=80",
-            TopNotes = "Cây bách Ý, Hoa hồng mộc mạc, Hoa sim",
-            HeartNotes = "Gỗ đàn hương Goa nguyên bản, Tuyết tùng Tây Tạng",
-            BaseNotes = "Gỗ cẩm lai Brazil, Xạ hương trắng, Hổ phách thanh tịnh",
-            Longevity = "10 - 14 Giờ",
-            Projection = "Bán kính 1.5 Mét",
-            Badge = "THANH TỊNH TÂM HỒN"
+            Id = 210,
+            Sku = "JW-SAPPHIRE-ROYAL",
+            Name = "Dây Chuyền Sapphire Ceylon Hoàng Gia 4.5ct & Kim Cương",
+            Category = "trang-suc-da-tiec",
+            CategoryName = "Tuyệt Tác Dạ Yến",
+            Material = "Bạch Kim Platinum 950",
+            Carat = "4.5ct Sapphire + 2.8ct Kim Cương",
+            Color = "Royal Blue Hoàng Tộc",
+            Clarity = "Eye Clean Tuyệt Hảo",
+            Cut = "Oval Mixed Cut",
+            Origin = "Ceylon (Sri Lanka) Tự Nhiên",
+            Price = 280000000m,
+            OldPrice = 320000000m,
+            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
+            GiaNumber = "GRS-2026-99182",
+            Badge = "BÁU VẬT HOÀNG GIA",
+            Desc = "Viên đá quý Sapphire hoàng tộc xanh thẳm tự nhiên từ Sri Lanka, bao bọc bởi 3 hàng kim cương nước D rực rỡ, chuẩn phong cách quý tộc Anh."
         }
     };
 }
 
 <!-- ==========================================================================
-     PHẦN 1: HERO SECTION - HAUTE PARFUMERIE (CHUYỂN ĐỘNG TĨNH ĐẲNG CẤP)
+     HERO SECTION: TUYỆT TÁC TRANG SỨC KIM CƯƠNG VỚI CHUYỂN ĐỘNG TĨNH
      ========================================================================== -->
-<section class="pf-hero-section">
-    <!-- Lớp sương khói hương thơm mờ ảo trôi nhẹ nhàng (Chuyển động tĩnh) -->
-    <div class="pf-mist-layer" style="width: 500px; height: 500px; top: -100px; left: -100px;"></div>
-    <div class="pf-mist-layer" style="width: 600px; height: 600px; bottom: -150px; right: -100px; animation-delay: -5s;"></div>
-
+<section class="pf-hero-section position-relative py-5">
     <div class="container position-relative" style="z-index: 2;">
-        <div class="row align-items-center g-5">
-            <!-- Nội dung giới thiệu bên trái -->
-            <div class="col-lg-6">
-                <div class="pf-hero-badge">
-                    <i class="bi bi-stars"></i> BỘ SƯU TẬP NICHE & HAUTE PARFUMERIE 2026
+        <div class="row align-items-center min-vh-75 py-4">
+            <!-- Cột trái: Văn bản giới thiệu thương hiệu kim hoàn -->
+            <div class="col-lg-7 text-start mb-5 mb-lg-0">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" 
+                     style="background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.35);">
+                    <i class="bi bi-gem text-warning"></i>
+                    <span class="small font-monospace" style="color: #f7e8bd; letter-spacing: 0.15em;">
+                        AURA BRILLIANCE • HAUTE JOAILLERIE & GIA DIAMONDS
+                    </span>
                 </div>
-                <h1 class="pf-hero-title">
-                    Đánh Thức Giác Quan Với <span class="pf-gold-text">Tuyệt Tác Mùi Hương</span> Độc Bản
+
+                <h1 class="display-3 font-serif fw-bold text-white mb-3" style="line-height: 1.15;">
+                    Tuyệt Tác <span class="pf-gold-text">Kim Cương</span><br />
+                    Đẳng Cấp Thượng Lưu
                 </h1>
-                <p class="pf-hero-desc">
-                    Mỗi giọt nước hoa tại <strong>L'Aura Noir</strong> là một tác phẩm nghệ thuật điều hương thủ công từ Paris và Grasse. Chiết xuất tinh dầu nguyên bản 100%, bảo lưu độ lưu hương bất tận suốt 24 giờ.
+
+                <p class="lead text-secondary mb-4" style="max-width: 620px; font-weight: 300; line-height: 1.8;">
+                    Mỗi viên kim cương tại <strong>AURA BRILLIANCE</strong> là một báu vật độc bản được chứng nhận bởi <strong>Viện Ngọc Học Hoa Kỳ GIA</strong>. Chế tác thủ công bởi các nghệ nhân kim hoàn bậc thầy trên chất liệu Bạch kim Platinum 950 và Vàng 18K nguyên khối.
                 </p>
 
-                <!-- Nút hành động -->
-                <div class="d-flex flex-wrap gap-3 align-items-center mb-5">
-                    <a href="#bo-suu-tap" class="btn pf-gold-shimmer-btn px-4 py-3 rounded-pill">
-                        <i class="bi bi-bag-check me-2"></i> KHÁM PHÁ BỘ SƯU TẬP
-                    </a>
-                    <a href="#thap-mui-huong" class="btn btn-outline-light px-4 py-3 rounded-pill border-secondary" style="letter-spacing: 0.05em; font-weight: 600;">
-                        <i class="bi bi-droplet me-2 text-warning"></i> KHÁM PHÁ THÁP HƯƠNG
-                    </a>
+                <!-- Thống kê nhanh thông số uy tín -->
+                <div class="row g-3 mb-4" style="max-width: 580px;">
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2);">
+                            <div class="fs-4 fw-bold text-warning font-serif">100%</div>
+                            <div class="small text-secondary" style="font-size: 0.75rem;">Kim Cương GIA</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2);">
+                            <div class="fs-4 fw-bold text-warning font-serif">3EX</div>
+                            <div class="small text-secondary" style="font-size: 0.75rem;">Giác Cắt Hoàn Hảo</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2);">
+                            <div class="fs-4 fw-bold text-warning font-serif">95%</div>
+                            <div class="small text-secondary" style="font-size: 0.75rem;">Cam Kết Thu Đổi</div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Thống kê trực quan -->
-                <div class="row g-4 pt-3 border-top border-secondary">
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-warning font-serif">100%</div>
-                        <div class="text-secondary small">Chính Hãng Pháp & Ý</div>
-                    </div>
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-warning font-serif">16H+</div>
-                        <div class="text-secondary small">Độ Lưu Hương Vượt Trội</div>
-                    </div>
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-warning font-serif">15.000+</div>
-                        <div class="text-secondary small">Tín Đồ Hương Thơm VIP</div>
-                    </div>
+                <!-- Nút hành động chính -->
+                <div class="d-flex flex-wrap gap-3 align-items-center">
+                    <a href="#jewelry-collection" class="btn btn-gold-luxury px-4 py-3">
+                        <i class="bi bi-gem me-2"></i> KHÁM PHÁ BỘ SƯU TẬP
+                    </a>
+                    <a href="#gia-guide" class="btn btn-outline-gold px-4 py-3">
+                        <i class="bi bi-award me-2"></i> CẨM NANG 4CS KIM CƯƠNG
+                    </a>
+                    <a href="/Auth/Register" class="btn btn-link text-warning text-decoration-none small ps-2">
+                        <i class="bi bi-person-plus me-1"></i> Đăng Ký Hội Viên VIP
+                    </a>
                 </div>
             </div>
 
-            <!-- Hình ảnh chai nước hoa bồng bềnh tĩnh bên phải (Hero Visual) -->
-            <div class="col-lg-6">
-                <div class="pf-hero-visual">
-                    <!-- Vòng hào quang thở nhịp nhàng (Aura Breathing Animation) -->
-                    <div class="pf-hero-aura pf-aura-pulse"></div>
+            <!-- Cột phải: Khối hiển thị nhẫn kim cương trung tâm với chuyển động tĩnh -->
+            <div class="col-lg-5 text-center position-relative">
+                <!-- Vòng hào quang kim cương tỏa sáng nhịp nhàng (pfAuraPulse) -->
+                <div class="pf-aura-pulse position-absolute top-50 start-50 translate-middle" 
+                     style="width: 380px; height: 380px; background: radial-gradient(circle, rgba(212,175,55,0.35) 0%, rgba(247,232,189,0.15) 45%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 1;">
+                </div>
 
-                    <!-- Chai nước hoa trôi bồng bềnh êm đềm tĩnh lặng (Float Animation) -->
-                    <div class="pf-float-bottle position-relative text-center">
-                        <img src="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=700&q=80" 
-                             alt="Baccarat Rouge 540 Extrait" 
-                             class="pf-hero-bottle-img" />
-                    </div>
-
-                    <!-- Thẻ nổi 1: Độ lưu hương -->
-                    <div class="pf-hero-floating-card pf-card-tl pf-breathe-card">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle p-2" style="background: rgba(212,175,55,0.2); color: var(--pf-gold);">
-                                <i class="bi bi-clock-history fs-4"></i>
-                            </div>
-                            <div>
-                                <span class="d-block text-warning fw-bold small text-uppercase">Extrait de Parfum</span>
-                                <strong class="text-light fs-6">Lưu Hương 16 - 24 Giờ</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Thẻ nổi 2: Tinh dầu tự nhiên -->
-                    <div class="pf-hero-floating-card pf-card-br pf-breathe-card" style="animation-delay: -2.5s;">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle p-2" style="background: rgba(212,175,55,0.2); color: var(--pf-gold);">
-                                <i class="bi bi-patch-check-fill fs-4"></i>
-                            </div>
-                            <div>
-                                <span class="d-block text-warning fw-bold small text-uppercase">Cam Kết Chất Lượng</span>
-                                <strong class="text-light fs-6">100% Chuẩn Auth Tem QR</strong>
+                <!-- Khung nhẫn kim cương bồng bềnh tĩnh (pfFloatBottle) -->
+                <div class="pf-float-bottle position-relative d-inline-block" style="z-index: 3;">
+                    <div class="position-relative p-4 rounded-4" 
+                         style="background: linear-gradient(145deg, rgba(26,32,48,0.7) 0%, rgba(14,17,24,0.9) 100%); border: 1px solid rgba(212,175,55,0.4); box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(212,175,55,0.2);">
+                        <img src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80" 
+                             alt="Nhẫn Kim Cương Solitaire Brilliant Cut" 
+                             class="img-fluid rounded-3" 
+                             style="max-height: 380px; object-fit: cover; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));" />
+                        
+                        <!-- Huy hiệu chứng chỉ GIA nổi -->
+                        <div class="position-absolute bottom-0 start-50 translate-middle-x mb-4 px-3 py-2 rounded-pill shadow-lg d-flex align-items-center gap-2"
+                             style="background: rgba(8, 9, 13, 0.95); border: 1px solid var(--pf-gold); backdrop-filter: blur(10px); min-width: 260px; justify-content: center;">
+                            <i class="bi bi-patch-check-fill text-warning fs-5"></i>
+                            <div class="text-start">
+                                <div class="fw-bold small text-white font-serif" style="letter-spacing: 0.05em;">GIA CERTIFIED D/VVS1</div>
+                                <div class="text-secondary" style="font-size: 0.7rem;">Mã khắc laser cạnh: GIA-248910291</div>
                             </div>
                         </div>
                     </div>
@@ -297,37 +297,37 @@
 </section>
 
 <!-- ==========================================================================
-     PHẦN 2: 4 CAM KẾT VÀNG TỪ L'AURA NOIR
+     4 TÔN CHỈ KIM HOÀN HOÀNG GIA (GOLD PILLARS)
      ========================================================================== -->
-<section class="py-5" style="background: #06070a; border-bottom: 1px solid var(--pf-gold-border);">
+<section class="py-5 border-top border-bottom" style="border-color: rgba(212,175,55,0.18) !important; background: rgba(14,18,26,0.65);">
     <div class="container">
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-3">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.6); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning fs-2 mb-3 pf-sparkle-icon"><i class="bi bi-shield-check"></i></div>
-                    <h5 class="text-light fw-bold mb-2">Chính Hãng Trọn Đời</h5>
-                    <p class="text-secondary small mb-0">Cam kết 100% nguyên seal nhập khẩu. Đền gấp 10 lần nếu phát hiện hàng không chính hãng.</p>
+        <div class="row g-4 text-center">
+            <div class="col-md-3 col-6">
+                <div class="p-3">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-award-fill"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">100% Kim Cương GIA</h5>
+                    <p class="text-secondary small mb-0">Mọi viên kim cương từ 0.3 Carat đều có chứng thư giám định GIA quốc tế độc bản.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.6); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning fs-2 mb-3 pf-sparkle-icon"><i class="bi bi-gift"></i></div>
-                    <h5 class="text-light fw-bold mb-2">Tặng 2 Sample 2ml</h5>
-                    <p class="text-secondary small mb-0">Thử mùi sample trước khi bóc seal chai chính. Hỗ trợ đổi trả miễn phí nếu không ưng ý.</p>
+            <div class="col-md-3 col-6">
+                <div class="p-3">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-arrow-repeat"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Thu Đổi Đến 95%</h5>
+                    <p class="text-secondary small mb-0">Chính sách thu mua, đổi lớn minh bạch trọn đời, bảo toàn giá trị tài sản đầu tư.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.6); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning fs-2 mb-3 pf-sparkle-icon"><i class="bi bi-lightning-charge"></i></div>
-                    <h5 class="text-light fw-bold mb-2">Giao Hỏa Tốc 2 Giờ</h5>
-                    <p class="text-secondary small mb-0">Đóng gói hộp quà nhung sang trọng, giao nhanh 2h nội thành Hà Nội & TP. Hồ Chí Minh.</p>
+            <div class="col-md-3 col-6">
+                <div class="p-3">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-stars"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Bảo Hành Làm Sạch Trọn Đời</h5>
+                    <p class="text-secondary small mb-0">Đánh bóng, xi mới Platinum và làm sạch bằng sóng siêu âm miễn phí không giới hạn.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.6); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning fs-2 mb-3 pf-sparkle-icon"><i class="bi bi-gem"></i></div>
-                    <h5 class="text-light fw-bold mb-2">Tư Vấn Mùi Hương 1:1</h5>
-                    <p class="text-secondary small mb-0">Đội ngũ chuyên gia mùi hương giàu kinh nghiệm sẵn sàng định hình chữ ký mùi hương của bạn.</p>
+            <div class="col-md-3 col-6">
+                <div class="p-3">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-shield-check"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Giao Hỏa Tốc Bảo Hiểm 2H</h5>
+                    <p class="text-secondary small mb-0">Hộp nhung hoàng gia sang trọng, vận chuyển bảo mật và bảo hiểm 100% giá trị hàng hóa.</p>
                 </div>
             </div>
         </div>
@@ -335,76 +335,137 @@
 </section>
 
 <!-- ==========================================================================
-     PHẦN 3: BỘ SƯU TẬP NƯỚC HOA CAO CẤP & BỘ LỌC TƯƠNG TÁC
+     BỘ SƯU TẬP 10 TUYỆT TÁC TRANG SỨC KIM CƯƠNG TINH TUYỂN
      ========================================================================== -->
-<section id="bo-suu-tap" class="py-5" style="background: var(--pf-bg-dark);">
+<section id="jewelry-collection" class="py-5 position-relative">
     <div class="container py-4">
-        <!-- Tiêu đề mục -->
-        <div class="pf-section-head">
-            <span class="pf-eyebrow">Haute Parfumerie Curation</span>
-            <h2 class="pf-section-title">Tuyển Tập Nước Hoa Danh Tiếng Thế Giới</h2>
-            <p class="text-secondary mx-auto mt-2" style="max-width: 600px;">
-                Những chai nước hoa được khát khao nhất bởi giới mộ điệu, mang đậm tính nghệ thuật và cá tính độc bản.
+        <div class="text-center mb-5">
+            <span class="badge px-3 py-2 rounded-pill mb-2 font-monospace" 
+                  style="background: rgba(212,175,55,0.15); color: #f7e8bd; border: 1px solid rgba(212,175,55,0.3);">
+                COLLECTION 2026 • HAUTE JOAILLERIE
+            </span>
+            <h2 class="display-5 font-serif fw-bold text-white mb-3">
+                Tuyệt Tác Trang Sức & Kim Cương Tự Nhiên
+            </h2>
+            <p class="text-secondary mx-auto" style="max-width: 680px; line-height: 1.8;">
+                Khám phá những mẫu nhẫn cầu hôn, lắc tay tennis, dây chuyền mặt trái tim và hoa tai kim cương được mài giũa với độ phản quang cực đại.
             </p>
+
+            <!-- Bộ lọc danh mục trực tiếp -->
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-4" id="jewelryFilterBtns">
+                <button type="button" class="btn btn-sm btn-gold-luxury active px-3 py-2" onclick="filterJewelry('all', this)">
+                    <i class="bi bi-grid-fill me-1"></i> Tất Cả Tuyệt Tác
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('nhan-kim-cuong', this)">
+                    <i class="bi bi-record-circle me-1"></i> Nhẫn Kim Cương
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('vong-tay-lac-tay', this)">
+                    <i class="bi bi-circle me-1"></i> Vòng & Lắc Tay
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('day-chuyen-mat-day', this)">
+                    <i class="bi bi-heart me-1"></i> Dây Chuyền & Mặt Dây
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('bong-tai-cao-cap', this)">
+                    <i class="bi bi-gem me-1"></i> Bông Tai Cao Cấp
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('trang-suc-da-tiec', this)">
+                    <i class="bi bi-stars me-1"></i> Tuyệt Tác Dạ Yến
+                </button>
+            </div>
         </div>
 
-        <!-- Bộ Lọc Nhóm Hương Tương Tác (Live Filter Pills) -->
-        <div class="pf-filter-nav">
-            <button class="pf-filter-btn active" onclick="filterPerfumes('all', this)">
-                <i class="bi bi-grid me-1"></i> Tất Cả Tuyệt Tác
-            </button>
-            <button class="pf-filter-btn" onclick="filterPerfumes('nuoc-hoa-nam', this)">
-                <i class="bi bi-gender-male me-1"></i> Nước Hoa Nam
-            </button>
-            <button class="pf-filter-btn" onclick="filterPerfumes('nuoc-hoa-nu', this)">
-                <i class="bi bi-gender-female me-1"></i> Nước Hoa Nữ
-            </button>
-            <button class="pf-filter-btn" onclick="filterPerfumes('nuoc-hoa-niche', this)">
-                <i class="bi bi-stars me-1"></i> Tuyệt Tác Niche
-            </button>
-        </div>
-
-        <!-- Lưới sản phẩm nước hoa cao cấp -->
-        <div class="row g-4" id="pfPerfumeGrid">
-            @foreach (var p in luxuryPerfumes)
+        <!-- Lưới sản phẩm trang sức -->
+        <div class="row g-4" id="jewelryGrid">
+            @foreach (var item in luxuryJewelry)
             {
-                <div class="col-md-6 col-lg-4 col-xl-3 pf-item" data-category="@p.Category">
-                    <div class="pf-card pf-breathe-card">
-                        <!-- Hình ảnh chai nước hoa -->
-                        <div class="pf-card-thumb-wrap">
-                            <span class="pf-badge-hot">@p.Badge</span>
-                            <span class="pf-badge-concentration">@p.Volume</span>
-                            <img src="@p.Image" alt="@p.Name" class="pf-card-thumb" loading="lazy" />
+                <div class="col-lg-4 col-md-6 jewelry-card-item" data-category="@item.Category">
+                    <div class="card h-100 border-0 rounded-4 overflow-hidden position-relative" 
+                         style="background: rgba(18, 22, 32, 0.88); border: 1px solid rgba(212,175,55,0.22) !important; transition: all 0.4s ease;">
+                        
+                        <!-- Badge nổi góc -->
+                        <div class="position-absolute top-0 start-0 m-3" style="z-index: 3;">
+                            <span class="badge px-3 py-2 rounded-pill font-monospace" 
+                                  style="background: linear-gradient(135deg, rgba(212,175,55,0.9), rgba(170,134,36,0.9)); color: #0b0c10; font-weight: 700; font-size: 0.7rem; letter-spacing: 0.05em;">
+                                @item.Badge
+                            </span>
                         </div>
 
-                        <!-- Thông tin nước hoa -->
-                        <div class="pf-card-body">
-                            <div class="pf-brand-origin">@p.Origin • @p.CategoryName</div>
-                            <h3 class="pf-prod-title" title="@p.Name">
-                                <a href="javascript:void(0)" onclick="openPerfumeModal('@p.Name', '@p.Image', '@p.Price.ToString("N0") đ', '@p.TopNotes', '@p.HeartNotes', '@p.BaseNotes', '@p.Longevity', '@p.Projection')">@p.Name</a>
-                            </h3>
+                        <!-- Mã GIA góc phải -->
+                        <div class="position-absolute top-0 end-0 m-3" style="z-index: 3;">
+                            <span class="badge bg-dark bg-opacity-75 border border-secondary text-warning small px-2 py-1 font-monospace" style="font-size: 0.65rem;">
+                                <i class="bi bi-shield-check me-1"></i>@item.GiaNumber
+                            </span>
+                        </div>
 
-                            <!-- Preview 3 tầng nốt hương -->
-                            <div class="pf-scent-notes-preview">
-                                <div><strong class="text-warning">Đầu:</strong> @p.TopNotes</div>
-                                <div><strong class="text-warning">Giữa:</strong> @p.HeartNotes</div>
-                                <div><strong class="text-warning">Cuối:</strong> @p.BaseNotes</div>
+                        <!-- Hình ảnh sản phẩm với hiệu ứng zoom nhẹ -->
+                        <div class="position-relative overflow-hidden" style="height: 280px; background: #0b0d13;">
+                            <img src="@item.Image" alt="@item.Name" 
+                                 class="w-100 h-100 object-fit-cover jewelry-thumb" 
+                                 style="transition: transform 0.6s ease;" />
+                            <div class="position-absolute bottom-0 start-0 end-0 p-3" 
+                                 style="background: linear-gradient(to top, rgba(14,18,26,0.95), transparent);">
+                                <span class="text-warning small font-monospace"><i class="bi bi-gem me-1"></i>@item.CategoryName</span>
+                            </div>
+                        </div>
+
+                        <!-- Nội dung chi tiết & thông số 4Cs -->
+                        <div class="card-body p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="font-serif fw-bold text-white mb-2" style="min-height: 52px; line-height: 1.3;">
+                                    @item.Name
+                                </h5>
+                                
+                                <p class="text-secondary small mb-3" style="line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    @item.Desc
+                                </p>
+
+                                <!-- Bảng thông số kỹ thuật 4Cs & Chất liệu -->
+                                <div class="p-3 rounded-3 mb-3" style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(212,175,55,0.25);">
+                                    <div class="row g-2 text-start small">
+                                        <div class="col-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">Chất liệu đúc:</span>
+                                            <strong class="text-light">@item.Material</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">Trọng lượng kim:</span>
+                                            <strong class="text-warning font-monospace">@item.Carat</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">Nước màu:</span>
+                                            <strong class="text-light font-monospace">@item.Color</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted d-block" style="font-size: 0.7rem;">Độ sạch & Giác:</span>
+                                            <strong class="text-light font-monospace">@item.Clarity / 3EX</strong>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="d-flex justify-content-between align-items-center mb-2 small text-secondary">
-                                <span><i class="bi bi-clock-history me-1 text-warning"></i>@p.Longevity</span>
-                                <span><i class="bi bi-broadcast me-1 text-warning"></i>@p.Projection</span>
-                            </div>
+                            <!-- Giá bán & Nút đặt mua / tư vấn -->
+                            <div>
+                                <div class="d-flex align-items-baseline justify-content-between mb-3">
+                                    <div>
+                                        <span class="fs-4 fw-bold font-serif text-warning">
+                                            @item.Price.ToString("N0") <small style="font-size: 0.75rem;">VNĐ</small>
+                                        </span>
+                                        <del class="text-muted small ms-2" style="font-size: 0.8rem;">
+                                            @item.OldPrice.ToString("N0") VNĐ
+                                        </del>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success small">Có sẵn tại Showroom</span>
+                                </div>
 
-                            <!-- Giá bán & Nút Thêm Vào Giỏ -->
-                            <div class="pf-price-box">
-                                <span class="pf-price-current">@p.Price.ToString("N0") ₫</span>
-                                <span class="pf-price-old">@p.OldPrice.ToString("N0") ₫</span>
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-gold-luxury py-2" onclick="orderJewelry('@item.Name', '@item.Price.ToString("N0")')">
+                                        <i class="bi bi-cart-plus me-1"></i> ĐẶT MUA / GIỮ HÀNG VIP
+                                    </button>
+                                    <button type="button" class="btn btn-outline-light btn-sm py-2" 
+                                            onclick="openQuickView('@item.Name', '@item.Material', '@item.Carat', '@item.Color', '@item.Clarity', '@item.GiaNumber', '@item.Price.ToString("N0")', '@item.Image', '@item.Desc')">
+                                        <i class="bi bi-eye me-1"></i> Xem Giấy Kiểm Định GIA
+                                    </button>
+                                </div>
                             </div>
-
-                            <button type="button" class="pf-btn-add-cart" onclick="addToCartPerfume('@p.Name')">
-                                <i class="bi bi-bag-plus"></i> Thêm Vào Giỏ Hàng
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -414,141 +475,133 @@
 </section>
 
 <!-- ==========================================================================
-     PHẦN 4: INTERACTIVE SCENT PYRAMID (THÁP 3 TẦNG HƯƠNG - CHUYỂN ĐỘNG TĨNH)
+     CẨM NANG 4CS KIM CƯƠNG GIA TƯƠNG TÁC (DIAMOND 4CS GUIDE)
      ========================================================================== -->
-<section id="thap-mui-huong" class="pf-pyramid-section">
-    <div class="container">
-        <div class="pf-section-head">
-            <span class="pf-eyebrow">The Olfactory Architecture</span>
-            <h2 class="pf-section-title">Nghệ Thuật Cấu Trúc 3 Tầng Hương</h2>
-            <p class="text-secondary mx-auto mt-2" style="max-width: 650px;">
-                Mỗi chai nước hoa cao cấp là một bản giao hưởng biến đổi kỳ diệu theo thời gian trên làn da của bạn.
-            </p>
-        </div>
+<section id="gia-guide" class="py-5 position-relative" style="background: rgba(14,18,26,0.85); border-top: 1px solid rgba(212,175,55,0.2);">
+    <div class="container py-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="badge px-3 py-2 rounded-pill mb-2 font-monospace" 
+                      style="background: rgba(212,175,55,0.15); color: #f7e8bd; border: 1px solid rgba(212,175,55,0.3);">
+                    TIÊU CHUẨN ĐỊNH DANH QUỐC TẾ
+                </span>
+                <h2 class="display-6 font-serif fw-bold text-white mb-3">
+                    Tiêu Chuẩn 4Cs Của Viện Ngọc Học Hoa Kỳ (GIA)
+                </h2>
+                <p class="text-secondary leading-relaxed mb-4">
+                    GIA là tổ chức sáng lập ra hệ thống đánh giá 4Cs được toàn cầu công nhận. Tại AURA BRILLIANCE, từng viên kim cương được tuyển chọn gắt gao vượt qua 4 tiêu chuẩn vàng:
+                </p>
 
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <!-- 1. Tầng Hương Đầu (Top Notes) -->
-                <div class="pf-pyramid-layer pf-layer-top">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="pf-pulse-node rounded-circle bg-warning d-inline-block" style="width: 12px; height: 12px;"></span>
-                            <span class="pf-layer-badge">Tầng 1: HƯƠNG ĐẦU (TOP NOTES)</span>
+                <div class="accordion accordion-flush" id="accordion4Cs">
+                    <!-- 1. Carat -->
+                    <div class="accordion-item mb-2 rounded-3 border-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2) !important;">
+                        <h2 class="accordion-header" id="headingCarat">
+                            <button class="accordion-button collapsed bg-transparent text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCarat">
+                                <i class="bi bi-gem text-warning me-2"></i> 1. Carat (Trọng Lượng Kim Cương)
+                            </button>
+                        </h2>
+                        <div id="collapseCarat" class="accordion-collapse collapse" data-bs-parent="#accordion4Cs">
+                            <div class="accordion-body text-secondary small pt-0">
+                                1 Carat tương đương 200 miligam (khoảng 6.5mm đối với giác cắt tròn). Trọng lượng càng lớn, độ quý hiếm tăng theo cấp số nhân.
+                            </div>
                         </div>
-                        <span class="text-warning small fw-bold">15 - 30 Phút Đầu Tiên</span>
                     </div>
-                    <h5 class="text-light fw-bold">Ấn Tượng Ban Đầu Sảng Khoái & Tươi Mới</h5>
-                    <p class="text-secondary small mb-2">
-                        Những phân tử hương nhẹ nhất, bay hơi đầu tiên ngay khi xịt lên da. Thường là nhóm Cam chanh Bergamot Calabria, Quýt hồng Sicily, Tiêu hồng, Bạch đậu khấu, Bạc hà tuyết hoặc Hoa oải hương nhẹ.
-                    </p>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-dark border border-secondary text-light">Cam Bergamot Ý</span>
-                        <span class="badge bg-dark border border-secondary text-light">Nhục đậu khấu</span>
-                        <span class="badge bg-dark border border-secondary text-light">Hạnh nhân đắng</span>
-                        <span class="badge bg-dark border border-secondary text-light">Bạch đậu khấu</span>
-                    </div>
-                </div>
 
-                <!-- 2. Tầng Hương Giữa (Heart Notes) -->
-                <div class="pf-pyramid-layer pf-layer-mid">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="pf-pulse-node rounded-circle bg-warning d-inline-block" style="width: 12px; height: 12px; animation-delay: -1s;"></span>
-                            <span class="pf-layer-badge">Tầng 2: HƯƠNG GIỮA (HEART NOTES)</span>
+                    <!-- 2. Color -->
+                    <div class="accordion-item mb-2 rounded-3 border-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2) !important;">
+                        <h2 class="accordion-header" id="headingColor">
+                            <button class="accordion-button collapsed bg-transparent text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseColor">
+                                <i class="bi bi-droplet-half text-warning me-2"></i> 2. Color (Nước Màu - Thang Đo D Đến Z)
+                            </button>
+                        </h2>
+                        <div id="collapseColor" class="accordion-collapse collapse" data-bs-parent="#accordion4Cs">
+                            <div class="accordion-body text-secondary small pt-0">
+                                AURA BRILLIANCE ưu tiên kim cương nước <strong>D, E, F (Colorless)</strong> - nhóm màu hoàn toàn không màu tinh khiết, mang lại vẻ lấp lánh như băng tuyết ngàn năm.
+                            </div>
                         </div>
-                        <span class="text-warning small fw-bold">2 - 6 Giờ Tiếp Theo</span>
                     </div>
-                    <h5 class="text-light fw-bold">Linh Hồn & Cốt Cách Của Chai Nước Hoa</h5>
-                    <p class="text-secondary small mb-2">
-                        Khi hương đầu lắng xuống, hương giữa bộc lộ trọn vẹn bản sắc. Được xem là trái tim quyến rũ, bao gồm tinh chất Hoa hồng tháng Năm Grasse, Hoa nhài Ai Cập Sambac, Rượu Cognac ủ sồi, Quế Ceylon hoặc Da thuộc.
-                    </p>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-dark border border-secondary text-light">Hoa hồng Grasse</span>
-                        <span class="badge bg-dark border border-secondary text-light">Hoa nhài Sambac</span>
-                        <span class="badge bg-dark border border-secondary text-light">Rượu Cognac ủ sồi</span>
-                        <span class="badge bg-dark border border-secondary text-light">Gỗ tuyết tùng Virginia</span>
-                    </div>
-                </div>
 
-                <!-- 3. Tầng Hương Cuối (Base Notes) -->
-                <div class="pf-pyramid-layer pf-layer-base">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="pf-pulse-node rounded-circle bg-warning d-inline-block" style="width: 12px; height: 12px; animation-delay: -2s;"></span>
-                            <span class="pf-layer-badge">Tầng 3: HƯƠNG CUỐI (BASE NOTES)</span>
+                    <!-- 3. Clarity -->
+                    <div class="accordion-item mb-2 rounded-3 border-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2) !important;">
+                        <h2 class="accordion-header" id="headingClarity">
+                            <button class="accordion-button collapsed bg-transparent text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseClarity">
+                                <i class="bi bi-eye text-warning me-2"></i> 3. Clarity (Độ Tinh Khiết)
+                            </button>
+                        </h2>
+                        <div id="collapseClarity" class="accordion-collapse collapse" data-bs-parent="#accordion4Cs">
+                            <div class="accordion-body text-secondary small pt-0">
+                                Đo lường các tạp chất và tì vết dưới kính hiển vi phóng đại 10x. Tuyển chọn độc quyền cấp độ <strong>FL (Flawless), IF, VVS1, VVS2</strong> không tì vết.
+                            </div>
                         </div>
-                        <span class="text-warning small fw-bold">8 - 24 Giờ Bất Tận</span>
                     </div>
-                    <h5 class="text-light fw-bold">Dấu Ấn Sâu Đậm & Ký Ức Khó Phai</h5>
-                    <p class="text-secondary small mb-2">
-                        Những phân tử hương nặng nhất, bám chặt vào tế bào da và sợi vải. Tỏa ra sự ấm áp, vương giả và lưu hương dai dẳng nhất: Gỗ trầm hương quý Oud Assam, Long diên hương Ambergris, Hổ phách đen, Vani Bourbon và Xạ hương trắng quý tộc.
-                    </p>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-dark border border-secondary text-light">Trầm hương Oud Assam</span>
-                        <span class="badge bg-dark border border-secondary text-light">Long diên hương Ambergris</span>
-                        <span class="badge bg-dark border border-secondary text-light">Gỗ đàn hương Úc</span>
-                        <span class="badge bg-dark border border-secondary text-light">Hổ phách đen</span>
-                        <span class="badge bg-dark border border-secondary text-light">Vani Bourbon Madagascar</span>
+
+                    <!-- 4. Cut -->
+                    <div class="accordion-item mb-2 rounded-3 border-0" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2) !important;">
+                        <h2 class="accordion-header" id="headingCut">
+                            <button class="accordion-button collapsed bg-transparent text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCut">
+                                <i class="bi bi-scissors text-warning me-2"></i> 4. Cut (Giác Cắt - Yếu Tố Quyết Định Độ Lửa)
+                            </button>
+                        </h2>
+                        <div id="collapseCut" class="accordion-collapse collapse" data-bs-parent="#accordion4Cs">
+                            <div class="accordion-body text-secondary small pt-0">
+                                Giác cắt quyết định khả năng phản xạ và khúc xạ ánh sáng. 100% sản phẩm của chúng tôi đạt chuẩn <strong>Triple Excellent (3EX)</strong> đỉnh cao.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
 
-<!-- ==========================================================================
-     PHẦN 5: TRẮC NGHIỆM CHỌN MÙI HƯƠNG (SCENT PERSONALITY FINDER)
-     ========================================================================== -->
-<section id="trac-nghiem-huong" class="py-5" style="background: #07090e;">
-    <div class="container py-4">
-        <div class="p-5 rounded-5 position-relative overflow-hidden" 
-             style="background: radial-gradient(circle at top right, #1a2235 0%, #0c0f18 100%); border: 1px solid var(--pf-gold-border);">
-            <div class="row align-items-center g-4 position-relative" style="z-index: 2;">
-                <div class="col-lg-7">
-                    <span class="pf-eyebrow">Trắc Nghiệm 30 Giây</span>
-                    <h2 class="pf-section-title mb-3">Tìm Hương Thơm Thuộc Về <span class="pf-gold-text">Bản Thể Của Bạn</span></h2>
-                    <p class="text-secondary mb-4">
-                        Mùi hương là chữ ký vô hình định hình khí chất của bạn. Trả lời nhanh 3 câu hỏi để AI chuyên gia của chúng tôi gợi ý chai nước hoa phù hợp nhất.
+            <!-- Cột phải: Thước đo size nhẫn & Hẹn lịch thử trực tiếp -->
+            <div class="col-lg-6">
+                <div class="p-4 rounded-4" style="background: linear-gradient(135deg, rgba(22,28,40,0.9), rgba(10,13,18,0.95)); border: 1px solid rgba(212,175,55,0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-calendar2-check-fill text-warning fs-3"></i>
+                        <h4 class="font-serif fw-bold text-white mb-0">Đặt Lịch Thử Kim Cương VIP</h4>
+                    </div>
+                    <p class="text-secondary small mb-4">
+                        Trải nghiệm phòng thử trang sức riêng tư (VIP Suite) với kính hiển vi quang học GIA và trà thảo mộc thượng hạng.
                     </p>
 
-                    <!-- Form câu hỏi tương tác -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <label class="form-label text-warning small fw-bold">1. Phong cách bạn hướng đến:</label>
-                            <select id="quizStyle" class="form-select bg-dark text-light border-secondary">
-                                <option value="luxury">Vương giả, sang trọng, đẳng cấp</option>
-                                <option value="mysterious">Bí ẩn, quyến rũ, mê hoặc</option>
-                                <option value="fresh">Tươi mát, thanh lịch, hiện đại</option>
-                                <option value="artistic">Độc bản, khác biệt, Niche</option>
-                            </select>
+                    <form onsubmit="event.preventDefault(); alert('Cảm ơn Quý Khách! Chuyên viên kim hoàn VIP của AURA BRILLIANCE sẽ liên hệ xác nhận lịch hẹn trong 15 phút.');">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small text-secondary">Họ và tên Quý Khách (*):</label>
+                                <input type="text" class="form-control bg-dark border-secondary text-white" placeholder="ví dụ: Nguyễn Hoàng Nam" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-secondary">Số điện thoại liên hệ (*):</label>
+                                <input type="tel" class="form-control bg-dark border-secondary text-white" placeholder="ví dụ: 0988 668 888" required />
+                            </div>
                         </div>
-                        <div class="col-sm-6">
-                            <label class="form-label text-warning small fw-bold">2. Dịp sử dụng chủ đạo:</label>
-                            <select id="quizOccasion" class="form-select bg-dark text-light border-secondary">
-                                <option value="night">Dạ tiệc, sự kiện cao cấp ban đêm</option>
-                                <option value="date">Hẹn hò lãng mạn, tiệc riêng tư</option>
-                                <option value="office">Công sở, đàm phán đối tác ban ngày</option>
-                                <option value="signature">Hương thơm đặc trưng dùng hàng ngày</option>
-                            </select>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small text-secondary">Showroom trải nghiệm:</label>
+                                <select class="form-select bg-dark border-secondary text-white">
+                                    <option>Showroom Hà Nội (Số 1 Duy Tân, Cầu Giấy)</option>
+                                    <option>Showroom TP. HCM (123 Nguyễn Thị Minh Khai, Q.1)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-secondary">Dòng sản phẩm quan tâm:</label>
+                                <select class="form-select bg-dark border-secondary text-white">
+                                    <option>Nhẫn Cầu Hôn / Kim Cương Viên GIA</option>
+                                    <option>Lắc Tay Tennis Platinum 950</option>
+                                    <option>Dây Chuyền Mặt Kim Cương</option>
+                                    <option>Bông Tai & Tuyệt Tác Dạ Yến</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="button" class="btn pf-gold-shimmer-btn px-4 py-3 rounded-pill" onclick="runScentQuiz()">
-                        <i class="bi bi-stars me-2"></i> XEM KẾT QUẢ GỢI Ý NGAY
-                    </button>
-                </div>
+                        <div class="mb-4">
+                            <label class="form-label small text-secondary">Ghi chú yêu cầu đặc biệt (khắc tên, size nhẫn, ngân sách):</label>
+                            <textarea class="form-control bg-dark border-secondary text-white" rows="2" placeholder="Ví dụ: Cần tư vấn kim cương nước D 1.5ct, ngân sách khoảng 200 triệu..."></textarea>
+                        </div>
 
-                <div class="col-lg-5 text-center">
-                    <div id="quizResultBox" class="p-4 rounded-4" style="background: rgba(14,17,24,0.85); border: 1px solid var(--pf-gold);">
-                        <div class="pf-sparkle-icon fs-1 text-warning mb-2"><i class="bi bi-gem"></i></div>
-                        <h5 class="text-light fw-bold" id="quizResultTitle">Baccarat Rouge 540 Extrait</h5>
-                        <p class="text-secondary small mb-3" id="quizResultDesc">
-                            Tuyệt tác phù hợp nhất với phong thái vương giả và khí chất cuốn hút của bạn. Độ lưu hương 24h đỉnh cao.
-                        </p>
-                        <button class="btn btn-warning btn-sm fw-bold px-4 rounded-pill" onclick="addToCartPerfume('Baccarat Rouge 540 Extrait')">
-                            Đặt Mua Tuyệt Phẩm Này
+                        <button type="submit" class="btn btn-gold-luxury w-100 py-3">
+                            <i class="bi bi-clock-history me-2"></i> XÁC NHẬN ĐẶT LỊCH HẸN VIP
                         </button>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -556,114 +609,43 @@
 </section>
 
 <!-- ==========================================================================
-     PHẦN 6: ĐÁNH GIÁ TỪ CÁC TÍN ĐỒ NƯỚC HOA VIP (TESTIMONIALS)
+     MODAL XEM CHI TIẾT & CHỨNG THƯ GIA
      ========================================================================== -->
-<section class="py-5" style="background: var(--pf-bg-dark);">
-    <div class="container py-4">
-        <div class="pf-section-head">
-            <span class="pf-eyebrow">Khách Hàng Nói Về L'Aura Noir</span>
-            <h2 class="pf-section-title">Ký Ức Hương Thơm Khó Phai</h2>
-        </div>
-
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.8); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning mb-3">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    </div>
-                    <p class="text-light small fst-italic mb-4" style="line-height: 1.8;">
-                        "Chai Baccarat Rouge 540 Extrait tại L'Aura Noir chuẩn authentic 100%. Mùi nghệ tây và long diên hương bám tỏa trên áo vest của mình suốt 2 ngày liền. Dịch vụ gói quà nhung quá tinh tế!"
-                    </p>
-                    <div class="d-flex align-items-center gap-3">
-                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" class="rounded-circle" width="45" height="45" style="object-fit: cover;" alt="Avatar" />
-                        <div>
-                            <strong class="d-block text-light small">Doanh nhân Tuấn Hưng</strong>
-                            <span class="text-muted small">Khách hàng VIP TP.HCM</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.8); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning mb-3">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    </div>
-                    <p class="text-light small fst-italic mb-4" style="line-height: 1.8;">
-                        "Mình là người rất khó tính với mùi hương, nhưng Santal 33 và Tom Ford Oud Wood ở đây thực sự đạt chuẩn Haute Parfumerie. Đi làm ai cũng hỏi dùng nước hoa gì mà thơm sang trọng thế."
-                    </p>
-                    <div class="d-flex align-items-center gap-3">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" class="rounded-circle" width="45" height="45" style="object-fit: cover;" alt="Avatar" />
-                        <div>
-                            <strong class="d-block text-light small">Bà Diễm My</strong>
-                            <span class="text-muted small">Creative Director Hà Nội</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.8); border: 1px solid rgba(212,175,55,0.15);">
-                    <div class="text-warning mb-3">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
-                    </div>
-                    <p class="text-light small fst-italic mb-4" style="line-height: 1.8;">
-                        "Cực kỳ thích chính sách tặng 2 sample để thử mùi trước. Sau khi thử chai Angels' Share thì mình quyết định bóc seal luôn vì mùi rượu Cognac và quế quá đỉnh! 10/10 điểm cho L'Aura Noir."
-                    </p>
-                    <div class="d-flex align-items-center gap-3">
-                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80" class="rounded-circle" width="45" height="45" style="object-fit: cover;" alt="Avatar" />
-                        <div>
-                            <strong class="d-block text-light small">Hoàng Long</strong>
-                            <span class="text-muted small">Kiến trúc sư Đà Nẵng</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ==========================================================================
-     MODAL XEM CHI TIẾT NỐT HƯƠNG (QUICK VIEW MODAL)
-     ========================================================================== -->
-<div class="modal fade" id="pfDetailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="background: rgba(14, 18, 26, 0.98); border: 1px solid var(--pf-gold); backdrop-filter: blur(20px);">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-warning fw-bold font-serif" id="pfModalTitle">Chi Tiết Nốt Hương</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 text-white" style="background: #0f131c; border: 1px solid rgba(212,175,55,0.4) !important;">
+            <div class="modal-header border-bottom border-secondary border-opacity-25">
+                <h5 class="modal-title font-serif fw-bold text-warning" id="modalJewelName">Chi Tiết Tuyệt Tác</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="row g-4 align-items-center">
+                <div class="row g-4">
                     <div class="col-md-5 text-center">
-                        <img id="pfModalImg" src="" alt="Nước hoa" class="img-fluid rounded-4 shadow-lg pf-float-bottle" style="max-height: 320px; object-fit: cover;" />
+                        <img id="modalJewelImg" src="" alt="Jewelry Image" class="img-fluid rounded-3 mb-3 border border-secondary" style="max-height: 260px; object-fit: cover;" />
+                        <div class="p-2 rounded bg-dark border border-warning border-opacity-50 text-warning small font-monospace">
+                            <i class="bi bi-patch-check-fill me-1"></i> <span id="modalGiaNum">GIA-000000</span>
+                        </div>
                     </div>
                     <div class="col-md-7">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge bg-warning text-dark fw-bold">100% NGUYÊN BẢN CHÍNH HÃNG</span>
-                            <span class="text-warning fs-4 fw-bold font-serif" id="pfModalPrice">0 đ</span>
-                        </div>
+                        <h4 class="font-serif fw-bold text-white mb-2" id="modalJewelTitle">Tên Sản Phẩm</h4>
+                        <div class="fs-4 fw-bold font-serif text-warning mb-3" id="modalJewelPrice">0 VNĐ</div>
+                        
+                        <p class="text-secondary small mb-3" id="modalJewelDesc">Mô tả chi tiết</p>
 
-                        <div class="mb-3 p-3 rounded" style="background: rgba(255,255,255,0.04); border-left: 3px solid var(--pf-gold);">
-                            <div class="small mb-1"><strong class="text-warning">Tầng Hương Đầu:</strong> <span id="pfModalTop" class="text-light"></span></div>
-                            <div class="small mb-1"><strong class="text-warning">Tầng Hương Giữa:</strong> <span id="pfModalHeart" class="text-light"></span></div>
-                            <div class="small"><strong class="text-warning">Tầng Hương Cuối:</strong> <span id="pfModalBase" class="text-light"></span></div>
-                        </div>
-
-                        <div class="row g-2 mb-4 small text-secondary">
-                            <div class="col-6">
-                                <i class="bi bi-clock-history text-warning me-1"></i>Độ lưu hương: <strong id="pfModalLongevity" class="text-light"></strong>
-                            </div>
-                            <div class="col-6">
-                                <i class="bi bi-broadcast text-warning me-1"></i>Độ tỏa hương: <strong id="pfModalProjection" class="text-light"></strong>
+                        <div class="p-3 rounded-3 mb-4" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(212,175,55,0.2);">
+                            <div class="row g-2 small">
+                                <div class="col-6"><strong>Chất liệu:</strong> <span id="modalMaterial" class="text-secondary"></span></div>
+                                <div class="col-6"><strong>Carat:</strong> <span id="modalCarat" class="text-warning"></span></div>
+                                <div class="col-6"><strong>Nước màu:</strong> <span id="modalColor" class="text-secondary"></span></div>
+                                <div class="col-6"><strong>Độ tinh khiết:</strong> <span id="modalClarity" class="text-secondary"></span></div>
                             </div>
                         </div>
 
-                        <div class="d-flex gap-3">
-                            <button type="button" class="btn pf-gold-shimmer-btn flex-grow-1 py-2 rounded-pill" onclick="addToCartFromModal()">
-                                <i class="bi bi-bag-plus me-1"></i> Thêm Vào Giỏ Ngay
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-gold-luxury flex-grow-1" onclick="alert('Đã gửi thông tin đến chuyên viên tư vấn kim cương.');">
+                                <i class="bi bi-telephone-outbound me-1"></i> Gọi Hotline Tư Vấn Ngay
                             </button>
-                            <button type="button" class="btn btn-outline-secondary py-2 px-3 rounded-pill" data-bs-dismiss="modal">
-                                Đóng
-                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
                         </div>
                     </div>
                 </div>
@@ -672,87 +654,65 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // Lọc sản phẩm theo danh mục mượt mà
-        function filterPerfumes(category, btn) {
-            // Cập nhật trạng thái nút
-            document.querySelectorAll('.pf-filter-btn').forEach(function(b) {
-                b.classList.remove('active');
-            });
-            btn.classList.add('active');
+<!-- Toast Thông Báo Thêm Giỏ Hàng -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="cartToast" class="toast text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" style="background: #111520; border: 1px solid var(--pf-gold) !important;">
+        <div class="toast-header border-0 text-white" style="background: rgba(212,175,55,0.15);">
+            <i class="bi bi-check-circle-fill text-warning me-2"></i>
+            <strong class="me-auto text-warning font-serif">AURA BRILLIANCE VIP</strong>
+            <small class="text-secondary">Vừa xong</small>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Đã thêm trang sức vào danh mục quan tâm!
+        </div>
+    </div>
+</div>
 
-            // Lọc các thẻ sản phẩm
-            var items = document.querySelectorAll('#pfPerfumeGrid .pf-item');
-            items.forEach(function(item) {
-                if (category === 'all' || item.getAttribute('data-category') === category) {
-                    item.style.display = 'block';
-                    item.style.opacity = '0';
-                    setTimeout(function() {
-                        item.style.transition = 'opacity 0.4s ease';
-                        item.style.opacity = '1';
-                    }, 50);
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-
-        // Thêm nước hoa vào giỏ hàng với thông báo Toast
-        function addToCartPerfume(productName) {
-            showPerfumeToast(productName);
-        }
-
-        // Mở Modal chi tiết nốt hương
-        var currentModalProdName = "";
-        function openPerfumeModal(name, img, price, top, heart, base, longevity, projection) {
-            currentModalProdName = name;
-            document.getElementById('pfModalTitle').textContent = name;
-            document.getElementById('pfModalImg').src = img;
-            document.getElementById('pfModalPrice').textContent = price;
-            document.getElementById('pfModalTop').textContent = top;
-            document.getElementById('pfModalHeart').textContent = heart;
-            document.getElementById('pfModalBase').textContent = base;
-            document.getElementById('pfModalLongevity').textContent = longevity;
-            document.getElementById('pfModalProjection').textContent = projection;
-
-            var modal = new bootstrap.Modal(document.getElementById('pfDetailModal'));
-            modal.show();
-        }
-
-        function addToCartFromModal() {
-            var modalEl = document.getElementById('pfDetailModal');
-            var modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-            addToCartPerfume(currentModalProdName);
-        }
-
-        // Trắc nghiệm chọn mùi hương
-        function runScentQuiz() {
-            var style = document.getElementById('quizStyle').value;
-            var titleEl = document.getElementById('quizResultTitle');
-            var descEl = document.getElementById('quizResultDesc');
-
-            if (style === 'luxury') {
-                titleEl.textContent = "Baccarat Rouge 540 Extrait de Parfum";
-                descEl.textContent = "Hương thơm vương giả số 1 thế giới với nghệ tây, hoa nhài Ai Cập và long diên hương. Tỏa sáng trong mọi dạ tiệc.";
-            } else if (style === 'mysterious') {
-                titleEl.textContent = "Tom Ford Private Blend Oud Wood EDP";
-                descEl.textContent = "Trầm hương Oud bí ẩn hòa quyện cùng bạch đậu khấu và vani đen, tạo nên phong thái quyến rũ không thể cưỡng lại.";
-            } else if (style === 'fresh') {
-                titleEl.textContent = "Bleu De Chanel Parfum Pour Homme";
-                descEl.textContent = "Sự tươi mát bùng nổ từ chanh vàng Ý và bạc hà tuyết, lắng đọng trên nền gỗ đàn hương New Caledonia thanh lịch.";
+<!-- ==========================================================================
+     SCRIPTS: LỌC TRANG SỨC & TƯƠNG TÁC
+     ========================================================================== -->
+<script>
+    function filterJewelry(cat, btn) {
+        var items = document.querySelectorAll('.jewelry-card-item');
+        items.forEach(function(el) {
+            if (cat === 'all' || el.getAttribute('data-category') === cat) {
+                el.style.display = 'block';
             } else {
-                titleEl.textContent = "Le Labo Santal 33 (Biểu Tượng Niche)";
-                descEl.textContent = "Hương gỗ đàn hương Úc, giấy cói và da thuộc độc bản dành riêng cho những tâm hồn tự do và khác biệt.";
+                el.style.display = 'none';
             }
+        });
 
-            var box = document.getElementById('quizResultBox');
-            box.style.transform = 'scale(0.96)';
-            setTimeout(function() {
-                box.style.transition = 'transform 0.4s ease';
-                box.style.transform = 'scale(1)';
-            }, 100);
-        }
-    </script>
-}
+        var btns = document.querySelectorAll('#jewelryFilterBtns button');
+        btns.forEach(function(b) {
+            b.classList.remove('btn-gold-luxury', 'active');
+            b.classList.add('btn-outline-gold');
+        });
+        btn.classList.remove('btn-outline-gold');
+        btn.classList.add('btn-gold-luxury', 'active');
+    }
+
+    function orderJewelry(name, price) {
+        var msg = 'Quý khách đã chọn tuyệt tác "' + name + '" (' + price + ' VNĐ). Chuyên viên CSKH VIP sẽ gọi ngay để hỗ trợ đo size và giao hàng!';
+        document.getElementById('toastMessage').innerText = msg;
+        var toastEl = document.getElementById('cartToast');
+        var toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    function openQuickView(name, mat, carat, color, clarity, gia, price, img, desc) {
+        document.getElementById('modalJewelName').innerText = name;
+        document.getElementById('modalJewelTitle').innerText = name;
+        document.getElementById('modalJewelPrice').innerText = price + ' VNĐ';
+        document.getElementById('modalJewelDesc').innerText = desc;
+        document.getElementById('modalMaterial').innerText = mat;
+        document.getElementById('modalCarat').innerText = carat;
+        document.getElementById('modalColor').innerText = color;
+        document.getElementById('modalClarity').innerText = clarity;
+        document.getElementById('modalGiaNum').innerText = gia;
+        document.getElementById('modalJewelImg').src = img;
+
+        var myModal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+        myModal.show();
+    }
+</script>

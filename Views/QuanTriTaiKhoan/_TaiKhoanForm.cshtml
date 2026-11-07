@@ -114,21 +114,35 @@
         </div>
     </div>
 
-    @* 4. Bảng Phân Quyền Ẩn/Hiện Menu Trực Tiếp Khi Tạo Tài Khoản *@
+    @* 4. Bảng Phân Quyền Ẩn/Hiện Menu Trực Tiếp Khi Tạo Tài Khoản Admin Con *@
     @if (!isEdit && Model.MenuFeatures != null && Model.MenuFeatures.Any())
     {
         <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
                 <div>
-                    <label class="form-label fw-bold mb-0 text-primary">
-                        <i class="bi bi-layout-text-sidebar me-1"></i> Chức năng Menu cho phép nhân viên xem
+                    <label class="form-label fw-bold mb-0 text-primary fs-6">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Phân Quyền Menu Cho Admin Con
                     </label>
-                    <small class="text-muted d-block">Nhân viên khi đăng nhập vào hệ thống CHỈ xem được các menu mà bạn tích chọn bên dưới.</small>
+                    <small class="text-muted d-block">Admin Con khi đăng nhập vào hệ thống <strong>CHỈ XEM ĐƯỢC CÁC MENU ĐƯỢC TÍCH CHỌN</strong>. Mọi menu khác sẽ được ẩn hoàn toàn!</small>
                 </div>
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-secondary" onclick="toggleAllFeatures(true)">Chọn tất cả</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="setEssOnly()">Chỉ Cổng ESS</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="toggleAllFeatures(false)">Bỏ chọn hết</button>
+                <div class="d-flex flex-wrap gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="presetRole('sales')">
+                        <i class="bi bi-cart me-1"></i> Admin Con Bán Hàng
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="presetRole('hrm')">
+                        <i class="bi bi-people me-1"></i> Admin Con Nhân Sự
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="presetRole('payroll')">
+                        <i class="bi bi-cash-stack me-1"></i> Admin Con Lương & KT
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="presetRole('warehouse')">
+                        <i class="bi bi-box-seam me-1"></i> Admin Con Kho
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="presetRole('cms')">
+                        <i class="bi bi-globe me-1"></i> Admin Con CMS
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllFeatures(true)">Tất cả</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="toggleAllFeatures(false)">Bỏ hết</button>
                 </div>
             </div>
 
@@ -195,6 +209,20 @@
     function toggleAllFeatures(checked) {
         document.querySelectorAll('.feature-checkbox').forEach(function(cb) {
             cb.checked = checked;
+        });
+    }
+
+    function presetRole(type) {
+        var map = {
+            'sales': ['banhang', 'sanpham', 'donhang', 'khachhang', 'kho', 'baocao'],
+            'hrm': ['nhansu', 'chamcong', 'dontu', 'hopdong', 'tuyendung', 'ess'],
+            'payroll': ['luong', 'hopdong', 'baocao', 'congno', 'ess'],
+            'warehouse': ['kho', 'sanpham', 'muahang', 'nhacungcap'],
+            'cms': ['cms_content', 'cms_menu', 'cms_layout']
+        };
+        var allowed = map[type] || [];
+        document.querySelectorAll('.feature-checkbox').forEach(function(cb) {
+            cb.checked = allowed.indexOf(cb.value) !== -1;
         });
     }
 
