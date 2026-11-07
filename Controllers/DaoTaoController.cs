@@ -31,7 +31,13 @@ namespace ERP_HRM_CMS.Controllers
             _currentUser = currentUser;
         }
 
-        private int CurrentUserId => _currentUser.UserId ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = _currentUser.UserId ?? 0;
+            return userId > 0;
+        }
 
         // 1. DANH SÁCH KHÓA ĐÀO TẠO NỘI BỘ
         [HttpGet("")]
@@ -69,13 +75,18 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.training.manage")]
         public async Task<IActionResult> TaoMoi(TrainingCreateEditDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.Departments = await _departmentService.GetFlatListAsync();
                 return View(dto);
             }
 
-            var result = await _trainingService.CreateTrainingAsync(dto, CurrentUserId);
+            var result = await _trainingService.CreateTrainingAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể tạo khóa đào tạo!");
@@ -117,6 +128,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.training.manage")]
         public async Task<IActionResult> ChinhSua(int id, TrainingCreateEditDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 ViewBag.Departments = await _departmentService.GetFlatListAsync();
@@ -124,7 +140,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             dto.Id = id;
-            var result = await _trainingService.UpdateTrainingAsync(dto, CurrentUserId);
+            var result = await _trainingService.UpdateTrainingAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Không thể cập nhật khóa đào tạo!");
@@ -157,7 +173,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.training.manage")]
         public async Task<IActionResult> GanHocVien(AssignTrainingParticipantsDto dto)
         {
-            var result = await _trainingService.AssignParticipantsAsync(dto, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _trainingService.AssignParticipantsAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = result.ErrorMessage;
@@ -175,7 +196,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.training.manage")]
         public async Task<IActionResult> ChamDiemHocVien(GradeParticipantDto dto)
         {
-            var result = await _trainingService.GradeParticipantAsync(dto, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _trainingService.GradeParticipantAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = result.ErrorMessage;

@@ -1,7 +1,6 @@
 @inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     var settings = Db.SiteSettings.ToDictionary(s => s.SettingKey, s => s.SettingValue ?? string.Empty);
-    string siteName = "AURA BRILLIANCE";
     string hotline = settings.GetValueOrDefault("Site_Hotline") ?? "1900 6868";
     string email = settings.GetValueOrDefault("Site_Email") ?? "concierge@aurabrilliance.com";
     string copyright = $"© {ERP_HRM_CMS.Helpers.VietnamTime.Now.Year} AURA BRILLIANCE HAUTE JOAILLERIE. All rights reserved.";

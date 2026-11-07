@@ -31,7 +31,13 @@ namespace ERP_HRM_CMS.Controllers
             _currentUser = currentUser;
         }
 
-        private int CurrentUserId => _currentUser.UserId ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = _currentUser.UserId ?? 0;
+            return userId > 0;
+        }
 
         // 1. DANH SÁCH ĐÁNH GIÁ KPI
         [HttpGet("")]
@@ -84,6 +90,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.kpi.manage")]
         public async Task<IActionResult> TaoMoi(CreateKpiReviewDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 var employeesResult = await _employeeService.GetPagedAsync(new EmployeeFilterDto { Page = 1, PageSize = 500 });
@@ -91,7 +102,7 @@ namespace ERP_HRM_CMS.Controllers
                 return View(dto);
             }
 
-            var result = await _kpiService.CreateKpiReviewAsync(dto, CurrentUserId);
+            var result = await _kpiService.CreateKpiReviewAsync(dto, currentUserId);
 
             if (!result.IsSuccess)
             {
@@ -121,7 +132,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TuDanhGia(SelfEvaluateKpiDto dto)
         {
-            int empId = _currentUser.EmployeeId ?? CurrentUserId;
+            if (!TryGetCurrentUserId(out _) || _currentUser.EmployeeId is not int empId || empId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính nhân viên đăng nhập." });
+            }
+
             var result = await _kpiService.SelfEvaluateAsync(dto, empId);
             if (!result.IsSuccess)
             {
@@ -141,7 +156,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.kpi.manage")]
         public async Task<IActionResult> QuanLyDanhGia(ManagerEvaluateKpiDto dto)
         {
-            var result = await _kpiService.ManagerEvaluateAsync(dto, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _kpiService.ManagerEvaluateAsync(dto, currentUserId);
 
             if (!result.IsSuccess)
             {
@@ -161,7 +181,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage,hrm.kpi.manage")]
         public async Task<IActionResult> PheDuyet(ApproveKpiDto dto)
         {
-            var result = await _kpiService.ApproveKpiAsync(dto, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _kpiService.ApproveKpiAsync(dto, currentUserId);
 
             if (!result.IsSuccess)
             {

@@ -45,12 +45,21 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("content.create")]
         public async Task<IActionResult> Create(ContentFormViewModel model)
         {
+            if (CurrentUserId() is not int authorId || authorId <= 0)
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "Không xác định được danh tính người dùng đang đăng nhập."
+                });
+            }
+
             if (ModelState.IsValid)
             {
                 var now = VietnamTime.Now;
                 var content = new Content
                 {
-                    AuthorId = CurrentUserId(),
+                    AuthorId = authorId,
                     CreatedAt = now,
                     UpdatedAt = now
                 };

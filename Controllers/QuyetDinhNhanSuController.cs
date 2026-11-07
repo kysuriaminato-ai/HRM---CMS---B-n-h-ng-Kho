@@ -24,6 +24,26 @@ namespace ERP_HRM_CMS.Controllers
 
         private int? CurrentUserId => _currentUser.UserId;
 
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            if (_currentUser.UserId is int id && id > 0)
+            {
+                userId = id;
+                return true;
+            }
+            userId = 0;
+            return false;
+        }
+
+        private IActionResult KhongXacDinhNguoiDung()
+        {
+            return Unauthorized(new
+            {
+                success = false,
+                message = "Không xác định được danh tính người dùng đang đăng nhập."
+            });
+        }
+
         // ═══════════════════════════════════════════════════════════
         // DANH SÁCH QUYẾT ĐỊNH NHÂN SỰ
         // ═══════════════════════════════════════════════════════════
@@ -97,9 +117,14 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Create(HrDecision decision)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (ModelState.IsValid)
             {
-                var (success, error, id) = await _decisionService.CreateAsync(decision, CurrentUserId);
+                var (success, error, id) = await _decisionService.CreateAsync(decision, currentUserId);
                 if (success)
                 {
                     TempData["SuccessMessage"] = $"Tạo quyết định số {decision.DecisionNumber} thành công!";
@@ -123,7 +148,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Approve(int id)
         {
-            int approvedBy = CurrentUserId ?? 1;
+            if (!TryGetCurrentUserId(out int approvedBy))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             var (success, error) = await _decisionService.ApproveDecisionAsync(id, approvedBy);
 
             if (success)
@@ -146,7 +175,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.employee.manage")]
         public async Task<IActionResult> Cancel(int id, string? reason)
         {
-            int cancelledBy = CurrentUserId ?? 1;
+            if (!TryGetCurrentUserId(out int cancelledBy))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             var (success, error) = await _decisionService.CancelDecisionAsync(id, cancelledBy, reason);
 
             if (success)

@@ -596,6 +596,149 @@ namespace ERP_HRM_CMS.Tests
             Assert.Contains("DISCOUNT_CEILING_EXCEEDED", errJson);
         }
 
+        [Fact]
+        public async Task P0_02_HomeIndex_Enforces_KiemTraQuyen_And_Blocks_Permissionless_AuthenticatedUser()
+        {
+            // 1. Kiểm tra thuộc tính [KiemTraQuyen] gắn trực tiếp trên HomeController.Index
+            var indexMethod = typeof(ERP_HRM_CMS.Controllers.HomeController).GetMethod(
+                nameof(ERP_HRM_CMS.Controllers.HomeController.Index));
+            Assert.NotNull(indexMethod);
+            var attr = indexMethod!.GetCustomAttributes(typeof(ERP_HRM_CMS.Filters.KiemTraQuyenAttribute), inherit: true)
+                .Cast<ERP_HRM_CMS.Filters.KiemTraQuyenAttribute>()
+                .FirstOrDefault();
+            Assert.NotNull(attr);
+            Assert.NotNull(attr!.Arguments);
+            Assert.Equal(ERP_HRM_CMS.Controllers.HomeController.DashboardPermissions, attr.Arguments![0]);
+
+            // 2. Tài khoản đã đăng nhập nhưng không có bất kỳ quyền nào bị chặn 403 / chuyển hướng KhongCoQuyen
+            string noPermUsername = $"noperm_{Guid.NewGuid():N}"[..18];
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                string salt = MatKhauHelper.GenerateSalt();
+                db.Users.Add(new User
+                {
+                    Username = noPermUsername,
+                    PasswordSalt = salt,
+                    PasswordHash = MatKhauHelper.HashPassword(TestHelpers.Password, salt),
+                    IsActive = true,
+                    IsSuperAdmin = false,
+                    MustChangePassword = false,
+                    CreatedAt = VietnamTime.Now
+                });
+                await db.SaveChangesAsync();
+            }
+
+            using var client = TestHelpers.NewClient(_factory);
+            await TestHelpers.LoginAsync(client, noPermUsername, TestHelpers.Password);
+
+            var htmlRes = await client.GetAsync("/Home/Index");
+            Assert.Equal(HttpStatusCode.Redirect, htmlRes.StatusCode);
+            Assert.Contains("/Home/KhongCoQuyen", htmlRes.Headers.Location?.ToString() ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+            using var ajaxReq = new HttpRequestMessage(HttpMethod.Get, "/Home/Index");
+            ajaxReq.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            using var ajaxRes = await client.SendAsync(ajaxReq);
+            Assert.Equal(HttpStatusCode.Forbidden, ajaxRes.StatusCode);
+        }
+
+        [Fact]
+        public async Task P0_04_Controllers_Return_401Unauthorized_When_UserIdentity_CannotBeResolved()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var sp = scope.ServiceProvider;
+            var anonymousUser = new FakeCurrentUser(userId: null, employeeId: null);
+
+            // 1. DanhGiaKpiController không còn fallback ?? 1 mà trả 401 ở mọi nhánh ghi
+            var kpiController = new ERP_HRM_CMS.Controllers.DanhGiaKpiController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IPerformanceReviewService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IEmployeeService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IDepartmentService>(),
+                anonymousUser);
+
+            var kpiCreateRes = await kpiController.TaoMoi(new ERP_HRM_CMS.Models.ViewModels.CreateKpiReviewDto());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(kpiCreateRes);
+
+            var kpiSelfRes = await kpiController.TuDanhGia(new ERP_HRM_CMS.Models.ViewModels.SelfEvaluateKpiDto());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(kpiSelfRes);
+
+            var kpiMgrRes = await kpiController.QuanLyDanhGia(new ERP_HRM_CMS.Models.ViewModels.ManagerEvaluateKpiDto());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(kpiMgrRes);
+
+            var kpiApproveRes = await kpiController.PheDuyet(new ERP_HRM_CMS.Models.ViewModels.ApproveKpiDto());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(kpiApproveRes);
+
+            // 2. DaoTaoController trả 401 khi không xác định được danh tính
+            var daoTaoController = new ERP_HRM_CMS.Controllers.DaoTaoController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.ITrainingService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IEmployeeService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IDepartmentService>(),
+                anonymousUser);
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await daoTaoController.TaoMoi(new ERP_HRM_CMS.Models.ViewModels.TrainingCreateEditDto()));
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await daoTaoController.GanHocVien(new ERP_HRM_CMS.Models.ViewModels.AssignTrainingParticipantsDto()));
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await daoTaoController.ChamDiemHocVien(new ERP_HRM_CMS.Models.ViewModels.GradeParticipantDto()));
+
+            // 3. TuyenDungController trả 401 khi không xác định được danh tính
+            var tuyenDungController = new ERP_HRM_CMS.Controllers.TuyenDungController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IRecruitmentService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IOnboardingService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IEmployeeService>(),
+                anonymousUser);
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await tuyenDungController.TaoMoi(new ERP_HRM_CMS.Models.ViewModels.JobPostingCreateEditDto()));
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await tuyenDungController.Xoa(1));
+
+            // 4. ChamCongController trả 401 khi khóa/mở khóa kỳ công mà không có UserId (không còn ?? 1)
+            var chamCongController = new ERP_HRM_CMS.Controllers.ChamCongController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IAttendanceService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IShiftScheduleService>(),
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IDepartmentService>(),
+                anonymousUser);
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await chamCongController.KhoaKyCong(2026, 4, null, null, null));
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(
+                await chamCongController.MoKhoaKyCong(1, "Lý do", 2026, 4));
+
+            // 5. QuyetDinhNhanSuController trả 401 khi duyệt/hủy quyết định mà không có UserId (không còn ?? 1)
+            var qdController = new ERP_HRM_CMS.Controllers.QuyetDinhNhanSuController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.IHrDecisionService>(),
+                anonymousUser);
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(await qdController.Approve(1));
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(await qdController.Cancel(1, "Hủy"));
+
+            // 6. SelfServiceController trả 401 khi không có UserId (không còn ?? 0)
+            var essController = new ERP_HRM_CMS.Controllers.SelfServiceController(
+                sp.GetRequiredService<ERP_HRM_CMS.Services.HRM.ISelfServicePortalService>(),
+                anonymousUser,
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ERP_HRM_CMS.Controllers.SelfServiceController>>());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(await essController.CheckIn());
+            Assert.IsType<Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult>(await essController.HuyDon(1));
+
+            // 7. UnauthorizedAccessExceptionFilter chuyển UnauthorizedAccessException thành HTTP 401
+            var httpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+            var actionContext = new Microsoft.AspNetCore.Mvc.ActionContext(
+                httpContext,
+                new Microsoft.AspNetCore.Routing.RouteData(),
+                new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor());
+            var exceptionContext = new Microsoft.AspNetCore.Mvc.Filters.ExceptionContext(
+                actionContext,
+                new List<Microsoft.AspNetCore.Mvc.Filters.IFilterMetadata>())
+            {
+                Exception = new UnauthorizedAccessException("Missing user identity")
+            };
+
+            var filter = new ERP_HRM_CMS.Filters.UnauthorizedAccessExceptionFilter();
+            filter.OnException(exceptionContext);
+
+            Assert.True(exceptionContext.ExceptionHandled);
+            var objResult = Assert.IsType<Microsoft.AspNetCore.Mvc.ObjectResult>(exceptionContext.Result);
+            Assert.Equal(Microsoft.AspNetCore.Http.StatusCodes.Status401Unauthorized, objResult.StatusCode);
+        }
+
         // ═══════════════════════════════════════════════════════════════════════════
         // HELPERS NỘI BỘ CHO KIỂM THỬ
         // ═══════════════════════════════════════════════════════════════════════════

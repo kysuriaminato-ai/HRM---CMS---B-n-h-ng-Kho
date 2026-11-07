@@ -1,5 +1,6 @@
 @model List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto>
 @{
+    #pragma warning disable CS1998
     ViewData["Module"] = "hrm";
     ViewData["Title"] = "Cơ cấu tổ chức & Phòng ban";
     ViewData["BreadcrumbSection"] = "Nhân sự & Chấm công";
@@ -9,6 +10,7 @@
 }
 
 @functions {
+    #pragma warning disable CS1998
     async Task RenderTree(List<ERP_HRM_CMS.Services.HRM.DepartmentTreeNodeDto> nodes, int level)
     {
         foreach (var node in nodes)

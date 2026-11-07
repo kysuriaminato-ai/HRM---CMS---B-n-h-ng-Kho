@@ -2,6 +2,7 @@ using ERP.Application;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Logging;
 using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Hubs;
 using ERP_HRM_CMS.Middleware;
@@ -48,8 +49,11 @@ if (!builder.Environment.IsDevelopment() && (string.IsNullOrWhiteSpace(allowedHo
         "Thiếu hoặc không hợp lệ AllowedHosts. Ngoài Development, đặt biến môi trường AllowedHosts bằng danh sách tên miền cụ thể (không dùng '*').");
 }
 
-// 1. Đăng ký MVC Controllers & Views
-builder.Services.AddControllersWithViews();
+// 1. Đăng ký MVC Controllers & Views (kèm filter chuyển UnauthorizedAccessException thành 401 Unauthorized)
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<UnauthorizedAccessExceptionFilter>();
+});
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))

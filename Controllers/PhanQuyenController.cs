@@ -90,7 +90,7 @@ namespace ERP_HRM_CMS.Controllers
             if (role == null) return LoiJson(404, "Không tìm thấy vai trò");
 
             int nguoiThaoTac = CurrentUserId();
-            if (nguoiThaoTac <= 0) return LoiJson(403, PermissionDelegationGuard.ThongBaoKhongDuQuyen);
+            if (nguoiThaoTac <= 0) return LoiJson(401, "Không xác định được danh tính người dùng đang đăng nhập.");
 
             bool laSuperAdmin = await _superAdmin.LaSuperAdminAsync(nguoiThaoTac);
 
@@ -215,7 +215,7 @@ namespace ERP_HRM_CMS.Controllers
             if (!tonTai) return LoiJson(404, "Không tìm thấy người dùng");
 
             int nguoiThaoTac = CurrentUserId();
-            if (nguoiThaoTac <= 0) return LoiJson(403, PermissionDelegationGuard.ThongBaoKhongDuQuyen);
+            if (nguoiThaoTac <= 0) return LoiJson(401, "Không xác định được danh tính người dùng đang đăng nhập.");
 
             bool laSuperAdmin = await _superAdmin.LaSuperAdminAsync(nguoiThaoTac);
 

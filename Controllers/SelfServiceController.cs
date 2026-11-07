@@ -39,8 +39,28 @@ namespace ERP_HRM_CMS.Controllers
             _logger = logger;
         }
 
-        private int CurrentUserId => _currentUser.UserId ?? 0;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
         private int? CurrentEmployeeId => _currentUser.EmployeeId;
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            if (_currentUser.UserId is int id && id > 0)
+            {
+                userId = id;
+                return true;
+            }
+            userId = 0;
+            return false;
+        }
+
+        private IActionResult KhongXacDinhNguoiDung()
+        {
+            return Unauthorized(new
+            {
+                success = false,
+                message = "Không xác định được danh tính người dùng đang đăng nhập."
+            });
+        }
 
         private bool IsPayslipUnlocked()
         {
@@ -92,6 +112,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckIn()
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên của bạn." });
@@ -101,7 +126,7 @@ namespace ERP_HRM_CMS.Controllers
             string userAgent = Request.Headers["User-Agent"].ToString();
 
             var (success, error, status) = await _portalService.WebCheckInAsync(
-                CurrentEmployeeId.Value, clientIp, userAgent, CurrentUserId);
+                CurrentEmployeeId.Value, clientIp, userAgent, currentUserId);
 
             if (!success)
             {
@@ -120,6 +145,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CheckOut()
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên của bạn." });
@@ -129,7 +159,7 @@ namespace ERP_HRM_CMS.Controllers
             string userAgent = Request.Headers["User-Agent"].ToString();
 
             var (success, error, status) = await _portalService.WebCheckOutAsync(
-                CurrentEmployeeId.Value, clientIp, userAgent, CurrentUserId);
+                CurrentEmployeeId.Value, clientIp, userAgent, currentUserId);
 
             if (!success)
             {
@@ -152,6 +182,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TaoDon(PersonalLeaveRequestCreateDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên." });
@@ -163,7 +198,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var (success, error, requestId) = await _portalService.CreateLeaveRequestAsync(
-                model, CurrentEmployeeId.Value, CurrentUserId);
+                model, CurrentEmployeeId.Value, currentUserId);
 
             if (!success)
             {
@@ -182,13 +217,18 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> HuyDon(int id)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên." });
             }
 
             var (success, error) = await _portalService.CancelLeaveRequestAsync(
-                id, CurrentEmployeeId.Value, CurrentUserId);
+                id, CurrentEmployeeId.Value, currentUserId);
 
             if (!success)
             {
@@ -202,6 +242,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuiGiaiTrinh(PersonalAdjustmentCreateDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên." });
@@ -213,7 +258,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var (success, error, requestId) = await _portalService.CreateAdjustmentRequestAsync(
-                model, CurrentEmployeeId.Value, CurrentUserId);
+                model, CurrentEmployeeId.Value, currentUserId);
 
             if (!success)
             {
@@ -236,12 +281,17 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> XacThucMatKhauPhieuLuong([FromBody] VerifyPasswordDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (string.IsNullOrWhiteSpace(model?.Password))
             {
                 return Json(new { success = false, message = "Vui lòng nhập mật khẩu tài khoản của bạn." });
             }
 
-            bool isValid = await _portalService.VerifyPasswordAsync(CurrentUserId, model.Password);
+            bool isValid = await _portalService.VerifyPasswordAsync(currentUserId, model.Password);
             if (!isValid)
             {
                 return Json(new { success = false, message = "Mật khẩu xác thực không chính xác. Vui lòng thử lại." });
@@ -316,6 +366,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CapNhatLienHe(PersonalContactUpdateDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên." });
@@ -327,7 +382,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var (success, error) = await _portalService.UpdateContactInfoAsync(
-                model, CurrentEmployeeId.Value, CurrentUserId);
+                model, CurrentEmployeeId.Value, currentUserId);
 
             if (!success)
             {
@@ -341,6 +396,11 @@ namespace ERP_HRM_CMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DangKyNguoiPhuThuoc(PersonalDependentRegisterDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (!CurrentEmployeeId.HasValue)
             {
                 return Json(new { success = false, message = "Không xác định được danh tính nhân viên." });
@@ -352,7 +412,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             var (success, error) = await _portalService.RegisterDependentAsync(
-                model, CurrentEmployeeId.Value, CurrentUserId);
+                model, CurrentEmployeeId.Value, currentUserId);
 
             if (!success)
             {

@@ -1,8 +1,11 @@
 -- =====================================================================
--- Cập nhật ảnh placeholder cục bộ cho dữ liệu đã có trong DB
--- (seed chỉ chạy khi bảng còn trống nên không tự cập nhật được).
--- Chỉ đổi các URL unsplash và /uploads/ (không tồn tại) sang file SVG có sẵn trong wwwroot/images.
--- Chạy trên ERP_HRM_CMS_DB. Chạy lại nhiều lần vẫn an toàn.
+-- [NGUỒN CHUẨN LEGACY] Database/Legacy/fix-placeholder-images.sql
+-- (Đã hợp nhất từ bản trùng ở thư mục gốc fix-placeholder-images.sql trong Phiên A).
+-- Lưu ý: Nguồn chuẩn schema & seed hiện hành nằm tại:
+--   1. EF Core Migrations: src/ERP.Infrastructure/Migrations/ + Data/DbInitializer.cs
+--   2. Script DBA chuẩn:   db/scripts/ (xem db/README.md)
+-- Script này chỉ dùng để cập nhật ảnh placeholder cục bộ cho dữ liệu cũ đã có trong DB.
+-- Chạy trên ERP_HRM_CMS_DB. Chạy lại nhiều lần vẫn an toàn (idempotent).
 -- =====================================================================
 
 IF DB_NAME() <> N'ERP_HRM_CMS_DB'
@@ -16,14 +19,18 @@ BEGIN TRY
 
     DECLARE @banner INT, @content INT;
 
-    UPDATE Banners
+    UPDATE dbo.Banners
     SET ImageUrl = CASE WHEN Id % 2 = 1 THEN '/images/banner-1.svg' ELSE '/images/banner-2.svg' END
-    WHERE ImageUrl LIKE 'https://images.unsplash.com/%' OR ImageUrl LIKE '/uploads/banners/%';
+    WHERE ImageUrl LIKE 'https://images.unsplash.com/%'
+       OR ImageUrl LIKE '/uploads/banners/%'
+       OR ImageUrl LIKE '/uploads/%';
     SET @banner = @@ROWCOUNT;
 
-    UPDATE Contents
+    UPDATE dbo.Contents
     SET ThumbnailUrl = CASE WHEN Id % 2 = 1 THEN '/images/news-1.svg' ELSE '/images/news-2.svg' END
-    WHERE ThumbnailUrl LIKE 'https://images.unsplash.com/%' OR ThumbnailUrl LIKE '/uploads/contents/%';
+    WHERE ThumbnailUrl LIKE 'https://images.unsplash.com/%'
+       OR ThumbnailUrl LIKE '/uploads/contents/%'
+       OR ThumbnailUrl LIKE '/uploads/%';
     SET @content = @@ROWCOUNT;
 
     COMMIT TRANSACTION;

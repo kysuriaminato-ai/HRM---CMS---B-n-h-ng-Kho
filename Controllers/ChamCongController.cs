@@ -32,6 +32,26 @@ namespace ERP_HRM_CMS.Controllers
 
         private int? CurrentUserId => _currentUser.UserId;
 
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            if (_currentUser.UserId is int id && id > 0)
+            {
+                userId = id;
+                return true;
+            }
+            userId = 0;
+            return false;
+        }
+
+        private IActionResult KhongXacDinhNguoiDung()
+        {
+            return Unauthorized(new
+            {
+                success = false,
+                message = "Không xác định được danh tính người dùng đang đăng nhập."
+            });
+        }
+
         // ═══════════════════════════════════════════════════════════
         // 1. BẢNG CHẤM CÔNG HÀNG NGÀY
         // ═══════════════════════════════════════════════════════════
@@ -68,7 +88,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> QuickAction(QuickCheckInDto dto)
         {
-            var (success, error) = await _attendanceService.QuickCheckInAsync(dto, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
+            var (success, error) = await _attendanceService.QuickCheckInAsync(dto, currentUserId);
             if (success)
             {
                 TempData["SuccessMessage"] = "Ghi nhận thông tin chấm công thành công!";
@@ -130,6 +155,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> ImportExcel(IFormFile? file, int? defaultShiftId)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (file == null || file.Length == 0)
             {
                 TempData["ErrorMessage"] = "Vui lòng chọn file Excel hoặc CSV chấm công hợp lệ.";
@@ -137,7 +167,7 @@ namespace ERP_HRM_CMS.Controllers
             }
 
             using var stream = file.OpenReadStream();
-            var result = await _attendanceService.ImportAttendanceLogAsync(stream, file.FileName, defaultShiftId, CurrentUserId);
+            var result = await _attendanceService.ImportAttendanceLogAsync(stream, file.FileName, defaultShiftId, currentUserId);
 
             if (result.Success)
             {
@@ -171,7 +201,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> AssignShift(int employeeId, DateTime date, int shiftId)
         {
-            var (success, error) = await _shiftService.AssignShiftAsync(employeeId, date, shiftId, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
+            var (success, error) = await _shiftService.AssignShiftAsync(employeeId, date, shiftId, currentUserId);
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 return Json(new { success, error });
 
@@ -188,8 +223,13 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> CopySchedule(DateTime sourceWeek, DateTime targetWeek, int? departmentId, int? branchId)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             var (success, error, count) = await _shiftService.CopyWeekScheduleAsync(
-                sourceWeek, targetWeek, departmentId, branchId, CurrentUserId);
+                sourceWeek, targetWeek, departmentId, branchId, currentUserId);
 
             if (success)
             {
@@ -211,8 +251,13 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> KhoaKyCong(int year, int month, int? branchId, int? departmentId, string? note)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             var (success, error, _) = await _attendanceService.LockPeriodAsync(
-                year, month, branchId, departmentId, CurrentUserId ?? 1, note);
+                year, month, branchId, departmentId, currentUserId, note);
 
             if (success)
                 TempData["SuccessMessage"] = $"Đã khóa thành công bảng công tháng {month}/{year}!";
@@ -227,8 +272,13 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> MoKhoaKyCong(int lockId, string reason, int year, int month)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             var (success, error) = await _attendanceService.UnlockPeriodAsync(
-                lockId, CurrentUserId ?? 1, reason);
+                lockId, currentUserId, reason);
 
             if (success)
                 TempData["SuccessMessage"] = $"Đã mở khóa kỳ công tháng {month}/{year} và lưu vết kiểm toán!";
@@ -254,9 +304,14 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.attendance.manage")]
         public async Task<IActionResult> TaoCa(Shift shift)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return KhongXacDinhNguoiDung();
+            }
+
             if (ModelState.IsValid)
             {
-                var (success, error, _) = await _shiftService.CreateShiftAsync(shift, CurrentUserId);
+                var (success, error, _) = await _shiftService.CreateShiftAsync(shift, currentUserId);
                 if (success)
                 {
                     TempData["SuccessMessage"] = $"Tạo ca làm việc '{shift.Name}' thành công!";

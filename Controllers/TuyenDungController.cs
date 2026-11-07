@@ -31,7 +31,13 @@ namespace ERP_HRM_CMS.Controllers
             _currentUser = currentUser;
         }
 
-        private int CurrentUserId => _currentUser.UserId ?? 1;
+        private int CurrentUserId => _currentUser.GetRequiredUserId();
+
+        private bool TryGetCurrentUserId(out int userId)
+        {
+            userId = _currentUser.UserId ?? 0;
+            return userId > 0;
+        }
 
         #region 1. Quản lý Tin Tuyển Dụng (Job Postings)
 
@@ -84,6 +90,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> TaoMoi(JobPostingCreateEditDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 var dropdowns = await _employeeService.GetDropdownDataAsync(model.DepartmentId, model.PositionId);
@@ -92,7 +103,7 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
-            var result = await _recruitmentService.CreateJobPostingAsync(model, CurrentUserId);
+            var result = await _recruitmentService.CreateJobPostingAsync(model, currentUserId);
             if (!result.IsSuccess)
             {
                 ModelState.AddModelError("", result.ErrorMessage ?? "Lỗi không xác định");
@@ -148,6 +159,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> ChinhSua(int id, JobPostingCreateEditDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (id != model.Id) return BadRequest();
 
             if (!ModelState.IsValid)
@@ -158,7 +174,7 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
-            var result = await _recruitmentService.UpdateJobPostingAsync(model, CurrentUserId);
+            var result = await _recruitmentService.UpdateJobPostingAsync(model, currentUserId);
             if (!result.IsSuccess)
             {
                 ModelState.AddModelError("", result.ErrorMessage ?? "Lỗi không xác định");
@@ -177,7 +193,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> Xoa(int id)
         {
-            var result = await _recruitmentService.DeleteJobPostingAsync(id, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _recruitmentService.DeleteJobPostingAsync(id, currentUserId);
             if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = result.ErrorMessage;
@@ -228,12 +249,17 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> CapNhatTrangThai([FromBody] UpdateCandidateStatusDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu không hợp lệ." });
             }
 
-            var result = await _recruitmentService.UpdateCandidateStatusAsync(dto, CurrentUserId);
+            var result = await _recruitmentService.UpdateCandidateStatusAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 return BadRequest(new { success = false, message = result.ErrorMessage });
@@ -274,12 +300,17 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> DatLichPhongVan([FromBody] InterviewScheduleCreateDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu đặt lịch không hợp lệ." });
             }
 
-            var result = await _recruitmentService.ScheduleInterviewAsync(dto, CurrentUserId);
+            var result = await _recruitmentService.ScheduleInterviewAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 return BadRequest(new { success = false, message = result.ErrorMessage });
@@ -292,12 +323,17 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> DanhGiaPhongVan([FromBody] InterviewEvaluationDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new { success = false, message = "Dữ liệu đánh giá không hợp lệ." });
             }
 
-            var result = await _recruitmentService.EvaluateInterviewAsync(dto, CurrentUserId);
+            var result = await _recruitmentService.EvaluateInterviewAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 return BadRequest(new { success = false, message = result.ErrorMessage });
@@ -347,6 +383,11 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> TiepNhanNhanSu(int candidateId, ConvertCandidateToEmployeeDto model)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (candidateId != model.CandidateId) return BadRequest();
 
             if (!ModelState.IsValid)
@@ -358,7 +399,7 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
-            var result = await _recruitmentService.ConvertToEmployeeAsync(model, CurrentUserId);
+            var result = await _recruitmentService.ConvertToEmployeeAsync(model, currentUserId);
             if (!result.IsSuccess)
             {
                 ModelState.AddModelError("", result.ErrorMessage ?? "Lỗi tiếp nhận nhân sự.");
@@ -393,7 +434,12 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage,hrm.employee.view")]
         public async Task<IActionResult> CapNhatTienDoTask([FromBody] UpdateOnboardingTaskDto dto)
         {
-            var result = await _onboardingService.UpdateTaskProgressAsync(dto.TaskId, dto.IsCompleted, dto.Note, CurrentUserId);
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
+            var result = await _onboardingService.UpdateTaskProgressAsync(dto.TaskId, dto.IsCompleted, dto.Note, currentUserId);
             if (!result.IsSuccess)
             {
                 return BadRequest(new { success = false, message = result.ErrorMessage });
@@ -407,13 +453,18 @@ namespace ERP_HRM_CMS.Controllers
         [KiemTraQuyen("hrm.recruitment.manage")]
         public async Task<IActionResult> TaoMoiChecklist(CreateChecklistDto dto)
         {
+            if (!TryGetCurrentUserId(out int currentUserId))
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = "Dữ liệu tạo quy trình không hợp lệ.";
                 return RedirectToAction(nameof(Onboarding));
             }
 
-            var result = await _onboardingService.CreateChecklistAsync(dto, CurrentUserId);
+            var result = await _onboardingService.CreateChecklistAsync(dto, currentUserId);
             if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = result.ErrorMessage;
