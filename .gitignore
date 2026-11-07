@@ -22,3 +22,6 @@ App_Data/
 # Nhật ký vận hành Serilog (Rolling File theo ngày)
 logs/
 **/logs/
+
+# SSMS temporary query scratch files
+SQLQuery*.sql
