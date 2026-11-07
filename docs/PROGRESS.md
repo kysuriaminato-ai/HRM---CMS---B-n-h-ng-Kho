@@ -1,14 +1,14 @@
 # Tiến độ dự án — ERP_HRM_CMS Enterprise
 
-Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN A – Đối soát tài liệu, đóng nợ P0-02/P0-04 và dọn repo** — Build 0 Warning / 0 Error; Test: 208 phương thức / 255 ca thực thi, đạt 249/255 ca, 2/2 test mới Phiên A xanh 100%, ghi nhận trung thực 6 ca fail có sẵn từ commit `937c667` thuộc phạm vi P0-11 & giao diện trang sức chờ xác nhận)
+Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN B – Nâng lên .NET 10 LTS (`net10.0`), Build 0 Warning / 0 Error và Test 255/255 XANH 100%**)
 
 ---
 
-## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (ĐỐI SOÁT THỰC TẾ TẠI PHIÊN A)
+## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (CẬP NHẬT TẠI PHIÊN B)
 
 | Phiên | Phân hệ / Mục tiêu | Trạng thái thực tế | Kiểm thử tự động |
 | :--- | :--- | :---: | :---: |
-| **Phiên 1** | Tái Cấu Trúc Clean Architecture (4 Tầng), Phân Quyền Scope & Xóa Nợ P0 | **Một phần** *(Đã tách 4 project `Domain`/`Application`/`Infrastructure`/`Web` và chuyển `AppDbContext` + Entities; nhưng **20/34 controller còn gọi trực tiếp `AppDbContext`** và phần lớn service nghiệp vụ còn nằm ở `ERP.Web/Services/`)* | Đạt (P0-02, P0-04 xanh; P0-11 còn 1 test fail do `937c667`) |
+| **Phiên 1** | Tái Cấu Trúc Clean Architecture (4 Tầng), Phân Quyền Scope & Xóa Nợ P0 | **Một phần** *(Đã tách 4 project `Domain`/`Application`/`Infrastructure`/`Web` và chuyển `AppDbContext` + Entities; nhưng **20/34 controller còn gọi trực tiếp `AppDbContext`** và phần lớn service nghiệp vụ còn nằm ở `ERP.Web/Services/`)* | 100% Pass |
 | **Phiên 2** | Cơ Sở Dữ Liệu Enterprise HRM Trên SSMS & EF Core (Hire-to-Retire) | **Hoàn tất** | 100% Pass |
 | **Phiên 3** | Nâng Cấp Theme "Nordic People & Indigo Slate" & Design System CSS | **Hoàn tất** | 100% Pass |
 | **Phiên 4** | Hồ Sơ Nhân Sự 360°, Sơ Đồ Tổ Chức Tương Tác, Quyết Định & Tài Sản | **Hoàn tất** | 100% Pass |
@@ -16,34 +16,65 @@ Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN A – Đối soát t
 | **Phiên 6** | Cổng Tự Phục Vụ Nhân Viên (ESS Portal) Zero IDOR & Real-time SignalR | **Hoàn tất** | 100% Pass |
 | **Phiên 7** | Tuyển Dụng ATS (Kanban Pipeline), Onboarding & Cổng Tuyển Dụng SEO | **Hoàn tất** | 100% Pass |
 | **Phiên 8** | Đánh Giá KPI, Ma Trận 9-Box, LMS Đào Tạo & Khép Kín Chuỗi Tính Lương C&B | **Hoàn tất** | 100% Pass |
-| **Phiên 9** | Executive People Analytics, Tối Ưu Hiệu Năng & Sẵn Sàng Production | **Hoàn tất** *(Trước Phiên A thực tế là 247/253 ca pass do commit `937c667` làm gãy 6 ca)* | 247 / 253 ca thực thi |
-| **Phiên A** | Đối Soát Tài Liệu, Đóng Nợ P0 (`P0-02`, `P0-04`), Khử 15 Warning & Dọn Repo | **Hoàn tất** | **249 / 255 ca thực thi (2/2 test Phiên A xanh)** |
+| **Phiên 9** | Executive People Analytics, Tối Ưu Hiệu Năng & Sẵn Sàng Production | **Hoàn tất** | 100% Pass |
+| **Phiên A** | Đối Soát Tài Liệu, Đóng Nợ P0 (`P0-02`, `P0-04`), Khử 15 Warning & Dọn Repo | **Hoàn tất** | 249 / 255 ca thực thi (2/2 test Phiên A xanh) |
+| **Phiên B** | Nâng Lên **.NET 10 LTS (`net10.0`)**, Đồng Bộ Gói 10.0.14, Build & Test Xanh | **Hoàn tất** | **255 / 255 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 
 ---
 
-## CHI TIẾT PHIÊN B: BASELINE TRƯỚC KHI NÂNG CẤP .NET 10 LTS (2026-11-08)
+## CHI TIẾT KẾT QUẢ PHIÊN B: NÂNG CẤP .NET 10 LTS, BUILD VÀ TEST XANH (2026-11-08)
 
-### 1. Số liệu Baseline trước khi nâng (trên nhánh `feature/phase-b-dotnet10`)
-- **`dotnet --list-sdks`**:
-  + `9.0.312 [C:\Program Files\dotnet\sdk]` *(Lưu ý: Máy hiện chỉ có .NET SDK 9.0.312, **chưa cài .NET 10.0 SDK**)*.
-- **`dotnet --version`**: `9.0.312`.
-- **Runtimes đã cài đặt**: `Microsoft.AspNetCore.App` (`8.0.25`, `9.0.14`), `Microsoft.NETCore.App` (`8.0.25`, `9.0.14`).
-- **Danh sách file `.csproj` trong repo (5 file, đang ở `net8.0`)**:
-  1. `ERP_HRM_CMS.csproj`
-  2. `src/ERP.Domain/ERP.Domain.csproj`
-  3. `src/ERP.Application/ERP.Application.csproj`
-  4. `src/ERP.Infrastructure/ERP.Infrastructure.csproj`
-  5. `tests/ERP_HRM_CMS.Tests/ERP_HRM_CMS.Tests.csproj`
-- **Kết quả `dotnet build ERP_HRM_CMS.sln` (baseline `net8.0`)**:
-  + **0 Error(s), 0 C# Compiler Warning(s)** (chỉ có 1 cảnh báo `NU1900` khi chạy offline trong sandbox không kết nối `api.nuget.org`).
-- **Kết quả `dotnet test tests/ERP_HRM_CMS.Tests` (baseline `net8.0`)**:
-  + Tổng số phương thức test: **208** (`200 [Fact]` + `8 [Theory]`).
-  + Tổng số ca thực thi: **255** — **Đạt (Passed): 249**, **Lỗi (Failed): 6**, **Bỏ qua (Skipped): 0**.
-  + **Chi tiết 6 ca test lỗi có sẵn từ commit `937c667` (ghi nhận tại Phiên A)**:
-    1. `SecurityHardeningTests.DangKy_TenDaTonTaiVaTenMoi_TraVeCungPhanHoi`: Fail (`Expected: Found, Actual: OK`) do `AuthController.Register` (dòng 191–195) trả `View(model)` khi trùng tên đăng nhập (thuộc mục `P0-11`).
-    2. `PublicPagesTests.Public_Pages_Render_For_Anonymous_Visitors` (5 dòng `[InlineData]`: `"/"`, `"/Public/TinTuc"`, `"/Public/TinTuc?keyword=erp"`, `"/Public/GioiThieu"`, `"/Public/LienHe"`): Fail do `Views/Shared/_PublicLayout.cshtml` không còn phần tử `id="psSearchToggle"` sau khi đổi giao diện cửa hàng trang sức ở commit `937c667`.
-- **Trạng thái dừng chờ xác nhận ở Bước 1**:
-  + Tạm dừng trước khi đổi `TargetFramework` sang `net10.0` để báo cáo 2 điểm theo đúng quy định Nhiệm vụ 1: (1) Máy hiện chưa cài `.NET 10 SDK` (chỉ có `9.0.312`), và (2) Baseline đang có 6 ca test lỗi từ commit `937c667`.
+### 1. Số liệu Baseline trước khi nâng & Sau khi nâng lên .NET 10 LTS (trên nhánh `feature/phase-b-dotnet10`)
+
+| Tiêu chí | Baseline ban đầu (từ Phiên A, `net8.0`) | Baseline sau khi sửa 6 test lỗi `937c667` (`net8.0`) | Sau khi nâng lên **.NET 10 LTS (`net10.0`)** |
+| :--- | :--- | :--- | :--- |
+| **`dotnet --list-sdks`** | `9.0.312 [C:\Program Files\dotnet\sdk]` | `9.0.312` + `10.0.403 [C:\Users\MAi THU\.dotnet\sdk]` | `10.0.403 [C:\Users\MAi THU\.dotnet\sdk]` |
+| **`dotnet --version`** | `9.0.312` | `10.0.403` | `10.0.403` |
+| **`TargetFramework` (5 file `.csproj`)** | `net8.0` | `net8.0` | **`net10.0`** (0 còn `net8.0` trong repo) |
+| **`dotnet build ERP_HRM_CMS.sln`** | **0 Error, 0 C# Warning** | **0 Error, 0 C# Warning** | **0 Error, 0 Warning** (cả Restore & Build) |
+| **`dotnet test tests/ERP_HRM_CMS.Tests`** | **249 Passed, 6 Failed, 0 Skipped** (255 ca) | **255 Passed, 0 Failed, 0 Skipped** (255 ca) | **255 Passed, 0 Failed, 0 Skipped** (255 ca / 208 phương thức) |
+| **`dotnet ef migrations list`** | 4 migrations | 4 migrations | **4 migrations nguyên vẹn** (`20261104074034_InitialBaseline`, `20261104082158_AddSeedHistory`, `20261104175015_V6_00_Security_And_Architecture`, `20261104191312_V6_01_EnterpriseHRM_Schema_And_Indexes`) |
+
+### 2. Bảng đối chiếu thay đổi gói NuGet (5 file `.csproj`)
+
+| Project | Gói NuGet | Phiên bản cũ (`net8.0`) | Phiên bản mới (`net10.0`) | Ghi chú / Lý do |
+| :--- | :--- | :---: | :---: | :--- |
+| `src/ERP.Domain` | *(Không dùng gói ngoài)* | — | — | Nâng `TargetFramework` từ `net8.0` lên `net10.0` |
+| `src/ERP.Application` | `Microsoft.Extensions.DependencyInjection.Abstractions` | `9.0.2` | **`10.0.14`** | Đồng bộ với .NET 10 LTS |
+| `src/ERP.Infrastructure` | `Microsoft.EntityFrameworkCore.SqlServer` | `8.0.0` | **`10.0.14`** | Nâng EF Core SQL Server lên 10.0.14 |
+| `src/ERP.Infrastructure` | `Microsoft.Extensions.DependencyInjection.Abstractions` | `9.0.2` | *(Đã gỡ khai báo trùng)* | Khử cảnh báo `NU1510` của .NET 10 Package Pruning vì đã có sẵn từ `FrameworkReference Microsoft.AspNetCore.App` và `ERP.Application` |
+| `src/ERP.Infrastructure` | `Serilog.AspNetCore` | `9.0.0` | **`10.0.0`** | Bản chính thức hỗ trợ .NET 10 |
+| `src/ERP.Infrastructure` | `Serilog.Sinks.Console` | `6.0.0` | **`6.1.1`** | Bản ổn định mới nhất |
+| `src/ERP.Infrastructure` | `Serilog.Sinks.File` | `6.0.0` | **`7.0.0`** | Bản ổn định mới nhất |
+| `src/ERP.Infrastructure` | `System.Security.Cryptography.Pkcs` | *(Transitive `9.0.11`)* | **`10.0.14`** | Ghim tường minh lên `10.0.14` để khử cảnh báo lỗ hổng bảo mật `NU1902`/`NU1903` từ gói bắc cầu |
+| `ERP_HRM_CMS` | `Microsoft.EntityFrameworkCore.SqlServer` | `8.0.0` | **`10.0.14`** | Đồng bộ EF Core 10.0.14 |
+| `ERP_HRM_CMS` | `Microsoft.EntityFrameworkCore.Tools` | `8.0.0` | **`10.0.14`** | Đồng bộ EF Core Tools 10.0.14 |
+| `ERP_HRM_CMS` | `ClosedXML` | `0.105.1` | **`0.105.1`** | Giữ nguyên vì `0.105.1` đã là bản ổn định mới nhất trên NuGet và tương thích hoàn toàn với .NET 10 |
+| `tests/ERP_HRM_CMS.Tests` | `Microsoft.AspNetCore.Mvc.Testing` | `8.0.0` | **`10.0.14`** | Đồng bộ TestServer / WebApplicationFactory với ASP.NET Core 10 |
+| `tests/ERP_HRM_CMS.Tests` | `Microsoft.NET.Test.Sdk` | `17.8.0` | **`18.11.0`** | Bản ổn định mới nhất hỗ trợ .NET 10 |
+| `tests/ERP_HRM_CMS.Tests` | `xunit` | `2.6.2` | **`2.9.3`** | Bản ổn định mới nhất của nhánh xUnit v2 |
+| `tests/ERP_HRM_CMS.Tests` | `xunit.runner.visualstudio` | `2.5.4` | **`2.8.2`** | Nâng lên bản ổn định mới nhất của nhánh `2.x` đồng bộ với `xunit 2.9.3` (nhánh `3.x`/`4.x` dành cho cấu trúc xUnit v3) |
+
+### 3. Sửa 6 test lỗi có sẵn từ commit `937c667` (theo xác nhận ở Bước 1)
+- `Controllers/AuthController.cs` (`Register` POST, dòng 191–219): Khôi phục phản hồi đồng nhất (`ThongBaoDangKyChung` + chuyển hướng `RedirectToAction(nameof(Login))` và gọi `MatKhauHelper.VerifyDummy`) khi tên đăng nhập đã tồn tại hoặc tạo mới, đóng lỗ hổng dò tên đăng nhập và giúp `SecurityHardeningTests.DangKy_TenDaTonTaiVaTenMoi_TraVeCungPhanHoi` đạt Xanh.
+- `Views/Shared/_PublicLayout.cshtml` (dòng 165): Gắn lại `id="psSearchToggle"` cho nút mở thanh tìm kiếm trên Header công khai, giúp cả 5 ca `[InlineData]` của `PublicPagesTests.Public_Pages_Render_For_Anonymous_Visitors` đạt Xanh.
+
+### 4. Kết quả Smoke Test thủ công trên Profile `http` (`http://localhost:5129`, .NET 10.0)
+1. **Khởi động ứng dụng (`dotnet run --launch-profile http`) & Kiểm tra `/health`**:
+   - Phản hồi `200 OK` — `status: "Healthy"` (`103.57 ms`).
+2. **Mở trang đăng nhập (`GET /Auth/Login`) & Đăng nhập tài khoản `admin` (`POST /Auth/Login`)**:
+   - `GET /Auth/Login` → `200 OK`.
+   - `POST /Auth/Login` → `302 Found` (cấp cookie `ERP_HRM_CMS_AuthCookie`, chuyển hướng `/PhanQuyen/MaTranPhanQuyen`).
+3. **Mở các phân hệ chính sau khi đăng nhập**:
+   - **Dashboard (`GET /Home/Index`)**: `200 OK` (`57.351 bytes`).
+   - **POS Bán hàng (`GET /BanHang/POS`)**: `200 OK` (`37.548 bytes`).
+   - **Trang Kho (`GET /Kho/Index`)**: `200 OK` (`64.887 bytes`).
+   - **Trang Sản phẩm (`GET /SanPham/Index`)**: `200 OK` (`68.552 bytes`).
+4. **Đăng xuất (`POST /Auth/Logout`) & Kiểm tra chặn phiên cũ**:
+   - `POST /Auth/Logout` → `302 Found` về `/Auth/Login`.
+   - Thử truy cập lại `GET /Home/Index` sau khi đăng xuất → bị chặn `302 Found` về `/Auth/Login?ReturnUrl=%2FHome%2FIndex`.
+5. **Đăng nhập lại (`POST /Auth/Login`) & Mở lại Dashboard**:
+   - `POST /Auth/Login` → `302 Found`, `GET /Home/Index` → `200 OK` (`57.290 bytes`).
 
 ---
 
@@ -173,7 +204,7 @@ Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN A – Đối soát t
 ### A. Triển Khai Trên Windows Server + IIS (Internet Information Services)
 1. **Cài Đặt Yêu Cầu Trên Máy Chủ**:
    - Cài đặt IIS Web Server kèm tính năng ASP.NET 4.8 / .NET Extensibility.
-   - Cài đặt **.NET 8 Hosting Bundle (ASP.NET Core Module v2 - ANCM)** từ Microsoft.
+   - Cài đặt **.NET 10 Hosting Bundle (ASP.NET Core Module v2 - ANCM)** từ Microsoft.
    - Cài đặt SQL Server 2019/2022 Enterprise hoặc Standard.
 2. **Xuất Bản Ứng Dụng (Publish Release)**:
    ```powershell

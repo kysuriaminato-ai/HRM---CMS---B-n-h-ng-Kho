@@ -1,12 +1,12 @@
 # ERP_HRM_CMS — Quản lý nhân sự, bán hàng & kho, CMS
 
-Ứng dụng ASP.NET Core MVC (.NET 8) + Entity Framework Core + SQL Server. Gồm các phân hệ: Nhân sự (HRM, chấm công, đơn từ, bảng lương), Bán hàng POS và đơn hàng, Kho (nhập/xuất/điều chuyển/kiểm kê), Mua hàng và công nợ (SCM), CMS và trang công khai, thông báo thời gian thực (SignalR), nhật ký kiểm toán (AuditLog).
+Ứng dụng ASP.NET Core MVC (.NET 10 LTS) + Entity Framework Core 10 + SQL Server. Gồm các phân hệ: Nhân sự (HRM, chấm công, đơn từ, bảng lương), Bán hàng POS và đơn hàng, Kho (nhập/xuất/điều chuyển/kiểm kê), Mua hàng và công nợ (SCM), CMS và trang công khai, thông báo thời gian thực (SignalR), nhật ký kiểm toán (AuditLog).
 
 ## 1. Yêu cầu
 
-- .NET 8 SDK
+- .NET 10 SDK (`10.0.x` LTS; khi triển khai trên Windows Server + IIS cài đặt **.NET 10 Hosting Bundle**)
 - SQL Server (hoặc LocalDB) có quyền tạo database
-- Visual Studio 2022 phiên bản 17.14 trở lên (hoặc `dotnet` CLI)
+- Visual Studio 2022 phiên bản 17.14 trở lên / Visual Studio 2026 (hoặc `dotnet` CLI)
 
 ## 2. Cấu hình
 
@@ -86,7 +86,7 @@ Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `Database/SQLQ
 
 ## 5. Chạy kiểm thử
 
-Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) gồm **31 file `*Tests.cs`** với **208 phương thức kiểm thử (`200 [Fact]` + `8 [Theory]`), tương ứng 255 ca kiểm thử thực thi (gồm 55 dòng `[InlineData]`)** (trước Phiên A là 206 phương thức / 253 ca kiểm thử thực thi; hiện đạt **249/255 ca thực thi**, còn 6 ca không đạt có sẵn từ commit `937c667` ở `SecurityHardeningTests.DangKy_TenDaTonTaiVaTenMoi_TraVeCungPhanHoi` [mục P0-11] và `PublicPagesTests.Public_Pages_Render_For_Anonymous_Visitors` [5 dòng `InlineData` thiếu `id="psSearchToggle"` trong `_PublicLayout.cshtml` hướng trang sức đang chờ xác nhận]).
+Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) gồm **31 file `*Tests.cs`** với **208 phương thức kiểm thử (`200 [Fact]` + `8 [Theory]`), tương ứng 255/255 ca kiểm thử thực thi XANH 100%** (gồm 55 dòng `[InlineData]`) trên nền tảng `.NET 10 LTS` (`net10.0`).
 
 ```
 dotnet test tests/ERP_HRM_CMS.Tests
@@ -263,8 +263,9 @@ Các test cho những khái niệm này nằm trong `tests/ERP_HRM_CMS.Tests/Pri
 3. Kiểm tra file `Up` trong `src/ERP.Infrastructure/Migrations/` trước khi commit. Không sửa schema bằng SQL tay.
 4. Build, chạy test, rồi commit cả file migration, Designer và `src/ERP.Infrastructure/Migrations/AppDbContextModelSnapshot.cs`.
 
-### Thay đổi cần lưu ý sau giai đoạn 1–2
+### Thay đổi cần lưu ý sau giai đoạn 1–2 & Phiên B (.NET 10 LTS)
 
+- Toàn bộ 5 project trong solution (`ERP_HRM_CMS`, `ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP_HRM_CMS.Tests`) đã nâng lên `net10.0` (EF Core `10.0.14`). Khi triển khai lên máy chủ IIS, cài đặt **.NET 10 Hosting Bundle (ASP.NET Core Module v2)** và cấu hình Application Pool ở chế độ `No Managed Code` + `Load User Profile = True`.
 - Bảng `SeedHistories` được tạo bằng migration `AddSeedHistory`. Khi khởi động, `MigrateAsync` tự áp dụng. Với database có sẵn, không cần script thủ công.
 - Quyền mặc định theo vai trò chỉ được gán một lần cho mỗi cặp (vai trò, quyền). Muốn gán lại quyền mặc định, phải xóa dòng tương ứng trong `SeedHistories` (thao tác thủ công, có sao lưu trước).
 - Tồn kho được thay đổi bằng UPDATE có điều kiện trong `Services/Kho/InventoryStockService.cs`. Không sửa `StockQuantity` trực tiếp trong controller.
