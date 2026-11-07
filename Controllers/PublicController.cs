@@ -42,8 +42,8 @@ namespace ERP_HRM_CMS.Controllers
             _logger = logger;
         }
 
+        [AllowAnonymous]
         [HttpGet]
-        [Route("/")]
         public async Task<IActionResult> Index()
         {
             // Đọc các khối đang kích hoạt theo thứ tự OrderIndex
@@ -84,6 +84,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(activeBlocks);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("bai-viet/{slug}")]
         public async Task<IActionResult> ChiTiet(string slug)
@@ -138,6 +139,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(content);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> TinTuc(string? keyword)
         {
@@ -156,6 +158,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(list);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GioiThieu()
         {
@@ -163,6 +166,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(company);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> LienHe()
         {
@@ -172,6 +176,7 @@ namespace ERP_HRM_CMS.Controllers
 
         #region Cổng Tuyển Dụng Công Khai (Careers Portal)
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("tuyen-dung")]
         public async Task<IActionResult> TuyenDung(string? keyword, int? departmentId, int? branchId)
@@ -180,6 +185,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(vm);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("tuyen-dung/{slug}")]
         public async Task<IActionResult> ChiTietTuyenDung(string slug)
@@ -190,6 +196,7 @@ namespace ERP_HRM_CMS.Controllers
             return View(vm);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("tuyen-dung/{slug}/ung-tuyen")]
@@ -238,6 +245,7 @@ namespace ERP_HRM_CMS.Controllers
 
         #region Technical SEO: Dynamic Sitemap.xml & Robots.txt
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("sitemap.xml")]
         [ResponseCache(Duration = 1800, Location = ResponseCacheLocation.Any)]
@@ -326,6 +334,7 @@ namespace ERP_HRM_CMS.Controllers
             return Content(xmlResult, "application/xml", Encoding.UTF8);
         }
 
+        [AllowAnonymous]
         [HttpGet]
         [Route("robots.txt")]
         public IActionResult RobotsTxt()
