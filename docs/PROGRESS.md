@@ -35,11 +35,12 @@ Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C1.1 – Đóng
   3. `Program.cs` — Bỏ `.AddSignInManager<SignInManager<User>>()`, giữ duy nhất `ERP_HRM_CMS_AuthCookie`.
   4. `src/ERP.Domain/Entities/AuthEntities.cs` — Gắn `[NotMapped]` cho `public override string? UserName` (đồng bộ với `Username` và `NormalizedUserName`).
   5. `src/ERP.Infrastructure/Persistence/AppDbContext.cs` — Cấu hình trực tiếp thực thể Identity trong `OnModelCreating` không qua `b.Property(u => u.UserName)`, khử triệt để cảnh báo `The property 'User.UserName' was first mapped explicitly and then ignored`.
-  6. `tests/ERP_HRM_CMS.Tests/AuthTests.cs` — Bổ sung các bài kiểm thử tự động theo mục B6 (`Login_WithLegacyHash_UpgradesToIdentityV3HashInDatabase_While_WrongPassword_DoesNotChangeHash`, `SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash`, `UserManager_FindByNameAsync_Resolves_Mapped_User_Without_Warning`, cùng `Public_Register_Assigns_Customer_Role_Activates_Immediately_And_Blocks_Admin_Pages`).
-  7. `README.md`, `docs/adr/ADR-004-identity-va-vai-tro.md`, `docs/ANALYSIS.md`, `docs/PROGRESS.md` — Cập nhật tài liệu theo mục A2 và C1–C3.
+  6. `tests/ERP_HRM_CMS.Tests/AuthTests.cs` — Thêm **2 test mới** (`SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash`, `UserManager_FindByNameAsync_Resolves_Mapped_User_Without_Warning`) và cập nhật test rehash đã có từ C1 (`Login_WithLegacyHash_UpgradesToIdentityV3HashInDatabase_While_WrongPassword_DoesNotChangeHash`) để kiểm chứng thêm nhánh đăng nhập sai không đổi hash.
+  7. `README.md`, `docs/adr/ADR-004-identity-va-vai-tro.md`, `docs/ANALYSIS.md`, `docs/PROGRESS.md` — Cập nhật tài liệu theo mục A2, C1–C3 và ghi nhận các rủi ro bảo mật đã chấp nhận tại **Mục 13 (“Rủi ro bảo mật đã chấp nhận”: `RISK-AUTH-01`, `RISK-AUTH-02`) của `docs/ANALYSIS.md`**.
 - **Số lượng test trước và sau Phiên C1.1:**
   - Trước C1.1 (cuối C1): **261 Passed, 0 Failed, 0 Skipped**.
-  - Sau C1.1: **263 Passed, 0 Failed, 0 Skipped** (bổ sung 2 phương thức test mới trong `AuthTests.cs` và mở rộng test rehash kiểm tra cả nhánh đăng nhập sai không đổi hash).
+  - Sau C1.1: **263 Passed, 0 Failed, 0 Skipped** (**+2 test mới** trong `AuthTests.cs`: `SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash` và `UserManager_FindByNameAsync_Resolves_Mapped_User_Without_Warning`).
+- **Rủi ro bảo mật đã chấp nhận:** Xem chi tiết tại **Mục 13 (“Rủi ro bảo mật đã chấp nhận” — `RISK-AUTH-01` và `RISK-AUTH-02`) trong `docs/ANALYSIS.md`**.
 
 ### 3. Kết quả kiểm chứng D1–D7 trên cơ sở dữ liệu thật `ERP_HRM_CMS_DB`
 

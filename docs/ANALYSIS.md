@@ -404,7 +404,26 @@ Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cậ
 
 ---
 
-## 13. Lộ trình các phiên sau
+## 13. Rủi ro bảo mật đã chấp nhận
+
+### RISK-AUTH-01: Đăng nhập dự phòng cho môi trường phát triển (đã gỡ mã, dữ liệu cũ chưa rõ)
+
+- Mô tả: Commit 937c667 thêm nhánh đăng nhập dự phòng trong AuthController, chấp nhận mật khẩu cố định ("Admin@123456", "123456") và tên đăng nhập làm mật khẩu. Nhánh này đã được gỡ trong f3d6a52 (kiểm chứng: không còn chuỗi "123456" trong AuthController).
+- Phạm vi ảnh hưởng: Tài khoản đã tồn tại trong ERP_HRM_CMS_DB trước thời điểm gỡ. Không có nhật ký để xác định tài khoản nào đã đăng nhập qua nhánh này.
+- Quyết định: Chủ dự án giữ nguyên mật khẩu hiện có (ngày ghi nhận: 2026-11-08).
+- Điều kiện chấp nhận: Ứng dụng chỉ chạy trên localhost, không công khai ra internet.
+- Bắt buộc trước khi triển khai ra ngoài: đổi mật khẩu tất cả tài khoản; đặt Seed:Demo = false; ghi nhật ký đăng nhập thành công.
+
+### RISK-AUTH-02: Mật khẩu mặc định "Admin@123456" còn trong mã nguồn
+
+- Vị trí: Data/DbInitializer.cs (dòng 646, 710); Controllers/QuanTriTaiKhoanController.cs (dòng 85).
+- Rủi ro: Tài khoản do admin tạo mới có mật khẩu đã biết nếu không được đổi.
+- Trạng thái: Chưa xử lý. Dự kiến sửa trong phiên C1.2 hoặc đầu C2: sinh mật khẩu ngẫu nhiên, đặt MustChangePassword = true.
+- Điều kiện chấp nhận tạm thời: Chỉ dùng trên localhost, không tạo tài khoản thật bằng mật khẩu mặc định.
+
+---
+
+## 14. Lộ trình các phiên sau
 
 Mỗi phiên kết thúc bằng cập nhật `docs/PROGRESS.md`, một báo cáo ngắn (file đã đổi, lệnh đã chạy, cách kiểm tra) và dừng chờ xác nhận như yêu cầu.
 
@@ -424,7 +443,7 @@ Mỗi phiên kết thúc bằng cập nhật `docs/PROGRESS.md`, một báo cáo
 
 ---
 
-## 14. Quyết định cần bạn xác nhận
+## 15. Quyết định cần bạn xác nhận
 
 Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hiện. Mình sẽ không tự quyết các điểm này.
 
@@ -441,7 +460,7 @@ Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hi�
 
 ---
 
-## 15. Tài liệu tham khảo
+## 16. Tài liệu tham khảo
 
 - Ngày hết hỗ trợ .NET 8 và .NET 9: 10/11/2026. Nguồn: [Infoworld, "End of support looms for .NET 8 and .NET 9"](https://www.infoworld.com/article/4191704/end-of-support-looms-for-net-8-and-net-9.html); [endoflife.ai, "Decision Guide — .NET 8"](https://endoflife.ai/decide-dotnet-8)
 - Chính sách hỗ trợ .NET: [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)
