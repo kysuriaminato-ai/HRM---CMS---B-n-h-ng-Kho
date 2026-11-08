@@ -23,7 +23,6 @@ namespace ERP_HRM_CMS.Controllers
 
         private readonly AppDbContext _context;
         private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
         private readonly LoginThrottleService _loginThrottle;
         private readonly ICurrentUserService _currentUser;
         private readonly ILogger<AuthController> _logger;
@@ -31,14 +30,12 @@ namespace ERP_HRM_CMS.Controllers
         public AuthController(
             AppDbContext context,
             UserManager<User> userManager,
-            SignInManager<User> signInManager,
             LoginThrottleService loginThrottle,
             ICurrentUserService currentUser,
             ILogger<AuthController> logger)
         {
             _context = context;
             _userManager = userManager;
-            _signInManager = signInManager;
             _loginThrottle = loginThrottle;
             _currentUser = currentUser;
             _logger = logger;
@@ -101,22 +98,10 @@ namespace ERP_HRM_CMS.Controllers
             }
             else
             {
-                // Dùng SignInManager & UserManager.PasswordHasher (LegacyCompatiblePasswordHasher) để kiểm chứng mật khẩu
+                // Dùng UserManager.PasswordHasher (LegacyCompatiblePasswordHasher) để kiểm chứng mật khẩu
                 var verifyResult = _userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
                 passwordOk = verifyResult != PasswordVerificationResult.Failed;
                 rehashNeeded = verifyResult == PasswordVerificationResult.SuccessRehashNeeded;
-
-                // Tiện ích hỗ trợ đăng nhập cho môi trường nội bộ / tài khoản mẫu
-                if (!passwordOk && (model.Password == "Admin@123456" || model.Password == "123456" || model.Password == user.Username))
-                {
-                    if (string.IsNullOrEmpty(user.PasswordSalt))
-                    {
-                        user.PasswordSalt = MatKhauHelper.GenerateSalt();
-                    }
-                    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, model.Password);
-                    passwordOk = true;
-                    rehashNeeded = false;
-                }
             }
 
             if (!passwordOk || user == null)
@@ -285,7 +270,6 @@ namespace ERP_HRM_CMS.Controllers
 
             if (user == null || !user.IsActive)
             {
-                await _signInManager.SignOutAsync();
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 return RedirectToAction(nameof(Login));
             }
@@ -339,7 +323,6 @@ namespace ERP_HRM_CMS.Controllers
                 await WriteAuthAuditAsync(_currentUser.UserId, _currentUser.Username ?? "unknown", "LOGOUT", ClientIp(), "Đăng xuất khỏi hệ thống");
             }
 
-            await _signInManager.SignOutAsync();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             HttpContext.Session.Clear();
             return RedirectToAction(nameof(Login));

@@ -1,7 +1,7 @@
 # ADR-004: Chuyển sang ASP.NET Core Identity, nâng .NET và ánh xạ vai trò
 
-- **Trạng thái:** Đã chấp thuận và triển khai **Phiên B** (.NET 10 LTS) & **Phiên C1** (ASP.NET Core Identity + vai trò `CUSTOMER`).
-- **Ngày:** 2026-11-04 (Cập nhật Phiên C1: 2026-11-08)
+- **Trạng thái:** Đã chấp thuận và triển khai hoàn tất **Phiên B** (.NET 10 LTS), **Phiên C1** & **Phiên C1.1** (Đóng C1: ASP.NET Core Identity, lưu hash Identity v3, bảo toàn hash khi seed demo, ánh xạ `UserName`, luồng đăng nhập tự quản qua `LoginThrottleService` và vai trò `CUSTOMER`).
+- **Ngày:** 2026-11-04 (Cập nhật Phiên C1 & C1.1: 2026-11-08)
 - **Liên quan:** `docs/ANALYSIS.md` (S8, S14, S15, P1-24, P1-25), `docs/ARCHITECTURE.md`, `docs/PROGRESS.md`
 
 ---
@@ -30,8 +30,10 @@ Toàn bộ 5 project (`ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ER
   - Tạo bảng `AspNetUsers`, `AspNetUserClaims`, `AspNetUserLogins`, `AspNetUserTokens`.
   - Copy nguyên vẹn 100% dòng từ bảng `Users` sang `AspNetUsers` bằng `SET IDENTITY_INSERT [AspNetUsers] ON` (giữ nguyên `Id`, `EmployeeId`, `Username`, `PasswordHash`, `PasswordSalt`, `IsActive`, `IsSuperAdmin`, `MustChangePassword`, `SecurityStamp`, `LastLoginAt`, `CreatedAt`).
   - Chuyển các khóa ngoại sang `AspNetUsers` nhưng **giữ nguyên bảng `Users` trong Phiên C1** (không xóa bảng `Users` cho đến khi xác nhận ở phiên sau). Có `Up` và `Down` rõ ràng.
-- **Khóa đăng nhập (Lockout):**
-  - Cấu hình `IdentityOptions.Lockout` (`MaxFailedAccessAttempts = 5`, `DefaultLockoutTimeSpan = 1 phút`, `AllowedForNewUsers = true`) và đồng bộ `AccessFailedCount` / `LockoutEnd` trên `AspNetUsers` kết hợp với [`LoginThrottleService`](file:///c:/HRM%20-%20CMS%20-%20B%C3%A1n%20h%C3%A0ng%20&%20Kho/Services/LoginThrottleService.cs) trên bảng `LoginAttempts` (5 lần sai theo cặp `Username + IP`, khóa lũy tiến 1 → 2 → 4 → 8 → 16 → tối đa 30 phút, không khóa vĩnh viễn). Hai cơ chế được đồng bộ thống nhất trong `AuthController.Login`, không xung đột nhau.
+- **Luồng đăng nhập & Khóa đăng nhập (Lockout — Quyết định B4 tại Phiên C1.1):**
+  - **Phương án đã chọn (Phương án A — mặc định cho C1.1):** Giữ luồng đăng nhập tự quản qua [`LoginThrottleService`](file:///c:/HRM%20-%20CMS%20-%20B%C3%A1n%20h%C3%A0ng%20&%20Kho/Services/LoginThrottleService.cs) trên bảng `LoginAttempts` (khóa theo cặp `Username + IP` sau 5 lần sai, thời gian khóa lũy tiến 1 → 2 → 4 → 8 → 16 → tối đa 30 phút, không khóa vĩnh viễn) kết hợp đồng bộ bộ đếm `AccessFailedCount` / `LockoutEnd` trên `AspNetUsers`; ASP.NET Core Identity chỉ dùng để lưu trữ người dùng (`UserStore` / `UserManager<User>`) và băm/kiểm chứng mật khẩu (`_userManager.PasswordHasher` = `LegacyCompatiblePasswordHasher`), không dùng `SignInManager.PasswordSignInAsync`.
+  - **Ghi chú sai lệch có chủ đích so với ADR-004 ban đầu:** Đây là sai lệch có chủ đích ở phần khóa đăng nhập để bảo toàn cơ chế chống brute-force theo cặp `(Username, IpAddress)` kèm thời gian khóa tăng dần của `LoginThrottleService` (mà `SignInManager` mặc định chỉ khóa theo tài khoản cố định thời gian và phụ thuộc scheme `Identity.Application`).
+  - Đã gỡ bỏ hoàn toàn nhánh dev fallback mật khẩu trong `AuthController.Login` để đảm bảo đăng nhập sai mật khẩu tuyệt đối không bao giờ làm thay đổi `PasswordHash` trong cơ sở dữ liệu.
 - **Cơ chế Cookie xác thực duy nhất (Mục 6):**
   - **Quyết định:** Giữ duy nhất một scheme xác thực `CookieAuthenticationDefaults.AuthenticationScheme` với cookie `ERP_HRM_CMS_AuthCookie` (đặt làm `DefaultScheme`, `DefaultAuthenticateScheme`, `DefaultChallengeScheme`, `DefaultSignInScheme`), không sinh thêm cookie `.AspNetCore.Identity.Application` thứ hai.
   - **Lý do chọn:**

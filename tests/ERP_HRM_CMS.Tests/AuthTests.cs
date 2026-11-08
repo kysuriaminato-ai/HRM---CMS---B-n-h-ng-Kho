@@ -122,7 +122,7 @@ namespace ERP_HRM_CMS.Tests
         }
 
         [Fact]
-        public async Task Login_WithLegacyHash_UpgradesToIdentityV3HashInDatabase()
+        public async Task Login_WithLegacyHash_UpgradesToIdentityV3HashInDatabase_While_WrongPassword_DoesNotChangeHash()
         {
             var userId = await TestHelpers.CreateUserAsync(_factory.Services);
             var username = await TestHelpers.GetUsernameAsync(_factory.Services, userId);
@@ -136,6 +136,18 @@ namespace ERP_HRM_CMS.Tests
             Assert.False(LegacyCompatiblePasswordHasher.IsIdentityFormatHash(hashBefore));
 
             using var client = TestHelpers.NewClient(_factory);
+
+            // 1. Đăng nhập sai mật khẩu (kể cả nhập mật khẩu mặc định cũ "123456" hay "Admin@123456") -> Hash trong DB tuyệt đối không đổi
+            var wrongRes = await TestHelpers.LoginAsync(client, username, "Admin@123456");
+            Assert.Equal(HttpStatusCode.OK, wrongRes.StatusCode);
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var hashAfterWrong = (await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId)).PasswordHash;
+                Assert.Equal(hashBefore, hashAfterWrong);
+            }
+
+            // 2. Đăng nhập đúng mật khẩu -> Hash trong DB được nâng cấp sang chuẩn Identity v3 (prefix AQAAAAIA, độ dài 84)
             var response = await TestHelpers.LoginAsync(client, username, TestHelpers.Password);
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
 
@@ -144,8 +156,57 @@ namespace ERP_HRM_CMS.Tests
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var hashAfter = (await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId)).PasswordHash;
                 Assert.NotEqual(hashBefore, hashAfter);
+                Assert.StartsWith("AQAAAAIA", hashAfter, StringComparison.Ordinal);
+                Assert.Equal(84, hashAfter.Length);
                 Assert.True(LegacyCompatiblePasswordHasher.IsIdentityFormatHash(hashAfter));
             }
+        }
+
+        [Fact]
+        public async Task SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var admin = await db.Users.FirstAsync(u => u.Username == "admin");
+            const string customHash = "AQAAAAIAAYagAAAAECustomAdminHashPreservedAcrossSeedDemoTestValue1234567890==";
+            string originalHash = admin.PasswordHash;
+
+            try
+            {
+                admin.PasswordHash = customHash;
+                await db.SaveChangesAsync();
+
+                // Chạy lại SeedAsync với seedDemo = true
+                await DbInitializer.SeedAsync(db, TestAppFactory.AdminPasswordForTests, seedDemo: true);
+
+                var reloadedAdmin = await db.Users.AsNoTracking().FirstAsync(u => u.Username == "admin");
+                Assert.Equal(customHash, reloadedAdmin.PasswordHash);
+            }
+            finally
+            {
+                var restoreAdmin = await db.Users.FirstAsync(u => u.Username == "admin");
+                restoreAdmin.PasswordHash = originalHash;
+                await db.SaveChangesAsync();
+            }
+        }
+
+        [Fact]
+        public async Task UserManager_FindByNameAsync_Resolves_Mapped_User_Without_Warning()
+        {
+            var userId = await TestHelpers.CreateUserAsync(_factory.Services);
+            var username = await TestHelpers.GetUsernameAsync(_factory.Services, userId);
+
+            using var scope = _factory.Services.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
+            var found = await userManager.FindByNameAsync(username);
+
+            Assert.NotNull(found);
+            Assert.Equal(userId, found!.Id);
+            Assert.Equal(username, found.Username);
+            Assert.Equal(username, found.UserName);
+            Assert.Equal(username.ToUpperInvariant(), found.NormalizedUserName);
         }
 
         [Fact]

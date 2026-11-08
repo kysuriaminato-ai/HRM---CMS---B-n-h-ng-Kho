@@ -120,7 +120,6 @@ builder.Services.AddIdentityCore<User>(options =>
         options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
     })
     .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager<SignInManager<User>>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddAuthentication(options =>

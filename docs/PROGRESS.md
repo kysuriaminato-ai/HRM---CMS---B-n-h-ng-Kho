@@ -1,10 +1,102 @@
 # Tiến độ dự án — ERP_HRM_CMS Enterprise
 
-Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN C1 – ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` và Vai trò Khách hàng (`CUSTOMER`), Build 0 Warning / 0 Error và Test 261/261 XANH 100%**)
+Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C1.1 – Đóng C1: Lưu Hash, Seed Demo, Ánh xạ UserName, Luồng Đăng nhập, Kiểm thử**)
 
 ---
 
-## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (CẬP NHẬT TẠI PHIÊN C1)
+## CHI TIẾT PHIÊN C1.1: CHẨN ĐOÁN (A1–A6), SỬA ĐỔI (B1–B7) VÀ KIỂM CHỨNG (D1–D7) (2026-11-08)
+
+### 1. Kết quả chẩn đoán A1–A6 (Làm trước khi sửa code)
+
+- **A1. Kiểm tra tiến trình giữ cổng `5000` và `5129`:**
+  - Chạy `netstat -ano | findstr :5000` và `netstat -ano | findstr :5129`: phát hiện cả hai cổng `127.0.0.1:5000`/`[::1]:5000` và `127.0.0.1:5129`/`[::1]:5129` đang bị giữ bởi **PID `29780`** (`ERP_HRM_CMS.exe` chạy từ `C:\HRM - CMS - Bán hàng & Kho\bin\Debug\net8.0\ERP_HRM_CMS.exe`, khởi tạo bởi **PID `4308`** `dotnet.exe run --project ERP_HRM_CMS.csproj` từ lúc `11/7/2026 3:39:11 PM` — tức bản build `.NET 8` cũ trước Phiên B và Phiên C1).
+  - Đã dừng cả hai tiến trình cũ (`Stop-Process -Id 29780, 4308 -Force`) và xác nhận lại `netstat -ano` trên cổng `5000` và `5129` đã hoàn toàn giải phóng (0 tiến trình lắng nghe).
+- **A2. Đối chiếu `Properties/launchSettings.json` và tài liệu:**
+  - Trong `Properties/launchSettings.json`, profile `"http"` có `"applicationUrl": "http://localhost:5000;http://localhost:5129"` (bind đồng thời cả cổng `5000` và `5129`), còn profile `"https"` có `"applicationUrl": "https://localhost:7184;http://localhost:5129"`.
+  - Khi chạy `dotnet run --launch-profile http`, Kestrel bind cả `http://localhost:5000` và `http://localhost:5129`. Ở Phiên B, báo cáo smoke test chỉ truy vấn đầu cuối `http://localhost:5129`, còn `README.md` (dòng 79) chỉ ghi *"chọn profile `http` (cổng 5129)"*. Đã thống nhất cập nhật `README.md` và `docs/PROGRESS.md` ghi rõ profile `http` lắng nghe trên `http://localhost:5000` và `http://localhost:5129`.
+- **A3. Kiểm tra `Data/DbInitializer.cs` quanh `SeedDemoDataAsync` và `AssignDemoRolesAsync`:**
+  - **Thứ tự khởi động trong `Program.cs`:** `DbInitializer.SeedAsync` được gọi tại dòng `174` **trước** `app.Run()` (dòng `222`). Do đó khi khởi động ứng dụng mới trong lúc cổng `5000`/`5129` đang bị tiến trình cũ chiếm, `DbInitializer.SeedAsync` vẫn chạy xong và in log `"Đã khởi tạo cơ sở dữ liệu. Dữ liệu mẫu: True"`, rồi đến `app.Run()` mới văng lỗi `address already in use` khi Kestrel bind cổng.
+  - **Seed có cập nhật `PasswordHash` của tài khoản đã tồn tại không?** Không. Cả `SeedAdminAccountsAsync` (kiểm tra `!await context.Users.AnyAsync(u => u.Username == ...)` trước khi gọi `CreateSuperAdminAccountAsync`) và `AssignDemoRolesAsync` (kiểm tra `if (user == null)` mới tạo user, còn nếu đã tồn tại thì chỉ kiểm tra và thêm `UserRole` còn thiếu) **đều không ghi đè `PasswordHash`** của `admin`, `quantritong` hay bất kỳ tài khoản nào đã tồn tại. Ở bước B2, đã đồng bộ thêm việc băm mật khẩu qua `LegacyCompatiblePasswordHasher` khi tạo tài khoản mới lần đầu và bổ sung test kiểm chứng `SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash`.
+- **A4. Kiểm tra luồng đăng nhập trong `Controllers/AuthController.cs`:**
+  - Khi `_userManager.PasswordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password)` trả về `PasswordVerificationResult.SuccessRehashNeeded`, biến `rehashNeeded = true`. Nếu tài khoản đang `IsActive == true`, nhánh `if (rehashNeeded)` gán `user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, model.Password)` và gọi `await _context.SaveChangesAsync()` **nên hash mới CÓ được lưu xuống DB**.
+  - Lý do trên `ERP_HRM_CMS_DB` ở cuối Phiên C1 `admin` và `quantritong` vẫn có hash 44 ký tự là vì: (1) ở Phiên C1 chỉ chạy kiểm thử đăng nhập trên bản sao `ERP_HRM_CMS_DB_COPY` theo yêu cầu mục 10 của C1, và (2) khi chạy ứng dụng trên `ERP_HRM_CMS_DB`, Kestrel bị chặn bởi tiến trình `.NET 8` cũ (`PID 29780` giữ cổng `5000`/`5129`) nên request đăng nhập vào cổng `5000`/`5129` đi vào tiến trình `.NET 8` cũ.
+  - **Đăng nhập sai có làm đổi hash không?** Trước khi sửa ở C1.1, `AuthController.Login` có một nhánh dev fallback (`if (!passwordOk && (model.Password == "Admin@123456" || model.Password == "123456" || model.Password == user.Username))`) tự động gán lại `user.PasswordHash` nếu người dùng nhập một trong 3 chuỗi đó. Đã **gỡ bỏ hoàn toàn nhánh dev fallback này** ở bước B1 để đảm bảo đăng nhập sai tuyệt đối không bao giờ làm đổi `PasswordHash`.
+- **A5. Nguyên nhân cảnh báo `The property 'User.UserName' was first mapped explicitly and then ignored` trong `AppDbContext`:**
+  - `AppDbContext` kế thừa `IdentityUserContext<User, int, ...>`. Trong `base.OnModelCreating(modelBuilder)`, `IdentityUserContext` gọi `b.Property(u => u.UserName).HasMaxLength(256)` (ánh xạ tường minh `User.UserName`), sau đó `AppDbContext` lại gọi `modelBuilder.Entity<User>().Ignore(u => u.UserName);`, khiến EF Core phát cảnh báo `CoreEventId.MappedPropertyIgnoredWarning`.
+  - **Cách sửa ở B3 (không đổi schema DB):** Đánh dấu `[NotMapped]` cho `public override string? UserName` trong `src/ERP.Domain/Entities/AuthEntities.cs` và cấu hình trực tiếp 4 thực thể Identity (`User` → `AspNetUsers`, `IdentityUserClaim<int>` → `AspNetUserClaims`, `IdentityUserLogin<int>` → `AspNetUserLogins`, `IdentityUserToken<int>` → `AspNetUserTokens`, kèm `Ignore<IdentityUserPasskey<int>>()` và `Ignore<IdentityPasskeyData>()`) trong `AppDbContext.OnModelCreating` mà không gọi `b.Property(u => u.UserName)`. Nhờ vậy: (1) Không còn cảnh báo `User.UserName` khi khởi động, (2) Không thay đổi schema hay tên cột `Username` trong bảng `AspNetUsers`, (3) `UserManager.FindByNameAsync` (truy vấn qua `NormalizedUserName`) và truy vấn SQL `SELECT UserName ... FROM dbo.AspNetUsers` đều hoạt động chính xác 100%.
+- **A6. Kiểm tra các Authentication Scheme trong `Program.cs`:**
+  - `Program.cs` dùng `builder.Services.AddIdentityCore<User>(...)` (không gọi `AddIdentity` nên không tự đăng ký `Identity.Application` cookie) và gọi `builder.Services.AddAuthentication(...).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => { options.Cookie.Name = "ERP_HRM_CMS_AuthCookie"; ... })`. Đã gỡ bỏ hoàn toàn `SignInManager<User>` khỏi `Program.cs` và `AuthController.cs` để chỉ duy trì duy nhất scheme `CookieAuthenticationDefaults.AuthenticationScheme` (`ERP_HRM_CMS_AuthCookie`).
+
+### 2. Danh sách file đã sửa đổi và số lượng kiểm thử trước / sau (B1–B7 & C1–C3)
+
+- **Danh sách file đã sửa đổi (8 file):**
+  1. `Controllers/AuthController.cs` — Gỡ nhánh dev fallback mật khẩu trong `Login`; gỡ `SignInManager<User>`, thực hiện nhất quán Phương án A (đăng nhập tự quản qua `LoginThrottleService` + `_userManager.PasswordHasher` + `CookieAuthenticationDefaults.AuthenticationScheme`), đảm bảo lưu `PasswordHash` mới xuống DB khi `SuccessRehashNeeded`.
+  2. `Data/DbInitializer.cs` — Đảm bảo `SeedAdminAccountsAsync` và `AssignDemoRolesAsync` không bao giờ ghi đè `PasswordHash` của tài khoản đã tồn tại; khi tạo tài khoản mới lần đầu sử dụng `LegacyCompatiblePasswordHasher`.
+  3. `Program.cs` — Bỏ `.AddSignInManager<SignInManager<User>>()`, giữ duy nhất `ERP_HRM_CMS_AuthCookie`.
+  4. `src/ERP.Domain/Entities/AuthEntities.cs` — Gắn `[NotMapped]` cho `public override string? UserName` (đồng bộ với `Username` và `NormalizedUserName`).
+  5. `src/ERP.Infrastructure/Persistence/AppDbContext.cs` — Cấu hình trực tiếp thực thể Identity trong `OnModelCreating` không qua `b.Property(u => u.UserName)`, khử triệt để cảnh báo `The property 'User.UserName' was first mapped explicitly and then ignored`.
+  6. `tests/ERP_HRM_CMS.Tests/AuthTests.cs` — Bổ sung các bài kiểm thử tự động theo mục B6 (`Login_WithLegacyHash_UpgradesToIdentityV3HashInDatabase_While_WrongPassword_DoesNotChangeHash`, `SeedDemo_DoesNotOverwrite_ExistingUser_PasswordHash`, `UserManager_FindByNameAsync_Resolves_Mapped_User_Without_Warning`, cùng `Public_Register_Assigns_Customer_Role_Activates_Immediately_And_Blocks_Admin_Pages`).
+  7. `README.md`, `docs/adr/ADR-004-identity-va-vai-tro.md`, `docs/ANALYSIS.md`, `docs/PROGRESS.md` — Cập nhật tài liệu theo mục A2 và C1–C3.
+- **Số lượng test trước và sau Phiên C1.1:**
+  - Trước C1.1 (cuối C1): **261 Passed, 0 Failed, 0 Skipped**.
+  - Sau C1.1: **263 Passed, 0 Failed, 0 Skipped** (bổ sung 2 phương thức test mới trong `AuthTests.cs` và mở rộng test rehash kiểm tra cả nhánh đăng nhập sai không đổi hash).
+
+### 3. Kết quả kiểm chứng D1–D7 trên cơ sở dữ liệu thật `ERP_HRM_CMS_DB`
+
+- **D1. Sao lưu và kiểm tra checksum trước khi thao tác trên `ERP_HRM_CMS_DB`:**
+  - Lệnh: `BACKUP DATABASE [ERP_HRM_CMS_DB] TO DISK = N'C:\SQLBackup\ERP_HRM_CMS_DB_before_C1_1.bak' WITH INIT, CHECKSUM, STATS = 10; RESTORE VERIFYONLY FROM DISK = N'C:\SQLBackup\ERP_HRM_CMS_DB_before_C1_1.bak' WITH CHECKSUM;`
+  - Kết quả: `BACKUP DATABASE successfully processed 1802 pages in 0.179 seconds (78.626 MB/sec). The backup set on file 1 is valid.`
+- **D2. Build không incremental (`dotnet build ERP_HRM_CMS.sln --no-incremental`):**
+  - Kết quả: `Build succeeded. 0 Warning(s), 0 Error(s)`.
+- **D3. Chạy toàn bộ bộ kiểm thử (`dotnet test tests/ERP_HRM_CMS.Tests`):**
+  - Kết quả: `Passed! - Failed: 0, Passed: 263, Skipped: 0, Total: 263, Duration: 45 s - ERP_HRM_CMS.Tests.dll (net10.0)`.
+- **D4. Chạy ứng dụng ở profile `http` (`http://localhost:5000;http://localhost:5129`), đăng nhập `admin` và `quantritong` bằng `Admin@123456`:**
+  - Trước khi đăng nhập:
+    ```text
+    UserName    Prefix   Len
+    ----------- -------- ---
+    admin       mBaziiyX 44
+    quantritong dhEb9P6L 44
+    ```
+  - Đăng nhập `admin` (`http://localhost:5000/Auth/Login`) → `302 Found` (`Location: /PhanQuyen/MaTranPhanQuyen`).
+  - Đăng nhập `quantritong` (`http://localhost:5129/Auth/Login`) → `302 Found` (`Location: /PhanQuyen/MaTranPhanQuyen`).
+  - Kết quả truy vấn sau khi đăng nhập trên `ERP_HRM_CMS_DB`:
+    ```text
+    UserName    Prefix   Len
+    ----------- -------- ---
+    admin       AQAAAAIA 84
+    quantritong AQAAAAIA 84
+    ```
+- **D5. Dừng ứng dụng, khởi động lại (`Seed:Demo = True`), kiểm tra bảo toàn hash và log `User.UserName`:**
+  - Kết quả truy vấn sau khi khởi động lại:
+    ```text
+    UserName    Prefix   Len
+    ----------- -------- ---
+    admin       AQAAAAIA 84
+    quantritong AQAAAAIA 84
+    ```
+  - Kiểm tra log khởi động: **0 cảnh báo** `The property 'User.UserName' was first mapped explicitly and then ignored`.
+- **D6. Đăng ký tài khoản thử `khachtest02` qua `POST /Auth/Register`:**
+  - Phản hồi HTTP: `302 Found` → `/Auth/Login`.
+  - Kết quả truy vấn trên `ERP_HRM_CMS_DB`:
+    ```text
+    UserName    IsActive Code
+    ----------- -------- --------
+    khachtest02 1        CUSTOMER
+    ```
+- **D7. Kiểm tra toàn vẹn dữ liệu trên `ERP_HRM_CMS_DB`:**
+  ```text
+  UsersCount AspNetUsersCount FkToUsersCount
+  ---------- ---------------- --------------
+  12         13               0
+  ```
+  - Bảng `Users` giữ nguyên **12 dòng** (không tăng).
+  - Bảng `AspNetUsers` tăng từ 12 lên **13 dòng** (tăng đúng 1 dòng của `khachtest02`).
+  - Số khóa ngoại trỏ vào `dbo.Users`: **0**.
+
+---
+
+## TỔNG QUAN KẾT QUẢ ĐẠT ĐƯỢC (CẬP NHẬT TẠI PHIÊN C1.1)
 
 | Phiên | Phân hệ / Mục tiêu | Trạng thái thực tế | Kiểm thử tự động |
 | :--- | :--- | :---: | :---: |
@@ -20,6 +112,7 @@ Cập nhật lần cuối: 2026-11-08 (Hoàn tất **PHIÊN C1 – ASP.NET Core 
 | **Phiên A** | Đối Soát Tài Liệu, Đóng Nợ P0 (`P0-02`, `P0-04`), Khử 15 Warning & Dọn Repo | **Hoàn tất** | 249 / 255 ca thực thi (2/2 test Phiên A xanh) |
 | **Phiên B** | Nâng Lên **.NET 10 LTS (`net10.0`)**, Đồng Bộ Gói 10.0.14, Build & Test Xanh | **Hoàn tất** | **255 / 255 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 | **Phiên C1** | **ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` & Vai Trò `CUSTOMER`** | **Hoàn tất** | **261 / 261 ca thực thi XANH 100% (0 Warning, 0 Error)** |
+| **Phiên C1.1** | **Đóng C1: Lưu Hash Identity v3, Bảo Toàn Hash Khi Seed Demo, Ánh Xạ `UserName`, Luồng Đăng Nhập & Kiểm Chứng `ERP_HRM_CMS_DB`** | **Hoàn tất** | **263 / 263 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 
 ---
 

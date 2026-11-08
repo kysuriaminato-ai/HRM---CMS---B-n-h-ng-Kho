@@ -76,7 +76,7 @@ Chỉ áp dụng cho database đã dùng trước giai đoạn này. Database m�
 
 ## 4. Chạy ứng dụng
 
-Mở `ERP_HRM_CMS.sln`, chọn profile `http` (cổng 5129) hoặc `https` (cổng 7184) rồi nhấn F5. Hoặc dùng CLI:
+Mở `ERP_HRM_CMS.sln`, chọn profile `http` (`http://localhost:5000;http://localhost:5129` — lắng nghe trên cả cổng `5000` và `5129` theo `Properties/launchSettings.json`) hoặc `https` (`https://localhost:7184;http://localhost:5129`) rồi nhấn F5. Hoặc dùng CLI:
 
 ```
 dotnet run --project ERP_HRM_CMS.csproj --launch-profile http
@@ -86,7 +86,7 @@ Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `Database/SQLQ
 
 ## 5. Chạy kiểm thử
 
-Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) gồm **31 file `*Tests.cs`** với **208 phương thức kiểm thử (`200 [Fact]` + `8 [Theory]`), tương ứng 255/255 ca kiểm thử thực thi XANH 100%** (gồm 55 dòng `[InlineData]`) trên nền tảng `.NET 10 LTS` (`net10.0`).
+Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) gồm **31 file `*Tests.cs`** với **216 phương thức kiểm thử (`208 [Fact]` + `8 [Theory]`), tương ứng 263/263 ca kiểm thử thực thi XANH 100%** (gồm 55 dòng `[InlineData]`) trên nền tảng `.NET 10 LTS` (`net10.0`).
 
 ```
 dotnet test tests/ERP_HRM_CMS.Tests

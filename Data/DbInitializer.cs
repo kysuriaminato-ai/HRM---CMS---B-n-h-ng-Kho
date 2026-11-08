@@ -634,16 +634,16 @@ namespace ERP_HRM_CMS.Data
             var ketoanUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "ketoan");
             if (ketoanUser == null)
             {
-                string kSalt = MatKhauHelper.GenerateSalt();
+                var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
                 ketoanUser = new User
                 {
                     Username = "ketoan",
-                    PasswordSalt = kSalt,
-                    PasswordHash = MatKhauHelper.HashPassword(initialAdminPassword ?? "Admin@123456", kSalt),
+                    PasswordSalt = MatKhauHelper.GenerateSalt(),
                     IsActive = true,
                     IsSuperAdmin = false,
                     CreatedAt = VietnamTime.Now
                 };
+                ketoanUser.PasswordHash = hasher.HashPassword(ketoanUser, initialAdminPassword ?? "Admin@123456");
                 context.Users.Add(ketoanUser);
                 await context.SaveChangesAsync();
             }
@@ -657,17 +657,18 @@ namespace ERP_HRM_CMS.Data
 
         private static async Task CreateSuperAdminAccountAsync(AppDbContext context, string username, string password)
         {
-            string salt = MatKhauHelper.GenerateSalt();
-            context.Users.Add(new User
+            var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
+            var user = new User
             {
                 Username = username,
-                PasswordSalt = salt,
-                PasswordHash = MatKhauHelper.HashPassword(password, salt),
+                PasswordSalt = MatKhauHelper.GenerateSalt(),
                 IsActive = true,
                 IsSuperAdmin = true,
                 EmployeeId = null,
                 CreatedAt = VietnamTime.Now
-            });
+            };
+            user.PasswordHash = hasher.HashPassword(user, password);
+            context.Users.Add(user);
             await context.SaveChangesAsync();
         }
 
@@ -689,6 +690,7 @@ namespace ERP_HRM_CMS.Data
                 ("warehouse_staff", "WAREHOUSE_STAFF")
             };
 
+            var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
             foreach (var (username, roleCode) in demoUsers)
             {
                 var role = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == roleCode.ToUpper());
@@ -697,16 +699,15 @@ namespace ERP_HRM_CMS.Data
                 var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
                 if (user == null)
                 {
-                    string salt = MatKhauHelper.GenerateSalt();
                     user = new User
                     {
                         Username = username,
-                        PasswordSalt = salt,
-                        PasswordHash = MatKhauHelper.HashPassword("Admin@123456", salt),
+                        PasswordSalt = MatKhauHelper.GenerateSalt(),
                         IsActive = true,
                         IsSuperAdmin = (roleCode == "SUPERADMIN"),
                         CreatedAt = VietnamTime.Now
                     };
+                    user.PasswordHash = hasher.HashPassword(user, "Admin@123456");
                     context.Users.Add(user);
                     await context.SaveChangesAsync();
                 }

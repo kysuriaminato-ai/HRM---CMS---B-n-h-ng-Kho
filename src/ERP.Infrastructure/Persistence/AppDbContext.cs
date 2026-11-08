@@ -159,7 +159,44 @@ namespace ERP_HRM_CMS.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            // Cấu hình trực tiếp các thực thể IdentityUserContext mà không gọi b.Property(u => u.UserName)
+            // vì bảng AspNetUsers ánh xạ cột tên đăng nhập qua thuộc tính User.Username ([NotMapped] cho User.UserName),
+            // giúp triệt tiêu hoàn toàn cảnh báo CoreEventId.MappedPropertyIgnoredWarning mà không đổi schema DB.
+            modelBuilder.Ignore<IdentityUserPasskey<int>>();
+            modelBuilder.Ignore<IdentityPasskeyData>();
+
+            modelBuilder.Entity<User>(b =>
+            {
+                b.HasKey(u => u.Id);
+                b.HasIndex(u => u.NormalizedUserName).HasDatabaseName("UserNameIndex").IsUnique().HasFilter("[NormalizedUserName] IS NOT NULL");
+                b.HasIndex(u => u.NormalizedEmail).HasDatabaseName("EmailIndex");
+                b.ToTable("AspNetUsers");
+                b.Property(u => u.ConcurrencyStamp).IsConcurrencyToken();
+                b.Property(u => u.NormalizedUserName).HasMaxLength(256);
+                b.Property(u => u.Email).HasMaxLength(256);
+                b.Property(u => u.NormalizedEmail).HasMaxLength(256);
+                b.HasMany<IdentityUserClaim<int>>().WithOne().HasForeignKey(uc => uc.UserId).IsRequired();
+                b.HasMany<IdentityUserLogin<int>>().WithOne().HasForeignKey(ul => ul.UserId).IsRequired();
+                b.HasMany<IdentityUserToken<int>>().WithOne().HasForeignKey(ut => ut.UserId).IsRequired();
+            });
+
+            modelBuilder.Entity<IdentityUserClaim<int>>(b =>
+            {
+                b.HasKey(uc => uc.Id);
+                b.ToTable("AspNetUserClaims");
+            });
+
+            modelBuilder.Entity<IdentityUserLogin<int>>(b =>
+            {
+                b.HasKey(l => new { l.LoginProvider, l.ProviderKey });
+                b.ToTable("AspNetUserLogins");
+            });
+
+            modelBuilder.Entity<IdentityUserToken<int>>(b =>
+            {
+                b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
+                b.ToTable("AspNetUserTokens");
+            });
 
             // Mã hóa số CCCD và số tài khoản ngân hàng khi lưu xuống database (xem ProtectedStringConverter).
             // Giá trị mã hóa dài hơn bản gốc nên cột được nới lên 512 ký tự.
@@ -230,7 +267,6 @@ namespace ERP_HRM_CMS.Data
 
             // Indexes duy nhất (Unique Constraints) bảo vệ tính toàn vẹn dữ liệu
             modelBuilder.Entity<User>().ToTable("AspNetUsers");
-            modelBuilder.Entity<User>().Ignore(u => u.UserName);
             modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
             modelBuilder.Entity<User>().Property(u => u.NormalizedUserName).HasMaxLength(256);
             modelBuilder.Entity<User>().Property(u => u.Email).HasMaxLength(256);

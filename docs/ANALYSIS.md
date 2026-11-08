@@ -394,6 +394,14 @@ Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cậ
 | P2-11 | OpenTelemetry (trace, metric) | 2–3 ngày |
 | P2-12 | Chuyển dần sang kiến trúc Clean Architecture theo module (strangler, mục 4.3) | 15–25 ngày (phân bổ qua nhiều phiên) |
 
+### 12.4 Nợ kỹ thuật phát hiện bổ sung tại Phiên C1 / C1.1 (Chưa xử lý trong C1.1 — Ghi nhận theo mục C3)
+
+| ID | Hạng mục nợ kỹ thuật | Mô tả chi tiết & Bằng chứng | Hướng xử lý ở phiên sau |
+|---|---|---|---|
+| TD-C1-01 | Cảnh báo EF Core Global Query Filter (`Tag`, `KpiReview`, `Training`) | Khi khởi tạo model, EF Core cảnh báo thực thể `Tag`, `KpiReview`, `Training` có Global Query Filter (`!IsDeleted`) và là đầu bắt buộc (required principal end) của quan hệ với thực thể phụ thuộc (`ContentTag`, `KpiReviewCriterion`, `TrainingParticipant`) nhưng thực thể phụ thuộc chưa có query filter tương ứng (`CoreEventId.PossibleUnintendedCollectionNavigationNullWarning` / required relationship filter mismatch). | Bổ sung query filter tương ứng trên thực thể bảng nối/phụ thuộc (`!ct.Tag.IsDeleted`, `!c.KpiReview.IsDeleted`, `!p.Training.IsDeleted`) trong `AppDbContext.OnModelCreating`. |
+| TD-C1-02 | Cảnh báo EF Core SQL Server MARS Savepoints (`SqlServerEventId.SavepointsDisabledBecauseOfMARS`) | Chuỗi kết nối đang bật `MultipleActiveResultSets=True` (`MARS`). Khi `DbContext.SaveChangesAsync` thực thi nhiều câu lệnh trong một batch, EF Core phát cảnh báo không thể dùng Transaction Savepoint khi `MARS` được bật. | Rà soát các truy vấn lồng nhau để tắt `MultipleActiveResultSets=True` trong chuỗi kết nối hoặc cấu hình `ConfigureWarnings` nếu chủ đích giữ MARS. |
+| TD-C1-03 | `dotnet user-secrets` chưa dùng được do thiếu `<UserSecretsId>` trong `ERP_HRM_CMS.csproj` | `Program.cs` và tài liệu hướng dẫn cấu hình `SeedAdmin:Password` qua `dotnet user-secrets set "SeedAdmin:Password" ...`, nhưng file `ERP_HRM_CMS.csproj` hiện chưa khai báo thẻ `<UserSecretsId>`, khiến lệnh `dotnet user-secrets` báo lỗi cho đến khi chạy `dotnet user-secrets init`. | Thêm `<UserSecretsId>` cố định vào `ERP_HRM_CMS.csproj` để nhà phát triển dùng được `dotnet user-secrets` ngay lập tức. |
+
 ---
 
 ## 13. Lộ trình các phiên sau

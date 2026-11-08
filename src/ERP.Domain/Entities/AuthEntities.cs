@@ -28,6 +28,7 @@ namespace ERP_HRM_CMS.Models.Entities
             }
         }
 
+        [NotMapped]
         public override string? UserName
         {
             get => base.UserName ?? string.Empty;
