@@ -1,6 +1,111 @@
 # Tiến độ dự án — ERP_HRM_CMS Enterprise
 
-Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C1.1 – Đóng C1: Lưu Hash, Seed Demo, Ánh xạ UserName, Luồng Đăng nhập, Kiểm thử**)
+Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C2 – Tách Khu Vực Admin, Staff, Shop (Giữ Nguyên Route) và Đóng RISK-AUTH-02**)
+
+---
+
+## CHI TIẾT PHIÊN C2: TÁCH KHU VỰC ADMIN, STAFF, SHOP (GIỮ NGUYÊN ROUTE) VÀ ĐÓNG RISK-AUTH-02 (2026-11-08)
+
+### 1. Phân loại 34 Controller trước khi di chuyển (Mục A1–A2)
+
+| STT | Controller | Khu vực (Area) | Vị trí file sau khi tách | Lý do (1 dòng) |
+| :---: | :--- | :---: | :--- | :--- |
+| 1 | `PublicController` | **Shop** (`[Area("Shop")]`) | `Areas/Shop/Controllers/PublicController.cs` | Trang chủ storefront công khai, tin tức, giới thiệu, liên hệ, tuyển dụng công khai, sitemap/robots. |
+| 2 | `GioHangController` | **Shop** (`[Area("Shop")]`) | `Areas/Shop/Controllers/GioHangController.cs` | Quản lý giỏ hàng và đặt hàng trực tuyến dành cho khách mua sắm trên storefront. |
+| 3 | `AuthController` | **Shop** (`[Area("Shop")]`) | `Areas/Shop/Controllers/AuthController.cs` | Đăng nhập, đăng xuất, đăng ký khách hàng (`CUSTOMER`) và đổi mật khẩu tài khoản. |
+| 4 | `QuanTriTaiKhoanController` | **Admin** (`[Area("Admin")]`) | `Areas/Admin/Controllers/QuanTriTaiKhoanController.cs` | Quản trị tài khoản người dùng hệ thống, gán vai trò, khóa/mở khóa và đặt lại mật khẩu. |
+| 5 | `PhanQuyenController` | **Admin** (`[Area("Admin")]`) | `Areas/Admin/Controllers/PhanQuyenController.cs` | Quản trị ma trận phân quyền hệ thống (`Roles`, `Permissions`, `RolePermissions`). |
+| 6 | `ContentController` | **Admin** (`[Area("Admin")]`) | `Areas/Admin/Controllers/ContentController.cs` | Quản trị nội dung bài viết/trang CMS và xuất bản nội dung lên storefront. |
+| 7 | `SanPhamController` | **Admin** (`[Area("Admin")]`) | `Areas/Admin/Controllers/SanPhamController.cs` | Quản trị danh mục mặt hàng, giá bán, giá vốn và cấu hình sản phẩm toàn hệ thống. |
+| 8 | `DanhMucController` | **Admin** (`[Area("Admin")]`) | `Areas/Admin/Controllers/DanhMucController.cs` | Quản trị cây danh mục sản phẩm và danh mục bài viết CMS. |
+| 9 | `BanHangController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/BanHangController.cs` | Nghiệp vụ bán hàng tại quầy (POS), tạo hóa đơn và lịch sử giao dịch bán hàng. |
+| 10 | `KhoController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/KhoController.cs` | Nghiệp vụ quản lý tồn kho, nhập/xuất kho, điều chuyển và kiểm kê kho. |
+| 11 | `CongNoController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/CongNoController.cs` | Nghiệp vụ theo dõi công nợ khách hàng/nhà cung cấp và thu/chi công nợ. |
+| 12 | `DonHangController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/DonHangController.cs` | Nghiệp vụ xử lý đơn đặt hàng từ khách hàng cho nhân viên bán hàng/điều phối. |
+| 13 | `PurchaseOrderController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/PurchaseOrderController.cs` | Nghiệp vụ đơn mua hàng (PO), duyệt PO và nhận hàng từ nhà cung cấp. |
+| 14 | `NhanSuController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/NhanSuController.cs` | Nghiệp vụ hồ sơ nhân sự 360°, sơ đồ tổ chức và quản lý nhân viên. |
+| 15 | `ChamCongController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/ChamCongController.cs` | Nghiệp vụ chấm công, phân ca làm việc, bảng công tháng và heatmap chuyên cần. |
+| 16 | `DonTuController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/DonTuController.cs` | Nghiệp vụ tạo và phê duyệt đơn xin nghỉ phép, tăng ca, giải trình công. |
+| 17 | `BangLuongController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/BangLuongController.cs` | Nghiệp vụ tính lương C&B, chốt bảng lương tháng và chi trả lương nhân viên. |
+| 18 | `DaoTaoController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/DaoTaoController.cs` | Nghiệp vụ quản lý khóa đào tạo nội bộ (LMS) và kết quả học tập của nhân viên. |
+| 19 | `TuyenDungController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/TuyenDungController.cs` | Nghiệp vụ tuyển dụng ATS (Kanban ứng viên, lịch phỏng vấn, onboarding). |
+| 20 | `DanhGiaKpiController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/DanhGiaKpiController.cs` | Nghiệp vụ đánh giá hiệu suất KPI định kỳ và ma trận nhân tài 9-Box. |
+| 21 | `QuyetDinhNhanSuController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/QuyetDinhNhanSuController.cs` | Nghiệp vụ ban hành quyết định bổ nhiệm, điều chuyển, khen thưởng, kỷ luật, thôi việc. |
+| 22 | `SelfServiceController` | **Staff** (`[Area("Staff")]`) | `Areas/Staff/Controllers/SelfServiceController.cs` | Cổng tự phục vụ nhân viên (ESS Portal `/CongNhanVien`): xem công, phiếu lương, gửi đơn. |
+| 23 | `HomeController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/HomeController.cs` | Chứa cả Dashboard tổng quan kiêm trang lỗi dùng chung (`/Home/KhongCoQuyen`, `/Home/LoiHeThong`) — giữ ở gốc chờ xác nhận. |
+| 24 | `NotificationController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/NotificationController.cs` | API chuông thông báo dùng chung trên thanh header của cả Admin và Staff — giữ ở gốc chờ xác nhận. |
+| 25 | `PhieuInController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/PhieuInController.cs` | Tiện ích xuất/in biểu mẫu hóa đơn, phiếu kho và quản lý mẫu in — giữ ở gốc chờ xác nhận. |
+| 26 | `UIController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/UIController.cs` | Trang showcase/tra cứu thành phần giao diện nội bộ — giữ ở gốc chờ xác nhận. |
+| 27 | `VaiTroController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/VaiTroController.cs` | Quản lý danh mục vai trò nhưng chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 28 | `MenuController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/MenuController.cs` | Cấu hình menu điều hướng động chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 29 | `LayoutConfigController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/LayoutConfigController.cs` | Cấu hình giao diện/theme hệ thống chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 30 | `AuditLogController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/AuditLogController.cs` | Tra cứu nhật ký kiểm toán hệ thống chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 31 | `PhongBanController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/PhongBanController.cs` | Quản lý danh mục phòng ban chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 32 | `HopDongController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/HopDongController.cs` | Quản lý hợp đồng lao động chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 33 | `TaiSanNhanSuController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/TaiSanNhanSuController.cs` | Quản lý cấp phát tài sản nhân sự chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+| 34 | `SupplierController` | **Chưa phân loại** *(Giữ ở gốc)* | `Controllers/SupplierController.cs` | Quản lý nhà cung cấp chưa nêu trong danh sách gợi ý A2 — giữ ở gốc chờ xác nhận. |
+
+---
+
+### 2. Kiểm tra giữ nguyên Route và Mã trạng thái trước & sau khi tách Area (Mục B)
+
+Sử dụng `MapAreaControllerRoute` với mẫu `{controller}/{action}/{id?}` (không thêm tiền tố `/Admin`, `/Staff`, `/Shop`), kết hợp `AreaAwareUrlHelperFactory` để `Url.Action`, `RedirectToAction` và TagHelpers tự động ánh xạ tên controller về đúng Area:
+
+| URL | Khu vực (Area) | Trước C2 (Ẩn danh / Đã đăng nhập Admin) | Sau C2 (Ẩn danh / Đã đăng nhập Admin) | Kết quả |
+| :--- | :---: | :---: | :---: | :---: |
+| `/`, `/Public/Index`, `/Public/TinTuc`, `/Public/GioiThieu`, `/Public/LienHe`, `/tuyen-dung`, `/sitemap.xml`, `/robots.txt` | `Shop` | `200 OK` / `200 OK` | `200 OK` / `200 OK` | **Giữ nguyên 100%** |
+| `/GioHang`, `/Auth/Login`, `/Auth/Register` | `Shop` | `200 OK` / `200 OK` | `200 OK` / `200 OK` | **Giữ nguyên 100%** |
+| `/Auth/ChangePassword` | `Shop` | `302 -> /Auth/Login` / `200 OK` | `302 -> /Auth/Login` / `200 OK` | **Giữ nguyên 100%** |
+| `/QuanTriTaiKhoan`, `/PhanQuyen/MaTranPhanQuyen`, `/Content`, `/SanPham`, `/DanhMuc` | `Admin` | `302 -> /Auth/Login` / `200 OK` | `302 -> /Auth/Login` / `200 OK` | **Giữ nguyên 100%** |
+| `/BanHang/POS`, `/Kho`, `/CongNo`, `/DonHang`, `/PurchaseOrder`, `/NhanSu`, `/ChamCong/BangCongThang`, `/ChamCong/Heatmap`, `/DonTu`, `/BangLuong`, `/DaoTao`, `/TuyenDung`, `/DanhGiaKpi`, `/QuyetDinhNhanSu`, `/CongNhanVien` | `Staff` | `302 -> /Auth/Login` / `200 OK` | `302 -> /Auth/Login` / `200 OK` | **Giữ nguyên 100%** |
+| `/Home/Index`, `/VaiTro`, `/AuditLog`, `/PhongBan`, `/HopDong`, `/TaiSanNhanSu`, `/Supplier` | *(Gốc)* | `302 -> /Auth/Login` / `200 OK` | `302 -> /Auth/Login` / `200 OK` | **Giữ nguyên 100%** |
+
+---
+
+### 3. Phân quyền Area (C1–C4), Điều hướng (D), Layout (E) và Đóng `RISK-AUTH-02` (F)
+
+- **C1–C4. Phân quyền theo khu vực (`Filters/AreaAuthorizationFilter.cs`):**
+  - **Area `Admin`:** Yêu cầu đã đăng nhập, **chặn tuyệt đối vai trò `CUSTOMER`** (trừ trường hợp `IsSuperAdmin`), và yêu cầu người dùng là `SUPERADMIN` hoặc có quyền quản trị trong hệ thống. Giữ nguyên toàn bộ `[KiemTraQuyen(...)]` trên từng controller/action.
+  - **Area `Staff`:** Yêu cầu đã đăng nhập và **chặn tuyệt đối người dùng chỉ có vai trò `CUSTOMER`** (redirect về `/Home/KhongCoQuyen` hoặc trả `403` cho API/AJAX). Giữ nguyên toàn bộ `[KiemTraQuyen(...)]` trên từng controller/action.
+  - **Area `Shop`:** Cho phép ẩn danh truy cập các trang công khai (`PublicController`, `GioHangController`, `Login`/`Register`); bắt buộc đăng nhập đối với trang tài khoản (`/Auth/ChangePassword`).
+- **D. Điều hướng sau đăng nhập (`Areas/Shop/Controllers/AuthController.cs` — `RedirectBasedOnRole`):**
+  - Tài khoản `SUPERADMIN` hoặc có quyền quản trị Admin → `/PhanQuyen/MaTranPhanQuyen` (hoặc trang quản trị tương ứng).
+  - Tài khoản `CUSTOMER` (không có quyền quản trị/nhân viên) → `/` (trang chủ Shop).
+  - Tài khoản nhân viên (`EMPLOYEE` / nghiệp vụ) → module nghiệp vụ được cấp quyền hoặc mặc định `/CongNhanVien`.
+- **E. Layout riêng từng khu vực:**
+  - Tạo `Views/Shared/_AdminLayout.cshtml`, `Views/Shared/_StaffLayout.cshtml` (sao chép từ `_Layout.cshtml` hiện tại) và `Views/Shared/_ShopLayout.cshtml` (sao chép từ `_PublicLayout.cshtml` hiện tại), kèm `_ViewStart.cshtml` cho từng Area `Admin`, `Staff`, `Shop` mà không thay đổi giao diện.
+- **F. Đóng `RISK-AUTH-02` (commit `d9ca67a`):**
+  - `Areas/Admin/Controllers/QuanTriTaiKhoanController.cs`: loại bỏ mật khẩu mặc định `"Admin@123456"`; sinh mật khẩu ngẫu nhiên 12 ký tự (gồm chữ hoa, chữ thường, chữ số, ký tự đặc biệt qua `MatKhauHelper.GenerateTemporaryPassword(12)`), cưỡng chế `MustChangePassword = true`, và hiển thị mật khẩu tạm thời đúng 1 lần qua `TempData["ThongBao"]`.
+  - `Data/DbInitializer.cs`: bảo toàn nguyên vẹn `PasswordHash` của `admin`, `quantritong` và các tài khoản đã tồn tại; thay thế `"Admin@123456"` ở dòng 646 và 710 bằng giá trị cấu hình `SeedAdmin:Password` — nếu chưa cấu hình thì tự động sinh mật khẩu ngẫu nhiên 12 ký tự và ghi ra Console đúng 1 lần.
+  - Đã cập nhật mục 13 (`RISK-AUTH-02`) trong `docs/ANALYSIS.md` sang trạng thái **Đã xử lý tại Phiên C2** (ngày `2026-11-08`, commit `d9ca67a`).
+
+---
+
+### 4. Kết quả Build, Kiểm thử tự động (Mục G) và Kiểm thử thủ công
+
+- **Kiểm tra schema (`dotnet ef migrations has-pending-model-changes`):** `No changes have been made to the model since the last migration.`
+- **Build (`dotnet build ERP_HRM_CMS.sln --no-incremental`):** `Build succeeded. 0 Warning(s), 0 Error(s)`.
+- **Số lượng test trước và sau Phiên C2:**
+  - Trước C2 (cuối C1.1): **263 Passed, 0 Failed, 0 Skipped**.
+  - Sau C2: **270 Passed, 0 Failed, 0 Skipped** (**+7 test mới** trong `tests/ERP_HRM_CMS.Tests/PhaseC2AreasAndSecurityTests.cs`):
+    1. `Area_Admin_Blocks_Customer` — **PASS**
+    2. `Area_Staff_Blocks_Customer` — **PASS**
+    3. `Area_Shop_Public_Pages_Anonymous_Ok` — **PASS**
+    4. `Routes_Unchanged_For_Listed_Urls` — **PASS**
+    5. `Login_Redirects_By_Role_Admin_Employee_Customer` — **PASS**
+    6. `Create_Account_Generates_Random_Password_With_MustChange` — **PASS**
+    7. `Register_Still_Assigns_Customer` — **PASS**
+- **Kiểm thử thủ công trên `ERP_HRM_CMS_DB` (chạy với `--Seed:Demo=false`):**
+  ```text
+  [admin] POST /Auth/Login -> 302 Location: /PhanQuyen/MaTranPhanQuyen
+  [admin] GET /PhanQuyen/MaTranPhanQuyen -> 200
+  [NVBH] POST /Auth/Login -> 302 Location: /BanHang/POS
+  [NVBH] GET /BanHang/POS -> 200
+  [khachtest02] POST /Auth/Login -> 302 Location: /
+  [khachtest02] GET / -> 200
+  [khachtest02] GET /QuanTriTaiKhoan -> 302 Location: /Home/KhongCoQuyen
+  [khachtest02] GET /BanHang/POS -> 302 Location: /Home/KhongCoQuyen
+  ```
 
 ---
 
@@ -114,6 +219,7 @@ Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C1.1 – Đóng
 | **Phiên B** | Nâng Lên **.NET 10 LTS (`net10.0`)**, Đồng Bộ Gói 10.0.14, Build & Test Xanh | **Hoàn tất** | **255 / 255 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 | **Phiên C1** | **ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` & Vai Trò `CUSTOMER`** | **Hoàn tất** | **261 / 261 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 | **Phiên C1.1** | **Đóng C1: Lưu Hash Identity v3, Bảo Toàn Hash Khi Seed Demo, Ánh Xạ `UserName`, Luồng Đăng Nhập & Kiểm Chứng `ERP_HRM_CMS_DB`** | **Hoàn tất** | **263 / 263 ca thực thi XANH 100% (0 Warning, 0 Error)** |
+| **Phiên C2** | **Tách Khu Vực `Admin`, `Staff`, `Shop` (Giữ Nguyên Route) & Đóng `RISK-AUTH-02`** | **Hoàn tất** | **270 / 270 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 
 ---
 

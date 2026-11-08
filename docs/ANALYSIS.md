@@ -414,12 +414,14 @@ Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cậ
 - Điều kiện chấp nhận: Ứng dụng chỉ chạy trên localhost, không công khai ra internet.
 - Bắt buộc trước khi triển khai ra ngoài: đổi mật khẩu tất cả tài khoản; đặt Seed:Demo = false; ghi nhật ký đăng nhập thành công.
 
-### RISK-AUTH-02: Mật khẩu mặc định "Admin@123456" còn trong mã nguồn
+### RISK-AUTH-02: Mật khẩu mặc định "Admin@123456" còn trong mã nguồn (đã xử lý tại Phiên C2)
 
-- Vị trí: Data/DbInitializer.cs (dòng 646, 710); Controllers/QuanTriTaiKhoanController.cs (dòng 85).
-- Rủi ro: Tài khoản do admin tạo mới có mật khẩu đã biết nếu không được đổi.
-- Trạng thái: Chưa xử lý. Dự kiến sửa trong phiên C1.2 hoặc đầu C2: sinh mật khẩu ngẫu nhiên, đặt MustChangePassword = true.
-- Điều kiện chấp nhận tạm thời: Chỉ dùng trên localhost, không tạo tài khoản thật bằng mật khẩu mặc định.
+- Vị trí trước khi sửa: `Data/DbInitializer.cs` (dòng 646, 710); `Controllers/QuanTriTaiKhoanController.cs` (dòng 85).
+- Rủi ro trước khi sửa: Tài khoản do admin tạo mới có mật khẩu đã biết nếu không được đổi.
+- Trạng thái: **Đã xử lý tại Phiên C2** (ngày đóng: `2026-11-08`, commit: `d9ca67a`).
+- Cách giải quyết:
+  1. `Areas/Admin/Controllers/QuanTriTaiKhoanController.cs` (`Create` GET & POST): loại bỏ chuỗi `"Admin@123456"`, tự động sinh mật khẩu ngẫu nhiên 12 ký tự (đủ chữ hoa, chữ thường, chữ số và ký tự đặc biệt qua `MatKhauHelper.GenerateTemporaryPassword(12)`), cưỡng chế `MustChangePassword = true` khi tạo tài khoản mới và hiển thị mật khẩu tạm thời đúng 1 lần qua `TempData["ThongBao"]`.
+  2. `Data/DbInitializer.cs` (`SeedAdminAccountsAsync` & `AssignDemoRolesAsync`): giữ nguyên `PasswordHash` của `admin`, `quantritong` và các tài khoản đã tồn tại; thay thế giá trị dự phòng `"Admin@123456"` khi tạo mới lần đầu bằng cấu hình `SeedAdmin:Password` — nếu chưa cấu hình thì tự động sinh mật khẩu ngẫu nhiên 12 ký tự và in ra Console đúng 1 lần.
 
 ---
 
