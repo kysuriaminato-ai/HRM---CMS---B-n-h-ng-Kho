@@ -67,12 +67,12 @@
             {
                 <label asp-for="Password" class="form-label fw-semibold">Mật khẩu ban đầu (*)</label>
                 <div class="input-group">
-                    <input asp-for="Password" type="text" class="form-control font-monospace" id="inputPassword" value="@(Model.Password ?? "Admin@123456")" required />
+                    <input asp-for="Password" type="text" class="form-control font-monospace" id="inputPassword" value="@Model.Password" required />
                     <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPass()" title="Sinh mật khẩu ngẫu nhiên">
                         <i class="bi bi-shuffle"></i>
                     </button>
                 </div>
-                <div class="form-text small">Mặc định: <code>Admin@123456</code> (tối thiểu 8 ký tự, có chữ và số).</div>
+                <div class="form-text small">Mật khẩu ngẫu nhiên 12 ký tự (bắt buộc đổi ở lần đăng nhập đầu, hiển thị một lần sau khi tạo).</div>
             }
         </div>
     </div>

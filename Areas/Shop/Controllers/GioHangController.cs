@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Models.ViewModels;
 using ERP_HRM_CMS.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +8,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     // Giỏ hàng dùng được cả khi khách chưa đăng nhập (lưu theo phiên).
     [AllowAnonymous]
+    [Area("Shop")]
     public class GioHangController : Controller
     {
         private readonly ICartService _cartService;

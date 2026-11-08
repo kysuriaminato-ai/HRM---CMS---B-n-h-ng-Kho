@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Shop")]
     public class AuthController : Controller
     {
         private const string ThongBaoDangKyChung =
@@ -419,50 +420,50 @@ namespace ERP_HRM_CMS.Controllers
 
             if (isSuperAdmin || HasRole("SUPERADMIN"))
             {
-                return RedirectToAction("MaTranPhanQuyen", "PhanQuyen");
+                return RedirectToAction("MaTranPhanQuyen", "PhanQuyen", new { area = "Admin" });
             }
             if (HasRole("ADMIN_MENU"))
             {
-                return RedirectToAction("Index", "Menu");
+                return RedirectToAction("Index", "Menu", new { area = string.Empty });
             }
             if (HasRole("ADMIN_CONTENT"))
             {
-                return RedirectToAction("Index", "Content");
+                return RedirectToAction("Index", "Content", new { area = "Admin" });
             }
             if (HasRole("HR_MANAGER") || HasRole("ADMIN_NHANVIEN") || HasRole("DEPARTMENT_HEAD") || HasRole("BRANCH_MANAGER"))
             {
-                return RedirectToAction("Index", "NhanSu");
+                return RedirectToAction("Index", "NhanSu", new { area = "Staff" });
             }
             if (HasRole("ADMIN_BANGLUONG"))
             {
-                return RedirectToAction("Index", "BangLuong");
+                return RedirectToAction("Index", "BangLuong", new { area = "Staff" });
             }
             if (HasRole("SALES_STAFF") || HasRole("SALES_DIRECTOR") || HasRole("ADMIN_DONHANG"))
             {
-                return RedirectToAction("POS", "BanHang");
+                return RedirectToAction("POS", "BanHang", new { area = "Staff" });
             }
             if (HasRole("WAREHOUSE_STAFF") || HasRole("ADMIN_KHO"))
             {
-                return RedirectToAction("Index", "Kho");
+                return RedirectToAction("Index", "Kho", new { area = "Staff" });
             }
             if (HasRole("ADMIN_SANPHAM"))
             {
-                return RedirectToAction("Index", "SanPham");
+                return RedirectToAction("Index", "SanPham", new { area = "Admin" });
             }
 
-            // Vai trò EMPLOYEE hoặc tài khoản tự phục vụ đi thẳng vào Cổng Nhân Viên tại /CongNhanVien (ESS Portal)
+            // Vai trò EMPLOYEE hoặc tài khoản tự phục vụ đi thẳng vào Cổng Nhân Viên tại /CongNhanVien (ESS Portal - khu vực Staff)
             if (HasRole("EMPLOYEE"))
             {
                 return Redirect("/CongNhanVien");
             }
 
-            // Vai trò CUSTOMER đi thẳng về trang chủ cửa hàng công khai (/)
+            // Vai trò CUSTOMER đi thẳng về trang chủ cửa hàng công khai (/ - khu vực Shop)
             if (HasRole("CUSTOMER"))
             {
                 return Redirect("/");
             }
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Home", new { area = string.Empty });
         }
     }
 }

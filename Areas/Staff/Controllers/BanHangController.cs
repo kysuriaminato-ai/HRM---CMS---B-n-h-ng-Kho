@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class BanHangController : Controller
     {
         private readonly AppDbContext _context;

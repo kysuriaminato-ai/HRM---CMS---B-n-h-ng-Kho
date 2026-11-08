@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +18,7 @@ namespace ERP_HRM_CMS.Controllers
     /// </summary>
     [Authorize]
     [KiemTraQuyen("auth.user.manage")]
+    [Area("Admin")]
     public class QuanTriTaiKhoanController : Controller
     {
         private const string ThongBaoBaoVe = "Chỉ SuperAdmin mới được thao tác trên tài khoản quản trị tổng.";
@@ -81,8 +82,9 @@ namespace ERP_HRM_CMS.Controllers
             var vm = new TaiKhoanFormViewModel
             {
                 IsActive = true,
+                MustChangePassword = true,
                 EmployeeId = empId,
-                Password = "Admin@123456",
+                Password = MatKhauHelper.GenerateTemporaryPassword(12),
                 Roles = await LoadRolesAsync(new List<int>()),
                 Employees = employees,
                 MenuFeatures = defaultFeatures
@@ -109,6 +111,12 @@ namespace ERP_HRM_CMS.Controllers
         {
             string tenDangNhap = (model.Username ?? string.Empty).Trim();
             var chon = (roleIds ?? new List<int>()).Distinct().ToList();
+
+            if (string.IsNullOrWhiteSpace(model.Password))
+            {
+                model.Password = MatKhauHelper.GenerateTemporaryPassword(12);
+            }
+            model.MustChangePassword = true;
 
             string? loi = null;
             if (tenDangNhap.Length < 3 || tenDangNhap.Length > 50)
@@ -140,18 +148,19 @@ namespace ERP_HRM_CMS.Controllers
                 return View(model);
             }
 
+            var hasher = new LegacyCompatiblePasswordHasher();
             string salt = MatKhauHelper.GenerateSalt();
             var user = new User
             {
                 Username = tenDangNhap,
                 PasswordSalt = salt,
-                PasswordHash = MatKhauHelper.HashPassword(model.Password!, salt),
                 IsActive = model.IsActive,
                 IsSuperAdmin = false,
-                MustChangePassword = model.MustChangePassword,
+                MustChangePassword = true,
                 EmployeeId = model.EmployeeId,
                 CreatedAt = VietnamTime.Now
             };
+            user.PasswordHash = hasher.HashPassword(user, model.Password!);
 
             // Nếu không chọn vai trò nào, mặc định cấp vai trò EMPLOYEE
             if (!chon.Any())
@@ -174,7 +183,8 @@ namespace ERP_HRM_CMS.Controllers
                 await CapNhatQuyenMenuChoUserAsync(user.Id, featureCodes);
             }
 
-            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}' cho nhân viên thành công.";
+            TempData["GeneratedPassword"] = model.Password;
+            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}' cho nhân viên thành công. Mật khẩu tạm thời (hiển thị 1 lần): {model.Password}";
             return RedirectToAction(nameof(Index));
         }
 

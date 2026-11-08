@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class CongNoController : Controller
     {
         private readonly AppDbContext _context;

@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class BangLuongController : Controller
     {
         private readonly AppDbContext _context;

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
@@ -13,6 +13,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     [KiemTraQuyen("auth.matrix.view")]
+    [Area("Admin")]
     public class PhanQuyenController : Controller
     {
         private readonly AppDbContext _context;

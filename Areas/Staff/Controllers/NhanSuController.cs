@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class NhanSuController : Controller
     {
         private readonly IEmployeeService _employeeService;

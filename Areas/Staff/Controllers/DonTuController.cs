@@ -1,4 +1,4 @@
-using ERP.Application.Common.Interfaces;
+﻿using ERP.Application.Common.Interfaces;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class DonTuController : Controller
     {
         private readonly ILeaveManagementService _leaveService;

@@ -51,11 +51,20 @@ if (!builder.Environment.IsDevelopment() && (string.IsNullOrWhiteSpace(allowedHo
         "Thiếu hoặc không hợp lệ AllowedHosts. Ngoài Development, đặt biến môi trường AllowedHosts bằng danh sách tên miền cụ thể (không dùng '*').");
 }
 
-// 1. Đăng ký MVC Controllers & Views (kèm filter chuyển UnauthorizedAccessException thành 401 Unauthorized)
+// 1. Đăng ký MVC Controllers & Views (kèm filter chuyển UnauthorizedAccessException thành 401 Unauthorized và AreaAuthorizationFilter)
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<UnauthorizedAccessExceptionFilter>();
+    options.Filters.Add<AreaAuthorizationFilter>();
 });
+
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.Razor.RazorViewEngineOptions>(options =>
+{
+    options.AreaViewLocationFormats.Add("/Views/{1}/{0}.cshtml");
+    options.AreaViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
+});
+
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, AreaAwareUrlHelperFactory>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
@@ -215,9 +224,24 @@ app.UseMustChangePasswordEnforcement();
 app.MapInfrastructureEndpoints();
 app.MapHub<NotificationHub>("/hub/notifications");
 
+app.MapAreaControllerRoute(
+    name: "shop_default",
+    areaName: "Shop",
+    pattern: "{controller=Public}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "admin_default",
+    areaName: "Admin",
+    pattern: "{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "staff_default",
+    areaName: "Staff",
+    pattern: "{controller}/{action=Index}/{id?}");
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Public}/{action=Index}/{id?}");
+    pattern: "{controller}/{action=Index}/{id?}");
 
 app.Run();
 

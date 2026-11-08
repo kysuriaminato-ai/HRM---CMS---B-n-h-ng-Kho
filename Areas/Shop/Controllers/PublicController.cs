@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,6 +23,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     // Trang công khai: trang chủ, bài viết, giới thiệu, liên hệ, tuyển dụng công khai, sitemap.xml, robots.txt.
     [AllowAnonymous]
+    [Area("Shop")]
     public class PublicController : Controller
     {
         private readonly AppDbContext _context;

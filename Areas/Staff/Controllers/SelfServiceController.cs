@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 using ERP.Application.Common.Interfaces;
@@ -21,6 +21,7 @@ namespace ERP_HRM_CMS.Controllers
     [KiemTraQuyen("hrm.self.service")]
     [Route("CongNhanVien")]
     [Route("SelfService")]
+    [Area("Staff")]
     public class SelfServiceController : Controller
     {
         public const string PayslipUnlockKey = "ESS_PAYSLIP_UNLOCK_EXPIRY";

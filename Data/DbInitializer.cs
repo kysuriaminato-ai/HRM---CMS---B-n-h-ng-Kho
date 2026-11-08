@@ -20,7 +20,7 @@ namespace ERP_HRM_CMS.Data
             // 3. Dữ liệu mẫu (SeedDemo) chỉ chạy khi được bật rõ ràng
             if (seedDemo)
             {
-                await SeedDemoDataAsync(context);
+                await SeedDemoDataAsync(context, initialAdminPassword);
             }
         }
 
@@ -181,10 +181,10 @@ namespace ERP_HRM_CMS.Data
         }
 
         /// <summary>SeedDemo: dữ liệu nhân sự, CMS, bán hàng, kho, mua hàng và lương mẫu.</summary>
-        private static async Task SeedDemoDataAsync(AppDbContext context)
+        private static async Task SeedDemoDataAsync(AppDbContext context, string? initialAdminPassword = null)
         {
             await SeedHrmDataAsync(context);
-            await AssignDemoRolesAsync(context);
+            await AssignDemoRolesAsync(context, initialAdminPassword);
             await SeedCmsDataAsync(context);
             await SeedSalesAndInventoryDataAsync(context);
             await SeedScmDataAsync(context);
@@ -635,6 +635,7 @@ namespace ERP_HRM_CMS.Data
             if (ketoanUser == null)
             {
                 var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
+                string ketoanPassword = ResolveSeedPasswordOrGenerateOnce(initialAdminPassword, "ketoan");
                 ketoanUser = new User
                 {
                     Username = "ketoan",
@@ -643,7 +644,7 @@ namespace ERP_HRM_CMS.Data
                     IsSuperAdmin = false,
                     CreatedAt = VietnamTime.Now
                 };
-                ketoanUser.PasswordHash = hasher.HashPassword(ketoanUser, initialAdminPassword ?? "Admin@123456");
+                ketoanUser.PasswordHash = hasher.HashPassword(ketoanUser, ketoanPassword);
                 context.Users.Add(ketoanUser);
                 await context.SaveChangesAsync();
             }
@@ -653,6 +654,18 @@ namespace ERP_HRM_CMS.Data
                 context.UserRoles.Add(new UserRole { UserId = ketoanUser.Id, RoleId = bangLuongRole.Id });
                 await context.SaveChangesAsync();
             }
+        }
+
+        private static string ResolveSeedPasswordOrGenerateOnce(string? configuredPassword, string accountLabel)
+        {
+            if (!string.IsNullOrWhiteSpace(configuredPassword))
+            {
+                return configuredPassword.Trim();
+            }
+
+            string generated = MatKhauHelper.GenerateTemporaryPassword(12);
+            Console.WriteLine($"[DbInitializer] Đã sinh mật khẩu ngẫu nhiên một lần cho tài khoản '{accountLabel}': {generated}");
+            return generated;
         }
 
         private static async Task CreateSuperAdminAccountAsync(AppDbContext context, string username, string password)
@@ -676,7 +689,7 @@ namespace ERP_HRM_CMS.Data
         /// Gán vai trò cho các tài khoản demo nếu chúng tồn tại (chỉ chạy trong SeedDemo).
         /// Không đổi mật khẩu của các tài khoản này.
         /// </summary>
-        private static async Task AssignDemoRolesAsync(AppDbContext context)
+        private static async Task AssignDemoRolesAsync(AppDbContext context, string? initialAdminPassword = null)
         {
             var demoUsers = new (string Username, string RoleCode)[]
             {
@@ -691,6 +704,7 @@ namespace ERP_HRM_CMS.Data
             };
 
             var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
+            string? resolvedDemoPassword = null;
             foreach (var (username, roleCode) in demoUsers)
             {
                 var role = await context.Roles.FirstOrDefaultAsync(r => r.Code.ToUpper() == roleCode.ToUpper());
@@ -699,6 +713,7 @@ namespace ERP_HRM_CMS.Data
                 var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username);
                 if (user == null)
                 {
+                    resolvedDemoPassword ??= ResolveSeedPasswordOrGenerateOnce(initialAdminPassword, "demo accounts");
                     user = new User
                     {
                         Username = username,
@@ -707,7 +722,7 @@ namespace ERP_HRM_CMS.Data
                         IsSuperAdmin = (roleCode == "SUPERADMIN"),
                         CreatedAt = VietnamTime.Now
                     };
-                    user.PasswordHash = hasher.HashPassword(user, "Admin@123456");
+                    user.PasswordHash = hasher.HashPassword(user, resolvedDemoPassword);
                     context.Users.Add(user);
                     await context.SaveChangesAsync();
                 }

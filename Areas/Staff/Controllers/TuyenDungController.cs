@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using ERP.Application.Common.Interfaces;
@@ -12,6 +12,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     [Route("TuyenDung")]
+    [Area("Staff")]
     public class TuyenDungController : Controller
     {
         private readonly IRecruitmentService _recruitmentService;

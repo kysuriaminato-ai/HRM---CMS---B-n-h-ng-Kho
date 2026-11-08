@@ -1,3 +1,10 @@
-﻿@{
-    Layout = "_Layout";
+@{
+    var area = ViewContext.RouteData.Values["area"]?.ToString();
+    Layout = area switch
+    {
+        "Admin" => "_AdminLayout",
+        "Staff" => "_StaffLayout",
+        "Shop" => "_ShopLayout",
+        _ => "_Layout"
+    };
 }

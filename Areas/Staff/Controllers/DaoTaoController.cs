@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using ERP.Application.Common.Interfaces;
@@ -12,6 +12,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     [Route("DaoTao")]
+    [Area("Staff")]
     public class DaoTaoController : Controller
     {
         private readonly ITrainingService _trainingService;
