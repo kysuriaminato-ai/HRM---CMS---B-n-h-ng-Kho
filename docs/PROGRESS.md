@@ -1,6 +1,57 @@
 # Tiến độ dự án — ERP_HRM_CMS Enterprise
 
-Cập nhật lần cuối: 2026-11-08 (Đã hoàn tất **PHIÊN C2 – Tách Khu Vực Admin, Staff, Shop (Giữ Nguyên Route) và Đóng RISK-AUTH-02**)
+Cập nhật lần cuối: 2026-11-10 (Đã hoàn tất **PHIÊN C2.1 – Chặn Employee Vào Khu Admin, Bổ Sung Test và Cập Nhật Tài Liệu**)
+
+---
+
+## CHI TIẾT PHIÊN C2.1: CHẶN EMPLOYEE VÀO KHU ADMIN, BỔ SUNG TEST VÀ CẬP NHẬT TÀI LIỆU (2026-11-10)
+
+### 1. Kết quả kiểm tra hiện trạng A1–A2 (Thực hiện trước khi sửa)
+
+- **A1. Đọc và phân tích `Filters/AreaAuthorizationFilter.cs`:**
+  - `AreaAuthorizationFilter` được đăng ký như một global MVC filter trong `Program.cs`.
+  - Đối với các request có `area == "Admin"`:
+    1. Kiểm tra xác thực: nếu chưa đăng nhập (`!user.Identity.IsAuthenticated`), redirect về `/Auth/Login` (hoặc trả 401 nếu là Ajax).
+    2. Kiểm tra `isSuperAdmin` (qua `IsInRole("SUPERADMIN")` hoặc claim `IsSuperAdmin == "True"`): nếu đúng thì cho phép truy cập ngay.
+    3. Kiểm tra vai trò `CUSTOMER`: nếu chỉ có vai trò khách hàng (`isCustomerOnly`), chặn truy cập và redirect về `/Home/KhongCoQuyen` (hoặc trả 403 nếu là Ajax).
+    4. Kiểm tra quyền quản trị (`AdminAreaPermissions`): lấy `userId` từ claim `NameIdentifier` và gọi `_permissionService.HasAnyPermissionAsync(userId, AdminAreaPermissions)`. Danh sách quyền quản trị bao gồm: `auth.user.manage`, `auth.user.resetpassword`, `auth.matrix.view`, `auth.matrix.manage`, `auth.view`, `auth.manage`, `content.view`, `content.create`, `content.edit`, `content.delete`, `content.manage`, `product.view`, `product.manage`, `menu.view`, `menu.manage`, `layout.manage`.
+    5. Nếu người dùng không có bất kỳ quyền nào trong danh sách trên, filter chặn truy cập và redirect về `/Home/KhongCoQuyen` (hoặc trả 403 nếu là Ajax).
+  - Ngoài ra, ở cấp Action/Controller, các controller trong khu vực Admin (`QuanTriTaiKhoanController`, `PhanQuyenController`, `ContentController`, `SanPhamController`, `DanhMucController`) đều có gắn `[KiemTraQuyen(...)]` tương ứng.
+- **A2. Kết quả kiểm thử test tạm với tài khoản `EMPLOYEE`:**
+  - Tài khoản `EMPLOYEE` được tạo với vai trò `EMPLOYEE` (không phải `SUPERADMIN`, chỉ có quyền `hrm.self.service` trong bảng `RolePermissions`).
+  - Khi thực hiện GET 5 URL thuộc khu vực Admin:
+    1. `/QuanTriTaiKhoan`: **302 Redirect** → `/Home/KhongCoQuyen` (Không nhận 200 OK).
+    2. `/PhanQuyen/MaTranPhanQuyen`: **302 Redirect** → `/Home/KhongCoQuyen` (Không nhận 200 OK).
+    3. `/Content`: **302 Redirect** → `/Home/KhongCoQuyen` (Không nhận 200 OK).
+    4. `/SanPham`: **302 Redirect** → `/Home/KhongCoQuyen` (Không nhận 200 OK).
+    5. `/DanhMuc`: **302 Redirect** → `/Home/KhongCoQuyen` (Không nhận 200 OK).
+  - **Kết luận:** Tài khoản `EMPLOYEE` đã bị chặn chính xác 100% tại cả 5 URL (bị chặn bởi `AreaAuthorizationFilter` và `KiemTraQuyenFilter`). Do đó theo mục B3: **Không sửa code logic, chỉ thêm test chính thức và dọn test tạm**.
+
+---
+
+### 2. Số lượng kiểm thử trước và sau Phiên C2.1 (Mục C)
+
+- **Trước C2.1:** **270 Passed, 0 Failed, 0 Skipped** (cuối Phiên C2).
+- **Sau C2.1:** **272 Passed, 0 Failed, 0 Skipped** (**+2 test mới** trong `tests/ERP_HRM_CMS.Tests/PhaseC2AreasAndSecurityTests.cs`):
+  1. `Area_Admin_Blocks_Employee` — **PASS** (kiểm chứng tài khoản `EMPLOYEE` gọi cả 5 URL `/QuanTriTaiKhoan`, `/PhanQuyen/MaTranPhanQuyen`, `/Content`, `/SanPham`, `/DanhMuc` đều bị chặn, trả về 302 chuyển hướng về `/Home/KhongCoQuyen`).
+  2. `Area_Admin_Allows_SuperAdmin` — **PASS** (kiểm chứng tài khoản `SUPERADMIN` (`admin`) gọi `/QuanTriTaiKhoan` trả về đúng 200 OK).
+- Đã xóa test tạm ở mục A2, không để lại test tạm trong repo (C3).
+
+---
+
+### 3. Kết quả kiểm chứng thủ công trên `ERP_HRM_CMS_DB` (Mục D1–D3, chạy với `--Seed:Demo=false`)
+
+- **D1. Kiểm tra tài khoản `EMPLOYEE` thật trong cơ sở dữ liệu:**
+  - Truy vấn `dbo.AspNetUsers` kết hợp `dbo.UserRoles` và `dbo.Roles` cho thấy: trong database hiện tại có 13 tài khoản (`admin`, `quantritong`, `NVBH`, `admin1`, `ketoan`, `superadmin`, `qtvp`, `hr_manager`, `salestaff`, `sales_staff`, `warehouse`, `warehouse_staff`, `khachtest02`).
+  - **Ghi nhận:** Trong DB hiện không có tài khoản người dùng thật nào được gán vai trò `EMPLOYEE` (vai trò `EMPLOYEE` tồn tại trong bảng `Roles` với Id = 6, quyền `hrm.self.service`, nhưng chưa gán cho user nào). Bỏ qua bước đăng nhập bằng tài khoản EMPLOYEE thật theo chỉ dẫn mục D1.
+- **D2. Đăng nhập bằng `khachtest02` (`CUSTOMER`) và gọi `GET /QuanTriTaiKhoan`:**
+  - `POST /Auth/Login` với tài khoản `khachtest02` → `302 Found`, `Location: /`.
+  - `GET /QuanTriTaiKhoan` với session của `khachtest02` → `302 Found`, `Location: /Home/KhongCoQuyen` (**Kỳ vọng đạt: không phải 200 OK, bị chặn hoàn toàn**).
+- **D3. Bảng tổng hợp mã trạng thái và chuyển hướng:**
+  ```text
+  [khachtest02] POST /Auth/Login -> 302 Location: /
+  [khachtest02] GET /QuanTriTaiKhoan -> 302 Location: /Home/KhongCoQuyen
+  ```
 
 ---
 
@@ -220,6 +271,7 @@ Sử dụng `MapAreaControllerRoute` với mẫu `{controller}/{action}/{id?}` (
 | **Phiên C1** | **ASP.NET Core Identity (`IdentityUser<int>`), `LegacyCompatiblePasswordHasher` & Vai Trò `CUSTOMER`** | **Hoàn tất** | **261 / 261 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 | **Phiên C1.1** | **Đóng C1: Lưu Hash Identity v3, Bảo Toàn Hash Khi Seed Demo, Ánh Xạ `UserName`, Luồng Đăng Nhập & Kiểm Chứng `ERP_HRM_CMS_DB`** | **Hoàn tất** | **263 / 263 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 | **Phiên C2** | **Tách Khu Vực `Admin`, `Staff`, `Shop` (Giữ Nguyên Route) & Đóng `RISK-AUTH-02`** | **Hoàn tất** | **270 / 270 ca thực thi XANH 100% (0 Warning, 0 Error)** |
+| **Phiên C2.1** | **Chặn `EMPLOYEE` Vào Khu `Admin`, Bổ Sung Test & Cập Nhật Tài Liệu** | **Hoàn tất** | **272 / 272 ca thực thi XANH 100% (0 Warning, 0 Error)** |
 
 ---
 

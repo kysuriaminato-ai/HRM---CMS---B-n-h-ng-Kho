@@ -389,6 +389,46 @@ namespace ERP_HRM_CMS.Tests
             Assert.False(user.IsSuperAdmin);
             Assert.Contains(user.UserRoles, ur => ur.Role.Code == "CUSTOMER");
         }
+
+        [Fact]
+        public async Task Area_Admin_Blocks_Employee()
+        {
+            var (empUser, empPass) = await CreateRoleUserAsync("EMPLOYEE");
+            using var client = TestHelpers.NewClient(_factory);
+            var loginRes = await TestHelpers.LoginAsync(client, empUser, empPass);
+            Assert.Equal(HttpStatusCode.Redirect, loginRes.StatusCode);
+
+            var adminUrls = new[]
+            {
+                "/QuanTriTaiKhoan",
+                "/PhanQuyen/MaTranPhanQuyen",
+                "/Content",
+                "/SanPham",
+                "/DanhMuc"
+            };
+
+            foreach (var url in adminUrls)
+            {
+                using var res = await client.GetAsync(url);
+                Assert.NotEqual(HttpStatusCode.OK, res.StatusCode);
+                var loc = res.Headers.Location?.ToString() ?? string.Empty;
+                Assert.True(
+                    res.StatusCode == HttpStatusCode.Redirect && (loc.Contains("/Home/KhongCoQuyen") || loc.Contains("/Auth/Login"))
+                    || res.StatusCode == HttpStatusCode.Forbidden,
+                    $"URL '{url}' trả về {(int)res.StatusCode} (Location: '{loc}') thay vì bị chặn!");
+            }
+        }
+
+        [Fact]
+        public async Task Area_Admin_Allows_SuperAdmin()
+        {
+            using var adminClient = TestHelpers.NewClient(_factory);
+            var loginRes = await TestHelpers.LoginAsync(adminClient, "admin", TestAppFactory.AdminPasswordForTests);
+            Assert.Equal(HttpStatusCode.Redirect, loginRes.StatusCode);
+
+            using var res = await adminClient.GetAsync("/QuanTriTaiKhoan");
+            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        }
     }
 }
 
