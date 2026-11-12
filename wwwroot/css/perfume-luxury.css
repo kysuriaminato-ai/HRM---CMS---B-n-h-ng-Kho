@@ -711,3 +711,285 @@ body.pf-luxury-body {
     animation: pfFloatBottle 4s ease-in-out infinite;
 }
 
+
+/* ==========================================================================
+   BỔ SUNG GIAO DIỆN STOREFRONT: BỘ LỌC, ẢNH NỔI, THẺ HẠNG, RESPONSIVE
+   ========================================================================== */
+
+/* Neo cuộn tránh bị header dính che mất tiêu đề */
+.pf-anchor {
+    display: block;
+    position: relative;
+    top: -190px;
+    visibility: hidden;
+    height: 0;
+}
+
+@media (max-width: 991.98px) {
+    .pf-anchor { top: -120px; }
+}
+
+/* ---------- Bộ lọc ---------- */
+.pf-filter-panel {
+    background: rgba(18, 22, 32, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+}
+
+.pf-input {
+    background-color: rgba(10, 13, 19, 0.85);
+    border-color: rgba(212, 175, 55, 0.28);
+    color: #f1f3f7;
+}
+
+.pf-input:focus {
+    background-color: rgba(10, 13, 19, 0.95);
+    border-color: var(--pf-gold, #d4af37);
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.18);
+}
+
+.pf-input::placeholder { color: rgba(241, 243, 247, 0.4); }
+.pf-filter-panel select.pf-input option { background-color: #10141c; color: #f1f3f7; }
+
+/* Dải danh mục cuộn ngang trên màn hình nhỏ */
+.pf-chip-row {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+
+.pf-chip-row::-webkit-scrollbar { display: none; }
+
+@media (min-width: 992px) {
+    .pf-chip-row { overflow: visible; }
+}
+
+/* ---------- Ảnh nổi khi rê chuột ---------- */
+.pf-float-preview {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    z-index: 1080;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-9999px, -9999px);
+    transition: opacity 0.18s ease;
+    background: rgba(10, 13, 19, 0.97);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+    overflow: hidden;
+}
+
+.pf-float-preview.is-visible { opacity: 1; visibility: visible; }
+
+.pf-float-preview img {
+    display: block;
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    background: #0b0d13;
+}
+
+.pf-float-caption {
+    padding: 10px 14px 12px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: #f1f3f7;
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+@media (max-width: 991.98px), (hover: none) {
+    .pf-float-preview { display: none !important; }
+}
+
+/* Ảnh hỏng: nền thay thế thay vì biểu tượng vỡ */
+.pf-img-fallback {
+    background: linear-gradient(135deg, #141924 0%, #0b0d13 100%);
+    position: relative;
+}
+
+.pf-img-fallback::after {
+    content: "\F3D1";
+    font-family: "bootstrap-icons";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6rem;
+    color: rgba(212, 175, 55, 0.4);
+}
+
+/* ---------- Chế độ danh sách ---------- */
+@media (min-width: 768px) {
+    .pf-view-list > .jewelry-card-item { width: 100%; max-width: 100%; flex: 0 0 100%; }
+    .pf-view-list .jewelry-card { flex-direction: row; }
+    .pf-view-list .jewelry-card > div:first-of-type { width: 300px; flex: 0 0 300px; height: auto !important; }
+    .pf-view-list .card-body { flex: 1 1 auto; }
+}
+
+/* ---------- Thẻ cam kết dịch vụ ---------- */
+.pf-service-card {
+    background: rgba(18, 22, 32, 0.78);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.pf-service-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+.pf-service-chip {
+    background: rgba(212, 175, 55, 0.12);
+    color: #f7e8bd;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* ---------- Bảng đo size ---------- */
+.pf-size-table-wrap {
+    background: rgba(18, 22, 32, 0.88);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    overflow: hidden;
+}
+
+.pf-size-table-wrap .table { --bs-table-bg: transparent; margin-bottom: 0; }
+.pf-size-table-wrap thead th { color: #f7e8bd; border-bottom-color: rgba(212, 175, 55, 0.3); }
+
+/* ---------- Thẻ hạng khách hàng ---------- */
+.pf-tier-card {
+    background: rgba(18, 22, 32, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    border-top: 3px solid var(--tier-color, #d4af37);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pf-tier-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.pf-tier-badge {
+    font-family: var(--pf-font-mono, monospace);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #f7e8bd;
+}
+
+/* ---------- Thẻ thành viên ---------- */
+.pf-member-card {
+    background:
+        radial-gradient(circle at 85% 15%, rgba(212, 175, 55, 0.22) 0%, transparent 55%),
+        linear-gradient(135deg, #171b26 0%, #0b0d13 100%);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+    aspect-ratio: 1.586 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+@media (max-width: 575.98px) {
+    .pf-member-card { aspect-ratio: auto; }
+}
+
+/* ---------- Tinh chỉnh hiển thị trên điện thoại ---------- */
+@media (max-width: 575.98px) {
+    .jewelry-card h5 { min-height: auto !important; font-size: 1rem; }
+    .jewelry-card .card-body { padding: 1rem !important; }
+    .pf-filter-panel { padding: 1rem !important; }
+}
+
+/* ==========================================================================
+   SỬA LỚP HIỂN THỊ THANH TÀI KHOẢN + KHUNG XEM THỬ ĐIỆN THOẠI
+   ========================================================================== */
+
+/* Thanh trên cùng phải nằm trên thanh điều hướng dính, nếu không menu tài
+   khoản (gồm nút Đăng xuất) sẽ bị thanh dưới đè lên và trông như trống rỗng */
+.pf-top-bar {
+    position: relative;
+    z-index: 1060;
+}
+
+.pf-top-bar .dropdown-menu {
+    z-index: 1061;
+}
+
+/* Lớp phủ xem thử */
+.pf-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    background: rgba(4, 6, 10, 0.96);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.pf-mobile-overlay.is-open { display: flex; }
+
+.pf-mobile-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 20px;
+    background: rgba(10, 13, 19, 0.95);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.pf-mobile-stage {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 20px;
+}
+
+.pf-phone-frame {
+    position: relative;
+    flex: 0 0 auto;
+    background: #0b0d13;
+    border: 12px solid #1b1f28;
+    border-radius: 42px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(212, 175, 55, 0.3);
+    overflow: hidden;
+    transform-origin: center center;
+}
+
+.pf-phone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 22px;
+    background: #1b1f28;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.pf-phone-frame iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #0b0d13;
+}

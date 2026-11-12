@@ -1,4 +1,4 @@
-@inject ERP_HRM_CMS.Data.AppDbContext Db
+﻿@inject ERP_HRM_CMS.Data.AppDbContext Db
 @inject ERP_HRM_CMS.Helpers.IPermissionService PermService
 @{
     var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP");
@@ -110,7 +110,7 @@
             @* — Tổng quan (Dashboard) — *@
             @if (isSuperAdmin || CanView("report.hrm", "report.sales", "hrm.employee.view", "order.view"))
             {
-                <a href="/" class="erp-nav-item" data-path="/">
+                <a href="/Home/Index" class="erp-nav-item" data-path="/Home/Index">
                     <i class="bi bi-grid-1x2"></i>
                     <span class="nav-label">Dashboard tổng quan</span>
                 </a>

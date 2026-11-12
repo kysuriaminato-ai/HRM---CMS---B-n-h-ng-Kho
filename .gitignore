@@ -25,3 +25,6 @@ logs/
 
 # SSMS temporary query scratch files
 SQLQuery*.sql
+
+# Thư mục nháp cục bộ (không đưa lên git)
+_scratch/
