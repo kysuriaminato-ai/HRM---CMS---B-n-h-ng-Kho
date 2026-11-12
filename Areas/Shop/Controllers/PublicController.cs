@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -61,13 +62,46 @@ namespace ERP_HRM_CMS.Controllers
                 .ToListAsync();
 
             var dbProducts = await _context.Products
-                .Include(p => p.Category)
-                .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CreatedAt)
-                .Take(24)
-                .ToListAsync();
+            .Include(p => p.Category)
+            .Include(p => p.Variants).ThenInclude(v => v.Material)
+            .Where(p => p.IsActive)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(24)
+            .ToListAsync();
 
             ViewBag.FeaturedProducts = dbProducts;
+
+            var jewelryCards = dbProducts.Select(p =>
+            {
+                var defaultVariant = p.Variants?.FirstOrDefault(v => v.IsDefault && v.IsActive)
+                    ?? p.Variants?.FirstOrDefault(v => v.IsDefault)
+                    ?? p.Variants?.FirstOrDefault();
+
+                string material = defaultVariant?.Material?.Name ?? string.Empty;
+
+                return new JewelryCardVm
+                {
+                    Id = p.Id,
+                    Sku = p.SKU ?? string.Empty,
+                    Name = p.Name ?? string.Empty,
+                    Category = ResolveJewelryCategorySlug(p.Category),
+                    CategoryName = p.Category?.Name ?? string.Empty,
+                    Material = material,
+                    Carat = p.Carat.HasValue ? p.Carat.Value.ToString() : string.Empty,
+                    Color = p.GemColor ?? string.Empty,
+                    Clarity = p.GemClarity ?? string.Empty,
+                    Cut = string.Empty,
+                    Origin = string.Empty,
+                    Price = p.SalePrice,
+                    OldPrice = p.SalePrice,
+                    Image = p.ImageUrl ?? string.Empty,
+                    GiaNumber = p.CertificateNo ?? string.Empty,
+                    Badge = string.Empty,
+                    Desc = p.Description ?? string.Empty
+                };
+            }).ToList();
+
+            ViewBag.JewelryCards = jewelryCards;
 
             ViewBag.Categories = await _context.Categories
                 .Where(c => c.IsActive)
@@ -81,6 +115,32 @@ namespace ERP_HRM_CMS.Controllers
                 .OrderByDescending(j => j.CreatedAt)
                 .Take(4)
                 .ToListAsync();
+
+            // Khách hàng thân thiết (Aura Privilege): chỉ lấy theo người dùng đang đăng nhập từ claim NameIdentifier
+            Customer? loyaltyCustomer = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userIdStr, out int userId) && userId > 0)
+                {
+                    // Truy vấn bảng Users THEO Id để lấy Email (TUYỆT ĐỐI KHÔNG truy vấn theo Username)
+                    var userEmail = await _context.Users
+                        .AsNoTracking()
+                        .Where(u => u.Id == userId)
+                        .Select(u => u.Email)
+                        .FirstOrDefaultAsync();
+
+                    if (!string.IsNullOrWhiteSpace(userEmail))
+                    {
+                        var emailTrimmed = userEmail.Trim();
+                        loyaltyCustomer = await _context.Customers
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(c => !c.IsDeleted && c.Email == emailTrimmed);
+                    }
+                }
+            }
+
+            ViewBag.LoyaltyCustomer = loyaltyCustomer;
 
             return View(activeBlocks);
         }
@@ -366,6 +426,31 @@ namespace ERP_HRM_CMS.Controllers
             sb.AppendLine($"Sitemap: {baseUrl}/sitemap.xml");
 
             return Content(sb.ToString(), "text/plain", Encoding.UTF8);
+        }
+
+        private static string ResolveJewelryCategorySlug(Category? category)
+        {
+            if (category == null) return "trang-suc-da-tiec";
+
+            string fromSlug = (category.Slug ?? string.Empty).Trim().ToLowerInvariant();
+            if (fromSlug is "nhan-kim-cuong" or "vong-tay-lac-tay" or "day-chuyen-mat-day" or "bong-tai-cao-cap" or "trang-suc-da-tiec")
+            {
+                return fromSlug;
+            }
+
+            string fromName = SlugHelper.GenerateSlug(category.Name ?? string.Empty);
+            if (fromName is "nhan-kim-cuong" or "vong-tay-lac-tay" or "day-chuyen-mat-day" or "bong-tai-cao-cap" or "trang-suc-da-tiec")
+            {
+                return fromName;
+            }
+
+            if (fromSlug.Contains("nhan") || fromName.Contains("nhan")) return "nhan-kim-cuong";
+            if (fromSlug.Contains("vong") || fromSlug.Contains("lac") || fromName.Contains("vong") || fromName.Contains("lac")) return "vong-tay-lac-tay";
+            if (fromSlug.Contains("day") || fromSlug.Contains("chuyen") || fromName.Contains("day") || fromName.Contains("chuyen")) return "day-chuyen-mat-day";
+            if (fromSlug.Contains("bong") || fromSlug.Contains("tai") || fromName.Contains("bong") || fromName.Contains("tai")) return "bong-tai-cao-cap";
+            if (fromSlug.Contains("da-tiec") || fromSlug.Contains("da-yen") || fromName.Contains("da-tiec") || fromName.Contains("da-yen")) return "trang-suc-da-tiec";
+
+            return "trang-suc-da-tiec";
         }
 
         #endregion

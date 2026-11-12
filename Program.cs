@@ -1,4 +1,4 @@
-using ERP.Application;
+﻿using ERP.Application;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Logging;
 using ERP_HRM_CMS.Data;
@@ -242,6 +242,37 @@ app.MapAreaControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller}/{action=Index}/{id?}");
+
+// ---------------------------------------------------------------------------
+// Đường dẫn riêng cho từng khu vực, đăng ký SAU các tuyến trên.
+//
+// Vì sao đặt sau: ASP.NET Core sinh liên kết theo tuyến khớp đầu tiên. Đặt sau
+// nghĩa là Url.Action và RedirectToAction vẫn sinh ra URL gốc như cũ, nên toàn
+// bộ liên kết đang có trong View và các test giữ nguyên hành vi. Các tuyến dưới
+// đây chỉ thêm cách truy cập, không thay cách sinh liên kết.
+//
+//   Quản trị tổng : /Admin/QuanTriTaiKhoan, /Admin/PhanQuyen/MaTranPhanQuyen
+//   Nhân viên     : /Staff/Kho, /Staff/BanHang/POS, /Staff/CongNhanVien
+//   Khách hàng    : /  và các trang công khai khác
+//
+// Phân quyền từng khu vực do AreaAuthorizationFilter đảm nhiệm, không phụ thuộc
+// vào việc URL có tiền tố hay không.
+// ---------------------------------------------------------------------------
+
+app.MapAreaControllerRoute(
+    name: "admin_prefixed",
+    areaName: "Admin",
+    pattern: "Admin/{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "staff_prefixed",
+    areaName: "Staff",
+    pattern: "Staff/{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "shop_prefixed",
+    areaName: "Shop",
+    pattern: "Shop/{controller=Public}/{action=Index}/{id?}");
 
 app.Run();
 

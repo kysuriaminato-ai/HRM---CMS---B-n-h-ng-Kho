@@ -22,6 +22,9 @@ namespace ERP_HRM_CMS.Data
             {
                 await SeedDemoDataAsync(context, initialAdminPassword);
             }
+
+            // 4. Bổ sung sản phẩm trang sức nếu chưa có sản phẩm nào IsActive (Phiên D1) - CHỈ chạy khi Development
+            await SeedJewelryProductsIfEmptyAsync(context, seedDemo);
         }
 
         /// <summary>
@@ -966,6 +969,84 @@ namespace ERP_HRM_CMS.Data
                             UpdatedAt = VietnamTime.Now
                         });
                     }
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Seed 16 sản phẩm trang sức từ mảng cứng sang bảng Products nếu chưa có sản phẩm trang sức nào IsActive (Phiên D1).
+        /// CHỈ chạy trong môi trường Development.
+        /// Kiểm tra tồn tại theo SKU để không nhân đôi dữ liệu. Không đụng tới bảng nào khác.
+        /// </summary>
+        public static async Task SeedJewelryProductsIfEmptyAsync(AppDbContext context, bool isDevelopment = false)
+        {
+            if (!isDevelopment)
+            {
+                string? env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                           ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+                if (!string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            // Nếu bảng Products đã có sản phẩm trang sức nào đang IsActive thì không làm gì
+            bool hasActiveJewelry = await context.Products
+                .AnyAsync(p => p.IsActive && p.SKU.StartsWith("JW-"));
+            if (hasActiveJewelry) return;
+
+            var catMap = await context.Categories
+                .ToDictionaryAsync(c => c.Slug, c => c.Id, StringComparer.OrdinalIgnoreCase);
+
+            int GetCatId(string slug)
+            {
+                if (catMap.TryGetValue(slug, out int id)) return id;
+                return catMap.Values.FirstOrDefault();
+            }
+
+            var items = new (string Sku, string Name, string CatSlug, decimal? Carat, string Color, string Clarity, string Cert, decimal Price, string Img, string Desc)[]
+            {
+                ("JW-RING-SOLITAIRE", "Nhẫn Kim Cương Solitaire Brilliant Cut 1.5 Carat", "nhan-kim-cuong", 1.50m, "Nước D (Tuyệt đối)", "VVS1 (Siêu tinh khiết)", "GIA-248910291", 185000000m, "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80", "Kim cương chủ 1.50 Carat nước D, giác cắt giác tròn 57 mặt chuẩn xác, phản chiếu ánh lửa 7 màu rực rỡ trên ổ nhẫn Platinum 950 vuốt 6 chấu thanh mảnh."),
+                ("JW-BRACE-TENNIS", "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum", "vong-tay-lac-tay", 5.00m, "Nước E - F", "VVS2 - VS1", "GIA-739182390", 145000000m, "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=700&q=80", "Dải kim cương chạy liền mạch 55 viên tinh tuyển đồng màu, khoá kép bảo hiểm công nghệ Thụy Sĩ ôm trọn cổ tay thanh thoát của quý cô quý phái."),
+                ("JW-NECK-HEART", "Dây Chuyền Mặt Kim Cương Halo Heart Diamond 1.2ct", "day-chuyen-mat-day", 1.20m, "Nước D", "VVS2", "GIA-550291821", 98000000m, "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80", "Viên kim cương hình trái tim hoàn mỹ được bao bọc bởi dải kim cương tấm viền kép lộng lẫy, truyền tải thông điệp tình yêu son sắt trường tồn."),
+                ("JW-EARR-EMERALD", "Bông Tai Kim Cương Emerald Cut Drop Earrings 2.0ct", "bong-tai-cao-cap", 2.00m, "Nước E", "VVS1", "GIA-829104812", 125000000m, "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=700&q=80", "Giác cắt ngọc lục bảo Emerald Cut trong suốt như mặt gương hồ thu, buông lơi duyên dáng theo từng cử chỉ xoay đầu của chủ nhân."),
+                ("JW-RING-ROYAL", "Nhẫn Kim Cương Hoàng Gia Cung Điện Royal Halo 2.0ct", "nhan-kim-cuong", 2.05m, "Nước D Tuyệt Đối", "FL (Flawless Hoàn Hảo)", "GIA-190284711", 220000000m, "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80", "Tuyệt phẩm kim cương 2.05 Carat nước D độ tinh khiết không tì vết Flawless, lấy cảm hứng từ vương miện hoàng gia châu Âu thế kỷ 19."),
+                ("JW-BANGLE-ROSE", "Vòng Kiềng Bản Liền Vàng Hồng 18K Nạm Kim Cương Pave", "vong-tay-lac-tay", 3.20m, "Nước F", "VS1", "GIA-620194827", 86000000m, "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=700&q=80", "Sắc vàng hồng ấm áp kết hợp kỹ thuật nạm chìm Micro Pave tỉ mỉ, tôn vinh nét đẹp thanh tao, sang trọng trong mọi dịp xuất hiện."),
+                ("JW-NECK-PEAR", "Dây Chuyền Kim Cương Giọt Nước Pear Shaped 1.8 Carat", "day-chuyen-mat-day", 1.80m, "Nước D", "VVS1", "GIA-440192830", 165000000m, "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80", "Giác cắt hình giọt nước kiêu sa kéo dài đường nét cổ kiêu hãnh, phản xạ ánh sáng mạnh mẽ tựa như tinh tú trên bầu trời đêm."),
+                ("JW-EARR-STUDS", "Bông Tai Nụ Kim Cương Classic Solitaire Studs 1.0 Carat", "bong-tai-cao-cap", 1.00m, "Nước E", "VVS2", "GIA-910283741", 58000000m, "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&q=80", "Mẫu hoa tai nụ kinh điển không bao giờ lỗi mốt, thích hợp diện hàng ngày nơi công sở cũng như trong các buổi dạ tiệc ấm cúng."),
+                ("JW-WEDDING-BAND", "Cặp Nhẫn Cưới Đôi Vàng Trắng 18K Khắc Laser Tình Yêu", "nhan-kim-cuong", 0.55m, "Nước D", "VVS1", "GIA-391028472", 42000000m, "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=700&q=80", "Thiết kế lòng nhẫn công thái học đeo êm ái, hỗ trợ khắc dấu vân tay, ngày cưới và tên lồng laser công nghệ Thụy Sĩ vĩnh cửu."),
+                ("JW-SAPPHIRE-ROYAL", "Dây Chuyền Sapphire Ceylon Hoàng Gia 4.5ct & Kim Cương", "trang-suc-da-tiec", 4.50m, "Royal Blue Hoàng Tộc", "Eye Clean Tuyệt Hảo", "GRS-2026-99182", 280000000m, "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80", "Viên đá quý Sapphire hoàng tộc xanh thẳm tự nhiên từ Sri Lanka, bao bọc bởi 3 hàng kim cương nước D rực rỡ, chuẩn phong cách quý tộc Anh."),
+                ("JW-RING-ETERNITY-18K", "Nhẫn Eternity Vàng Trắng 18K Full Kim Cương 1.2ct", "nhan-kim-cuong", 1.20m, "Nước E - F", "VS1 - VS2", "GIA-771204553", 96000000m, "https://images.unsplash.com/photo-1598560917505-59a3ad559071?auto=format&fit=crop&w=700&q=80", "Vòng nhẫn khép kín 36 viên kim cương tấm đồng đều, biểu tượng của tình yêu không điểm dừng, ôm trọn ngón tay bằng nẹp vàng trắng 18K."),
+                ("JW-BANGLE-GOLD24K", "Vòng Tay Kiềng Vàng Ròng 24K Chạm Khắc Thủ Công", "vong-tay-lac-tay", null, "Vàng Nguyên Bản", "Tuổi vàng 9999", "SJC-2026-00418", 21500000m, "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=700&q=80", "Kiềng vàng ròng 9999 chạm khắc hoa văn truyền thống bằng tay, vừa là trang sức vừa là tài sản tích trữ giữ giá theo giá vàng thị trường."),
+                ("JW-PENDANT-RUBY", "Mặt Dây Chuyền Ruby Miến Điện 2.2ct Viền Kim Cương", "day-chuyen-mat-day", 2.20m, "Pigeon Blood Đỏ Huyết", "Eye Clean", "GRS-2026-44120", 158000000m, "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=700&q=80", "Viên Ruby Pigeon Blood màu đỏ huyết đặc trưng vùng Mogok, được bao quanh bởi 24 viên kim cương tấm trên nền vàng hồng 18K ấm áp."),
+                ("JW-EARRING-HOOP", "Bông Tai Vòng Hoop Kim Cương Pave Vàng Trắng 18K", "bong-tai-cao-cap", 0.85m, "Nước F", "VS2", "GIA-559013882", 64000000m, "https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&w=700&q=80", "Bông tai vòng tròn nạm kim cương pave kín mặt ngoài, khoá bấm an toàn, nhẹ tay và phù hợp đeo từ công sở đến tiệc tối."),
+                ("JW-SET-BRIDAL", "Bộ Trang Sức Cưới Kim Cương 3 Món Vàng Trắng 18K", "trang-suc-da-tiec", 3.10m, "Nước D - E", "VVS2", "GIA-882017744", 342000000m, "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80", "Bộ ba dây chuyền, bông tai và lắc tay đồng bộ hoa văn, dành riêng cho ngày trọng đại và các dạ tiệc trang trọng nhất."),
+                ("JW-RING-MEN-SIGNET", "Nhẫn Nam Signet Vàng 18K Đính Kim Cương Đen 1.0ct", "nhan-kim-cuong", 1.00m, "Fancy Black", "Opaque", "IGI-2026-71203", 78000000m, "https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?auto=format&fit=crop&w=700&q=80", "Nhẫn signet bản dày khắc gia huy theo yêu cầu, tâm nhẫn là viên kim cương đen tuyền mài cabochon tạo khí chất mạnh mẽ.")
+            };
+
+            foreach (var it in items)
+            {
+                if (!await context.Products.AnyAsync(p => p.SKU == it.Sku))
+                {
+                    context.Products.Add(new Product
+                    {
+                        SKU = it.Sku,
+                        Name = it.Name,
+                        Slug = SlugHelper.GenerateSlug(it.Name),
+                        CategoryId = GetCatId(it.CatSlug),
+                        Unit = "Cái",
+                        CostPrice = Math.Round(it.Price * 0.75m, 0),
+                        SalePrice = it.Price,
+                        ImageUrl = it.Img,
+                        Description = it.Desc,
+                        Carat = it.Carat,
+                        GemColor = it.Color,
+                        GemClarity = it.Clarity,
+                        CertificateNo = it.Cert,
+                        IsActive = true,
+                        CreatedAt = VietnamTime.Now
+                    });
                 }
             }
             await context.SaveChangesAsync();

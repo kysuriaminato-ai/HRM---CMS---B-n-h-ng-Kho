@@ -1,4 +1,5 @@
-﻿@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+@using ERP_HRM_CMS.Models.ViewModels
 @{
     Layout = "_ShopLayout";
     ViewData["Title"] = "Tuyệt Tác Trang Sức Kim Cương & Haute Joaillerie";
@@ -13,314 +14,8 @@
         .GroupBy(pr => pr.SKU!.Trim(), StringComparer.OrdinalIgnoreCase)
         .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
 
-    // Bộ sưu tập 10 tuyệt phẩm trang sức kim cương cao cấp với chuẩn GIA quốc tế
-    var luxuryJewelry = new[]
-    {
-        new {
-            Id = 201,
-            Sku = "JW-RING-SOLITAIRE",
-            Name = "Nhẫn Kim Cương Solitaire Brilliant Cut 1.5 Carat",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "1.50 Carat",
-            Color = "Nước D (Tuyệt đối)",
-            Clarity = "VVS1 (Siêu tinh khiết)",
-            Cut = "Triple Excellent (3EX)",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 185000000m,
-            OldPrice = 210000000m,
-            Image = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-248910291",
-            Badge = "KIỆT TÁC CẦU HÔN",
-            Desc = "Kim cương chủ 1.50 Carat nước D, giác cắt giác tròn 57 mặt chuẩn xác, phản chiếu ánh lửa 7 màu rực rỡ trên ổ nhẫn Platinum 950 vuốt 6 chấu thanh mảnh."
-        },
-        new {
-            Id = 202,
-            Sku = "JW-BRACE-TENNIS",
-            Name = "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum",
-            Category = "vong-tay-lac-tay",
-            CategoryName = "Vòng & Lắc Tay",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "5.00 Carat (55 Viên)",
-            Color = "Nước E - F",
-            Clarity = "VVS2 - VS1",
-            Cut = "Round Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 145000000m,
-            OldPrice = 168000000m,
-            Image = "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-739182390",
-            Badge = "BIỂU TƯỢNG ĐẲNG CẤP",
-            Desc = "Dải kim cương chạy liền mạch 55 viên tinh tuyển đồng màu, khoá kép bảo hiểm công nghệ Thụy Sĩ ôm trọn cổ tay thanh thoát của quý cô quý phái."
-        },
-        new {
-            Id = 203,
-            Sku = "JW-NECK-HEART",
-            Name = "Dây Chuyền Mặt Kim Cương Halo Heart Diamond 1.2ct",
-            Category = "day-chuyen-mat-day",
-            CategoryName = "Dây Chuyền & Mặt Dây",
-            Material = "Vàng Trắng 18K (Au750)",
-            Carat = "1.20 Carat Chủ + 0.45ct Tấm",
-            Color = "Nước D",
-            Clarity = "VVS2",
-            Cut = "Heart Brilliant Cut",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 98000000m,
-            OldPrice = 115000000m,
-            Image = "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-550291821",
-            Badge = "TRÁI TIM VĨNH CỬU",
-            Desc = "Viên kim cương hình trái tim hoàn mỹ được bao bọc bởi dải kim cương tấm viền kép lộng lẫy, truyền tải thông điệp tình yêu son sắt trường tồn."
-        },
-        new {
-            Id = 204,
-            Sku = "JW-EARR-EMERALD",
-            Name = "Bông Tai Kim Cương Emerald Cut Drop Earrings 2.0ct",
-            Category = "bong-tai-cao-cap",
-            CategoryName = "Bông Tai Cao Cấp",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "2.00 Carat (Cặp 1.0ct x 2)",
-            Color = "Nước E",
-            Clarity = "VVS1",
-            Cut = "Emerald Step Cut",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 125000000m,
-            OldPrice = 142000000m,
-            Image = "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-829104812",
-            Badge = "QUÝ TỘC HOÀNG GIA",
-            Desc = "Giác cắt ngọc lục bảo Emerald Cut trong suốt như mặt gương hồ thu, buông lơi duyên dáng theo từng cử chỉ xoay đầu của chủ nhân."
-        },
-        new {
-            Id = 205,
-            Sku = "JW-RING-ROYAL",
-            Name = "Nhẫn Kim Cương Hoàng Gia Cung Điện Royal Halo 2.0ct",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Bạch Kim 950 & Vàng Vàng 18K",
-            Carat = "2.05 Carat Chủ (GIA D/FL)",
-            Color = "Nước D Tuyệt Đối",
-            Clarity = "FL (Flawless Hoàn Hảo)",
-            Cut = "Cushion Modified Brilliant",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 220000000m,
-            OldPrice = 255000000m,
-            Image = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-190284711",
-            Badge = "ĐỘC BẢN CUNG ĐIỆN",
-            Desc = "Tuyệt phẩm kim cương 2.05 Carat nước D độ tinh khiết không tì vết Flawless, lấy cảm hứng từ vương miện hoàng gia châu Âu thế kỷ 19."
-        },
-        new {
-            Id = 206,
-            Sku = "JW-BANGLE-ROSE",
-            Name = "Vòng Kiềng Bản Liền Vàng Hồng 18K Nạm Kim Cương Pave",
-            Category = "vong-tay-lac-tay",
-            CategoryName = "Vòng & Lắc Tay",
-            Material = "Vàng Hồng 18K Ý (Au750)",
-            Carat = "3.20 Carat Kim Cương Tấm",
-            Color = "Nước F",
-            Clarity = "VS1",
-            Cut = "Micro Pave Setting",
-            Origin = "Ý (Made in Italy)",
-            Price = 86000000m,
-            OldPrice = 98000000m,
-            Image = "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-620194827",
-            Badge = "THỜI THƯỢNG HIỆN ĐẠI",
-            Desc = "Sắc vàng hồng ấm áp kết hợp kỹ thuật nạm chìm Micro Pave tỉ mỉ, tôn vinh nét đẹp thanh tao, sang trọng trong mọi dịp xuất hiện."
-        },
-        new {
-            Id = 207,
-            Sku = "JW-NECK-PEAR",
-            Name = "Dây Chuyền Kim Cương Giọt Nước Pear Shaped 1.8 Carat",
-            Category = "day-chuyen-mat-day",
-            CategoryName = "Dây Chuyền & Mặt Dây",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "1.80 Carat Chủ + 0.60ct Phụ",
-            Color = "Nước D",
-            Clarity = "VVS1",
-            Cut = "Pear Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 165000000m,
-            OldPrice = 190000000m,
-            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-440192830",
-            Badge = "GIỌT LỆ NỮ THẦN",
-            Desc = "Giác cắt hình giọt nước kiêu sa kéo dài đường nét cổ kiêu hãnh, phản xạ ánh sáng mạnh mẽ tựa như tinh tú trên bầu trời đêm."
-        },
-        new {
-            Id = 208,
-            Sku = "JW-EARR-STUDS",
-            Name = "Bông Tai Nụ Kim Cương Classic Solitaire Studs 1.0 Carat",
-            Category = "bong-tai-cao-cap",
-            CategoryName = "Bông Tai Cao Cấp",
-            Material = "Vàng Trắng 18K (Au750)",
-            Carat = "1.00 Carat (0.50ct x 2)",
-            Color = "Nước E",
-            Clarity = "VVS2",
-            Cut = "Round Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 58000000m,
-            OldPrice = 68000000m,
-            Image = "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-910283741",
-            Badge = "THANH LỊCH MỖI NGÀY",
-            Desc = "Mẫu hoa tai nụ kinh điển không bao giờ lỗi mốt, thích hợp diện hàng ngày nơi công sở cũng như trong các buổi dạ tiệc ấm cúng."
-        },
-        new {
-            Id = 209,
-            Sku = "JW-WEDDING-BAND",
-            Name = "Cặp Nhẫn Cưới Đôi Vàng Trắng 18K Khắc Laser Tình Yêu",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Vàng Trắng 18K & Kim Cương",
-            Carat = "0.35 Carat Nhẫn Nữ, 0.20ct Nam",
-            Color = "Nước D",
-            Clarity = "VVS1",
-            Cut = "Princess & Round Cut",
-            Origin = "Thiết Kế Riêng Theo Đôi",
-            Price = 42000000m,
-            OldPrice = 49000000m,
-            Image = "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-391028472",
-            Badge = "KỶ VẬT TRĂM NĂM",
-            Desc = "Thiết kế lòng nhẫn công thái học đeo êm ái, hỗ trợ khắc dấu vân tay, ngày cưới và tên lồng laser công nghệ Thụy Sĩ vĩnh cửu."
-        },
-        new {
-            Id = 210,
-            Sku = "JW-SAPPHIRE-ROYAL",
-            Name = "Dây Chuyền Sapphire Ceylon Hoàng Gia 4.5ct & Kim Cương",
-            Category = "trang-suc-da-tiec",
-            CategoryName = "Tuyệt Tác Dạ Yến",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "4.5ct Sapphire + 2.8ct Kim Cương",
-            Color = "Royal Blue Hoàng Tộc",
-            Clarity = "Eye Clean Tuyệt Hảo",
-            Cut = "Oval Mixed Cut",
-            Origin = "Ceylon (Sri Lanka) Tự Nhiên",
-            Price = 280000000m,
-            OldPrice = 320000000m,
-            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GRS-2026-99182",
-            Badge = "BÁU VẬT HOÀNG GIA",
-            Desc = "Viên đá quý Sapphire hoàng tộc xanh thẳm tự nhiên từ Sri Lanka, bao bọc bởi 3 hàng kim cương nước D rực rỡ, chuẩn phong cách quý tộc Anh."
-        },
-        new {
-            Id = 211,
-            Sku = "JW-RING-ETERNITY-18K",
-            Name = "Nhẫn Eternity Vàng Trắng 18K Full Kim Cương 1.2ct",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Vàng Trắng 18K",
-            Carat = "1.20 Carat (36 viên)",
-            Color = "Nước E - F",
-            Clarity = "VS1 - VS2",
-            Cut = "Round Brilliant",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 96000000m,
-            OldPrice = 112000000m,
-            Image = "https://images.unsplash.com/photo-1598560917505-59a3ad559071?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-771204553",
-            Badge = "VÒNG TRÒN VĨNH CỬU",
-            Desc = "Vòng nhẫn khép kín 36 viên kim cương tấm đồng đều, biểu tượng của tình yêu không điểm dừng, ôm trọn ngón tay bằng nẹp vàng trắng 18K."
-        },
-        new {
-            Id = 212,
-            Sku = "JW-BANGLE-GOLD24K",
-            Name = "Vòng Tay Kiềng Vàng Ròng 24K Chạm Khắc Thủ Công",
-            Category = "vong-tay-lac-tay",
-            CategoryName = "Vòng & Lắc Tay",
-            Material = "Vàng Ròng 24K (9999)",
-            Carat = "Trọng lượng 2 chỉ",
-            Color = "Vàng Nguyên Bản",
-            Clarity = "Tuổi vàng 9999",
-            Cut = "Chạm khắc tay",
-            Origin = "Chế tác thủ công Việt Nam",
-            Price = 21500000m,
-            OldPrice = 23000000m,
-            Image = "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "SJC-2026-00418",
-            Badge = "TÍCH SẢN TRUYỀN ĐỜI",
-            Desc = "Kiềng vàng ròng 9999 chạm khắc hoa văn truyền thống bằng tay, vừa là trang sức vừa là tài sản tích trữ giữ giá theo giá vàng thị trường."
-        },
-        new {
-            Id = 213,
-            Sku = "JW-PENDANT-RUBY",
-            Name = "Mặt Dây Chuyền Ruby Miến Điện 2.2ct Viền Kim Cương",
-            Category = "day-chuyen-mat-day",
-            CategoryName = "Dây Chuyền & Mặt Dây",
-            Material = "Vàng Hồng 18K",
-            Carat = "2.20ct Ruby + 0.6ct Kim Cương",
-            Color = "Pigeon Blood Đỏ Huyết",
-            Clarity = "Eye Clean",
-            Cut = "Cushion Cut",
-            Origin = "Mogok, Miến Điện",
-            Price = 158000000m,
-            OldPrice = 175000000m,
-            Image = "https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GRS-2026-44120",
-            Badge = "HUYẾT NGỌC QUÝ HIẾM",
-            Desc = "Viên Ruby Pigeon Blood màu đỏ huyết đặc trưng vùng Mogok, được bao quanh bởi 24 viên kim cương tấm trên nền vàng hồng 18K ấm áp."
-        },
-        new {
-            Id = 214,
-            Sku = "JW-EARRING-HOOP",
-            Name = "Bông Tai Vòng Hoop Kim Cương Pave Vàng Trắng 18K",
-            Category = "bong-tai-cao-cap",
-            CategoryName = "Bông Tai Cao Cấp",
-            Material = "Vàng Trắng 18K",
-            Carat = "0.85 Carat (58 viên)",
-            Color = "Nước F",
-            Clarity = "VS2",
-            Cut = "Round Brilliant",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 64000000m,
-            OldPrice = 72000000m,
-            Image = "https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-559013882",
-            Badge = "THANH LỊCH HÀNG NGÀY",
-            Desc = "Bông tai vòng tròn nạm kim cương pave kín mặt ngoài, khoá bấm an toàn, nhẹ tay và phù hợp đeo từ công sở đến tiệc tối."
-        },
-        new {
-            Id = 215,
-            Sku = "JW-SET-BRIDAL",
-            Name = "Bộ Trang Sức Cưới Kim Cương 3 Món Vàng Trắng 18K",
-            Category = "trang-suc-da-tiec",
-            CategoryName = "Tuyệt Tác Dạ Yến",
-            Material = "Vàng Trắng 18K",
-            Carat = "3.10 Carat tổng thể",
-            Color = "Nước D - E",
-            Clarity = "VVS2",
-            Cut = "Round & Marquise",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 342000000m,
-            OldPrice = 395000000m,
-            Image = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-882017744",
-            Badge = "TRỌN BỘ CÔ DÂU",
-            Desc = "Bộ ba dây chuyền, bông tai và lắc tay đồng bộ hoa văn, dành riêng cho ngày trọng đại và các dạ tiệc trang trọng nhất."
-        },
-        new {
-            Id = 216,
-            Sku = "JW-RING-MEN-SIGNET",
-            Name = "Nhẫn Nam Signet Vàng 18K Đính Kim Cương Đen 1.0ct",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Vàng Vàng 18K",
-            Carat = "1.00 Carat Kim Cương Đen",
-            Color = "Fancy Black",
-            Clarity = "Opaque",
-            Cut = "Cabochon",
-            Origin = "Kim Cương Tự Nhiên Xử Lý Nhiệt",
-            Price = 78000000m,
-            OldPrice = 89000000m,
-            Image = "https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "IGI-2026-71203",
-            Badge = "BẢN LĨNH PHÁI MẠNH",
-            Desc = "Nhẫn signet bản dày khắc gia huy theo yêu cầu, tâm nhẫn là viên kim cương đen tuyền mài cabochon tạo khí chất mạnh mẽ."
-        }
-    };
+    var luxuryJewelry = ViewBag.JewelryCards as List<JewelryCardVm>
+                        ?? new List<JewelryCardVm>();
 }
 
 <!-- ==========================================================================
@@ -661,7 +356,7 @@
                            : item.Material.Contains("Hồng") ? "vang-hong"
                            : item.Material.Contains("Ròng") ? "vang-rong"
                            : "vang-vang";
-                var realId = dbIdBySku.TryGetValue(item.Sku, out var foundId) ? foundId : 0;
+                var realId = item.Id;
 
                 <div class="col-12 col-sm-6 col-lg-4 jewelry-card-item"
                      data-category="@item.Category"
@@ -994,40 +689,100 @@
             </p>
         </div>
 
-        <!-- Thẻ thành viên mẫu -->
+        @{
+            var loyaltyCustomer = ViewBag.LoyaltyCustomer as ERP_HRM_CMS.Models.Entities.Customer;
+            var tierInfo = loyaltyCustomer != null ? ERP_HRM_CMS.Helpers.LoyaltyHelper.GetTier(loyaltyCustomer.TotalRevenue) : null;
+        }
+
+        <!-- Thẻ thành viên mẫu hoặc thực tế của khách hàng -->
         <div class="row justify-content-center mb-5">
             <div class="col-12 col-md-8 col-lg-6">
-                <div class="pf-member-card rounded-4 p-4 position-relative overflow-hidden">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div>
-                            <div class="text-uppercase small text-secondary" style="letter-spacing: 0.18em;">Aura Brilliance</div>
-                            <div class="font-serif fw-bold text-white fs-4">Privilege Card</div>
+                @if (loyaltyCustomer == null)
+                {
+                    <div class="pf-member-card rounded-4 p-4 position-relative overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <div class="text-uppercase small text-secondary" style="letter-spacing: 0.18em;">Aura Brilliance</div>
+                                <div class="font-serif fw-bold text-white fs-4">Privilege Card</div>
+                            </div>
+                            <i class="bi bi-gem fs-2 text-warning"></i>
                         </div>
-                        <i class="bi bi-gem fs-2 text-warning"></i>
-                    </div>
-                    <div class="font-monospace text-warning mb-4" style="letter-spacing: 0.22em; font-size: 1.1rem;">
-                        AB•• •••• •••• 2026
-                    </div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div>
-                            <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">CHỦ THẺ</div>
-                            <div class="text-white fw-semibold">QUÝ KHÁCH THÀNH VIÊN</div>
+                        <div class="font-monospace text-warning mb-4" style="letter-spacing: 0.22em; font-size: 1.1rem;">
+                            AB•• •••• •••• 2026
                         </div>
-                        <div class="text-end">
-                            <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">HẠNG THẺ</div>
-                            <div class="fw-bold" style="color: #d4af37;">GOLD</div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div>
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">CHỦ THẺ</div>
+                                <div class="text-white fw-semibold">QUÝ KHÁCH THÀNH VIÊN</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">HẠNG THẺ</div>
+                                <div class="fw-bold" style="color: #d4af37;">GOLD</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <p class="text-center small text-secondary mt-3 mb-0">
-                    Thẻ minh họa. Đăng ký tài khoản để nhận thẻ thành viên điện tử của riêng quý khách.
-                </p>
+                    <p class="text-center small text-secondary mt-3 mb-0">
+                        Thẻ minh họa. Đăng ký tài khoản để nhận thẻ thành viên điện tử của riêng quý khách.
+                    </p>
+                }
+                else
+                {
+                    <div class="pf-member-card rounded-4 p-4 position-relative overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <div class="text-uppercase small text-secondary" style="letter-spacing: 0.18em;">Aura Brilliance</div>
+                                <div class="font-serif fw-bold text-white fs-4">Privilege Card</div>
+                            </div>
+                            <i class="bi bi-gem fs-2 text-warning"></i>
+                        </div>
+                        <div class="font-monospace text-warning mb-4" style="letter-spacing: 0.22em; font-size: 1.1rem;">
+                            AB•• •••• •••• 2026
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div>
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">CHỦ THẺ</div>
+                                <div class="text-white fw-semibold">@loyaltyCustomer.FullName.ToUpperInvariant()</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">HẠNG THẺ</div>
+                                <div class="fw-bold" style="color: @tierInfo!.Color;">@tierInfo.Code</div>
+                            </div>
+                        </div>
+
+                        @if (tierInfo.NextMilestone > 0)
+                        {
+                            <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-secondary">Tiến độ nâng hạng @tierInfo.NextTierName</span>
+                                    <span class="text-warning font-monospace">@tierInfo.ProgressPercent.ToString("0.#")%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(tierInfo.ProgressPercent)%;" aria-valuenow="@tierInfo.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="small text-secondary mt-2 text-center">
+                                    Còn @tierInfo.RemainingAmount.ToString("N0")đ nữa để lên hạng @tierInfo.NextTierName
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="small text-warning mt-2 text-center fw-semibold">
+                                    Quý khách đang ở hạng cao nhất
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
 
         <div class="row g-3 g-lg-4">
                 <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column" style="--tier-color: #b9c2cc;">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "SILVER" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #b9c2cc; @(tierInfo?.Code == "SILVER" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="pf-tier-badge"><i class="bi bi-award me-1"></i>SILVER</span>
                             <i class="bi bi-award fs-3" style="color: #b9c2cc;"></i>
@@ -1042,7 +797,7 @@
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column" style="--tier-color: #d4af37;">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "GOLD" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #d4af37; @(tierInfo?.Code == "GOLD" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="pf-tier-badge"><i class="bi bi-award-fill me-1"></i>GOLD</span>
                             <i class="bi bi-award-fill fs-3" style="color: #d4af37;"></i>
@@ -1058,7 +813,7 @@
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column" style="--tier-color: #e5e4e2;">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "PLATINUM" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #e5e4e2; @(tierInfo?.Code == "PLATINUM" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="pf-tier-badge"><i class="bi bi-gem me-1"></i>PLATINUM</span>
                             <i class="bi bi-gem fs-3" style="color: #e5e4e2;"></i>
@@ -1074,7 +829,7 @@
                     </div>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column" style="--tier-color: #8fd3ff;">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "DIAMOND" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #8fd3ff; @(tierInfo?.Code == "DIAMOND" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <span class="pf-tier-badge"><i class="bi bi-stars me-1"></i>DIAMOND</span>
                             <i class="bi bi-stars fs-3" style="color: #8fd3ff;"></i>
