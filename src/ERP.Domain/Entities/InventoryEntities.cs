@@ -55,11 +55,24 @@ namespace ERP_HRM_CMS.Models.Entities
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = VietnamTime.Now;
 
+        // Bổ sung thông số trang sức/đá quý (Giai đoạn D1)
+        [MaxLength(100)]
+        public string? GemstoneType { get; set; }
+        [Column(TypeName = "decimal(8,2)")]
+        public decimal? Carat { get; set; }
+        [MaxLength(50)]
+        public string? GemColor { get; set; }
+        [MaxLength(50)]
+        public string? GemClarity { get; set; }
+        [MaxLength(100)]
+        public string? CertificateNo { get; set; }
+
         [ForeignKey("CategoryId")]
         public virtual Category Category { get; set; } = null!;
         [ForeignKey("UnitId")]
         public virtual Unit? UnitEntity { get; set; }
         public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+        public virtual ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
     }
 
     [Table("Inventories")]
@@ -68,6 +81,7 @@ namespace ERP_HRM_CMS.Models.Entities
         [Key]
         public int Id { get; set; }
         public int ProductId { get; set; }
+        public int VariantId { get; set; }
         public int BranchId { get; set; }
         public int StockQuantity { get; set; } = 0;
         public int MinStockAlert { get; set; } = 5;
@@ -76,6 +90,8 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant Variant { get; set; } = null!;
         [ForeignKey("BranchId")]
         public virtual Branch Branch { get; set; } = null!;
     }
@@ -91,6 +107,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string TransactionType { get; set; } = "IN";
         public int BranchId { get; set; }
         public int ProductId { get; set; }
+        public int? VariantId { get; set; }
         public int Quantity { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; } = 0;
@@ -106,6 +123,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual Branch Branch { get; set; } = null!;
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant? Variant { get; set; }
         [ForeignKey("CreatedBy")]
         public virtual User Creator { get; set; } = null!;
     }
@@ -159,6 +178,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public long Id { get; set; }
         public long OrderId { get; set; }
         public int ProductId { get; set; }
+        public int? VariantId { get; set; }
         public int Quantity { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; }
@@ -172,6 +192,8 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual Order Order { get; set; } = null!;
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant? Variant { get; set; }
     }
 
     [Table("CartItems")]
@@ -183,6 +205,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public string? SessionId { get; set; }
         public int? UserId { get; set; }
         public int ProductId { get; set; }
+        public int? VariantId { get; set; }
         public int Quantity { get; set; } = 1;
         public DateTime AddedAt { get; set; } = VietnamTime.Now;
 
@@ -190,5 +213,7 @@ namespace ERP_HRM_CMS.Models.Entities
         public virtual User? User { get; set; }
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant? Variant { get; set; }
     }
 }

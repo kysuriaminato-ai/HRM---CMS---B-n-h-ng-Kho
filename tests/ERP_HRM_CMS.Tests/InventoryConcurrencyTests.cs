@@ -46,7 +46,7 @@ namespace ERP_HRM_CMS.Tests
             return chiNhanh.Id;
         }
 
-        private static async Task<int> TaoSanPhamAsync(AppDbContext db, decimal giaVon)
+        private static async Task<(int ProductId, int VariantId)> TaoSanPhamAsync(AppDbContext db, decimal giaVon)
         {
             string ma = MaNgauNhien();
             var danhMuc = new Category { Code = "DM" + ma, Name = "Danh mục kiểm thử " + ma, Slug = "dm-" + ma.ToLowerInvariant() };
@@ -64,15 +64,29 @@ namespace ERP_HRM_CMS.Tests
             };
             db.Products.Add(sanPham);
             await db.SaveChangesAsync();
-            return sanPham.Id;
+
+            var variant = new ProductVariant
+            {
+                ProductId = sanPham.Id,
+                Sku = sanPham.SKU,
+                PricingMode = "Fixed",
+                FixedPrice = sanPham.SalePrice,
+                IsActive = true,
+                IsDefault = true
+            };
+            db.ProductVariants.Add(variant);
+            await db.SaveChangesAsync();
+
+            return (sanPham.Id, variant.Id);
         }
 
-        private static async Task TaoTonAsync(AppDbContext db, int branchId, int productId, int soLuong)
+        private static async Task TaoTonAsync(AppDbContext db, int branchId, int productId, int variantId, int soLuong)
         {
             db.Inventories.Add(new Inventory
             {
                 BranchId = branchId,
                 ProductId = productId,
+                VariantId = variantId,
                 StockQuantity = soLuong,
                 MinStockAlert = 5,
                 MaxStockLimit = 1000
@@ -80,21 +94,21 @@ namespace ERP_HRM_CMS.Tests
             await db.SaveChangesAsync();
         }
 
-        private async Task<int> DocTonAsync(int branchId, int productId)
+        private async Task<int> DocTonAsync(int branchId, int variantId)
         {
             await using var db = NewContext();
             return await db.Inventories.AsNoTracking()
-                .Where(i => i.BranchId == branchId && i.ProductId == productId)
+                .Where(i => i.BranchId == branchId && i.VariantId == variantId)
                 .Select(i => i.StockQuantity)
                 .SingleAsync();
         }
 
         /// <summary>Một giao dịch xuất: chờ tín hiệu xuất phát, rồi trừ tồn trong transaction.</summary>
-        private static async Task<bool> XuatAsync(AppDbContext db, int branchId, int productId, int soLuong, Task batDau)
+        private static async Task<bool> XuatAsync(AppDbContext db, int branchId, int variantId, int soLuong, Task batDau)
         {
             await batDau;
             await using var giaoDich = await db.Database.BeginTransactionAsync();
-            bool thanhCong = await InventoryStockService.TruTonAsync(db, branchId, productId, soLuong, VietnamTime.Now);
+            bool thanhCong = await InventoryStockService.TruTonAsync(db, branchId, variantId, soLuong, VietnamTime.Now);
             if (thanhCong)
             {
                 await giaoDich.CommitAsync();
@@ -109,12 +123,12 @@ namespace ERP_HRM_CMS.Tests
         [Fact]
         public async Task HaiGiaoDichXuatDongThoi_CungSanPham_ChiMotGiaoDichThanhCong()
         {
-            int branchId, productId;
+            int branchId, productId, variantId;
             await using (var setup = NewContext())
             {
                 branchId = await TaoChiNhanhAsync(setup, MaNgauNhien());
-                productId = await TaoSanPhamAsync(setup, 1000m);
-                await TaoTonAsync(setup, branchId, productId, 10);
+                (productId, variantId) = await TaoSanPhamAsync(setup, 1000m);
+                await TaoTonAsync(setup, branchId, productId, variantId, 10);
             }
 
             // Hai xuất 7 đơn vị trên tồn 10: tổng 14 > 10, chỉ được một giao dịch thành công
@@ -122,13 +136,13 @@ namespace ERP_HRM_CMS.Tests
             await using var dbB = NewContext();
             var batDau = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var taskA = XuatAsync(dbA, branchId, productId, 7, batDau.Task);
-            var taskB = XuatAsync(dbB, branchId, productId, 7, batDau.Task);
+            var taskA = XuatAsync(dbA, branchId, variantId, 7, batDau.Task);
+            var taskB = XuatAsync(dbB, branchId, variantId, 7, batDau.Task);
             batDau.SetResult();
             bool[] ketQua = await Task.WhenAll(taskA, taskB);
 
             Assert.Equal(1, ketQua.Count(k => k));
-            Assert.Equal(3, await DocTonAsync(branchId, productId));
+            Assert.Equal(3, await DocTonAsync(branchId, variantId));
         }
 
         [Fact]
@@ -136,13 +150,13 @@ namespace ERP_HRM_CMS.Tests
         {
             await using var db = NewContext();
             int branchId = await TaoChiNhanhAsync(db, MaNgauNhien());
-            int productId = await TaoSanPhamAsync(db, 1000m);
-            await TaoTonAsync(db, branchId, productId, 5);
+            var (productId, variantId) = await TaoSanPhamAsync(db, 1000m);
+            await TaoTonAsync(db, branchId, productId, variantId, 5);
 
-            bool thanhCong = await InventoryStockService.TruTonAsync(db, branchId, productId, 6, VietnamTime.Now);
+            bool thanhCong = await InventoryStockService.TruTonAsync(db, branchId, variantId, 6, VietnamTime.Now);
 
             Assert.False(thanhCong);
-            Assert.Equal(5, await DocTonAsync(branchId, productId));
+            Assert.Equal(5, await DocTonAsync(branchId, variantId));
         }
 
         [Fact]
@@ -150,19 +164,19 @@ namespace ERP_HRM_CMS.Tests
         {
             await using var db = NewContext();
             int branchId = await TaoChiNhanhAsync(db, MaNgauNhien());
-            int productId = await TaoSanPhamAsync(db, 1000m);
-            await TaoTonAsync(db, branchId, productId, 10);
-            await InventoryStockService.TruTonAsync(db, branchId, productId, 3, VietnamTime.Now); // tồn = 7
+            var (productId, variantId) = await TaoSanPhamAsync(db, 1000m);
+            await TaoTonAsync(db, branchId, productId, variantId, 10);
+            await InventoryStockService.TruTonAsync(db, branchId, variantId, 3, VietnamTime.Now); // tồn = 7
 
             // Kiểm kê còn đọc số 10 (cũ): không được ghi đè
-            bool ghiSoCu = await InventoryStockService.DatTonTuyetDoiAsync(db, branchId, productId, 10, 4, VietnamTime.Now);
+            bool ghiSoCu = await InventoryStockService.DatTonTuyetDoiAsync(db, branchId, variantId, 10, 4, VietnamTime.Now);
             Assert.False(ghiSoCu);
-            Assert.Equal(7, await DocTonAsync(branchId, productId));
+            Assert.Equal(7, await DocTonAsync(branchId, variantId));
 
             // Kiểm kê đọc đúng số hiện tại (7): được ghi
-            bool ghiSoMoi = await InventoryStockService.DatTonTuyetDoiAsync(db, branchId, productId, 7, 4, VietnamTime.Now);
+            bool ghiSoMoi = await InventoryStockService.DatTonTuyetDoiAsync(db, branchId, variantId, 7, 4, VietnamTime.Now);
             Assert.True(ghiSoMoi);
-            Assert.Equal(4, await DocTonAsync(branchId, productId));
+            Assert.Equal(4, await DocTonAsync(branchId, variantId));
         }
 
         [Fact]
@@ -175,10 +189,10 @@ namespace ERP_HRM_CMS.Tests
             Assert.Equal(0, truoc.SoMatHang);
             Assert.Equal(0m, truoc.GiaTriTonKho);
 
-            int spA = await TaoSanPhamAsync(db, 1000m);
-            await TaoTonAsync(db, branchId, spA, 4);   // tồn thấp (4 <= 5), giá trị 4 * 1000
-            int spB = await TaoSanPhamAsync(db, 2500m);
-            await TaoTonAsync(db, branchId, spB, 20);  // an toàn, giá trị 20 * 2500
+            var (spA, varA) = await TaoSanPhamAsync(db, 1000m);
+            await TaoTonAsync(db, branchId, spA, varA, 4);   // tồn thấp (4 <= 5), giá trị 4 * 1000
+            var (spB, varB) = await TaoSanPhamAsync(db, 2500m);
+            await TaoTonAsync(db, branchId, spB, varB, 20);  // an toàn, giá trị 20 * 2500
 
             var sau = await InventoryStockService.TongHopTonKhoAsync(db, branchId);
             Assert.Equal(2, sau.SoMatHang);

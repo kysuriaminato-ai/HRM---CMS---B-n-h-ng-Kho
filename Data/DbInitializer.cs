@@ -257,9 +257,10 @@ namespace ERP_HRM_CMS.Data
                 ("cms_content", "content.delete", "Xóa bài viết"),
                 ("cms_layout", "layout.manage", "Quản lý giao diện & Banner"),
 
-                // Bán hàng - Sản phẩm
+                // Bán hàng - Sản phẩm & Giá Vàng
                 ("product", "product.view", "Xem danh mục & sản phẩm"),
                 ("product", "product.manage", "Quản lý sản phẩm (Thêm/Sửa/Xóa)"),
+                ("product", "product.gold", "Quản lý giá vàng & bảng giá trang sức"),
 
                 // Bán hàng - Đơn hàng & POS
                 ("order", "order.pos", "Bán hàng tại quầy POS"),
@@ -903,20 +904,61 @@ namespace ERP_HRM_CMS.Data
             }
             await context.SaveChangesAsync();
 
-            // 3. Tồn kho ban đầu (Inventories) cho từng Chi nhánh
+            // 3. Đảm bảo mỗi sản phẩm có ít nhất một ProductVariant mặc định và liên kết vật liệu (Phiên D1)
+            var otherMaterial = await context.JewelryMaterials.FirstOrDefaultAsync(m => m.Code == "OTHER");
+            if (otherMaterial == null)
+            {
+                otherMaterial = new JewelryMaterial
+                {
+                    Code = "OTHER",
+                    Name = "Khác",
+                    Metal = "Other",
+                    IsActive = true,
+                    CreatedAt = VietnamTime.Now
+                };
+                context.JewelryMaterials.Add(otherMaterial);
+                await context.SaveChangesAsync();
+            }
+
+            var allProds = await context.Products.ToListAsync();
+            foreach (var prod in allProds)
+            {
+                var defaultVariant = await context.ProductVariants.FirstOrDefaultAsync(v => v.ProductId == prod.Id && v.IsDefault);
+                if (defaultVariant == null)
+                {
+                    string sku = !string.IsNullOrWhiteSpace(prod.SKU) ? prod.SKU.Trim() : $"P{prod.Id}";
+                    context.ProductVariants.Add(new ProductVariant
+                    {
+                        ProductId = prod.Id,
+                        Sku = sku,
+                        MaterialId = otherMaterial.Id,
+                        PricingMode = "Fixed",
+                        FixedPrice = Math.Round(prod.SalePrice, 0),
+                        LaborFee = 0,
+                        StoneFee = 0,
+                        IsDefault = true,
+                        IsActive = true,
+                        CreatedAt = VietnamTime.Now
+                    });
+                }
+            }
+            await context.SaveChangesAsync();
+
+            // 4. Tồn kho ban đầu (Inventories) cho từng Chi nhánh và từng Biến thể
             var branches = await context.Branches.ToListAsync();
-            var products = await context.Products.ToListAsync();
+            var variants = await context.ProductVariants.Include(v => v.Product).Where(v => v.IsActive).ToListAsync();
 
             foreach (var b in branches)
             {
-                foreach (var prod in products)
+                foreach (var v in variants)
                 {
-                    if (!await context.Inventories.AnyAsync(i => i.ProductId == prod.Id && i.BranchId == b.Id))
+                    if (!await context.Inventories.AnyAsync(i => i.VariantId == v.Id && i.BranchId == b.Id))
                     {
                         int initialStock = b.Code == "CN-HN" ? 100 : 50;
                         context.Inventories.Add(new Inventory
                         {
-                            ProductId = prod.Id,
+                            ProductId = v.ProductId,
+                            VariantId = v.Id,
                             BranchId = b.Id,
                             StockQuantity = initialStock,
                             MinStockAlert = 5,

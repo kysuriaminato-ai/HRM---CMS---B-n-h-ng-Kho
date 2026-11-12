@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
@@ -275,13 +275,17 @@ namespace ERP_HRM_CMS.Controllers
                 // 1. Tự động tăng tồn kho thực tế tại chi nhánh bằng câu lệnh UPDATE nguyên tử (không mất cập nhật khi đồng thời)
                 foreach (var item in po.PurchaseOrderDetails)
                 {
+                    var variantId = await InventoryStockService.ResolveVariantIdAsync(_context, item.ProductId, item.VariantId);
+                    item.VariantId = variantId;
+
                     bool daCongTon = await InventoryStockService.CongTonAsync(
-                        _context, po.BranchId, item.ProductId, item.Quantity, VietnamTime.Now);
+                        _context, po.BranchId, variantId, item.Quantity, VietnamTime.Now);
                     if (!daCongTon)
                     {
                         _context.Inventories.Add(new Inventory
                         {
                             ProductId = item.ProductId,
+                            VariantId = variantId,
                             BranchId = po.BranchId,
                             StockQuantity = item.Quantity,
                             MinStockAlert = 5,
@@ -297,6 +301,7 @@ namespace ERP_HRM_CMS.Controllers
                         TransactionType = "IN",
                         BranchId = po.BranchId,
                         ProductId = item.ProductId,
+                        VariantId = variantId,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
                         Note = $"Nhập hàng theo đơn PO {po.POCode} từ NCC {po.Supplier.Name}",

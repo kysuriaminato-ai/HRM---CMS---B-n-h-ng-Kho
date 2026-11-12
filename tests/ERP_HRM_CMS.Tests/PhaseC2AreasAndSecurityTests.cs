@@ -5,6 +5,7 @@ using ERP_HRM_CMS.Controllers;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
+using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Services.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -208,6 +209,66 @@ namespace ERP_HRM_CMS.Tests
         [Fact]
         public async Task Routes_Unchanged_For_Listed_Urls()
         {
+            // Tạo sẵn nhân viên, kỳ lương và phiếu lương để URL /PhieuIn/PhieuLuong/{id}
+            // không phụ thuộc vào dữ liệu còn sót lại từ test khác
+            int slipId;
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var dept = await db.Departments.FirstAsync();
+                var pos = await db.Positions.FirstAsync();
+
+                var emp = new Employee
+                {
+                    EmployeeCode = $"NV-{Guid.NewGuid():N}"[..10],
+                    FullName = "Nhân Viên Route Test",
+                    DepartmentId = dept.Id,
+                    PositionId = pos.Id,
+                    Email = $"route_{Guid.NewGuid():N}@test.local",
+                    Phone = "0901234567",
+                    Status = "Active",
+                    HireDate = DateTime.Today.AddYears(-2)
+                };
+                db.Employees.Add(emp);
+                await db.SaveChangesAsync();
+
+                var period = await db.PayrollPeriods.FirstOrDefaultAsync(p => p.Month == 11 && p.Year == 2026);
+                if (period == null)
+                {
+                    period = new PayrollPeriod
+                    {
+                        Name = $"Kỳ lương Route {Guid.NewGuid():N}"[..25],
+                        Month = 11,
+                        Year = 2026,
+                        StandardWorkDays = 22,
+                        Status = PayrollPeriodStatus.Draft,
+                        CreatedAt = VietnamTime.Now
+                    };
+                    db.PayrollPeriods.Add(period);
+                    await db.SaveChangesAsync();
+                }
+
+                var slip = new SalarySlip
+                {
+                    PayrollPeriodId = period.Id,
+                    EmployeeId = emp.Id,
+                    BasicSalary = 15000000,
+                    StandardDays = 22,
+                    ActualWorkDays = 22,
+                    GrossSalary = 15000000,
+                    SocialInsurance = 1200000,
+                    HealthInsurance = 225000,
+                    UnemploymentInsurance = 150000,
+                    TotalInsurance = 1575000,
+                    NetSalary = 13425000,
+                    Status = SalarySlipStatus.Sent,
+                    CreatedAt = VietnamTime.Now
+                };
+                db.SalarySlips.Add(slip);
+                await db.SaveChangesAsync();
+                slipId = slip.Id;
+            }
+
             var protectedUrls = new[]
             {
                 // Khu vực Admin
@@ -237,7 +298,7 @@ namespace ERP_HRM_CMS.Tests
                 "/DanhGiaKpi",
                 "/QuyetDinhNhanSu",
                 "/CongNhanVien",
-                "/PhieuIn/PhieuLuong/1",
+                $"/PhieuIn/PhieuLuong/{slipId}",
                 "/PhongBan",
                 "/HopDong",
                 "/TaiSanNhanSu",

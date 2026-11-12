@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Filters;
@@ -161,12 +161,15 @@ namespace ERP_HRM_CMS.Controllers
 
                     // 1. Tạo phiếu giao dịch kho
                     string transCode = await MaChungTu.SinhDuyNhatAsync("PNK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
+                    int variantId = await InventoryStockService.ResolveVariantIdAsync(_context, dto.ProductId, null);
+
                     var transaction = new InventoryTransaction
                     {
                         TransactionCode = transCode,
                         TransactionType = "IN",
                         BranchId = dto.BranchId,
                         ProductId = dto.ProductId,
+                        VariantId = variantId,
                         Quantity = dto.Quantity,
                         UnitPrice = dto.UnitPrice > 0 ? dto.UnitPrice : product.CostPrice,
                         Note = string.IsNullOrWhiteSpace(dto.Note) ? "Nhập hàng từ nhà cung cấp" : dto.Note.Trim(),
@@ -175,14 +178,14 @@ namespace ERP_HRM_CMS.Controllers
                     };
                     _context.InventoryTransactions.Add(transaction);
 
-                    // 2. Cộng tồn bằng UPDATE cộng dồn trên database (không mất cập nhật khi đồng thời).
-                    //    Chưa có dòng tồn thì thêm mới; nếu hai giao dịch cùng thêm, unique index sẽ chặn và hủy giao dịch.
-                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.BranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    // 2. Cộng tồn bằng UPDATE cộng dồn theo VariantId trên database (không mất cập nhật khi đồng thời).
+                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.BranchId, variantId, dto.Quantity, VietnamTime.Now);
                     if (!daCongTon)
                     {
                         _context.Inventories.Add(new Inventory
                         {
                             ProductId = dto.ProductId,
+                            VariantId = variantId,
                             BranchId = dto.BranchId,
                             StockQuantity = dto.Quantity,
                             MinStockAlert = 5,
@@ -254,8 +257,10 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
-                    // Trừ tồn bằng UPDATE có điều kiện (StockQuantity >= số xuất). Không đủ thì hủy toàn bộ transaction.
-                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.BranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    int variantId = await InventoryStockService.ResolveVariantIdAsync(_context, dto.ProductId, null);
+
+                    // Trừ tồn bằng UPDATE có điều kiện (StockQuantity >= số xuất) theo VariantId. Không đủ thì hủy toàn bộ transaction.
+                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.BranchId, variantId, dto.Quantity, VietnamTime.Now);
                     if (!duDeTru)
                     {
                         await dbTransaction.RollbackAsync();
@@ -271,6 +276,7 @@ namespace ERP_HRM_CMS.Controllers
                         TransactionType = "OUT",
                         BranchId = dto.BranchId,
                         ProductId = dto.ProductId,
+                        VariantId = variantId,
                         Quantity = dto.Quantity,
                         UnitPrice = dto.UnitPrice > 0 ? dto.UnitPrice : inventory!.Product.CostPrice,
                         Note = string.IsNullOrWhiteSpace(dto.Note) ? "Xuất kho điều chuyển / hao hụt" : dto.Note.Trim(),
@@ -435,11 +441,12 @@ namespace ERP_HRM_CMS.Controllers
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
                 try
                 {
+                    int variantId = await InventoryStockService.ResolveVariantIdAsync(_context, dto.ProductId, null);
                     string transCode = await MaChungTu.SinhDuyNhatAsync("DCK", ma => _context.InventoryTransactions.AnyAsync(t => t.TransactionCode == ma));
                     decimal unitCost = fromInventory!.Product.CostPrice;
 
-                    // 1. Trừ tồn chi nhánh xuất bằng UPDATE có điều kiện; không đủ thì hủy toàn bộ điều chuyển
-                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.FromBranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    // 1. Trừ tồn chi nhánh xuất bằng UPDATE có điều kiện theo VariantId; không đủ thì hủy toàn bộ điều chuyển
+                    bool duDeTru = await InventoryStockService.TruTonAsync(_context, dto.FromBranchId, variantId, dto.Quantity, VietnamTime.Now);
                     if (!duDeTru)
                     {
                         await dbTransaction.RollbackAsync();
@@ -459,6 +466,7 @@ namespace ERP_HRM_CMS.Controllers
                         TransactionType = "TRANSFER_OUT",
                         BranchId = dto.FromBranchId,
                         ProductId = dto.ProductId,
+                        VariantId = variantId,
                         Quantity = dto.Quantity,
                         UnitPrice = unitCost,
                         Note = $"Điều chuyển kho sang chi nhánh #{dto.ToBranchId}. " + (dto.Note ?? string.Empty),
@@ -467,13 +475,14 @@ namespace ERP_HRM_CMS.Controllers
                     });
 
                     // 2. Cộng tồn kho tại chi nhánh nhận & ghi giao dịch IN
-                    // Cộng tồn chi nhánh nhận bằng UPDATE cộng dồn; chưa có dòng tồn thì thêm mới
-                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.ToBranchId, dto.ProductId, dto.Quantity, VietnamTime.Now);
+                    // Cộng tồn chi nhánh nhận bằng UPDATE cộng dồn theo VariantId; chưa có dòng tồn thì thêm mới
+                    bool daCongTon = await InventoryStockService.CongTonAsync(_context, dto.ToBranchId, variantId, dto.Quantity, VietnamTime.Now);
                     if (!daCongTon)
                     {
                         _context.Inventories.Add(new Inventory
                         {
                             ProductId = dto.ProductId,
+                            VariantId = variantId,
                             BranchId = dto.ToBranchId,
                             StockQuantity = dto.Quantity,
                             MinStockAlert = 5,
@@ -488,6 +497,7 @@ namespace ERP_HRM_CMS.Controllers
                         TransactionType = "TRANSFER_IN",
                         BranchId = dto.ToBranchId,
                         ProductId = dto.ProductId,
+                        VariantId = variantId,
                         Quantity = dto.Quantity,
                         UnitPrice = unitCost,
                         Note = $"Nhận điều chuyển từ chi nhánh #{dto.FromBranchId}. " + (dto.Note ?? string.Empty),
@@ -624,6 +634,7 @@ namespace ERP_HRM_CMS.Controllers
                     sheet.StocktakingDetails.Add(new StocktakingDetail
                     {
                         ProductId = pid,
+                        VariantId = inv.VariantId,
                         SystemQuantity = sysQty,
                         ActualQuantity = actQty,
                         DifferenceQuantity = diffQty,
@@ -636,7 +647,7 @@ namespace ERP_HRM_CMS.Controllers
                     if (diffQty != 0)
                     {
                         // Chỉ ghi khi tồn vẫn bằng số đã đọc; nếu đã đổi (giao dịch khác) thì hủy phiên kiểm kê
-                        bool daCapNhat = await InventoryStockService.DatTonTuyetDoiAsync(_context, branchId, pid, sysQty, actQty, VietnamTime.Now);
+                        bool daCapNhat = await InventoryStockService.DatTonTuyetDoiAsync(_context, branchId, inv.VariantId, sysQty, actQty, VietnamTime.Now);
                         if (!daCapNhat)
                         {
                             await dbTransaction.RollbackAsync();
@@ -650,6 +661,7 @@ namespace ERP_HRM_CMS.Controllers
                             TransactionType = "ADJUST",
                             BranchId = branchId,
                             ProductId = pid,
+                            VariantId = inv.VariantId,
                             Quantity = diffQty,
                             UnitPrice = inv.Product.CostPrice,
                             Note = $"Cân bằng kiểm kê phiếu {sheet.Code}. Lý do: {reason}",

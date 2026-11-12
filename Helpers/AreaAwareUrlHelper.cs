@@ -59,7 +59,8 @@ namespace ERP_HRM_CMS.Helpers
             ["PhongBan"] = "Staff",
             ["HopDong"] = "Staff",
             ["TaiSanNhanSu"] = "Staff",
-            ["Supplier"] = "Staff"
+            ["Supplier"] = "Staff",
+            ["GiaVang"] = "Staff"
         };
 
         private readonly IUrlHelper _inner;

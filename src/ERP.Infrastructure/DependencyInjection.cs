@@ -47,6 +47,8 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IGoldPriceProvider, ERP.Infrastructure.Services.ManualGoldPriceProvider>();
+        services.AddScoped<IVariantPricingService, ERP.Infrastructure.Services.VariantPricingService>();
 
         // 4. Health Checks kiểm tra kết nối SQL Server tại /health
         services.AddHealthChecks()

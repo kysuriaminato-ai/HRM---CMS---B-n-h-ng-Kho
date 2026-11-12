@@ -1,4 +1,4 @@
-﻿using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Helpers;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using ERP_HRM_CMS.Data;
@@ -28,13 +28,20 @@ namespace ERP_HRM_CMS.Services
             var productIds = rawItems.Select(i => i.ProductId).Distinct().ToList();
 
             var products = await _context.Products
+                .Include(p => p.Variants)
                 .Where(p => productIds.Contains(p.Id))
                 .ToDictionaryAsync(p => p.Id, p => p);
 
-            // Kiểm tra trực tiếp bảng Inventories theo BranchId
-            var inventories = await _context.Inventories
-                .Where(i => i.BranchId == branchId && productIds.Contains(i.ProductId))
-                .ToDictionaryAsync(i => i.ProductId, i => i.StockQuantity);
+            // Kiểm tra trực tiếp bảng Inventories theo BranchId và VariantId
+            var variantIds = products.Values
+                .SelectMany(p => p.Variants)
+                .Select(v => v.Id)
+                .Distinct()
+                .ToList();
+
+            var inventoriesByVariant = await _context.Inventories
+                .Where(i => i.BranchId == branchId && variantIds.Contains(i.VariantId))
+                .ToDictionaryAsync(i => i.VariantId, i => i.StockQuantity);
 
             var result = new CartViewModel();
 
@@ -42,7 +49,8 @@ namespace ERP_HRM_CMS.Services
             {
                 if (!products.TryGetValue(item.ProductId, out var prod)) continue;
 
-                int availableStock = inventories.GetValueOrDefault(item.ProductId, 0);
+                var defaultVariant = prod.Variants.FirstOrDefault(v => v.IsDefault) ?? prod.Variants.FirstOrDefault();
+                int availableStock = defaultVariant != null && inventoriesByVariant.TryGetValue(defaultVariant.Id, out int st) ? st : 0;
                 string? stockWarning = null;
                 int currentQty = item.Quantity;
 

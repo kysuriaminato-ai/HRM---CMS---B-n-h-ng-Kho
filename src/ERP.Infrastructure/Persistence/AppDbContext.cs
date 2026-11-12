@@ -99,6 +99,11 @@ namespace ERP_HRM_CMS.Data
         public DbSet<StocktakingSheet> StocktakingSheets => Set<StocktakingSheet>();
         public DbSet<StocktakingDetail> StocktakingDetails => Set<StocktakingDetail>();
 
+        // Phân hệ Sản phẩm Trang sức & Vàng (Phiên D1)
+        public DbSet<JewelryMaterial> JewelryMaterials => Set<JewelryMaterial>();
+        public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+        public DbSet<GoldPrice> GoldPrices => Set<GoldPrice>();
+
         // Phiên 5: Hồ sơ nhân viên mở rộng
         public DbSet<EmployeeRelative> EmployeeRelatives => Set<EmployeeRelative>();
         public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
@@ -572,6 +577,66 @@ namespace ERP_HRM_CMS.Data
                 .HasOne(d => d.Customer)
                 .WithMany(c => c.DebtRecords)
                 .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ═══════════════════════════════════════════════════════════
+            // PHIÊN D1 — Mô hình Trang sức, Biến thể & Giá Vàng
+            // ═══════════════════════════════════════════════════════════
+            modelBuilder.Entity<JewelryMaterial>().HasIndex(m => m.Code).IsUnique();
+
+            modelBuilder.Entity<ProductVariant>().HasIndex(v => v.Sku).IsUnique();
+            modelBuilder.Entity<ProductVariant>()
+                .HasOne(v => v.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(v => v.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ProductVariant>()
+                .HasOne(v => v.Material)
+                .WithMany(m => m.Variants)
+                .HasForeignKey(v => v.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GoldPrice>().HasIndex(g => g.EffectiveDate).IsUnique();
+
+            // Khóa duy nhất (VariantId, BranchId) trên bảng Inventories
+            modelBuilder.Entity<Inventory>()
+                .HasIndex(i => new { i.VariantId, i.BranchId })
+                .IsUnique();
+
+            modelBuilder.Entity<Inventory>()
+                .HasOne(i => i.Variant)
+                .WithMany(v => v.Inventories)
+                .HasForeignKey(i => i.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InventoryTransaction>()
+                .HasOne(t => t.Variant)
+                .WithMany(v => v.InventoryTransactions)
+                .HasForeignKey(t => t.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.OrderDetails)
+                .HasForeignKey(d => d.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(c => c.Variant)
+                .WithMany(v => v.CartItems)
+                .HasForeignKey(c => c.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PurchaseOrderDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.PurchaseOrderDetails)
+                .HasForeignKey(d => d.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StocktakingDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.StocktakingDetails)
+                .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ═══════════════════════════════════════════════════════════

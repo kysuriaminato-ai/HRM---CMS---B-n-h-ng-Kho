@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Common.Security;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
@@ -172,16 +172,24 @@ namespace ERP_HRM_CMS.Controllers
 
             decimal validatedDiscount = discountValidation.GetRequiredValue();
 
-            // Nạp tồn kho một lần duy nhất cho toàn bộ sản phẩm trong giỏ (tránh N+1 query H5)
+            // Nạp biến thể mặc định và tồn kho theo biến thể (tránh N+1 query)
             var productIds = cart.Items.Select(x => x.ProductId).Distinct().ToList();
-            var stockByProduct = await _context.Inventories
+            var variants = await _context.ProductVariants
+                .Where(v => productIds.Contains(v.ProductId) && v.IsDefault)
+                .ToDictionaryAsync(v => v.ProductId, v => v);
+
+            var variantIds = variants.Values.Select(v => v.Id).ToList();
+            var stockByVariant = await _context.Inventories
                 .AsNoTracking()
-                .Where(i => i.BranchId == dto.BranchId && productIds.Contains(i.ProductId))
-                .ToDictionaryAsync(i => i.ProductId, i => i);
+                .Where(i => i.BranchId == dto.BranchId && variantIds.Contains(i.VariantId))
+                .ToDictionaryAsync(i => i.VariantId, i => i);
 
             foreach (var item in cart.Items)
             {
-                stockByProduct.TryGetValue(item.ProductId, out var inv);
+                variants.TryGetValue(item.ProductId, out var variant);
+                Inventory? inv = null;
+                if (variant != null) stockByVariant.TryGetValue(variant.Id, out inv);
+
                 if (inv == null || inv.StockQuantity < item.Quantity)
                 {
                     string stockErr = $"Lỗi tồn kho: Sản phẩm '{item.ProductName}' chỉ còn {inv?.StockQuantity ?? 0} {item.Unit} khả dụng!";
@@ -219,15 +227,19 @@ namespace ERP_HRM_CMS.Controllers
 
                 foreach (var item in cart.Items)
                 {
+                    variants.TryGetValue(item.ProductId, out var variant);
+                    int variantId = variant?.Id ?? await InventoryStockService.ResolveVariantIdAsync(_context, item.ProductId, null);
+
                     _context.OrderDetails.Add(new OrderDetail
                     {
                         OrderId = order.Id,
                         ProductId = item.ProductId,
+                        VariantId = variantId,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice
                     });
 
-                    if (!await InventoryStockService.TruTonAsync(_context, dto.BranchId, item.ProductId, item.Quantity, VietnamTime.Now))
+                    if (!await InventoryStockService.TruTonAsync(_context, dto.BranchId, variantId, item.Quantity, VietnamTime.Now))
                     {
                         throw new TonKhoKhongDuException($"Sản phẩm '{item.ProductName}' vừa hết hàng tại chi nhánh. Đơn hàng chưa được lập.");
                     }
@@ -238,6 +250,7 @@ namespace ERP_HRM_CMS.Controllers
                         TransactionType = "OUT",
                         BranchId = dto.BranchId,
                         ProductId = item.ProductId,
+                        VariantId = variantId,
                         Quantity = item.Quantity,
                         UnitPrice = item.UnitPrice,
                         Note = $"Xuất kho bán lẻ theo đơn hàng {order.OrderCode}",
