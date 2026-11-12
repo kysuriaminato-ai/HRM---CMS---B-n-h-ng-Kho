@@ -38,6 +38,17 @@
     <link href="~/css/site.css" rel="stylesheet" />
     <link href="~/css/public-site.css" rel="stylesheet" />
     <link href="~/css/perfume-luxury.css" rel="stylesheet" />
+    <script>
+        // Đặt giao diện trước khi trang vẽ để không bị nháy màu
+        (function () {
+            try {
+                var t = localStorage.getItem('pf-theme');
+                var a = localStorage.getItem('pf-accent');
+                if (t) { document.documentElement.setAttribute('data-pf-theme', t); }
+                if (a) { document.documentElement.setAttribute('data-pf-accent', a); }
+            } catch (e) { /* trình duyệt chặn localStorage thì dùng mặc định */ }
+        })();
+    </script>
 </head>
 <body class="pf-luxury-body">
     <a class="ps-skip-link" href="#noi-dung-chinh">Bỏ qua điều hướng</a>
@@ -82,6 +93,19 @@
                 <a href="/#bang-do-size" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-rulers me-1"></i>Đo Size Nhẫn</a>
                 <a href="/Public/GioiThieu" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-gem me-1"></i>Về Aura Brilliance</a>
                 <a href="/tuyen-dung" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-briefcase me-1"></i>Tuyển dụng</a>
+                <div class="pf-theme-bar d-none d-lg-inline-flex" role="group" aria-label="Tuỳ chỉnh giao diện">
+                    <button type="button" class="pf-swatch" data-accent="gold" title="Vàng Champagne" aria-label="Màu Vàng Champagne"></button>
+                    <button type="button" class="pf-swatch" data-accent="rose" title="Hồng Ngọc" aria-label="Màu Hồng Ngọc"></button>
+                    <button type="button" class="pf-swatch" data-accent="emerald" title="Lục Bảo" aria-label="Màu Lục Bảo"></button>
+                    <button type="button" class="pf-swatch" data-accent="sapphire" title="Lam Ngọc" aria-label="Màu Lam Ngọc"></button>
+                    <button type="button" class="pf-swatch" data-accent="platinum" title="Bạch Kim" aria-label="Màu Bạch Kim"></button>
+                </div>
+
+                <button type="button" id="btnThemeToggle" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1"
+                        title="Chuyển chế độ Sáng / Tối" aria-label="Chuyển chế độ Sáng hoặc Tối">
+                    <i class="bi bi-moon-stars"></i><span class="small d-none d-xl-inline">Chế độ tối</span>
+                </button>
+
                 <button type="button" id="btnMobilePreview" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 d-none d-lg-inline-flex align-items-center gap-1"
                         title="Xem giao diện trên điện thoại" aria-label="Xem giao diện trên điện thoại">
                     <i class="bi bi-phone"></i><span class="small">Bản điện thoại</span>
@@ -382,95 +406,55 @@
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 
-<!-- ==========================================================================
-     KHUNG XEM THỬ GIAO DIỆN ĐIỆN THOẠI
-     ========================================================================== -->
-<div id="mobilePreviewOverlay" class="pf-mobile-overlay" role="dialog" aria-modal="true" aria-label="Xem thử giao diện điện thoại">
-    <div class="pf-mobile-toolbar">
-        <span class="text-warning fw-semibold"><i class="bi bi-phone me-2"></i>Giao diện điện thoại</span>
-        <div class="d-flex align-items-center gap-2">
-            <select id="mobilePreviewDevice" class="form-select form-select-sm pf-input" style="width: auto;">
-                <option value="390x844">iPhone 14 — 390 × 844</option>
-                <option value="360x800">Android — 360 × 800</option>
-                <option value="430x932">iPhone Pro Max — 430 × 932</option>
-                <option value="768x1024">iPad — 768 × 1024</option>
-            </select>
-            <button type="button" id="mobilePreviewReload" class="btn btn-sm btn-outline-gold" title="Tải lại">
-                <i class="bi bi-arrow-clockwise"></i>
-            </button>
-            <button type="button" id="mobilePreviewClose" class="btn btn-sm btn-outline-light" title="Đóng">
-                <i class="bi bi-x-lg"></i> Đóng
-            </button>
-        </div>
-    </div>
-
-    <div class="pf-mobile-stage">
-        <div class="pf-phone-frame" id="mobilePhoneFrame">
-            <div class="pf-phone-notch"></div>
-            <iframe id="mobilePreviewFrame" title="Xem thử giao diện điện thoại" src="about:blank"></iframe>
-        </div>
-    </div>
-</div>
-
 <script>
 (function () {
     'use strict';
-    var btn = document.getElementById('btnMobilePreview');
-    var overlay = document.getElementById('mobilePreviewOverlay');
-    if (!btn || !overlay) { return; }
+    var root = document.documentElement;
+    var btn = document.getElementById('btnThemeToggle');
 
-    // Đang nằm trong khung xem thử thì ẩn nút để không lồng nhau
-    if (window.self !== window.top) {
-        btn.remove();
-        overlay.remove();
-        return;
+    function save(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* bỏ qua */ } }
+
+    function paintToggle() {
+        if (!btn) { return; }
+        var light = root.getAttribute('data-pf-theme') === 'light';
+        var icon = btn.querySelector('i');
+        var label = btn.querySelector('span');
+        if (icon) { icon.className = light ? 'bi bi-sun' : 'bi bi-moon-stars'; }
+        if (label) { label.textContent = light ? 'Chế độ sáng' : 'Chế độ tối'; }
+        btn.setAttribute('aria-pressed', light ? 'true' : 'false');
     }
 
-    var frame = document.getElementById('mobilePreviewFrame');
-    var phone = document.getElementById('mobilePhoneFrame');
-    var sel = document.getElementById('mobilePreviewDevice');
-
-    function targetUrl() {
-        var u = new URL(window.location.href);
-        u.searchParams.set('mobilepreview', '1');
-        return u.toString();
+    function paintSwatches() {
+        var cur = root.getAttribute('data-pf-accent') || 'gold';
+        document.querySelectorAll('.pf-swatch').forEach(function (b) {
+            b.classList.toggle('is-active', b.dataset.accent === cur);
+        });
     }
 
-    function fitScale() {
-        var parts = sel.value.split('x');
-        var w = parseInt(parts[0], 10);
-        var h = parseInt(parts[1], 10);
-        phone.style.width = w + 'px';
-        phone.style.height = h + 'px';
-
-        // Thu nhỏ vừa màn hình nếu khung cao hơn vùng hiển thị
-        var avail = window.innerHeight - 130;
-        var scale = Math.min(1, avail / (h + 24));
-        phone.style.transform = 'scale(' + scale + ')';
+    if (btn) {
+        btn.addEventListener('click', function () {
+            var light = root.getAttribute('data-pf-theme') === 'light';
+            if (light) { root.removeAttribute('data-pf-theme'); save('pf-theme', 'dark'); }
+            else { root.setAttribute('data-pf-theme', 'light'); save('pf-theme', 'light'); }
+            paintToggle();
+            paintSwatches();
+        });
     }
 
-    function open() {
-        frame.src = targetUrl();
-        overlay.classList.add('is-open');
-        document.body.style.overflow = 'hidden';
-        fitScale();
-    }
-
-    function close() {
-        overlay.classList.remove('is-open');
-        document.body.style.overflow = '';
-        frame.src = 'about:blank';
-    }
-
-    btn.addEventListener('click', open);
-    document.getElementById('mobilePreviewClose').addEventListener('click', close);
-    document.getElementById('mobilePreviewReload').addEventListener('click', function () { frame.src = targetUrl(); });
-    sel.addEventListener('change', fitScale);
-    window.addEventListener('resize', function () { if (overlay.classList.contains('is-open')) { fitScale(); } });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('is-open')) { close(); }
+    document.querySelectorAll('.pf-swatch').forEach(function (b) {
+        b.addEventListener('click', function () {
+            root.setAttribute('data-pf-accent', b.dataset.accent);
+            save('pf-accent', b.dataset.accent);
+            paintSwatches();
+        });
     });
+
+    paintToggle();
+    paintSwatches();
 })();
 </script>
+
+@await Html.PartialAsync("_MobilePreview")
+
 </body>
 </html>

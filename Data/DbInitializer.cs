@@ -1,4 +1,4 @@
-using ERP_HRM_CMS.Models.Enums;
+﻿using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +25,77 @@ namespace ERP_HRM_CMS.Data
 
             // 4. Bổ sung sản phẩm trang sức nếu chưa có sản phẩm nào IsActive (Phiên D1) - CHỈ chạy khi Development
             await SeedJewelryProductsIfEmptyAsync(context, seedDemo);
+
+            // 5. Nối tài khoản quản trị với một hồ sơ nhân viên - CHỈ chạy khi Development
+            await LienKetTaiKhoanQuanTriVoiNhanVienAsync(context, seedDemo);
+
+            // 6. Sửa các đường dẫn ảnh đã hỏng của sản phẩm đã seed trước đó
+            await SuaAnhSanPhamHongAsync(context);
+        }
+
+        /// <summary>
+        /// Sửa đường dẫn ảnh sản phẩm đã chết. Ảnh được seed ở các phiên trước trỏ tới
+        /// một tấm Unsplash nay đã bị gỡ, nên trang hiển thị ảnh vỡ. Hàm này chạy lại
+        /// nhiều lần vẫn an toàn vì chỉ đụng đúng các dòng còn giữ đường dẫn cũ.
+        /// </summary>
+        public static async Task SuaAnhSanPhamHongAsync(AppDbContext context)
+        {
+            const string anhHong = "https://images.unsplash.com/photo-1611591475152-4783113837af?auto=format&fit=crop&w=700&q=80";
+            const string anhMoi = "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=700&q=80";
+
+            var canSua = await context.Products
+                .Where(p => p.ImageUrl == anhHong)
+                .ToListAsync();
+
+            if (canSua.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var sp in canSua)
+            {
+                sp.ImageUrl = anhMoi;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Nối tài khoản quản trị với một hồ sơ nhân viên để Cổng Nhân viên (ESS) có dữ liệu hiển thị.
+        /// Nếu không có liên kết này, trang /CongNhanVien báo "Chưa Liên Kết Hồ Sơ Nhân Viên".
+        /// Chỉ chạy ở môi trường Development, và chỉ khi tài khoản chưa được gắn hồ sơ nào.
+        /// </summary>
+        public static async Task LienKetTaiKhoanQuanTriVoiNhanVienAsync(AppDbContext context, bool isDevelopment = false)
+        {
+            if (!isDevelopment)
+            {
+                return;
+            }
+
+            var taiKhoan = await context.Users.FirstOrDefaultAsync(u => u.IsSuperAdmin && u.EmployeeId == null);
+            if (taiKhoan == null)
+            {
+                return; // Không có tài khoản quản trị nào thiếu liên kết
+            }
+
+            // Ưu tiên hồ sơ chưa gắn với tài khoản nào để tránh hai tài khoản trỏ cùng một nhân viên
+            var idDaDung = await context.Users
+                .Where(u => u.EmployeeId != null)
+                .Select(u => u.EmployeeId!.Value)
+                .ToListAsync();
+
+            var nhanVien = await context.Employees
+                .Where(e => e.Status == "Active" && !idDaDung.Contains(e.Id))
+                .OrderBy(e => e.Id)
+                .FirstOrDefaultAsync();
+
+            if (nhanVien == null)
+            {
+                return; // Chưa có nhân viên nào để nối, bỏ qua
+            }
+
+            taiKhoan.EmployeeId = nhanVien.Id;
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -875,7 +946,7 @@ namespace ERP_HRM_CMS.Data
             var sampleProducts = new List<(string SKU, string Name, string Slug, string CatCode, string Unit, decimal Cost, decimal Price, string Img, string Desc)>
             {
                 ("JW-RING-SOLITAIRE", "Nhẫn Kim Cương Solitaire Brilliant Cut 1.5 Carat (GIA D/VVS1)", "nhan-kim-cuong-solitaire-1-5ct", "CAT-JEWEL-RING", "Chiếc", 145000000, 185000000, "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80", "Kim cương chủ GIA 1.5 Carat, Nước D tuyệt đối, Độ sạch VVS1, Giác cắt 3EX. Ổ nhẫn Bạch kim Platinum 950 đính kim cương tấm viền lấp lánh."),
-                ("JW-BRACE-TENNIS", "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum 950", "lac-tay-kim-cuong-tennis-bracelet", "CAT-JEWEL-BRACE", "Chiếc", 115000000, 145000000, "https://images.unsplash.com/photo-1611591475152-4783113837af?auto=format&fit=crop&w=700&q=80", "55 viên kim cương tự nhiên Round Brilliant đồng đều tổng trọng lượng 5.0 Carat, Nước E, Độ sạch VS1. Khóa an toàn đúc Bạch kim Platinum 950."),
+                ("JW-BRACE-TENNIS", "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum 950", "lac-tay-kim-cuong-tennis-bracelet", "CAT-JEWEL-BRACE", "Chiếc", 115000000, 145000000, "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=700&q=80", "55 viên kim cương tự nhiên Round Brilliant đồng đều tổng trọng lượng 5.0 Carat, Nước E, Độ sạch VS1. Khóa an toàn đúc Bạch kim Platinum 950."),
                 ("JW-NECK-HALO", "Dây Chuyền Mặt Kim Cương Trái Tim Halo Diamond Vàng Trắng 18K", "day-chuyen-kim-cuong-trai-tim-halo", "CAT-JEWEL-NECK", "Dây", 52000000, 68000000, "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80", "Kim cương chủ 0.8 Carat hình trái tim Heart Cut, bao quanh bởi 2 tầng kim cương tấm Halo lấp lánh, dây chuyền thanh mảnh Vàng trắng Ý 18K."),
                 ("JW-EARR-STUDS", "Bông Tai Kim Cương Đơn 4 Chấu 2.0 Carat Bạch Kim Platinum", "bong-tai-kim-cuong-4-chau-2ct", "CAT-JEWEL-EARR", "Đôi", 95000000, 120000000, "https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=700&q=80", "Cặp kim cương chủ 1.0 Carat mỗi bên (Tổng 2.0 Carat), Kiểm định GIA Quốc tế, Nước E, Độ trong suốt VVS2, Giác cắt Excellent tỏa sáng lộng lẫy."),
                 ("JW-RING-ETERNITY", "Nhẫn Vàng Hồng 18K Đính Kim Cương Tấm Eternity Band", "nhan-vang-hong-18k-eternity-band", "CAT-JEWEL-RING", "Chiếc", 29000000, 38500000, "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=700&q=80", "Dải kim cương tự nhiên chạy tròn kín thân nhẫn tượng trưng cho tình yêu vĩnh cửu, chất liệu Vàng hồng 18K (Rose Gold 750) ấm áp và kiêu sa."),

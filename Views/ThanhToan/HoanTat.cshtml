@@ -1,0 +1,118 @@
+@model ERP_HRM_CMS.Models.ViewModels.CheckoutCompletedViewModel
+@{
+    Layout = "_ShopLayout";
+    ViewData["Title"] = "Đặt hàng thành công";
+}
+
+<section class="py-5">
+    <div class="container py-4" style="max-width: 820px;">
+
+        <div class="text-center mb-5">
+            <div class="pf-success-ring mx-auto mb-3">
+                <i class="bi bi-check-lg"></i>
+            </div>
+            <h1 class="display-6 font-serif fw-bold pf-text-strong mb-2">Đặt hàng thành công</h1>
+            <p class="pf-text-soft mb-1">
+                Cảm ơn <strong class="pf-text-strong">@Model.CustomerName</strong>. Chuyên viên sẽ gọi xác nhận trong vòng 2 giờ làm việc.
+            </p>
+            <div class="font-monospace text-warning fs-5">Mã đơn hàng: @Model.OrderCode</div>
+        </div>
+
+        @if (Model.LoyaltyTierUpgraded)
+        {
+            <div class="pf-tier-card rounded-4 p-4 mb-4 text-center" style="--tier-color: #d4af37;">
+                <i class="bi bi-award-fill fs-2 text-warning"></i>
+                <h2 class="h5 font-serif fw-bold pf-text-strong mt-2 mb-1">Chúc mừng, thẻ của quý khách đã lên hạng @Model.LoyaltyTierName</h2>
+                <p class="small pf-text-soft mb-0">Ưu đãi hạng mới được áp dụng ngay từ đơn hàng kế tiếp.</p>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(Model.LoyaltyTierName))
+        {
+            <div class="pf-filter-panel rounded-4 p-3 text-center small pf-text-soft mb-4">
+                Hạng thẻ hiện tại của quý khách: <strong class="pf-text-strong">@Model.LoyaltyTierName</strong>
+            </div>
+        }
+
+        <div class="pf-filter-panel rounded-4 p-4 mb-4">
+            <h2 class="h6 font-serif fw-bold pf-text-strong mb-3">Chi tiết đơn hàng</h2>
+
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr class="small text-uppercase pf-text-soft">
+                            <th scope="col">Sản phẩm</th>
+                            <th scope="col" class="text-center">SL</th>
+                            <th scope="col" class="text-end">Đơn giá</th>
+                            <th scope="col" class="text-end">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr>
+                                <td class="pf-text-strong">@line.ProductName</td>
+                                <td class="text-center pf-text-soft">@line.Quantity</td>
+                                <td class="text-end pf-text-soft font-monospace">@line.UnitPrice.ToString("N0") đ</td>
+                                <td class="text-end fw-semibold pf-text-strong font-monospace">@line.LineTotal.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="border-top mt-3 pt-3" style="border-color: rgba(212,175,55,0.2) !important;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="pf-text-soft">Tạm tính</span>
+                    <span class="pf-text-strong">@Model.TotalAmount.ToString("N0") đ</span>
+                </div>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="pf-text-soft">Ưu đãi thành viên</span>
+                        <span class="text-success">-@Model.DiscountAmount.ToString("N0") đ</span>
+                    </div>
+                }
+                <div class="d-flex justify-content-between align-items-baseline pt-2 border-top"
+                     style="border-color: rgba(212,175,55,0.2) !important;">
+                    <span class="fw-bold pf-text-strong">Tổng thanh toán</span>
+                    <span class="fs-4 fw-bold font-serif text-warning">@Model.FinalAmount.ToString("N0") đ</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pf-filter-panel rounded-4 p-4 mb-4">
+            <h2 class="h6 font-serif fw-bold pf-text-strong mb-3">Thông tin nhận hàng</h2>
+            <div class="row g-3 small">
+                <div class="col-12 col-md-6">
+                    <div class="pf-text-soft">Người nhận</div>
+                    <div class="pf-text-strong fw-semibold">@Model.CustomerName</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="pf-text-soft">Số điện thoại</div>
+                    <div class="pf-text-strong fw-semibold font-monospace">@Model.CustomerPhone</div>
+                </div>
+                <div class="col-12">
+                    <div class="pf-text-soft">Địa chỉ</div>
+                    <div class="pf-text-strong">@Model.CustomerAddress</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="pf-text-soft">Phương thức thanh toán</div>
+                    <div class="pf-text-strong">@Model.PaymentMethodLabel</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="pf-text-soft">Thời gian đặt</div>
+                    <div class="pf-text-strong font-monospace">@Model.CreatedAt.ToString("HH:mm dd/MM/yyyy")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="/" class="btn btn-gold-luxury px-4 py-2 me-2 mb-2">
+                <i class="bi bi-gem me-1"></i> Tiếp tục mua sắm
+            </a>
+            <a href="/Public/LienHe" class="btn btn-outline-gold px-4 py-2 mb-2">
+                <i class="bi bi-headset me-1"></i> Liên hệ hỗ trợ
+            </a>
+        </div>
+    </div>
+</section>

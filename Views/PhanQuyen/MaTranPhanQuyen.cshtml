@@ -1,4 +1,4 @@
-@model ERP_HRM_CMS.Models.ViewModels.MaTranPhanQuyenViewModel
+﻿@model ERP_HRM_CMS.Models.ViewModels.MaTranPhanQuyenViewModel
 @{
     ViewData["Title"] = "Ma Trận Phân Quyền Vai Trò (RBAC)";
     ViewData["Module"] = "system";
@@ -16,18 +16,94 @@
 </erp-page-header>
 
 <div class="mb-4">
-    <label class="form-label small fw-semibold text-muted text-uppercase mb-2">Chọn vai trò cần thiết lập</label>
-    <div class="d-flex flex-wrap gap-2">
-        @foreach (var r in Model.Roles)
-        {
-            <a href="@Url.Action("MaTranPhanQuyen", new { roleId = r.Id })"
-               class="erp-role-pill @(r.Id == Model.SelectedRoleId ? "active" : "")">
-                <i class="bi bi-shield"></i>
-                <span>@r.Name (@r.Code)</span>
-            </a>
-        }
+    <label class="form-label small fw-semibold text-muted text-uppercase mb-2" for="roleFilterSelect">
+        Chọn vai trò cần thiết lập
+    </label>
+
+    <div class="row g-2 align-items-center">
+        <div class="col-12 col-md-4 col-lg-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="search" id="roleFilterKeyword" class="form-control"
+                       placeholder="Lọc theo tên hoặc mã vai trò" autocomplete="off"
+                       aria-label="Lọc danh sách vai trò" />
+            </div>
+        </div>
+
+        <div class="col-12 col-md-5 col-lg-4">
+            <select id="roleFilterSelect" class="form-select form-select-sm" aria-label="Vai trò đang thiết lập">
+                @foreach (var r in Model.Roles)
+                {
+                    <option value="@Url.Action("MaTranPhanQuyen", new { roleId = r.Id })"
+                            data-search="@($"{r.Name} {r.Code}".ToLowerInvariant())"
+                            selected="@(r.Id == Model.SelectedRoleId)">
+                        @r.Name (@r.Code)
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="col-12 col-md-3 col-lg-5 d-flex align-items-center gap-2">
+            <span class="small text-muted">
+                Có <strong id="roleFilterCount">@Model.Roles.Count()</strong> vai trò
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="roleFilterReset">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Xoá lọc
+            </button>
+        </div>
     </div>
 </div>
+
+<script>
+(function () {
+    'use strict';
+    var sel = document.getElementById('roleFilterSelect');
+    var kw = document.getElementById('roleFilterKeyword');
+    var countEl = document.getElementById('roleFilterCount');
+    var reset = document.getElementById('roleFilterReset');
+    if (!sel || !kw) { return; }
+
+    // Giữ bản gốc để khôi phục khi xoá lọc
+    var all = Array.prototype.map.call(sel.options, function (o) {
+        return { value: o.value, text: o.text, search: o.getAttribute('data-search') || '', selected: o.selected };
+    });
+
+    function strip(v) {
+        return (v || '').toLowerCase().normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+    }
+
+    function render(term) {
+        var t = strip(term).trim();
+        var keep = all.filter(function (o) { return t === '' || strip(o.search).indexOf(t) !== -1; });
+        sel.innerHTML = '';
+        keep.forEach(function (o) {
+            var el = document.createElement('option');
+            el.value = o.value;
+            el.text = o.text;
+            el.selected = o.selected;
+            sel.appendChild(el);
+        });
+        if (countEl) { countEl.textContent = String(keep.length); }
+        sel.disabled = keep.length === 0;
+    }
+
+    kw.addEventListener('input', function () { render(this.value); });
+
+    // Đổi vai trò thì tải lại trang theo roleId tương ứng
+    sel.addEventListener('change', function () {
+        if (this.value) { window.location.href = this.value; }
+    });
+
+    if (reset) {
+        reset.addEventListener('click', function () {
+            kw.value = '';
+            render('');
+            kw.focus();
+        });
+    }
+})();
+</script>
 
 <div class="erp-table-wrapper stagger-rows">
     <div class="erp-table-toolbar">

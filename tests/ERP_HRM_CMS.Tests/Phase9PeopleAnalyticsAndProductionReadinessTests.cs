@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -322,7 +322,10 @@ namespace ERP_HRM_CMS.Tests
                 "AuthController",
                 "ErrorController",
                 "HomeController",
-                "GioHangController"
+                "GioHangController",
+                // Trang thanh toán của khách hàng: khách chưa đăng nhập vẫn phải đặt được
+                // hàng, giống giỏ hàng. Không có action quản trị nào trong controller này.
+                "ThanhToanController"
             };
 
             var unsecureControllers = new List<string>();

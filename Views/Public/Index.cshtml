@@ -1,4 +1,4 @@
-@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+﻿@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
 @using ERP_HRM_CMS.Models.ViewModels
 @{
     Layout = "_ShopLayout";
@@ -390,7 +390,7 @@
                             <img src="@item.Image" alt="@item.Name" loading="lazy"
                                  class="w-100 h-100 object-fit-cover jewelry-thumb" 
                                  style="transition: transform 0.6s ease;"
-                                 onerror="this.onerror=null; this.classList.add('pf-img-fallback'); this.removeAttribute('src');" />
+                                 onerror="this.onerror=null; this.alt=''; this.src='/images/jewelry-placeholder.svg';" />
                             <div class="position-absolute bottom-0 start-0 end-0 p-3" 
                                  style="background: linear-gradient(to top, rgba(14,18,26,0.95), transparent);">
                                 <span class="text-warning small font-monospace"><i class="bi bi-gem me-1"></i>@item.CategoryName</span>
