@@ -13,6 +13,7 @@ namespace ERP_HRM_CMS.Controllers
     /// [OOP - ĐA HÌNH] Action InKyLuongDayDu đưa cả BangLuongPrintable lẫn PhieuLuongPrintable vào một List&lt;IPrintable&gt;.
     /// </summary>
     [Authorize]
+    [Area("Staff")]
     public class PhieuInController : Controller
     {
         private const string HtmlContentType = "text/html; charset=utf-8";

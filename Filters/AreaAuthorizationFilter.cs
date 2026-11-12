@@ -90,6 +90,14 @@ namespace ERP_HRM_CMS.Filters
             // C1: Khu vực Admin chỉ cho phép SUPERADMIN hoặc người có quyền quản trị
             if (string.Equals(area, "Admin", StringComparison.OrdinalIgnoreCase))
             {
+                // Nếu Controller là UIController (hoặc action chỉ dành riêng cho SuperAdmin kiểm tra trực tiếp 403),
+                // cho phép controller tự xử lý trả về 403 Forbidden thay vì chuyển hướng chung.
+                var controllerType = (context.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor)?.ControllerTypeInfo;
+                if (controllerType != null && string.Equals(controllerType.Name, "UIController", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
                 var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (!int.TryParse(userIdClaim, out int userId) || userId <= 0)
                 {

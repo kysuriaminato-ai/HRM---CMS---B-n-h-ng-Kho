@@ -1,4 +1,4 @@
-﻿using ERP_HRM_CMS.Helpers;
+using ERP_HRM_CMS.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +10,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     [KiemTraQuyen("layout.manage")]
+    [Area("Admin")]
     public class LayoutConfigController : Controller
     {
         private readonly AppDbContext _context;

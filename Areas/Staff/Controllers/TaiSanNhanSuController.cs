@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class TaiSanNhanSuController : Controller
     {
         private readonly IAssetManagementService _assetService;

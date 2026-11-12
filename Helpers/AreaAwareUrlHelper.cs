@@ -34,6 +34,11 @@ namespace ERP_HRM_CMS.Helpers
             ["Content"] = "Admin",
             ["SanPham"] = "Admin",
             ["DanhMuc"] = "Admin",
+            ["UI"] = "Admin",
+            ["VaiTro"] = "Admin",
+            ["Menu"] = "Admin",
+            ["LayoutConfig"] = "Admin",
+            ["AuditLog"] = "Admin",
 
             // Khu vực Staff (nghiệp vụ nội bộ)
             ["BanHang"] = "Staff",
@@ -49,7 +54,12 @@ namespace ERP_HRM_CMS.Helpers
             ["TuyenDung"] = "Staff",
             ["DanhGiaKpi"] = "Staff",
             ["QuyetDinhNhanSu"] = "Staff",
-            ["SelfService"] = "Staff"
+            ["SelfService"] = "Staff",
+            ["PhieuIn"] = "Staff",
+            ["PhongBan"] = "Staff",
+            ["HopDong"] = "Staff",
+            ["TaiSanNhanSu"] = "Staff",
+            ["Supplier"] = "Staff"
         };
 
         private readonly IUrlHelper _inner;

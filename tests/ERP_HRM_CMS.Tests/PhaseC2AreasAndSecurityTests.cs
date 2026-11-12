@@ -56,7 +56,12 @@ namespace ERP_HRM_CMS.Tests
                 typeof(PhanQuyenController),
                 typeof(ContentController),
                 typeof(SanPhamController),
-                typeof(DanhMucController)
+                typeof(DanhMucController),
+                typeof(UIController),
+                typeof(VaiTroController),
+                typeof(MenuController),
+                typeof(LayoutConfigController),
+                typeof(AuditLogController)
             };
 
             foreach (var ctrlType in adminControllers)
@@ -107,7 +112,12 @@ namespace ERP_HRM_CMS.Tests
                 typeof(TuyenDungController),
                 typeof(DanhGiaKpiController),
                 typeof(QuyetDinhNhanSuController),
-                typeof(SelfServiceController)
+                typeof(SelfServiceController),
+                typeof(PhieuInController),
+                typeof(PhongBanController),
+                typeof(HopDongController),
+                typeof(TaiSanNhanSuController),
+                typeof(SupplierController)
             };
 
             foreach (var ctrlType in staffControllers)
@@ -206,6 +216,11 @@ namespace ERP_HRM_CMS.Tests
                 "/Content",
                 "/SanPham",
                 "/DanhMuc",
+                "/UI/Styleguide",
+                "/VaiTro",
+                "/Menu",
+                "/LayoutConfig",
+                "/AuditLog",
                 // Khu vực Staff
                 "/BanHang/POS",
                 "/Kho",
@@ -222,16 +237,15 @@ namespace ERP_HRM_CMS.Tests
                 "/DanhGiaKpi",
                 "/QuyetDinhNhanSu",
                 "/CongNhanVien",
-                // Khu vực Shop (yêu cầu đăng nhập)
-                "/Auth/ChangePassword",
-                // Chưa phân loại (giữ ở gốc Controllers/)
-                "/Home/Index",
-                "/VaiTro",
-                "/AuditLog",
+                "/PhieuIn/PhieuLuong/1",
                 "/PhongBan",
                 "/HopDong",
                 "/TaiSanNhanSu",
-                "/Supplier"
+                "/Supplier",
+                // Khu vực Shop (yêu cầu đăng nhập)
+                "/Auth/ChangePassword",
+                // Giữ ở gốc Controllers/
+                "/Home/Index"
             };
 
             // 1. Khi chưa đăng nhập: toàn bộ URL bảo vệ đều redirect về /Auth/Login (giữ nguyên mã trạng thái 302)

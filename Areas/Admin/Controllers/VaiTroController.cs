@@ -17,6 +17,7 @@ namespace ERP_HRM_CMS.Controllers
     /// </summary>
     [Authorize]
     [KiemTraQuyen("auth.user.manage")]
+    [Area("Admin")]
     public class VaiTroController : Controller
     {
         private static readonly Regex MaNhomHopLe = new(@"^[A-Z][A-Z0-9_]{2,49}$", RegexOptions.Compiled);

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Staff")]
     public class SupplierController : Controller
     {
         private readonly AppDbContext _context;

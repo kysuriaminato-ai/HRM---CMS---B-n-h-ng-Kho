@@ -8,6 +8,7 @@ namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
     [KiemTraQuyen("auth.view")]
+    [Area("Admin")]
     public class AuditLogController : Controller
     {
         private readonly AppDbContext _context;

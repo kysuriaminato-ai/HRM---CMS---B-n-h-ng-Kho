@@ -37,6 +37,7 @@ namespace ERP_HRM_CMS.Controllers
     /// Giới hạn nghiêm ngặt chỉ dành cho tài khoản Super Admin (kiểm tra trực tiếp qua ISuperAdminService).
     /// </summary>
     [Authorize]
+    [Area("Admin")]
     public class UIController : Controller
     {
         private readonly ISuperAdminService _superAdmin;
@@ -76,6 +77,9 @@ namespace ERP_HRM_CMS.Controllers
         {
             _superAdmin = superAdmin;
         }
+
+        [HttpGet]
+        public IActionResult Index() => RedirectToAction(nameof(Styleguide));
 
         [HttpGet]
         public async Task<IActionResult> Styleguide(CancellationToken cancellationToken)

@@ -11,6 +11,7 @@ using ERP_HRM_CMS.Models.ViewModels;
 namespace ERP_HRM_CMS.Controllers
 {
     [Authorize]
+    [Area("Admin")]
     public class MenuController : Controller
     {
         private readonly AppDbContext _context;
