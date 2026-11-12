@@ -1,4 +1,4 @@
-# Build output
+﻿# Build output
 bin/
 obj/
 **/bin/
@@ -25,6 +25,8 @@ logs/
 
 # SSMS temporary query scratch files
 SQLQuery*.sql
+# Ngoại lệ: script SQL cũ được lưu trữ có chủ đích trong db/legacy/
+!db/legacy/SQLQuery*.sql
 
 # Thư mục nháp cục bộ (không đưa lên git)
 _scratch/

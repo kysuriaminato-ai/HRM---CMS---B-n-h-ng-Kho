@@ -1,4 +1,4 @@
-# Phân tích hiện trạng và đánh giá khoảng trống
+﻿# Phân tích hiện trạng và đánh giá khoảng trống
 
 - **Phiên:** 1 (chỉ phân tích, không sửa code)
 - **Ngày:** 2026-11-04
@@ -85,8 +85,10 @@ Services/                → Payroll, Kho, Printing, Security, Notification, Car
 Helpers/ Filters/ Hubs/ Middleware/ ViewComponents/
 Views/ (76 file)         → 6 layout khác nhau
 wwwroot/                 → CSS, JS, lib
-Database/Legacy/         → script SQL cũ (chỉ tham khảo)
-scripts/legacy/          → script PowerShell kiểm thử cũ
+db/scripts/              → script SQL có đánh số phiên bản (V4 → V6)
+db/legacy/               → script SQL cũ (chỉ tham khảo)
+archive/scripts/         → script PowerShell kiểm thử cũ
+archive/patches/         → bản vá git của các phiên trước
 docs/adr/                → ADR-003 (đề xuất, chờ xác nhận)
 ```
 
@@ -187,7 +189,7 @@ Thang mức độ: **Nghiêm trọng** (khai thác được, ảnh hưởng dữ
 | S14 | Thấp | `Helpers/MatKhauHelper.cs:61–74` | Chính sách: tối thiểu 8 ký tự, có chữ và số. Không kiểm tra mật khẩu đã bị lộ, không có MFA. Chính sách này chưa theo hướng NIST SP 800-63B (ưu tiên độ dài và danh sách mật khẩu cấm) | Thêm danh sách mật khẩu phổ biến. Cân nhắc MFA (TOTP) cho vai trò quản trị |
 | S15 | Thấp | `MatKhauHelper.cs:17` | PBKDF2-SHA256 với 100.000 vòng. OWASP hiện khuyến nghị cao hơn (khoảng 600.000 cho PBKDF2-HMAC-SHA256) | Nâng số vòng khi nâng cấp. Dùng cùng cơ chế "nâng cấp khi đăng nhập" đã có cho hash cũ |
 | S16 | Thấp | `Data/AppDbContextFactory.cs:18` | Chuỗi kết nối localdb cứng, chỉ dùng cho design-time EF tools | Chấp nhận được, nhưng ghi chú rõ trong code |
-| S17 | Thấp | `Database/Legacy/SQLQuery1.sql` | Script mẫu có tài khoản mật khẩu `123456`. README đã cảnh báo | Đảm bảo file không dùng cho production. Cân nhắc xóa khỏi repo |
+| S17 | Thấp | `db/legacy/SQLQuery1.sql` | Script mẫu có tài khoản mật khẩu `123456`. README đã cảnh báo | Đảm bảo file không dùng cho production. Cân nhắc xóa khỏi repo |
 
 ### 6.1 Điểm bảo mật đã làm tốt (giữ nguyên)
 
@@ -243,7 +245,7 @@ Thang mức độ: **Nghiêm trọng** (khai thác được, ảnh hưởng dữ
 |---|---|---|---|
 | A1 | `Views/Shared/` | 6 layout trùng lặp phần head, nav và CSS. `_Layout1.cshtml` không được tham chiếu (213 byte). `SalesLayout.cshtml` không có tham chiếu chính xác (chỉ có `_SalesLayout`) | Xác nhận rồi xóa file không dùng. Gộp còn 2–3 layout dùng chung partial |
 | A2 | `_columns_check.csv` (root, 434 dòng) | File nháp liệt kê cột, không được tham chiếu ở đâu | **Đã xóa trong Phiên A** (đã kiểm chứng không có tham chiếu trong code/test/script) |
-| A3 | `scripts/legacy/*.ps1`, `Database/Legacy/*.sql` | Script cũ, README ghi là đã thay bằng test và migration | Giữ có chú thích, hoặc chuyển ra ngoài repo |
+| A3 | `archive/scripts/*.ps1`, `db/legacy/*.sql` | Script cũ, README ghi là đã thay bằng test và migration | **Đã gom về một chỗ (12/11/2026)**: SQL cũ vào `db/legacy/`, PowerShell cũ vào `archive/scripts/`. Giữ để tham khảo |
 | A4 | `Data/DbInitializer.cs` (1285 dòng) | Trộn ba việc: vá schema bằng SQL thô (dòng 52), seed quyền và admin (SeedCore), dữ liệu mẫu (SeedDemo) | Tách thành `SchemaPatcher`, `CoreSeeder`, `DemoSeeder`. Vá schema nên chuyển hết sang migration |
 | A5 | Toàn repo | Tên controller, route và action bằng tiếng Việt (xem mục 2) | Đổi dần sang tiếng Anh, giữ route cũ bằng redirect 301 trong một thời gian. Cần ADR |
 | A6 | Migrations | 2 migration cùng ngày 2026-11-04 (`InitialBaseline`, `AddSeedHistory`); không có file `.sql` đi kèm | Sinh script `dotnet ef migrations script` và lưu cạnh migration (yêu cầu của dự án) |
@@ -456,7 +458,7 @@ Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hi�
 5. **Duyệt đơn từ:** cấp duyệt là gì (trưởng bộ phận, giám đốc)? Có cần người được ủy quyền?
 6. **Đổi tên route tiếng Việt sang tiếng Anh:** làm ngay, hay để khi có module mới? Cần giữ URL cũ bằng redirect bao lâu?
 7. **Tham số lương:** kế toán hoặc tư vấn pháp lý xác nhận các mục `NeedsConfirmation` trong `appsettings.json` (ví dụ mức lương cơ sở 2.530.000 từ 01/07/2026, trần đóng BHXH, mức phạt đi muộn "nội bộ chưa có văn bản"). Hệ thống hiện đánh dấu cảnh báo trên phiếu lương khi còn TODO.
-8. **Dọn dẹp:** được phép xóa `_columns_check.csv`, `Views/Shared/_Layout1.cshtml`, `Views/Shared/SalesLayout.cshtml`, và chuyển `scripts/legacy/` ra ngoài repo không?
+8. **Dọn dẹp:** được phép xóa `_columns_check.csv`, `Views/Shared/_Layout1.cshtml`, `Views/Shared/SalesLayout.cshtml`, và chuyển `archive/scripts/` ra ngoài repo không?
 9. **Ưu tiên nghiệp vụ mới:** tuyển dụng và KPI có cần trong 6 tháng tới không, hay để sau?
 10. **Môi trường triển khai:** một instance hay nhiều instance? Có reverse proxy không (ảnh hưởng S8 và H7)? Dữ liệu lưu ở đâu (ảnh hưởng quyết định về khóa Data Protection và sao lưu)?
 

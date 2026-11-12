@@ -1,4 +1,4 @@
-# Database Guide — ERP HRM CMS
+﻿# Database Guide — ERP HRM CMS
 
 ## Tổng quan
 
@@ -24,6 +24,15 @@ Toàn bộ schema được đồng bộ qua Migration và cung cấp bộ SQL Sc
    - **`V6_00_Security_And_Architecture.sql`**: Bảo mật P0 (`Users.MustChangePassword`, `LeaveRequests.CreatedByUserId`), vai trò `BRANCH_MANAGER`, `DEPARTMENT_HEAD`.
    - **`V6_01_EnterpriseHRM_Schema_And_Indexes.sql`**: Schema Enterprise HRM khép kín vòng đời nhân sự (9 bảng mới + cột `Slug` chuẩn SEO + Check Constraints + Covering Indexes + Extended Properties).
    - **`V6_02_EnterpriseHRM_SeedData.sql`**: Dữ liệu mẫu Enterprise HRM phong phú (Quỹ phép năm 2026, 6 tin tuyển dụng chuẩn SEO, 18 ứng viên đủ 6 cột Kanban, lịch phỏng vấn, danh mục & cấp phát tài sản, quyết định nhân sự, khóa chấm công, đơn giải trình, checklist Onboarding/Offboarding).
+
+### Cấu trúc thư mục `db/`
+
+| Thư mục | Nội dung | Dùng khi nào |
+| --- | --- | --- |
+| `db/scripts/` | Script SQL có đánh số phiên bản V4 → V6 | Dựng database mới, chạy theo đúng thứ tự |
+| `db/legacy/` | Script SQL cũ từ giai đoạn đầu dự án | Chỉ tham khảo, **không chạy trên database thật** |
+
+> **Cảnh báo**: `db/legacy/SQLQuery1.sql` chứa tài khoản mẫu với mật khẩu yếu. File chỉ để tham khảo lịch sử, tuyệt đối không dùng cho môi trường thật.
 
 > **Lưu ý quan trọng**: Mọi script trong `db/scripts/` đều được viết theo nguyên tắc **Idempotent** (`IF OBJECT_ID(...) IS NULL`, `IF NOT EXISTS...`), bọc trong giao dịch `SET XACT_ABORT ON`, đảm bảo chạy lại nhiều lần an toàn tuyệt đối không lỗi, không nhân bản dữ liệu.
 

@@ -1,4 +1,4 @@
-# Tiến độ dự án — ERP_HRM_CMS Enterprise
+﻿# Tiến độ dự án — ERP_HRM_CMS Enterprise
 
 Cập nhật lần cuối: 2026-11-10 (Đã hoàn tất **PHIÊN C2.1 – Chặn Employee Vào Khu Admin, Bổ Sung Test và Cập Nhật Tài Liệu**)
 
@@ -547,3 +547,37 @@ Sử dụng `MapAreaControllerRoute` với mẫu `{controller}/{action}/{id?}` (
   1. Mở SSMS, kết nối đến SQL Server Production.
   2. Mở file `db/scripts/V6_99_Verify_Schema_Health.sql` và nhấn **F5** để chạy kiểm tra sức khỏe.
   3. Kiểm tra kết quả in ra tại cửa sổ `Messages`: đảm bảo 100% bảng, khóa ngoại và chỉ mục then chốt hiển thị dấu `[✔]`.
+
+---
+
+## DỌN DẸP CẤU TRÚC THƯ MỤC (2026-11-12)
+
+### 1. Việc đã làm
+- Gom toàn bộ script SQL về một gốc duy nhất là `db/`:
+  + `Database/Legacy/*.sql` (10 file) → `db/legacy/`
+  + `db/scripts/` giữ nguyên (9 file script có đánh số phiên bản)
+- Gom tài liệu và script lịch sử về một gốc duy nhất là `archive/`:
+  + `scripts/legacy/*.ps1` (5 file) → `archive/scripts/`
+  + `archive/patches/` giữ nguyên (4 file `.patch`)
+- Xóa hai thư mục rỗng còn lại sau khi di chuyển: `Database/` và `scripts/`.
+- Chuyển 5 file `SQLQuery*.sql` và 2 file `.bak` ở thư mục gốc vào `_scratch/`,
+  đồng thời thêm `_scratch/` vào `.gitignore`. Các file này vốn không được git
+  theo dõi nên không ảnh hưởng tới lịch sử repo.
+
+### 2. Lý do
+Trước khi dọn, script SQL nằm rải ở ba nơi (`db/scripts/`, `Database/Legacy/`,
+và vài file rời ở thư mục gốc), còn script PowerShell nằm tách biệt ở
+`scripts/legacy/`. Người đọc repo lần đầu không biết nên chạy thư mục nào.
+
+### 3. Lưu ý về đường dẫn trong tài liệu cũ
+Các mục lịch sử phía trên trong file này vẫn ghi đường dẫn cũ
+(`Database/Legacy/...`, `scripts/legacy/...`) vì chúng mô tả đúng trạng thái
+tại thời điểm đó. `docs/ANALYSIS.md` và `db/README.md` đã được cập nhật theo
+cấu trúc mới.
+
+### 4. Việc chưa làm
+Repo vẫn lai hai kiểu kiến trúc: project web cổ điển ở thư mục gốc
+(`Controllers/`, `Views/`, `Models/`, `Services/`...) song song với `src/` theo
+Clean Architecture (`ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`).
+Gộp project web vào `src/ERP.Web/` sẽ phải sửa `.sln`, `.csproj` và nhiều đường
+dẫn, nên để lại thành một phiên riêng.
