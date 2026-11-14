@@ -154,4 +154,28 @@
             </tbody>
         </table>
     </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalCount bản ghi)</span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId">Trước</a>
+                </li>
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.PageIndex ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p"
+                           asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")" asp-route-departmentId="@Model.DepartmentId">Sau</a>
+                </li>
+            </ul>
+        </div>
+    }
 </div>

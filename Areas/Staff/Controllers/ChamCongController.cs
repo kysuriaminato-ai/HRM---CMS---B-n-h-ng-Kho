@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
@@ -75,12 +75,26 @@ namespace ERP_HRM_CMS.Controllers
             };
 
             var paged = await _attendanceService.GetDailyAttendancePagedAsync(filter);
+            var shifts = await _shiftService.GetAllShiftsAsync();
             ViewBag.Filter = filter;
             ViewBag.Departments = await _departmentService.GetDepartmentSelectListAsync(departmentId);
-            ViewBag.Shifts = await _shiftService.GetAllShiftsAsync();
+            ViewBag.Shifts = shifts;
             ViewBag.IsPeriodLocked = await _attendanceService.IsPeriodLockedAsync(selectedDate.Year, selectedDate.Month, branchId, departmentId);
 
-            return View(paged);
+            var vm = new AttendanceDailyIndexViewModel
+            {
+                SelectedDate = selectedDate,
+                DepartmentId = departmentId,
+                AttendanceList = paged,
+                Shifts = shifts,
+                PageIndex = paged.PageIndex,
+                TotalPages = paged.TotalPages,
+                TotalCount = paged.TotalCount,
+                HasPreviousPage = paged.HasPreviousPage,
+                HasNextPage = paged.HasNextPage
+            };
+
+            return View(vm);
         }
 
         // Điểm danh / Check-in / Check-out nhanh
