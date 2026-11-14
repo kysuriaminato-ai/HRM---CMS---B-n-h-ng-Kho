@@ -11,7 +11,7 @@
     bool isSuperAdmin = User.IsInRole("SUPERADMIN") || string.Equals(User.FindFirst("IsSuperAdmin")?.Value, "True", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
-<html lang="vi" data-bs-theme="dark">
+<html lang="vi" data-bs-theme="light" data-pf-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -38,13 +38,17 @@
     <link href="~/css/site.css" rel="stylesheet" />
     <link href="~/css/public-site.css" rel="stylesheet" />
     <link href="~/css/perfume-luxury.css" rel="stylesheet" />
+    <link href="~/css/aura-pink.css" rel="stylesheet" />
     <script>
         // Đặt giao diện trước khi trang vẽ để không bị nháy màu
         (function () {
             try {
                 var t = localStorage.getItem('pf-theme');
                 var a = localStorage.getItem('pf-accent');
-                if (t) { document.documentElement.setAttribute('data-pf-theme', t); }
+                if (t === 'dark') {
+                    document.documentElement.setAttribute('data-pf-theme', 'dark');
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                }
                 if (a) { document.documentElement.setAttribute('data-pf-accent', a); }
             } catch (e) { /* trình duyệt chặn localStorage thì dùng mặc định */ }
         })();
@@ -434,8 +438,15 @@
     if (btn) {
         btn.addEventListener('click', function () {
             var light = root.getAttribute('data-pf-theme') === 'light';
-            if (light) { root.removeAttribute('data-pf-theme'); save('pf-theme', 'dark'); }
-            else { root.setAttribute('data-pf-theme', 'light'); save('pf-theme', 'light'); }
+            if (light) {
+                root.setAttribute('data-pf-theme', 'dark');
+                root.setAttribute('data-bs-theme', 'dark');
+                save('pf-theme', 'dark');
+            } else {
+                root.setAttribute('data-pf-theme', 'light');
+                root.setAttribute('data-bs-theme', 'light');
+                save('pf-theme', 'light');
+            }
             paintToggle();
             paintSwatches();
         });

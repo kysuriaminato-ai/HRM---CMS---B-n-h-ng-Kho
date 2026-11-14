@@ -231,6 +231,67 @@
 <!-- ==========================================================================
      BỘ SƯU TẬP 10 TUYỆT TÁC TRANG SỨC KIM CƯƠNG TINH TUYỂN
      ========================================================================== -->
+<!-- ==========================================================================
+     XU HƯỚNG TÌM KIẾM + BA BANNER ƯU ĐÃI
+     ========================================================================== -->
+<section class="py-5">
+    <div class="container">
+
+        <div class="pk-section-head">
+            <h2 class="h4 pk-section-title">Xu hướng tìm kiếm</h2>
+            <a href="/?cat=all#bo-suu-tap" class="small text-decoration-none pf-text-soft">
+                Xem tất cả <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="pk-trend-row" role="list">
+            @foreach (var xh in luxuryJewelry.Take(8))
+            {
+                <a class="pk-trend-item" role="listitem" href="/?cat=@xh.Category#bo-suu-tap" title="@xh.Name">
+                    <span class="pk-trend-circle">
+                        <img src="@(string.IsNullOrWhiteSpace(xh.Image) ? "/images/jewelry-placeholder.svg" : xh.Image)"
+                             alt="@xh.CategoryName" loading="lazy"
+                             onerror="this.onerror=null; this.alt=''; this.src='/images/jewelry-placeholder.svg';" />
+                    </span>
+                    <span class="pk-trend-label">@xh.CategoryName</span>
+                </a>
+            }
+        </div>
+
+        <div class="row g-3 g-lg-4 mt-4">
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--rose" href="/?cat=nhan-kim-cuong#bo-suu-tap">
+                    <span class="pk-promo-kicker">Bộ sưu tập cưới</span>
+                    <div class="pk-promo-title">Lấp Lánh Rạng Ngời</div>
+                    <div class="pk-promo-sub">Nhẫn cầu hôn kim cương GIA, khắc tên miễn phí trọn đời.</div>
+                    <span class="pk-promo-cta">Khám phá ngay <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-gem pk-promo-icon"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--blush" href="/#khach-hang-than-thiet">
+                    <span class="pk-promo-kicker">Aura Privilege</span>
+                    <div class="pk-promo-title">Ưu Đãi Tới 12%</div>
+                    <div class="pk-promo-sub">Thẻ thành viên tự động nâng hạng theo tổng chi tiêu.</div>
+                    <span class="pk-promo-cta">Xem quyền lợi <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-award pk-promo-icon"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--cream" href="/#bang-do-size">
+                    <span class="pk-promo-kicker">Dịch vụ tận nhà</span>
+                    <div class="pk-promo-title">Đo Size Miễn Phí</div>
+                    <div class="pk-promo-sub">Chuyên viên tới tận nơi đo size cho đơn hàng cầu hôn.</div>
+                    <span class="pk-promo-cta">Đặt lịch ngay <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-rulers pk-promo-icon"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
 <span id="bo-suu-tap" class="pf-anchor"></span>
 <section id="jewelry-collection" class="py-5 position-relative">
     <div class="container py-4">
@@ -357,8 +418,11 @@
                            : item.Material.Contains("Ròng") ? "vang-rong"
                            : "vang-vang";
                 var realId = item.Id;
+                var phanTramGiam = item.OldPrice > item.Price && item.OldPrice > 0
+                    ? (int)Math.Round((item.OldPrice - item.Price) * 100m / item.OldPrice)
+                    : 0;
 
-                <div class="col-12 col-sm-6 col-lg-4 jewelry-card-item"
+                <div class="col-6 col-md-4 col-lg-3 jewelry-card-item"
                      data-category="@item.Category"
                      data-material="@matKey"
                      data-price="@item.Price"
@@ -377,6 +441,11 @@
                                 @item.Badge
                             </span>
                         </div>
+
+                        @if (phanTramGiam > 0)
+                        {
+                            <span class="pk-sale-tag">-@phanTramGiam%</span>
+                        }
 
                         <!-- Mã GIA góc phải -->
                         <div class="position-absolute top-0 end-0 m-3" style="z-index: 3;">
