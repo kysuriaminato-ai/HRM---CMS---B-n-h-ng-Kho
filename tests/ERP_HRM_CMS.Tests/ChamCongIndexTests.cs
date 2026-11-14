@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using ERP_HRM_CMS.Data;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models.Entities;
@@ -59,7 +59,12 @@ namespace ERP_HRM_CMS.Tests
                 Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 
                 var html = await res.Content.ReadAsStringAsync();
-                Assert.Contains("Bảng Chấm Công Hàng Ngày", html);
+
+                // TagHelper erp-page-header xuất tiêu đề qua WebUtility.HtmlEncode,
+                // hàm này mã hoá ký tự tiếng Việt thành dạng số (B&#7843;ng...).
+                // Giải mã lại trước khi so sánh để khỏi phụ thuộc cách mã hoá.
+                var plain = System.Net.WebUtility.HtmlDecode(html);
+                Assert.Contains("Bảng Chấm Công Hàng Ngày", plain);
             });
 
             Assert.Null(exception);
