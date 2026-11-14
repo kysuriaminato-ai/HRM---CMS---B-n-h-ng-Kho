@@ -1,4 +1,4 @@
-﻿@inject ERP_HRM_CMS.Data.AppDbContext Db
+@inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     var settings = Db.SiteSettings.ToDictionary(s => s.SettingKey, s => s.SettingValue ?? string.Empty);
     string hotline = settings.GetValueOrDefault("Site_Hotline") ?? "1900 6868";
@@ -18,8 +18,10 @@
     <erp-seo-head title="@((string?)ViewData["Title"] ?? "AURA BRILLIANCE - Tuyệt Tác Trang Sức Kim Cương & Đá Quý")"
                   description="@((string?)ViewData["Description"] ?? "Thế giới trang sức xa xỉ, nhẫn kim cương tự nhiên chứng nhận GIA, vòng tay, dây chuyền vàng 18K và bạch kim Platinum thượng hạng.")"
                   canonical="@((string?)ViewData["CanonicalUrl"])"
+                  og-url="@((string?)ViewData["OgUrl"] ?? (string?)ViewData["CanonicalUrl"])"
                   og-image="@((string?)ViewData["OgImage"] ?? "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=80")"
                   og-type="@((string?)ViewData["OgType"] ?? "website")"
+                  twitter-card="@((string?)ViewData["TwitterCard"] ?? "summary_large_image")"
                   entity-type="@((string?)ViewData["SeoEntityType"])"
                   entity-id="@((int?)ViewData["SeoEntityId"])"
                   custom-json-ld="@((string?)ViewData["CustomJsonLd"])"></erp-seo-head>

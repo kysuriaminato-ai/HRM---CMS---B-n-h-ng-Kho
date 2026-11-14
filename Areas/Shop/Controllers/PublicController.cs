@@ -412,6 +412,12 @@ namespace ERP_HRM_CMS.Controllers
             sb.AppendLine();
             sb.AppendLine("# Disallow Internal & Admin Endpoints");
             sb.AppendLine("Disallow: /admin");
+            sb.AppendLine("Disallow: /Admin");
+            sb.AppendLine("Disallow: /Admin/");
+            sb.AppendLine("Disallow: /Staff");
+            sb.AppendLine("Disallow: /Staff/");
+            sb.AppendLine("Disallow: /ThanhToan");
+            sb.AppendLine("Disallow: /ThanhToan/");
             sb.AppendLine("Disallow: /NhanSu");
             sb.AppendLine("Disallow: /BangLuong");
             sb.AppendLine("Disallow: /ChamCong");
