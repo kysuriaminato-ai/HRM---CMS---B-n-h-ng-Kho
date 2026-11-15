@@ -1,4 +1,4 @@
-@inject ERP_HRM_CMS.Data.AppDbContext Db
+﻿@inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     var settings = Db.SiteSettings.ToDictionary(s => s.SettingKey, s => s.SettingValue ?? string.Empty);
     string hotline = settings.GetValueOrDefault("Site_Hotline") ?? "1900 6868";
@@ -99,23 +99,35 @@
                 <a href="/#bang-do-size" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-rulers me-1"></i>Đo Size Nhẫn</a>
                 <a href="/Public/GioiThieu" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-gem me-1"></i>Về Aura Brilliance</a>
                 <a href="/tuyen-dung" class="text-decoration-none text-secondary hover-gold"><i class="bi bi-briefcase me-1"></i>Tuyển dụng</a>
-                <div class="pf-theme-bar d-none d-lg-inline-flex" role="group" aria-label="Tuỳ chỉnh giao diện">
-                    <button type="button" class="pf-swatch" data-accent="gold" title="Vàng Champagne" aria-label="Màu Vàng Champagne"></button>
-                    <button type="button" class="pf-swatch" data-accent="rose" title="Hồng Ngọc" aria-label="Màu Hồng Ngọc"></button>
-                    <button type="button" class="pf-swatch" data-accent="emerald" title="Lục Bảo" aria-label="Màu Lục Bảo"></button>
-                    <button type="button" class="pf-swatch" data-accent="sapphire" title="Lam Ngọc" aria-label="Màu Lam Ngọc"></button>
-                    <button type="button" class="pf-swatch" data-accent="platinum" title="Bạch Kim" aria-label="Màu Bạch Kim"></button>
+                @* Gom toàn bộ tuỳ chỉnh giao diện vào một menu để thanh trên cùng đỡ rối *@
+                <div class="dropdown">
+                    <button type="button" class="btn btn-sm btn-link text-decoration-none pf-topbar-link dropdown-toggle"
+                            data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+                            title="Tuỳ chỉnh giao diện">
+                        <i class="bi bi-palette me-1"></i>Giao diện
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-end p-3 pk-theme-menu" style="min-width: 248px;">
+                        <div class="small fw-semibold mb-2 pf-text-strong">Màu chủ đạo</div>
+                        <div class="pf-theme-bar mb-3" role="group" aria-label="Màu chủ đạo">
+                            <button type="button" class="pf-swatch" data-accent="rose" title="Hồng Pastel" aria-label="Màu Hồng Pastel"></button>
+                            <button type="button" class="pf-swatch" data-accent="peach" title="Cam Đào" aria-label="Màu Cam Đào"></button>
+                            <button type="button" class="pf-swatch" data-accent="lavender" title="Oải Hương" aria-label="Màu Oải Hương"></button>
+                            <button type="button" class="pf-swatch" data-accent="mint" title="Bạc Hà" aria-label="Màu Bạc Hà"></button>
+                            <button type="button" class="pf-swatch" data-accent="sky" title="Thiên Thanh" aria-label="Màu Thiên Thanh"></button>
+                        </div>
+
+                        <button type="button" id="btnThemeToggle" class="btn btn-sm btn-outline-gold w-100 mb-2 d-inline-flex align-items-center justify-content-center gap-2"
+                                title="Chuyển chế độ Sáng / Tối" aria-label="Chuyển chế độ Sáng hoặc Tối">
+                            <i class="bi bi-moon-stars"></i><span class="small">Chế độ tối</span>
+                        </button>
+
+                        <button type="button" id="btnMobilePreview" class="btn btn-sm btn-outline-gold w-100 d-inline-flex align-items-center justify-content-center gap-2"
+                                title="Xem giao diện trên điện thoại" aria-label="Xem giao diện trên điện thoại">
+                            <i class="bi bi-phone"></i><span class="small">Bản điện thoại</span>
+                        </button>
+                    </div>
                 </div>
-
-                <button type="button" id="btnThemeToggle" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1"
-                        title="Chuyển chế độ Sáng / Tối" aria-label="Chuyển chế độ Sáng hoặc Tối">
-                    <i class="bi bi-moon-stars"></i><span class="small d-none d-xl-inline">Chế độ tối</span>
-                </button>
-
-                <button type="button" id="btnMobilePreview" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 d-none d-lg-inline-flex align-items-center gap-1"
-                        title="Xem giao diện trên điện thoại" aria-label="Xem giao diện trên điện thoại">
-                    <i class="bi bi-phone"></i><span class="small">Bản điện thoại</span>
-                </button>
                 
                 @if (isAuthenticated)
                 {
@@ -431,7 +443,7 @@
     }
 
     function paintSwatches() {
-        var cur = root.getAttribute('data-pf-accent') || 'gold';
+        var cur = root.getAttribute('data-pf-accent') || 'rose';
         document.querySelectorAll('.pf-swatch').forEach(function (b) {
             b.classList.toggle('is-active', b.dataset.accent === cur);
         });

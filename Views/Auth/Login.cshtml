@@ -1,11 +1,11 @@
-@inject ERP_HRM_CMS.Data.AppDbContext Db
+﻿@inject ERP_HRM_CMS.Data.AppDbContext Db
 @model ERP_HRM_CMS.Models.ViewModels.LoginViewModel
 @{
     Layout = null;
     ViewData["Title"] = "Cổng Quản Trị Hệ Thống - AURA BRILLIANCE";
 }
 <!DOCTYPE html>
-<html lang="vi" data-bs-theme="dark">
+<html lang="vi" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -21,20 +21,20 @@
 
     <style>
         :root {
-            --login-gold: #d4af37;
-            --login-gold-light: #f7e8bd;
+            --login-gold: #d95b8c;
+            --login-gold-light: #efaec8;
         }
         body {
-            background-color: #08090d;
+            background-color: #fffafc;
             font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-            color: #fcfbfa;
+            color: #2d2630;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.09) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(240, 248, 255, 0.05) 0%, transparent 45%);
+                radial-gradient(circle at 10% 20%, rgba(217, 91, 140, 0.09) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(251, 232, 240, 0.7) 0%, transparent 45%);
             margin: 0;
             padding: 20px;
         }
@@ -42,16 +42,16 @@
         .login-wrapper {
             width: 100%;
             max-width: 1050px;
-            background: rgba(14, 18, 26, 0.88);
-            border: 1px solid rgba(212, 175, 55, 0.28);
+            background: #ffffff;
+            border: 1px solid rgba(217, 91, 140, 0.28);
             border-radius: 24px;
-            box-shadow: 0 25px 65px rgba(0, 0, 0, 0.85), 0 0 45px rgba(212, 175, 55, 0.15);
+            box-shadow: 0 25px 65px rgba(157, 47, 88, 0.16), 0 0 45px rgba(217, 91, 140, 0.15);
             overflow: hidden;
             backdrop-filter: blur(20px);
         }
 
         .login-hero {
-            background: linear-gradient(135deg, rgba(14, 18, 26, 0.72) 0%, rgba(8, 9, 13, 0.95) 100%),
+            background: linear-gradient(135deg, #ffffff 0%, rgba(157, 47, 88, 0.9) 100%),
                         url('https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat;
             padding: 50px 40px;
             display: flex;
@@ -64,7 +64,7 @@
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at center, rgba(212, 175, 55, 0.18) 0%, transparent 70%);
+            background: radial-gradient(circle at center, rgba(217, 91, 140, 0.18) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -73,43 +73,43 @@
         }
 
         .form-control {
-            background: rgba(22, 27, 39, 0.8);
-            border: 1px solid rgba(212, 175, 55, 0.22);
-            color: #fff;
+            background: #ffffff;
+            border: 1px solid rgba(217, 91, 140, 0.22);
+            color: #2d2630;
             padding: 12px 16px;
             border-radius: 10px;
             transition: all 0.3s ease;
         }
 
         .form-control:focus {
-            background: rgba(26, 32, 48, 0.95);
+            background: #ffffff;
             border-color: var(--login-gold);
-            color: #fff;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            color: #2d2630;
+            box-shadow: 0 0 15px rgba(217, 91, 140, 0.3);
         }
 
         .btn-gold-login {
-            background: linear-gradient(135deg, #d4af37 0%, #f7e8bd 50%, #aa8624 100%);
+            background: linear-gradient(135deg, #d95b8c 0%, #efaec8 50%, #c13f73 100%);
             border: none;
-            color: #0b0c10;
+            color: #ffffff;
             font-weight: 700;
             padding: 13px;
             border-radius: 10px;
             letter-spacing: 0.05em;
             width: 100%;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.35);
+            box-shadow: 0 4px 20px rgba(217, 91, 140, 0.35);
         }
 
         .btn-gold-login:hover {
-            box-shadow: 0 6px 28px rgba(212, 175, 55, 0.6);
+            box-shadow: 0 6px 28px rgba(217, 91, 140, 0.6);
             transform: translateY(-2px);
-            color: #000;
+            color: #ffffff;
         }
 
         .brand-badge {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid rgba(212, 175, 55, 0.4);
+            background: rgba(217, 91, 140, 0.15);
+            border: 1px solid rgba(217, 91, 140, 0.4);
             color: var(--login-gold-light);
             font-size: 0.75rem;
             letter-spacing: 0.15em;
@@ -142,7 +142,7 @@
                 </div>
 
                 <div class="position-relative" style="z-index: 2;">
-                    <div class="p-3 rounded-3 mb-3" style="background: rgba(14, 18, 26, 0.85); border: 1px solid rgba(212, 175, 55, 0.25);">
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(217, 91, 140, 0.25);">
                         <div class="d-flex align-items-center gap-3">
                             <i class="bi bi-shield-lock-fill fs-3 text-warning"></i>
                             <div>
@@ -226,7 +226,7 @@
                 </div>
 
                 <!-- Thẻ bấm 1 chạm điền tài khoản mẫu -->
-                <div class="mt-4 p-3 rounded-3 text-secondary small" style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(212,175,55,0.35);">
+                <div class="mt-4 p-3 rounded-3 text-secondary small" style="background: rgba(255,255,255,0.03); border: 1px dashed rgba(217,91,140,0.35);">
                     <div class="text-warning fw-bold mb-2 d-flex align-items-center justify-content-between">
                         <span><i class="bi bi-key-fill me-1"></i>Bấm để tự động điền tài khoản thử nghiệm:</span>
                         <span class="badge bg-warning text-dark font-monospace">Pass: Admin@123456</span>

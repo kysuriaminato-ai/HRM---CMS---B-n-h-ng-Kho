@@ -1,4 +1,4 @@
-@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanIndexViewModel
+﻿@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanIndexViewModel
 @{
     ViewData["Title"] = "Quản lý tài khoản";
 }
@@ -27,6 +27,73 @@
     <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>@loi
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@*
+    Khung thông tin đăng nhập vừa cấp.
+    Mật khẩu tạm chỉ nằm trong TempData nên chỉ hiện đúng một lần sau khi
+    tạo tài khoản hoặc đặt lại mật khẩu. Tải lại trang là mất, vì vậy khung
+    này được đặt ngay đầu trang kèm nút sao chép để admin gửi cho người dùng.
+*@
+@if (TempData["GeneratedPassword"] is string matKhauTam && !string.IsNullOrWhiteSpace(matKhauTam))
+{
+    var tkTen = TempData["GeneratedUsername"] as string ?? string.Empty;
+    var tkNgucanh = TempData["GeneratedPasswordContext"] as string ?? "Thông tin đăng nhập";
+
+    <div class="card border-0 shadow-sm mb-3" id="khungThongTinDangNhap"
+         style="border-left: 4px solid #d95b8c !important; background: #fffafc;">
+        <div class="card-body">
+            <div class="d-flex align-items-start gap-2 mb-3">
+                <i class="bi bi-key-fill fs-4" style="color: #d95b8c;"></i>
+                <div>
+                    <div class="fw-bold">@tkNgucanh — hãy sao chép ngay</div>
+                    <small class="text-danger fw-semibold">
+                        Mật khẩu tạm chỉ hiển thị một lần. Tải lại trang là không xem lại được.
+                    </small>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-5">
+                    <label class="form-label small text-muted mb-1" for="tkTenDangNhap">Tên đăng nhập</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control font-monospace" id="tkTenDangNhap"
+                               value="@tkTen" readonly aria-label="Tên đăng nhập vừa cấp" />
+                        <button class="btn btn-outline-secondary js-copy" type="button"
+                                data-copy-target="tkTenDangNhap" title="Sao chép tên đăng nhập">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-5">
+                    <label class="form-label small text-muted mb-1" for="tkMatKhauTam">Mật khẩu tạm thời</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control font-monospace fw-bold" id="tkMatKhauTam"
+                               value="@matKhauTam" readonly aria-label="Mật khẩu tạm thời" />
+                        <button class="btn btn-outline-secondary js-copy" type="button"
+                                data-copy-target="tkMatKhauTam" title="Sao chép mật khẩu">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex align-items-end">
+                    <button class="btn w-100 js-copy-both" type="button"
+                            style="background: #d95b8c; color: #fff;">
+                        <i class="bi bi-clipboard-check me-1"></i> Cả hai
+                    </button>
+                </div>
+            </div>
+
+            <div class="small text-muted mt-3 mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                Ở lần đăng nhập đầu tiên, hệ thống sẽ bắt buộc người dùng đổi mật khẩu
+                tại <code>/Auth/ChangePassword</code>. Sau khi đổi xong, họ vào được
+                đúng các chức năng đã được phân quyền.
+            </div>
+        </div>
     </div>
 }
 
@@ -150,4 +217,62 @@
             </tbody>
         </table>
     </div>
-</div>
+</div>
+
+@*
+    Sao chép thông tin đăng nhập. navigator.clipboard chỉ hoạt động trong ngữ cảnh
+    bảo mật (https hoặc localhost) nên có thêm nhánh dự phòng dùng execCommand.
+*@
+<script>
+    (function () {
+        var khung = document.getElementById('khungThongTinDangNhap');
+        if (!khung) { return; }
+
+        function saoChep(chuoi, nut) {
+            function baoThanhCong() {
+                if (!nut) { return; }
+                var icon = nut.querySelector('i');
+                var lopCu = icon ? icon.className : null;
+                if (icon) { icon.className = 'bi bi-check-lg'; }
+                setTimeout(function () {
+                    if (icon && lopCu) { icon.className = lopCu; }
+                }, 1400);
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(chuoi).then(baoThanhCong, duPhong);
+            } else {
+                duPhong();
+            }
+
+            function duPhong() {
+                var tam = document.createElement('textarea');
+                tam.value = chuoi;
+                tam.setAttribute('readonly', '');
+                tam.style.position = 'fixed';
+                tam.style.opacity = '0';
+                document.body.appendChild(tam);
+                tam.select();
+                try { document.execCommand('copy'); baoThanhCong(); } catch (e) { }
+                document.body.removeChild(tam);
+            }
+        }
+
+        khung.querySelectorAll('.js-copy').forEach(function (nut) {
+            nut.addEventListener('click', function () {
+                var o = document.getElementById(nut.getAttribute('data-copy-target'));
+                if (o) { saoChep(o.value, nut); }
+            });
+        });
+
+        var nutCaHai = khung.querySelector('.js-copy-both');
+        if (nutCaHai) {
+            nutCaHai.addEventListener('click', function () {
+                var ten = document.getElementById('tkTenDangNhap');
+                var mk = document.getElementById('tkMatKhauTam');
+                saoChep('Tên đăng nhập: ' + (ten ? ten.value : '') +
+                        '\nMật khẩu tạm: ' + (mk ? mk.value : ''), nutCaHai);
+            });
+        }
+    })();
+</script>

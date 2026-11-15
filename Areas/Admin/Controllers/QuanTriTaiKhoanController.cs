@@ -183,8 +183,12 @@ namespace ERP_HRM_CMS.Controllers
                 await CapNhatQuyenMenuChoUserAsync(user.Id, featureCodes);
             }
 
+            // Mật khẩu tạm được đưa vào TempData để trang Index hiển thị trong khung
+            // riêng có nút sao chép, thay vì nhét lẫn vào câu thông báo.
+            TempData["GeneratedUsername"] = tenDangNhap;
             TempData["GeneratedPassword"] = model.Password;
-            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}' cho nhân viên thành công. Mật khẩu tạm thời (hiển thị 1 lần): {model.Password}";
+            TempData["GeneratedPasswordContext"] = "Tài khoản vừa được tạo";
+            TempData["ThongBao"] = $"Đã tạo tài khoản '{tenDangNhap}' thành công.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -591,7 +595,10 @@ namespace ERP_HRM_CMS.Controllers
 
             await _context.SaveChangesAsync();
 
-            TempData["ThongBao"] = $"Đã đặt lại mật khẩu cho tài khoản '{user.Username}'. Yêu cầu đổi mật khẩu ở lần đăng nhập tới.";
+            TempData["GeneratedUsername"] = user.Username;
+            TempData["GeneratedPassword"] = newPassword;
+            TempData["GeneratedPasswordContext"] = "Mật khẩu vừa được đặt lại";
+            TempData["ThongBao"] = $"Đã đặt lại mật khẩu cho tài khoản '{user.Username}'.";
             return RedirectToAction(nameof(Index));
         }
 
