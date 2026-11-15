@@ -1,4 +1,4 @@
-@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
+﻿@model ERP_HRM_CMS.Models.ViewModels.TaiKhoanFormViewModel
 @{
     var isEdit = Model.Id > 0;
 }
@@ -111,6 +111,28 @@
                     </div>
                 </div>
             }
+
+            @* Ô "Khác": tự điền vai trò chưa có trong danh sách. Khi lưu, controller
+               tạo vai trò mới (bỏ dấu tên để sinh mã) rồi gán cho tài khoản này. *@
+            <div class="col-12">
+                <div class="form-check border rounded p-2 ps-4 bg-body">
+                    <input class="form-check-input" type="checkbox" id="chkVaiTroKhac" />
+                    <label class="form-check-label w-100" for="chkVaiTroKhac">
+                        <strong class="d-block">Khác</strong>
+                        <small class="text-muted">Tự điền vai trò của nhân sự này</small>
+                    </label>
+
+                    <div class="mt-2 d-none" id="khungVaiTroKhac">
+                        <input type="text" class="form-control" name="vaiTroKhac" id="txtVaiTroKhac"
+                               maxlength="150" placeholder="Ví dụ: Trưởng ca bán hàng" disabled />
+                        <div class="form-text">
+                            Mã vai trò tự sinh từ tên, ví dụ <code>Trưởng ca bán hàng</code>
+                            thành <code>TRUONG_CA_BAN_HANG</code>. Nếu tên đã tồn tại,
+                            hệ thống dùng lại vai trò cũ thay vì tạo trùng.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -231,4 +253,23 @@
             cb.checked = (cb.value === 'ess');
         });
     }
+</script>
+
+@*
+    Ô "Khác" chỉ gửi tên vai trò khi người dùng thực sự tích chọn. Ô nhập để
+    disabled lúc đóng nên trình duyệt không gửi kèm, tránh tạo vai trò ngoài ý muốn.
+*@
+<script>
+    (function () {
+        var chk = document.getElementById('chkVaiTroKhac');
+        var khung = document.getElementById('khungVaiTroKhac');
+        var txt = document.getElementById('txtVaiTroKhac');
+        if (!chk || !khung || !txt) { return; }
+
+        chk.addEventListener('change', function () {
+            khung.classList.toggle('d-none', !chk.checked);
+            txt.disabled = !chk.checked;
+            if (chk.checked) { txt.focus(); } else { txt.value = ''; }
+        });
+    })();
 </script>

@@ -1,4 +1,6 @@
-﻿using System.Security.Claims;
+﻿using System.Globalization;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -107,7 +109,7 @@ namespace ERP_HRM_CMS.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(TaiKhoanFormViewModel model, List<int>? roleIds, List<string>? featureCodes)
+        public async Task<IActionResult> Create(TaiKhoanFormViewModel model, List<int>? roleIds, List<string>? featureCodes, string? vaiTroKhac)
         {
             string tenDangNhap = (model.Username ?? string.Empty).Trim();
             var chon = (roleIds ?? new List<int>()).Distinct().ToList();
@@ -161,6 +163,12 @@ namespace ERP_HRM_CMS.Controllers
                 CreatedAt = VietnamTime.Now
             };
             user.PasswordHash = hasher.HashPassword(user, model.Password!);
+
+            int? idVaiTroKhac = await TaoVaiTroTuNhapAsync(vaiTroKhac);
+            if (idVaiTroKhac.HasValue && !chon.Contains(idVaiTroKhac.Value))
+            {
+                chon.Add(idVaiTroKhac.Value);
+            }
 
             // Nếu không chọn vai trò nào, mặc định cấp vai trò EMPLOYEE
             if (!chon.Any())
@@ -231,7 +239,7 @@ namespace ERP_HRM_CMS.Controllers
         /// <summary>Sửa trạng thái và vai trò. Mật khẩu đổi ở action ResetPassword riêng.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(TaiKhoanFormViewModel model, List<int>? roleIds)
+        public async Task<IActionResult> Edit(TaiKhoanFormViewModel model, List<int>? roleIds, string? vaiTroKhac)
         {
             if (await LaTaiKhoanBiBaoVeAsync(model.Id))
             {
@@ -272,6 +280,12 @@ namespace ERP_HRM_CMS.Controllers
                 model.Roles = await LoadRolesAsync(chon);
                 model.Employees = await LoadEmployeeOptionsAsync();
                 return View(model);
+            }
+
+            int? idVaiTroKhacSua = await TaoVaiTroTuNhapAsync(vaiTroKhac);
+            if (idVaiTroKhacSua.HasValue && !chon.Contains(idVaiTroKhacSua.Value))
+            {
+                chon.Add(idVaiTroKhacSua.Value);
             }
 
             bool doiKichHoat = user.IsActive != model.IsActive;
@@ -600,6 +614,197 @@ namespace ERP_HRM_CMS.Controllers
             TempData["GeneratedPasswordContext"] = "Mật khẩu vừa được đặt lại";
             TempData["ThongBao"] = $"Đã đặt lại mật khẩu cho tài khoản '{user.Username}'.";
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Gỡ tư cách quản trị tổng của một tài khoản: tắt cờ IsSuperAdmin và bỏ vai trò
+        /// SUPERADMIN. Chỉ SuperAdmin được thao tác, không gỡ được chính mình, và hệ thống
+        /// phải luôn còn ít nhất một quản trị tổng đang hoạt động.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GoAdminTong(int id)
+        {
+            if (!await _superAdmin.LaSuperAdminAsync(CurrentUserId()))
+            {
+                TempData["LoiDuyet"] = ThongBaoBaoVe;
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (id == CurrentUserId())
+            {
+                TempData["LoiDuyet"] = "Không thể tự gỡ quyền quản trị tổng của chính mình.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            bool conQuanTriTongKhac = await _context.Users.AnyAsync(u =>
+                u.Id != user.Id
+                && u.IsActive
+                && (u.IsSuperAdmin || u.UserRoles.Any(ur => ur.Role.Code == SuperAdminService.MaVaiTroSuperAdmin)));
+
+            if (!conQuanTriTongKhac)
+            {
+                TempData["LoiDuyet"] = "Hệ thống phải luôn còn ít nhất một quản trị tổng đang hoạt động.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            user.IsSuperAdmin = false;
+            foreach (var ur in user.UserRoles
+                         .Where(ur => ur.Role.Code == SuperAdminService.MaVaiTroSuperAdmin)
+                         .ToList())
+            {
+                _context.UserRoles.Remove(ur);
+            }
+
+            // Thu hồi mọi phiên đăng nhập cũ để quyền mới có hiệu lực ngay.
+            user.SecurityStamp = Guid.NewGuid();
+            await _context.SaveChangesAsync();
+
+            TempData["ThongBao"] = $"Đã gỡ quyền quản trị tổng của tài khoản '{user.Username}'. " +
+                                   "Tài khoản vẫn đăng nhập được với các vai trò còn lại.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Cấp lại tư cách quản trị tổng. Có cặp với GoAdminTong để thao tác gỡ không
+        /// trở thành đường một chiều.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CapAdminTong(int id)
+        {
+            if (!await _superAdmin.LaSuperAdminAsync(CurrentUserId()))
+            {
+                TempData["LoiDuyet"] = ThongBaoBaoVe;
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.IsSuperAdmin = true;
+            user.IsActive = true;
+
+            var vaiTroSuper = await _context.Roles
+                .FirstOrDefaultAsync(r => r.Code == SuperAdminService.MaVaiTroSuperAdmin);
+            if (vaiTroSuper != null && !user.UserRoles.Any(ur => ur.RoleId == vaiTroSuper.Id))
+            {
+                user.UserRoles.Add(new UserRole { UserId = user.Id, RoleId = vaiTroSuper.Id });
+            }
+
+            user.SecurityStamp = Guid.NewGuid();
+            await _context.SaveChangesAsync();
+
+            TempData["ThongBao"] = $"Đã cấp quyền quản trị tổng cho tài khoản '{user.Username}'.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Tạo vai trò từ ô "Khác" người dùng tự điền. Nếu đã có vai trò cùng tên hoặc cùng
+        /// mã thì dùng lại thay vì tạo trùng. Trả về Id vai trò, hoặc null nếu bỏ trống.
+        /// </summary>
+        private async Task<int?> TaoVaiTroTuNhapAsync(string? tenVaiTro)
+        {
+            string ten = (tenVaiTro ?? string.Empty).Trim();
+            if (ten.Length == 0)
+            {
+                return null;
+            }
+
+            if (ten.Length > 150)
+            {
+                ten = ten.Substring(0, 150);
+            }
+
+            var daCo = await _context.Roles.FirstOrDefaultAsync(r => r.Name == ten);
+            if (daCo != null)
+            {
+                if (!daCo.IsActive)
+                {
+                    daCo.IsActive = true;
+                    await _context.SaveChangesAsync();
+                }
+                return daCo.Id;
+            }
+
+            string ma = TaoMaVaiTro(ten);
+            var trungMa = await _context.Roles.FirstOrDefaultAsync(r => r.Code == ma);
+            if (trungMa != null)
+            {
+                return trungMa.Id;
+            }
+
+            var vaiTroMoi = new Role
+            {
+                Code = ma,
+                Name = ten,
+                Description = "Vai trò do quản trị viên tự thêm từ mục \"Khác\".",
+                IsSystem = false,
+                IsActive = true,
+                CreatedAt = VietnamTime.Now
+            };
+
+            _context.Roles.Add(vaiTroMoi);
+            await _context.SaveChangesAsync();
+            return vaiTroMoi.Id;
+        }
+
+        /// <summary>
+        /// Dựng mã vai trò từ tên tiếng Việt: bỏ dấu, viết hoa, thay khoảng trắng bằng gạch
+        /// dưới. Ví dụ "Trưởng ca bán hàng" thành "TRUONG_CA_BAN_HANG". Mã tối đa 50 ký tự
+        /// theo ràng buộc của bảng Roles.
+        /// </summary>
+        private static string TaoMaVaiTro(string ten)
+        {
+            string thuong = ten.Replace('đ', 'd').Replace('Đ', 'D');
+            string tach = thuong.Normalize(NormalizationForm.FormD);
+
+            var sb = new StringBuilder();
+            foreach (char c in tach)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
+                {
+                    continue;
+                }
+
+                if (char.IsLetterOrDigit(c))
+                {
+                    sb.Append(char.ToUpperInvariant(c));
+                }
+                else if (sb.Length > 0 && sb[sb.Length - 1] != '_')
+                {
+                    sb.Append('_');
+                }
+            }
+
+            string ma = sb.ToString().Trim('_');
+            if (ma.Length == 0)
+            {
+                ma = "VAITRO";
+            }
+
+            if (ma.Length > 50)
+            {
+                ma = ma.Substring(0, 50).Trim('_');
+            }
+
+            return ma;
         }
 
         private int CurrentUserId()

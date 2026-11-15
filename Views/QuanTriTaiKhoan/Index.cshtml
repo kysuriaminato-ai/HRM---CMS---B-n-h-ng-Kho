@@ -200,6 +200,29 @@
                                         </button>
                                     </form>
                                 }
+
+                                @* Gỡ / cấp tư cách quản trị tổng. Controller kiểm tra lại
+                                   quyền, chặn tự gỡ chính mình và chặn gỡ người cuối cùng. *@
+                                @if (u.IsSuperAdmin)
+                                {
+                                    <form asp-action="GoAdminTong" asp-route-id="@u.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Gỡ quyền quản trị tổng của tài khoản @u.Username? Tài khoản vẫn đăng nhập được với các vai trò còn lại.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger" title="Gỡ quyền quản trị tổng">
+                                            <i class="bi bi-shield-slash me-1"></i> Gỡ Admin Tổng
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="CapAdminTong" asp-route-id="@u.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Cấp quyền quản trị tổng cho tài khoản @u.Username? Tài khoản sẽ có toàn quyền trên hệ thống.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-secondary" title="Cấp quyền quản trị tổng">
+                                            <i class="bi bi-shield-plus"></i>
+                                        </button>
+                                    </form>
+                                }
                             </div>
                         </td>
                     </tr>
@@ -217,7 +240,8 @@
             </tbody>
         </table>
     </div>
-</div>
+</div>
+
 
 @*
     Sao chép thông tin đăng nhập. navigator.clipboard chỉ hoạt động trong ngữ cảnh
