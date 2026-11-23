@@ -27,7 +27,7 @@ namespace ERP_HRM_CMS.Data
             await SeedJewelryProductsIfEmptyAsync(context, seedDemo);
 
             // 5. Nối tài khoản quản trị với một hồ sơ nhân viên - CHỈ chạy khi Development
-            await LienKetTaiKhoanQuanTriVoiNhanVienAsync(context, seedDemo);
+            await ChuanHoaPhanTangQuanTriAsync(context, seedDemo);
 
             // 6. Sửa các đường dẫn ảnh đã hỏng của sản phẩm đã seed trước đó
             await SuaAnhSanPhamHongAsync(context);
@@ -61,40 +61,80 @@ namespace ERP_HRM_CMS.Data
         }
 
         /// <summary>
-        /// Nối tài khoản quản trị với một hồ sơ nhân viên để Cổng Nhân viên (ESS) có dữ liệu hiển thị.
-        /// Nếu không có liên kết này, trang /CongNhanVien báo "Chưa Liên Kết Hồ Sơ Nhân Viên".
-        /// Chỉ chạy ở môi trường Development, và chỉ khi tài khoản chưa được gắn hồ sơ nào.
+        /// Chuẩn hoá mô hình phân tầng quản trị:
+        ///   - Admin tổng là tài khoản kỹ thuật của hệ thống, KHÔNG gắn hồ sơ nhân viên.
+        ///   - Các admin con là nhân viên thật, mỗi người quản một mảng nghiệp vụ.
+        ///   - Nhân sự thường dùng tài khoản gắn hồ sơ, không có cờ quản trị tổng.
+        ///
+        /// Hàm chỉ chạy một lần: khi đã tồn tại một admin tổng không gắn nhân viên thì
+        /// coi như dữ liệu đã chuẩn và thoát ngay. Nhờ vậy việc quản trị viên chủ động
+        /// cấp quyền admin tổng về sau không bị lần khởi động kế tiếp gỡ mất.
         /// </summary>
-        public static async Task LienKetTaiKhoanQuanTriVoiNhanVienAsync(AppDbContext context, bool isDevelopment = false)
+        public static async Task ChuanHoaPhanTangQuanTriAsync(AppDbContext context, bool isDevelopment = false)
         {
             if (!isDevelopment)
             {
                 return;
             }
 
-            var taiKhoan = await context.Users.FirstOrDefaultAsync(u => u.IsSuperAdmin && u.EmployeeId == null);
-            if (taiKhoan == null)
+            bool daChuan = await context.Users.AnyAsync(u => u.IsSuperAdmin && u.EmployeeId == null);
+            if (daChuan)
             {
-                return; // Không có tài khoản quản trị nào thiếu liên kết
+                return;
             }
 
-            // Ưu tiên hồ sơ chưa gắn với tài khoản nào để tránh hai tài khoản trỏ cùng một nhân viên
-            var idDaDung = await context.Users
-                .Where(u => u.EmployeeId != null)
-                .Select(u => u.EmployeeId!.Value)
+            var dsQuanTriTong = await context.Users
+                .Include(u => u.UserRoles)
+                .Where(u => u.IsSuperAdmin)
+                .OrderBy(u => u.Id)
                 .ToListAsync();
 
-            var nhanVien = await context.Employees
-                .Where(e => e.Status == "Active" && !idDaDung.Contains(e.Id))
-                .OrderBy(e => e.Id)
-                .FirstOrDefaultAsync();
-
-            if (nhanVien == null)
+            if (dsQuanTriTong.Count == 0)
             {
-                return; // Chưa có nhân viên nào để nối, bỏ qua
+                return;
             }
 
-            taiKhoan.EmployeeId = nhanVien.Id;
+            // Chọn một tài khoản làm admin tổng thuần. Ưu tiên tên "superadmin" cho dễ nhận biết.
+            var adminTong = dsQuanTriTong
+                .FirstOrDefault(u => string.Equals(u.Username, "superadmin", StringComparison.OrdinalIgnoreCase))
+                ?? dsQuanTriTong[0];
+
+            adminTong.EmployeeId = null;
+            adminTong.IsSuperAdmin = true;
+            adminTong.SecurityStamp = Guid.NewGuid();
+
+            var vaiTroSuper = await context.Roles
+                .FirstOrDefaultAsync(r => r.Code == "SUPERADMIN");
+            if (vaiTroSuper != null && !adminTong.UserRoles.Any(ur => ur.RoleId == vaiTroSuper.Id))
+            {
+                adminTong.UserRoles.Add(new UserRole { UserId = adminTong.Id, RoleId = vaiTroSuper.Id });
+            }
+
+            // Những tài khoản quản trị tổng còn lại hạ xuống admin con: giữ liên kết nhân
+            // viên, bỏ cờ quản trị tổng và bỏ vai trò SUPERADMIN để quyền phản ánh đúng mảng
+            // phụ trách. Mỗi người cần ít nhất một vai trò quản lý, nếu trống thì cấp EMPLOYEE.
+            var vaiTroNhanVien = await context.Roles.FirstOrDefaultAsync(r => r.Code == "EMPLOYEE");
+
+            foreach (var adminCon in dsQuanTriTong.Where(u => u.Id != adminTong.Id))
+            {
+                adminCon.IsSuperAdmin = false;
+                adminCon.SecurityStamp = Guid.NewGuid();
+
+                if (vaiTroSuper != null)
+                {
+                    foreach (var ur in adminCon.UserRoles.Where(ur => ur.RoleId == vaiTroSuper.Id).ToList())
+                    {
+                        context.UserRoles.Remove(ur);
+                        adminCon.UserRoles.Remove(ur);
+                    }
+                }
+
+                if (!adminCon.UserRoles.Any() && vaiTroNhanVien != null)
+                {
+                    adminCon.UserRoles.Add(new UserRole { UserId = adminCon.Id, RoleId = vaiTroNhanVien.Id });
+                }
+            }
+
             await context.SaveChangesAsync();
         }
 

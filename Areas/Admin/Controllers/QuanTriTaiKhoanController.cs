@@ -267,6 +267,14 @@ namespace ERP_HRM_CMS.Controllers
 
             loi ??= await KiemTraVaiTroAsync(chon);
 
+            // Admin tổng là tài khoản kỹ thuật của hệ thống, không phải người trong công ty,
+            // nên không được gắn hồ sơ nhân viên. Admin con và nhân sự thì ngược lại.
+            if (loi == null && user.IsSuperAdmin && model.EmployeeId.HasValue)
+            {
+                loi = "Tài khoản quản trị tổng là tài khoản hệ thống nên không gắn hồ sơ nhân viên. "
+                    + "Nếu đây là nhân sự của công ty, hãy gỡ quyền quản trị tổng trước rồi cấp vai trò quản lý mảng cho họ.";
+            }
+
             if (loi == null && await LaSuperAdminCuoiCungAsync(user, model.IsActive, chon))
             {
                 loi = "Hệ thống phải luôn còn ít nhất một SuperAdmin đang hoạt động.";
@@ -696,6 +704,14 @@ namespace ERP_HRM_CMS.Controllers
             if (user == null)
             {
                 return NotFound();
+            }
+
+            if (user.EmployeeId.HasValue)
+            {
+                TempData["LoiDuyet"] = $"Tài khoản '{user.Username}' đang gắn hồ sơ nhân viên nên không thể làm quản trị tổng. "
+                                     + "Quản trị tổng là tài khoản hệ thống, không thuộc biên chế công ty. "
+                                     + "Hãy gỡ liên kết nhân viên ở màn hình sửa tài khoản trước.";
+                return RedirectToAction(nameof(Index));
             }
 
             user.IsSuperAdmin = true;

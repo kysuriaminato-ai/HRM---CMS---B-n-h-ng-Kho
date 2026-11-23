@@ -14,7 +14,25 @@
     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
 
     @* 1. Chọn Nhân Viên Liên Kết *@
-    <div class="mb-3">
+    @*
+        Ba tầng tài khoản:
+          - Quản trị tổng: tài khoản kỹ thuật của hệ thống, không thuộc biên chế, không gắn hồ sơ.
+          - Admin con: nhân viên thật, mỗi người phụ trách một mảng, bắt buộc gắn hồ sơ.
+          - Nhân sự thường: nhân viên có tài khoản để dùng các chức năng được cấp.
+    *@
+    @if (isEdit && Model.IsSuperAdmin)
+    {
+        <div class="alert alert-secondary d-flex gap-2 py-2 small">
+            <i class="bi bi-shield-lock-fill"></i>
+            <div>
+                <strong>Tài khoản quản trị tổng.</strong>
+                Đây là tài khoản kỹ thuật của hệ thống, không thuộc biên chế công ty nên không
+                gắn hồ sơ nhân viên. Muốn biến thành nhân sự của công ty, hãy gỡ quyền quản trị
+                tổng ở danh sách tài khoản trước.
+            </div>
+        </div>
+    }
+    <div class="mb-3 @(isEdit && Model.IsSuperAdmin ? "d-none" : "")">
         <label asp-for="EmployeeId" class="form-label fw-semibold">
             <i class="bi bi-person-badge text-primary me-1"></i> Nhân viên liên kết
         </label>
