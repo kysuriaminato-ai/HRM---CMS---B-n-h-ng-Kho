@@ -1,4 +1,4 @@
-# Phân tích hiện trạng và đánh giá khoảng trống
+﻿# Phân tích hiện trạng và đánh giá khoảng trống
 
 - **Phiên:** 1 (chỉ phân tích, không sửa code)
 - **Ngày:** 2026-11-04
@@ -85,8 +85,10 @@ Services/                → Payroll, Kho, Printing, Security, Notification, Car
 Helpers/ Filters/ Hubs/ Middleware/ ViewComponents/
 Views/ (76 file)         → 6 layout khác nhau
 wwwroot/                 → CSS, JS, lib
-Database/Legacy/         → script SQL cũ (chỉ tham khảo)
-scripts/legacy/          → script PowerShell kiểm thử cũ
+db/scripts/              → script SQL có đánh số phiên bản (V4 → V6)
+db/legacy/               → script SQL cũ (chỉ tham khảo)
+archive/scripts/         → script PowerShell kiểm thử cũ
+archive/patches/         → bản vá git của các phiên trước
 docs/adr/                → ADR-003 (đề xuất, chờ xác nhận)
 ```
 
@@ -187,7 +189,7 @@ Thang mức độ: **Nghiêm trọng** (khai thác được, ảnh hưởng dữ
 | S14 | Thấp | `Helpers/MatKhauHelper.cs:61–74` | Chính sách: tối thiểu 8 ký tự, có chữ và số. Không kiểm tra mật khẩu đã bị lộ, không có MFA. Chính sách này chưa theo hướng NIST SP 800-63B (ưu tiên độ dài và danh sách mật khẩu cấm) | Thêm danh sách mật khẩu phổ biến. Cân nhắc MFA (TOTP) cho vai trò quản trị |
 | S15 | Thấp | `MatKhauHelper.cs:17` | PBKDF2-SHA256 với 100.000 vòng. OWASP hiện khuyến nghị cao hơn (khoảng 600.000 cho PBKDF2-HMAC-SHA256) | Nâng số vòng khi nâng cấp. Dùng cùng cơ chế "nâng cấp khi đăng nhập" đã có cho hash cũ |
 | S16 | Thấp | `Data/AppDbContextFactory.cs:18` | Chuỗi kết nối localdb cứng, chỉ dùng cho design-time EF tools | Chấp nhận được, nhưng ghi chú rõ trong code |
-| S17 | Thấp | `Database/Legacy/SQLQuery1.sql` | Script mẫu có tài khoản mật khẩu `123456`. README đã cảnh báo | Đảm bảo file không dùng cho production. Cân nhắc xóa khỏi repo |
+| S17 | Thấp | `db/legacy/SQLQuery1.sql` | Script mẫu có tài khoản mật khẩu `123456`. README đã cảnh báo | Đảm bảo file không dùng cho production. Cân nhắc xóa khỏi repo |
 
 ### 6.1 Điểm bảo mật đã làm tốt (giữ nguyên)
 
@@ -242,8 +244,8 @@ Thang mức độ: **Nghiêm trọng** (khai thác được, ảnh hưởng dữ
 | ID | Vị trí | Mô tả | Khuyến nghị |
 |---|---|---|---|
 | A1 | `Views/Shared/` | 6 layout trùng lặp phần head, nav và CSS. `_Layout1.cshtml` không được tham chiếu (213 byte). `SalesLayout.cshtml` không có tham chiếu chính xác (chỉ có `_SalesLayout`) | Xác nhận rồi xóa file không dùng. Gộp còn 2–3 layout dùng chung partial |
-| A2 | `_columns_check.csv` (root, 434 dòng) | File nháp liệt kê cột, không được tham chiếu ở đâu | Xóa sau khi xác nhận |
-| A3 | `scripts/legacy/*.ps1`, `Database/Legacy/*.sql` | Script cũ, README ghi là đã thay bằng test và migration | Giữ có chú thích, hoặc chuyển ra ngoài repo |
+| A2 | `_columns_check.csv` (root, 434 dòng) | File nháp liệt kê cột, không được tham chiếu ở đâu | **Đã xóa trong Phiên A** (đã kiểm chứng không có tham chiếu trong code/test/script) |
+| A3 | `archive/scripts/*.ps1`, `db/legacy/*.sql` | Script cũ, README ghi là đã thay bằng test và migration | **Đã gom về một chỗ (12/11/2026)**: SQL cũ vào `db/legacy/`, PowerShell cũ vào `archive/scripts/`. Giữ để tham khảo |
 | A4 | `Data/DbInitializer.cs` (1285 dòng) | Trộn ba việc: vá schema bằng SQL thô (dòng 52), seed quyền và admin (SeedCore), dữ liệu mẫu (SeedDemo) | Tách thành `SchemaPatcher`, `CoreSeeder`, `DemoSeeder`. Vá schema nên chuyển hết sang migration |
 | A5 | Toàn repo | Tên controller, route và action bằng tiếng Việt (xem mục 2) | Đổi dần sang tiếng Anh, giữ route cũ bằng redirect 301 trong một thời gian. Cần ADR |
 | A6 | Migrations | 2 migration cùng ngày 2026-11-04 (`InitialBaseline`, `AddSeedHistory`); không có file `.sql` đi kèm | Sinh script `dotnet ef migrations script` và lưu cạnh migration (yêu cầu của dự án) |
@@ -311,23 +313,41 @@ Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cậ
 
 ### 12.1 P0
 
-| ID | Hạng mục | Liên quan | Ước lượng |
-|---|---|---|---|
-| P0-01 | Nâng lên **.NET 10 LTS** và EF Core tương ứng; build và test sạch | Mục 3 | 1–2 ngày |
-| P0-02 | Thêm kiểm tra quyền cho Dashboard (`HomeController.cs:21`), tìm kiếm toàn cục (`:182`), tìm sản phẩm POS (`BanHangController.cs:54`), `GetSupplier` (`SupplierController.cs:102`) | S1, S2 | 0,5 ngày |
-| P0-03 | Ràng buộc giảm giá POS phía server, quyền riêng cho giảm giá, ghi lý do vào audit | S6 | 1 ngày |
-| P0-04 | Thay `CurrentUserId` (Session, `?? 1`) bằng claim; trả 401 khi không xác định được user | S5, D9 | 1,5 ngày |
-| P0-05 | Ghi audit đăng nhập, thất bại, đăng xuất, khóa tự động, đổi mật khẩu | S10 | 1 ngày |
-| P0-06 | Sửa cấp tài khoản nhanh: không hiện mật khẩu, buộc đổi lần đầu, bỏ gợi ý "123456", kích hoạt theo quy trình | S3 | 1 ngày |
-| P0-07 | Luồng nhập kho PO dùng `CongTonAsync` | D1 | 0,5 ngày |
-| P0-08 | Chống dò tên đăng nhập (luôn băm), `ForwardedHeaders`, giới hạn theo IP độc lập | S8 | 1 ngày |
-| P0-09 | **ADR và triển khai phạm vi dữ liệu** theo chi nhánh và phòng ban, áp dụng ở POS, Kho, Đơn hàng, Nhân sự | S4, D10 | 5–8 ngày |
-| P0-10 | Quy tắc duyệt đơn từ: không tự duyệt, đúng cấp, đúng trưởng bộ phận | S7 | 1 ngày |
-| P0-11 | Chống spam đăng ký: CAPTCHA hoặc rate limit, giới hạn tài khoản chờ duyệt | S9 | 0,5–1 ngày |
-| P0-12 | Thay bộ làm sạch HTML bằng parser; làm sạch lúc ghi; bộ test XSS | S11 | 1–2 ngày |
-| P0-13 | Test phân quyền: người đã đăng nhập thiếu quyền phải nhận 403 hoặc chuyển hướng cho mọi endpoint | Mục 5.1 | 1 ngày |
+| ID | Hạng mục | Liên quan | Ước lượng | Trạng thái (Kiểm chứng Phiên A) | Bằng chứng trong code |
+|---|---|---|---|---|---|
+| P0-01 | Nâng lên **.NET 10 LTS** và EF Core tương ứng; build và test sạch | Mục 3 | 1–2 ngày | **Đã làm** | Đã nâng cả 5 `.csproj` (`ERP_HRM_CMS`, `ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP_HRM_CMS.Tests`) lên `<TargetFramework>net10.0</TargetFramework>`, đồng bộ `Microsoft.EntityFrameworkCore.SqlServer` / `Tools` / `Microsoft.AspNetCore.Mvc.Testing` lên `10.0.14`, `Serilog.AspNetCore` lên `10.0.0`; `dotnet build` đạt **0 Warning, 0 Error** và `dotnet test` đạt **255/255 Pass** trên `.NET SDK 10.0.403` |
+| P0-02 | Thêm kiểm tra quyền cho Dashboard (`HomeController.cs`), tìm kiếm toàn cục, tìm sản phẩm POS (`BanHangController.cs`), `GetSupplier` (`SupplierController.cs`) | S1, S2 | 0,5 ngày | **Đã làm** | `HomeController.Index` gắn `[KiemTraQuyen(DashboardPermissions)]` + chặn 403/redirect khi user không có quyền KPI lẫn `hrm.self.service`; `GlobalQuickSearch` kiểm tra từng quyền `hrm.employee.view`, `product.view`, `order.view`; `BanHangController.TimKiemSanPhamPos` có `[KiemTraQuyen("order.pos,order.manage")]`; `SupplierController.GetSupplier` có `[KiemTraQuyen("scm.supplier.view,scm.po.manage")]` |
+| P0-03 | Ràng buộc giảm giá POS phía server, quyền riêng cho giảm giá, ghi lý do vào audit | S6 | 1 ngày | **Đã làm** | `src/ERP.Application/Common/Security/PosDiscountPolicy.cs` kiểm tra `0 <= DiscountAmount <= SubTotal`, trần theo vai trò (10% / 30% / 50%), bắt buộc lý do khi giảm > 5%; `BanHangController.cs:111–206` gọi `PosDiscountPolicy.Validate` và ghi `AuditLogs` (`POS_DISCOUNT_APPLIED`) |
+| P0-04 | Thay `CurrentUserId` (Session, `?? 1`) bằng claim; trả 401 khi không xác định được user | S5, D9 | 1,5 ngày | **Đã làm** | `CurrentUserService` đọc từ `ClaimTypes.NameIdentifier`; đã xóa toàn bộ fallback `?? 1` / `?? 0` liên quan danh tính tại `DanhGiaKpiController`, `DaoTaoController`, `TuyenDungController`, `ChamCongController`, `QuyetDinhNhanSuController`, `SelfServiceController`, `ContentController`, `PhanQuyenController` và đăng ký `UnauthorizedAccessExceptionFilter` trả HTTP 401 |
+| P0-05 | Ghi audit đăng nhập, thất bại, đăng xuất, khóa tự động, đổi mật khẩu | S10 | 1 ngày | **Một phần** | `AuthController.WriteAuthAuditAsync` (`AuthController.cs:309–327`) đã ghi `LOGIN_FAILED`, `LOGIN_BLOCKED_INACTIVE`, `LOGIN_SUCCESS`, `CHANGE_PASSWORD`, `LOGOUT` vào `AuditLogs`; còn thiếu ghi sự kiện `LOGIN_LOCKED_OUT` riêng khi `LoginThrottleService` bắt đầu khóa tự động |
+| P0-06 | Sửa cấp tài khoản nhanh: không hiện mật khẩu, buộc đổi lần đầu, bỏ gợi ý "123456", kích hoạt theo quy trình | S3 | 1 ngày | **Một phần** | `NhanSuController.CapTaiKhoanNhanh` & `EmployeeService.ProvisionUserAccountAsync` đã sinh mật khẩu tạm ngẫu nhiên 1 lần, gắn `Cache-Control: no-store`, đặt `MustChangePassword = true`, ép đổi mật khẩu qua `MustChangePasswordMiddleware`; **nhưng còn mở**: `AuthController.cs:98–104` còn đoạn dev fallback chấp nhận `"Admin@123456"` / `"123456"` / `user.Username` và `Views/Auth/Login.cshtml:159–175` còn nút điền sẵn mật khẩu mặc định |
+| P0-07 | Luồng nhập kho PO dùng `CongTonAsync` | D1 | 0,5 ngày | **Đã làm** | `PurchaseOrderController.cs:277` gọi `InventoryStockService.CongTonAsync(_context, po.BranchId, item.ProductId, item.Quantity)` bên trong transaction |
+| P0-08 | Chống dò tên đăng nhập (luôn băm), `ForwardedHeaders`, giới hạn theo IP độc lập | S8 | 1 ngày | **Một phần** | `AuthController.cs:91` luôn gọi `MatKhauHelper.VerifyDummy(model.Password)` khi user không tồn tại; `src/ERP.Infrastructure/DependencyInjection.cs:86–102` và `Program.cs:96` đã cấu hình `UseForwardedHeaders`; **nhưng còn mở**: `LoginThrottleService.cs` mới khóa theo cặp `(Username, IpAddress)`, chưa có bộ đếm giới hạn theo IP độc lập với tên đăng nhập |
+| P0-09 | **ADR và triển khai phạm vi dữ liệu** theo chi nhánh và phòng ban, áp dụng ở POS, Kho, Đơn hàng, Nhân sự | S4, D10 | 5–8 ngày | **Một phần** | Đã triển khai `IDataScopeService` / `DataScopeService` (`Company`, `Branch`, `Department`, `Self`) và áp dụng tại `HomeController`, `BanHangController`, `KhoController`, `DonHangController`, `PurchaseOrderController`, `EmployeeService`, `AttendanceService`, `LeaveManagementService`, `PeopleAnalyticsService`; **nhưng còn mở**: chưa có file ADR riêng về phạm vi dữ liệu trong `docs/adr/`, và một số service/controller (`PerformanceReviewService`, `TrainingService`, `RecruitmentService`, `CongNoController`) chưa lọc theo `IDataScopeService` |
+| P0-10 | Quy tắc duyệt đơn từ: không tự duyệt, đúng cấp, đúng trưởng bộ phận | S7 | 1 ngày | **Một phần** | `LeaveApprovalPolicy.ValidateApprover` (`src/ERP.Application/Common/Security/LeaveApprovalPolicy.cs`) và `LeaveManagementService.cs:190–308` đã chặn tự duyệt/tự từ chối (ghi `SELF_APPROVE_BY_SUPERADMIN` nếu SuperAdmin duyệt) và kiểm tra `level` `"TP"`/`"GD"`; **nhưng còn mở**: chưa đối chiếu người duyệt cấp `"TP"` phải đúng `Department.ManagerId` của nhân viên khi người duyệt có quyền rộng, và tham số `level` còn là `string` chưa chuyển sang enum |
+| P0-11 | Chống spam đăng ký: CAPTCHA hoặc rate limit, giới hạn tài khoản chờ duyệt | S9 | 0,5–1 ngày | **Còn mở** | `AuthController.Register` (`AuthController.cs:181–221`) chưa có CAPTCHA hay rate limit; từ commit `937c667`, dòng 191–195 trả `View(model)` (`200 OK`) lộ tên đăng nhập đã tồn tại (hằng `ThongBaoDangKyChung` ở dòng 29 không được dùng, làm fail test `SecurityHardeningTests.DangKy_TenDaTonTaiVaTenMoi_TraVeCungPhanHoi`), và dòng 203 đặt `IsActive = true` ngay khi đăng ký |
+| P0-12 | Thay bộ làm sạch HTML bằng parser; làm sạch lúc ghi; bộ test XSS | S11 | 1–2 ngày | **Một phần** | Đã có bộ test `tests/ERP_HRM_CMS.Tests/HtmlSanitizerTests.cs` (10 ca kiểm thử); **nhưng còn mở**: `Helpers/HtmlSanitizerHelper.cs` vẫn dùng `Regex` thay vì thư viện HTML parser, và `ContentController` / `ContentFormViewModel.GhiVaoEntity` chưa gọi `Sanitize` lúc ghi |
+| P0-13 | Test phân quyền: người đã đăng nhập thiếu quyền phải nhận 403 hoặc chuyển hướng cho mọi endpoint | Mục 5.1 | 1 ngày | **Một phần** | `AuthorizationDefaultTests.cs` đã quét tự động mọi controller/action cho người **chưa đăng nhập**; `Phase1ArchitectureAndSecurityTests.cs` và `Phase8PerformanceLmsAndPayrollTests.cs` đã kiểm thử 403/redirect cho người đã đăng nhập thiếu quyền trên một số endpoint trọng yếu (`HomeController.Index`, POS, Supplier, KPI, Đào tạo, Bảng lương), nhưng chưa có test quét tự động toàn bộ 100% action có `[KiemTraQuyen]` với tài khoản đã đăng nhập 0 quyền |
 
 **Tổng P0: khoảng 16–22 ngày công** (trong đó P0-09 chiếm phần lớn).
+
+#### 12.1.1 Báo cáo rà soát toàn bộ mẫu `?? 1` / `?? 0` trên toàn codebase (Phiên A)
+
+1. **Các vị trí liên quan đến danh tính người dùng (User Identity) — Đã sửa triệt để trong Phiên A (trả HTTP 401 khi không xác định được user):**
+   - `Controllers/DanhGiaKpiController.cs:34` (`_currentUser.UserId ?? 1`) & `:124` (`_currentUser.EmployeeId ?? CurrentUserId`): Đã bỏ `?? 1` và fallback sang `CurrentUserId`, kiểm tra danh tính và trả `401 Unauthorized` ở mọi action ghi (`TaoMoi`, `TuDanhGia`, `QuanLyDanhGia`, `PheDuyet`).
+   - `Controllers/DaoTaoController.cs:34` (`_currentUser.UserId ?? 1`): Đã bỏ `?? 1`, trả `401 Unauthorized` tại `TaoMoi`, `ChinhSua`, `GanHocVien`, `ChamDiemHocVien`.
+   - `Controllers/TuyenDungController.cs:34` (`_currentUser.UserId ?? 1`): Đã bỏ `?? 1`, trả `401 Unauthorized` tại 9 POST action (`TaoMoi`, `ChinhSua`, `Xoa`, `CapNhatTrangThai`, `DatLichPhongVan`, `DanhGiaPhongVan`, `TiepNhanNhanSu`, `CapNhatTienDoTask`, `TaoMoiChecklist`).
+   - `Controllers/ChamCongController.cs:215, 231` (`CurrentUserId ?? 1` trong `KhoaKyCong`, `MoKhoaKyCong`): Đã bỏ `?? 1` và kiểm tra danh tính trả `401 Unauthorized` trên toàn bộ POST action (`QuickAction`, `ImportExcel`, `AssignShift`, `CopySchedule`, `KhoaKyCong`, `MoKhoaKyCong`, `TaoCa`).
+   - `Controllers/QuyetDinhNhanSuController.cs:126, 149` (`CurrentUserId ?? 1` trong `Approve`, `Cancel`): Đã bỏ `?? 1` và trả `401 Unauthorized` tại `Create`, `Approve`, `Cancel`.
+   - `Controllers/SelfServiceController.cs:42` (`_currentUser.UserId ?? 0`): Đã bỏ `?? 0` và trả `401 Unauthorized` tại tất cả POST action (`CheckIn`, `CheckOut`, `TaoDon`, `HuyDon`, `GuiGiaiTrinh`, `XacThucMatKhauPhieuLuong`, `CapNhatLienHe`, `DangKyNguoiPhuThuoc`).
+   - `Controllers/ContentController.cs:53` (`AuthorId = CurrentUserId()`): Đã kiểm tra `CurrentUserId()` hợp lệ (`> 0`), trả `401 Unauthorized` nếu không xác định được người tạo.
+   - `Controllers/PhanQuyenController.cs:93, 218` (`if (nguoiThaoTac <= 0)`): Đã đổi mã trả về từ `403` sang `401` khi không xác định được danh tính người thao tác.
+   - `Filters/UnauthorizedAccessExceptionFilter.cs` + `Program.cs`: Bắt ngoại lệ `UnauthorizedAccessException` từ `ICurrentUserService.GetRequiredUserId()` trên toàn cục và chuyển thành phản hồi `401 Unauthorized`.
+
+2. **Các vị trí `?? 1` / `?? 0` KHÔNG phải danh tính người dùng (ghi nhận để theo dõi ở mục D10, không sửa trong Phiên A):**
+   - **Chi nhánh mặc định `branchId ?? 1` (mục D10):** `BanHangController.cs:68`, `GioHangController.cs:29, 40, 50`, `KhoController.cs:56, 129, 225, 389, 530, 542, 683`, `PurchaseOrderController.cs:122`, `SanPhamController.cs:28`.
+   - **Ca làm việc mặc định khi sinh công từ đơn nghỉ phép:** `Services/HRM/LeaveManagementService.cs:693` (`ShiftId = defaultShift?.Id ?? 1`).
+   - **Giá trị khởi tạo ViewModel form GET (chưa chọn trên dropdown):** `DonTuController.cs:89` (`EmployeeId = _currentUser.EmployeeId ?? 0`), `HopDongController.cs:99` (`EmployeeId = employeeId ?? 0`), `QuyetDinhNhanSuController.cs:83` (`EmployeeId = employeeId ?? 0`), `PhanQuyenController.cs:157` (`targetUserId = userId ?? users.FirstOrDefault()?.Id ?? 0`).
 
 ### 12.2 P1
 
@@ -376,9 +396,38 @@ Tham chiếu: OWASP ASVS (xác thực, quản lý phiên, kiểm soát truy cậ
 | P2-11 | OpenTelemetry (trace, metric) | 2–3 ngày |
 | P2-12 | Chuyển dần sang kiến trúc Clean Architecture theo module (strangler, mục 4.3) | 15–25 ngày (phân bổ qua nhiều phiên) |
 
+### 12.4 Nợ kỹ thuật phát hiện bổ sung tại Phiên C1 / C1.1 (Chưa xử lý trong C1.1 — Ghi nhận theo mục C3)
+
+| ID | Hạng mục nợ kỹ thuật | Mô tả chi tiết & Bằng chứng | Hướng xử lý ở phiên sau |
+|---|---|---|---|
+| TD-C1-01 | Cảnh báo EF Core Global Query Filter (`Tag`, `KpiReview`, `Training`) | Khi khởi tạo model, EF Core cảnh báo thực thể `Tag`, `KpiReview`, `Training` có Global Query Filter (`!IsDeleted`) và là đầu bắt buộc (required principal end) của quan hệ với thực thể phụ thuộc (`ContentTag`, `KpiReviewCriterion`, `TrainingParticipant`) nhưng thực thể phụ thuộc chưa có query filter tương ứng (`CoreEventId.PossibleUnintendedCollectionNavigationNullWarning` / required relationship filter mismatch). | Bổ sung query filter tương ứng trên thực thể bảng nối/phụ thuộc (`!ct.Tag.IsDeleted`, `!c.KpiReview.IsDeleted`, `!p.Training.IsDeleted`) trong `AppDbContext.OnModelCreating`. |
+| TD-C1-02 | Cảnh báo EF Core SQL Server MARS Savepoints (`SqlServerEventId.SavepointsDisabledBecauseOfMARS`) | Chuỗi kết nối đang bật `MultipleActiveResultSets=True` (`MARS`). Khi `DbContext.SaveChangesAsync` thực thi nhiều câu lệnh trong một batch, EF Core phát cảnh báo không thể dùng Transaction Savepoint khi `MARS` được bật. | Rà soát các truy vấn lồng nhau để tắt `MultipleActiveResultSets=True` trong chuỗi kết nối hoặc cấu hình `ConfigureWarnings` nếu chủ đích giữ MARS. |
+| TD-C1-03 | `dotnet user-secrets` chưa dùng được do thiếu `<UserSecretsId>` trong `ERP_HRM_CMS.csproj` | `Program.cs` và tài liệu hướng dẫn cấu hình `SeedAdmin:Password` qua `dotnet user-secrets set "SeedAdmin:Password" ...`, nhưng file `ERP_HRM_CMS.csproj` hiện chưa khai báo thẻ `<UserSecretsId>`, khiến lệnh `dotnet user-secrets` báo lỗi cho đến khi chạy `dotnet user-secrets init`. | Thêm `<UserSecretsId>` cố định vào `ERP_HRM_CMS.csproj` để nhà phát triển dùng được `dotnet user-secrets` ngay lập tức. |
+
 ---
 
-## 13. Lộ trình các phiên sau
+## 13. Rủi ro bảo mật đã chấp nhận
+
+### RISK-AUTH-01: Đăng nhập dự phòng cho môi trường phát triển (đã gỡ mã, dữ liệu cũ chưa rõ)
+
+- Mô tả: Commit 937c667 thêm nhánh đăng nhập dự phòng trong AuthController, chấp nhận mật khẩu cố định ("Admin@123456", "123456") và tên đăng nhập làm mật khẩu. Nhánh này đã được gỡ trong f3d6a52 (kiểm chứng: không còn chuỗi "123456" trong AuthController).
+- Phạm vi ảnh hưởng: Tài khoản đã tồn tại trong ERP_HRM_CMS_DB trước thời điểm gỡ. Không có nhật ký để xác định tài khoản nào đã đăng nhập qua nhánh này.
+- Quyết định: Chủ dự án giữ nguyên mật khẩu hiện có (ngày ghi nhận: 2026-11-08).
+- Điều kiện chấp nhận: Ứng dụng chỉ chạy trên localhost, không công khai ra internet.
+- Bắt buộc trước khi triển khai ra ngoài: đổi mật khẩu tất cả tài khoản; đặt Seed:Demo = false; ghi nhật ký đăng nhập thành công.
+
+### RISK-AUTH-02: Mật khẩu mặc định "Admin@123456" còn trong mã nguồn (đã xử lý tại Phiên C2)
+
+- Vị trí trước khi sửa: `Data/DbInitializer.cs` (dòng 646, 710); `Controllers/QuanTriTaiKhoanController.cs` (dòng 85).
+- Rủi ro trước khi sửa: Tài khoản do admin tạo mới có mật khẩu đã biết nếu không được đổi.
+- Trạng thái: **Đã xử lý tại Phiên C2** (ngày đóng: `2026-11-08`, commit: `d9ca67a`).
+- Cách giải quyết:
+  1. `Areas/Admin/Controllers/QuanTriTaiKhoanController.cs` (`Create` GET & POST): loại bỏ chuỗi `"Admin@123456"`, tự động sinh mật khẩu ngẫu nhiên 12 ký tự (đủ chữ hoa, chữ thường, chữ số và ký tự đặc biệt qua `MatKhauHelper.GenerateTemporaryPassword(12)`), cưỡng chế `MustChangePassword = true` khi tạo tài khoản mới và hiển thị mật khẩu tạm thời đúng 1 lần qua `TempData["ThongBao"]`.
+  2. `Data/DbInitializer.cs` (`SeedAdminAccountsAsync` & `AssignDemoRolesAsync`): giữ nguyên `PasswordHash` của `admin`, `quantritong` và các tài khoản đã tồn tại; thay thế giá trị dự phòng `"Admin@123456"` khi tạo mới lần đầu bằng cấu hình `SeedAdmin:Password` — nếu chưa cấu hình thì tự động sinh mật khẩu ngẫu nhiên 12 ký tự và in ra Console đúng 1 lần.
+
+---
+
+## 14. Lộ trình các phiên sau
 
 Mỗi phiên kết thúc bằng cập nhật `docs/PROGRESS.md`, một báo cáo ngắn (file đã đổi, lệnh đã chạy, cách kiểm tra) và dừng chờ xác nhận như yêu cầu.
 
@@ -398,7 +447,7 @@ Mỗi phiên kết thúc bằng cập nhật `docs/PROGRESS.md`, một báo cáo
 
 ---
 
-## 14. Quyết định cần bạn xác nhận
+## 15. Quyết định cần bạn xác nhận
 
 Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hiện. Mình sẽ không tự quyết các điểm này.
 
@@ -409,13 +458,13 @@ Các điểm dưới đây ảnh hưởng trực tiếp đến cách thực hi�
 5. **Duyệt đơn từ:** cấp duyệt là gì (trưởng bộ phận, giám đốc)? Có cần người được ủy quyền?
 6. **Đổi tên route tiếng Việt sang tiếng Anh:** làm ngay, hay để khi có module mới? Cần giữ URL cũ bằng redirect bao lâu?
 7. **Tham số lương:** kế toán hoặc tư vấn pháp lý xác nhận các mục `NeedsConfirmation` trong `appsettings.json` (ví dụ mức lương cơ sở 2.530.000 từ 01/07/2026, trần đóng BHXH, mức phạt đi muộn "nội bộ chưa có văn bản"). Hệ thống hiện đánh dấu cảnh báo trên phiếu lương khi còn TODO.
-8. **Dọn dẹp:** được phép xóa `_columns_check.csv`, `Views/Shared/_Layout1.cshtml`, `Views/Shared/SalesLayout.cshtml`, và chuyển `scripts/legacy/` ra ngoài repo không?
+8. **Dọn dẹp:** được phép xóa `_columns_check.csv`, `Views/Shared/_Layout1.cshtml`, `Views/Shared/SalesLayout.cshtml`, và chuyển `archive/scripts/` ra ngoài repo không?
 9. **Ưu tiên nghiệp vụ mới:** tuyển dụng và KPI có cần trong 6 tháng tới không, hay để sau?
 10. **Môi trường triển khai:** một instance hay nhiều instance? Có reverse proxy không (ảnh hưởng S8 và H7)? Dữ liệu lưu ở đâu (ảnh hưởng quyết định về khóa Data Protection và sao lưu)?
 
 ---
 
-## 15. Tài liệu tham khảo
+## 16. Tài liệu tham khảo
 
 - Ngày hết hỗ trợ .NET 8 và .NET 9: 10/11/2026. Nguồn: [Infoworld, "End of support looms for .NET 8 and .NET 9"](https://www.infoworld.com/article/4191704/end-of-support-looms-for-net-8-and-net-9.html); [endoflife.ai, "Decision Guide — .NET 8"](https://endoflife.ai/decide-dotnet-8)
 - Chính sách hỗ trợ .NET: [.NET and .NET Core Support Policy](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core)

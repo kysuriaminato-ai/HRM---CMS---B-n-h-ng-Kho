@@ -1,7 +1,8 @@
-using ERP.Application;
+﻿using ERP.Application;
 using ERP.Infrastructure;
 using ERP.Infrastructure.Logging;
 using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Hubs;
 using ERP_HRM_CMS.Middleware;
@@ -10,9 +11,11 @@ using ERP_HRM_CMS.Services.HRM;
 using ERP_HRM_CMS.Services.Payroll;
 using ERP_HRM_CMS.Services.Printing;
 using ERP_HRM_CMS.Services.Security;
+using ERP_HRM_CMS.Models.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,8 +51,20 @@ if (!builder.Environment.IsDevelopment() && (string.IsNullOrWhiteSpace(allowedHo
         "Thiếu hoặc không hợp lệ AllowedHosts. Ngoài Development, đặt biến môi trường AllowedHosts bằng danh sách tên miền cụ thể (không dùng '*').");
 }
 
-// 1. Đăng ký MVC Controllers & Views
-builder.Services.AddControllersWithViews();
+// 1. Đăng ký MVC Controllers & Views (kèm filter chuyển UnauthorizedAccessException thành 401 Unauthorized và AreaAuthorizationFilter)
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<UnauthorizedAccessExceptionFilter>();
+    options.Filters.Add<AreaAuthorizationFilter>();
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.Razor.RazorViewEngineOptions>(options =>
+{
+    options.AreaViewLocationFormats.Add("/Views/{1}/{0}.cshtml");
+    options.AreaViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
+});
+
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, AreaAwareUrlHelperFactory>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
@@ -95,9 +110,35 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// 5. Cấu hình Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// 5. Cấu hình ASP.NET Core Identity (AppUser : IdentityUser<int>) và Cookie Authentication duy nhất
+// (Giữ bảng Roles, UserRoles, Permissions, RolePermissions, UserPermissions hiện có làm nguồn phân quyền; không dùng IdentityRole)
+builder.Services.AddSingleton<IPasswordHasher<User>, LegacyCompatiblePasswordHasher>();
+builder.Services.AddIdentityCore<User>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+
+        // Lockout của Identity theo ADR-004 mục 2.2: 5 lần sai, khóa tăng dần (cùng LoginThrottleService tối đa 30 phút), không khóa vĩnh viễn
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = LoginThrottleService.FailuresBeforeLockout;
+        options.Lockout.DefaultLockoutTimeSpan = LoginThrottleService.BaseLockout;
+
+        options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.Cookie.Name = "ERP_HRM_CMS_AuthCookie";
         options.LoginPath = "/Auth/Login";
@@ -183,9 +224,55 @@ app.UseMustChangePasswordEnforcement();
 app.MapInfrastructureEndpoints();
 app.MapHub<NotificationHub>("/hub/notifications");
 
+app.MapAreaControllerRoute(
+    name: "shop_default",
+    areaName: "Shop",
+    pattern: "{controller=Public}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "admin_default",
+    areaName: "Admin",
+    pattern: "{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "staff_default",
+    areaName: "Staff",
+    pattern: "{controller}/{action=Index}/{id?}");
+
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Public}/{action=Index}/{id?}");
+    pattern: "{controller}/{action=Index}/{id?}");
+
+// ---------------------------------------------------------------------------
+// Đường dẫn riêng cho từng khu vực, đăng ký SAU các tuyến trên.
+//
+// Vì sao đặt sau: ASP.NET Core sinh liên kết theo tuyến khớp đầu tiên. Đặt sau
+// nghĩa là Url.Action và RedirectToAction vẫn sinh ra URL gốc như cũ, nên toàn
+// bộ liên kết đang có trong View và các test giữ nguyên hành vi. Các tuyến dưới
+// đây chỉ thêm cách truy cập, không thay cách sinh liên kết.
+//
+//   Quản trị tổng : /Admin/QuanTriTaiKhoan, /Admin/PhanQuyen/MaTranPhanQuyen
+//   Nhân viên     : /Staff/Kho, /Staff/BanHang/POS, /Staff/CongNhanVien
+//   Khách hàng    : /  và các trang công khai khác
+//
+// Phân quyền từng khu vực do AreaAuthorizationFilter đảm nhiệm, không phụ thuộc
+// vào việc URL có tiền tố hay không.
+// ---------------------------------------------------------------------------
+
+app.MapAreaControllerRoute(
+    name: "admin_prefixed",
+    areaName: "Admin",
+    pattern: "Admin/{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "staff_prefixed",
+    areaName: "Staff",
+    pattern: "Staff/{controller}/{action=Index}/{id?}");
+
+app.MapAreaControllerRoute(
+    name: "shop_prefixed",
+    areaName: "Shop",
+    pattern: "Shop/{controller=Public}/{action=Index}/{id?}");
 
 app.Run();
 

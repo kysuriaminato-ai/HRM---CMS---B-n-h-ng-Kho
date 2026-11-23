@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using System.Security.Claims;
 using ERP_HRM_CMS.Models.Entities;
 using ERP_HRM_CMS.Models.Enums;
@@ -9,7 +11,7 @@ using ERP.Application.Common.Interfaces;
 
 namespace ERP_HRM_CMS.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityUserContext<User, int, IdentityUserClaim<int>, IdentityUserLogin<int>, IdentityUserToken<int>>
     {
         private readonly IHttpContextAccessor? _httpContextAccessor;
         private readonly IDataProtectionProvider _dataProtectionProvider;
@@ -47,7 +49,7 @@ namespace ERP_HRM_CMS.Data
         }
 
         // Phân hệ Auth & Phân quyền
-        public DbSet<User> Users => Set<User>();
+        public override DbSet<User> Users => Set<User>();
         public DbSet<Role> Roles => Set<Role>();
         public DbSet<Module> Modules => Set<Module>();
         public DbSet<Permission> Permissions => Set<Permission>();
@@ -96,6 +98,11 @@ namespace ERP_HRM_CMS.Data
         public DbSet<DebtPayment> DebtPayments => Set<DebtPayment>();
         public DbSet<StocktakingSheet> StocktakingSheets => Set<StocktakingSheet>();
         public DbSet<StocktakingDetail> StocktakingDetails => Set<StocktakingDetail>();
+
+        // Phân hệ Sản phẩm Trang sức & Vàng (Phiên D1)
+        public DbSet<JewelryMaterial> JewelryMaterials => Set<JewelryMaterial>();
+        public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+        public DbSet<GoldPrice> GoldPrices => Set<GoldPrice>();
 
         // Phiên 5: Hồ sơ nhân viên mở rộng
         public DbSet<EmployeeRelative> EmployeeRelatives => Set<EmployeeRelative>();
@@ -157,7 +164,44 @@ namespace ERP_HRM_CMS.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
+            // Cấu hình trực tiếp các thực thể IdentityUserContext mà không gọi b.Property(u => u.UserName)
+            // vì bảng AspNetUsers ánh xạ cột tên đăng nhập qua thuộc tính User.Username ([NotMapped] cho User.UserName),
+            // giúp triệt tiêu hoàn toàn cảnh báo CoreEventId.MappedPropertyIgnoredWarning mà không đổi schema DB.
+            modelBuilder.Ignore<IdentityUserPasskey<int>>();
+            modelBuilder.Ignore<IdentityPasskeyData>();
+
+            modelBuilder.Entity<User>(b =>
+            {
+                b.HasKey(u => u.Id);
+                b.HasIndex(u => u.NormalizedUserName).HasDatabaseName("UserNameIndex").IsUnique().HasFilter("[NormalizedUserName] IS NOT NULL");
+                b.HasIndex(u => u.NormalizedEmail).HasDatabaseName("EmailIndex");
+                b.ToTable("AspNetUsers");
+                b.Property(u => u.ConcurrencyStamp).IsConcurrencyToken();
+                b.Property(u => u.NormalizedUserName).HasMaxLength(256);
+                b.Property(u => u.Email).HasMaxLength(256);
+                b.Property(u => u.NormalizedEmail).HasMaxLength(256);
+                b.HasMany<IdentityUserClaim<int>>().WithOne().HasForeignKey(uc => uc.UserId).IsRequired();
+                b.HasMany<IdentityUserLogin<int>>().WithOne().HasForeignKey(ul => ul.UserId).IsRequired();
+                b.HasMany<IdentityUserToken<int>>().WithOne().HasForeignKey(ut => ut.UserId).IsRequired();
+            });
+
+            modelBuilder.Entity<IdentityUserClaim<int>>(b =>
+            {
+                b.HasKey(uc => uc.Id);
+                b.ToTable("AspNetUserClaims");
+            });
+
+            modelBuilder.Entity<IdentityUserLogin<int>>(b =>
+            {
+                b.HasKey(l => new { l.LoginProvider, l.ProviderKey });
+                b.ToTable("AspNetUserLogins");
+            });
+
+            modelBuilder.Entity<IdentityUserToken<int>>(b =>
+            {
+                b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
+                b.ToTable("AspNetUserTokens");
+            });
 
             // Mã hóa số CCCD và số tài khoản ngân hàng khi lưu xuống database (xem ProtectedStringConverter).
             // Giá trị mã hóa dài hơn bản gốc nên cột được nới lên 512 ký tự.
@@ -227,7 +271,11 @@ namespace ERP_HRM_CMS.Data
                 .IsUnique();
 
             // Indexes duy nhất (Unique Constraints) bảo vệ tính toàn vẹn dữ liệu
+            modelBuilder.Entity<User>().ToTable("AspNetUsers");
             modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+            modelBuilder.Entity<User>().Property(u => u.NormalizedUserName).HasMaxLength(256);
+            modelBuilder.Entity<User>().Property(u => u.Email).HasMaxLength(256);
+            modelBuilder.Entity<User>().Property(u => u.NormalizedEmail).HasMaxLength(256);
             // Bản ghi cũ (trước khi có SecurityStamp) nhận giá trị ngẫu nhiên khi migration thêm cột
             modelBuilder.Entity<User>().Property(u => u.SecurityStamp).HasDefaultValueSql("NEWID()");
 
@@ -529,6 +577,66 @@ namespace ERP_HRM_CMS.Data
                 .HasOne(d => d.Customer)
                 .WithMany(c => c.DebtRecords)
                 .HasForeignKey(d => d.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ═══════════════════════════════════════════════════════════
+            // PHIÊN D1 — Mô hình Trang sức, Biến thể & Giá Vàng
+            // ═══════════════════════════════════════════════════════════
+            modelBuilder.Entity<JewelryMaterial>().HasIndex(m => m.Code).IsUnique();
+
+            modelBuilder.Entity<ProductVariant>().HasIndex(v => v.Sku).IsUnique();
+            modelBuilder.Entity<ProductVariant>()
+                .HasOne(v => v.Product)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(v => v.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ProductVariant>()
+                .HasOne(v => v.Material)
+                .WithMany(m => m.Variants)
+                .HasForeignKey(v => v.MaterialId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GoldPrice>().HasIndex(g => g.EffectiveDate).IsUnique();
+
+            // Khóa duy nhất (VariantId, BranchId) trên bảng Inventories
+            modelBuilder.Entity<Inventory>()
+                .HasIndex(i => new { i.VariantId, i.BranchId })
+                .IsUnique();
+
+            modelBuilder.Entity<Inventory>()
+                .HasOne(i => i.Variant)
+                .WithMany(v => v.Inventories)
+                .HasForeignKey(i => i.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<InventoryTransaction>()
+                .HasOne(t => t.Variant)
+                .WithMany(v => v.InventoryTransactions)
+                .HasForeignKey(t => t.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.OrderDetails)
+                .HasForeignKey(d => d.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(c => c.Variant)
+                .WithMany(v => v.CartItems)
+                .HasForeignKey(c => c.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<PurchaseOrderDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.PurchaseOrderDetails)
+                .HasForeignKey(d => d.VariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<StocktakingDetail>()
+                .HasOne(d => d.Variant)
+                .WithMany(v => v.StocktakingDetails)
+                .HasForeignKey(d => d.VariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ═══════════════════════════════════════════════════════════

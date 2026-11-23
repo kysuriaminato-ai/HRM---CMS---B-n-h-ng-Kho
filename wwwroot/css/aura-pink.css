@@ -1,0 +1,1206 @@
+﻿/* ==========================================================================
+   AURA BRILLIANCE — CHỦ ĐỀ TRẮNG HỒNG PASTEL
+   --------------------------------------------------------------------------
+   Nạp SAU perfume-luxury.css nên được quyền ghi đè.
+   Giao diện sáng là mặc định; chế độ tối vẫn giữ nguyên khi người dùng chọn
+   (thẻ <html> bỏ thuộc tính data-pf-theme="light").
+   Bố cục tham khảo cách trình bày của các trang trang sức Việt Nam:
+   tiêu đề mục gạch chân ngắn, lưới 4 cột, nhãn giảm giá góc ảnh,
+   giá nổi bật kèm giá gốc gạch ngang.
+   ========================================================================== */
+
+:root[data-pf-theme="light"] {
+    /* --- Nền và bề mặt --- */
+    --pk-bg: #fffafc;
+    --pk-surface: #ffffff;
+    --pk-surface-alt: #fdf5f8;
+
+    /* --- Thang hồng pastel --- */
+    --pk-50: #fdf4f8;
+    --pk-100: #fbe8f0;
+    --pk-200: #f6d2e0;
+    --pk-300: #efaec8;
+    --pk-400: #e685ab;
+    --pk-500: #d95b8c;   /* màu chính */
+    --pk-600: #c13f73;
+    --pk-700: #9d2f58;
+
+    /* --- Chữ --- */
+    --pk-ink: #2d2630;
+    --pk-ink-soft: #6c6373;
+    --pk-ink-faint: #9a92a3;
+
+    /* --- Đường kẻ và đổ bóng --- */
+    --pk-line: #f2e4ea;
+    --pk-line-strong: #e6cfd9;
+    --pk-shadow-sm: 0 1px 3px rgba(157, 47, 88, .06);
+    --pk-shadow: 0 6px 20px rgba(157, 47, 88, .09);
+    --pk-shadow-lg: 0 16px 42px rgba(157, 47, 88, .14);
+
+    /* --- Nối vào hệ biến cũ để các thành phần sẵn có đổi màu theo --- */
+    --pf-bg-dark: var(--pk-bg);
+    --pf-bg-surface: var(--pk-surface);
+    --pf-bg-card: var(--pk-surface);
+    --pf-card-hover: var(--pk-surface-alt);
+    --pf-gold: var(--pk-500);
+    --pf-gold-light: var(--pk-300);
+    --pf-gold-gradient: linear-gradient(135deg, var(--pk-500) 0%, var(--pk-300) 50%, var(--pk-600) 100%);
+    --pf-gold-border: var(--pk-line-strong);
+    --pf-gold-border-hover: var(--pk-400);
+    --pf-gold-glow: rgba(217, 91, 140, .28);
+    --pf-text-primary: var(--pk-ink);
+    --pf-text-secondary: var(--pk-ink-soft);
+    --pf-text-muted: var(--pk-ink-faint);
+}
+
+/* ==========================================================================
+   1. NỀN TRANG
+   ========================================================================== */
+
+:root[data-pf-theme="light"] body.pf-luxury-body {
+    background-color: var(--pk-bg) !important;
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(246, 210, 224, .55) 0%, transparent 42%),
+        radial-gradient(circle at 88% 4%, rgba(251, 232, 240, .7) 0%, transparent 38%);
+    background-attachment: fixed;
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] section {
+    background: transparent !important;
+    border-color: var(--pk-line) !important;
+}
+
+/* Mục xen kẽ nền hồng rất nhạt cho đỡ đơn điệu */
+:root[data-pf-theme="light"] section:nth-of-type(even) {
+    background: linear-gradient(180deg, var(--pk-50) 0%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
+/* ==========================================================================
+   2. THANH ĐẦU TRANG
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .pf-marquee-wrap {
+    background: linear-gradient(90deg, var(--pk-600), var(--pk-400), var(--pk-600)) !important;
+    border-bottom: 0;
+}
+
+:root[data-pf-theme="light"] .pf-marquee-content span { color: #fff !important; }
+
+:root[data-pf-theme="light"] .pf-top-bar {
+    background: var(--pk-surface) !important;
+    border-bottom: 1px solid var(--pk-line) !important;
+    color: var(--pk-ink-soft) !important;
+}
+
+:root[data-pf-theme="light"] .pf-navbar {
+    background: rgba(255, 255, 255, .94) !important;
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--pk-line) !important;
+    box-shadow: var(--pk-shadow-sm);
+}
+
+:root[data-pf-theme="light"] .pf-brand-name {
+    background: linear-gradient(135deg, var(--pk-700) 0%, var(--pk-500) 55%, var(--pk-400) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+:root[data-pf-theme="light"] .pf-brand-subtitle { color: var(--pk-ink-faint) !important; }
+
+:root[data-pf-theme="light"] .pf-nav-link {
+    color: var(--pk-ink) !important;
+    font-weight: 600;
+    letter-spacing: .04em;
+    position: relative;
+    padding-bottom: 6px;
+}
+
+:root[data-pf-theme="light"] .pf-nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 2px;
+    background: var(--pk-500);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform .25s ease;
+}
+
+:root[data-pf-theme="light"] .pf-nav-link:hover::after,
+:root[data-pf-theme="light"] .pf-nav-link.active::after { transform: scaleX(1); }
+
+:root[data-pf-theme="light"] .pf-nav-link:hover { color: var(--pk-600) !important; }
+
+/* ==========================================================================
+   3. TIÊU ĐỀ MỤC — gạch chân ngắn màu hồng
+   ========================================================================== */
+
+:root[data-pf-theme="light"] section h2,
+:root[data-pf-theme="light"] section .display-5,
+:root[data-pf-theme="light"] section .display-6 {
+    color: var(--pk-ink) !important;
+    position: relative;
+}
+
+.pk-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+
+.pk-section-title {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: 0;
+    padding-bottom: 10px;
+    position: relative;
+    color: var(--pk-ink);
+}
+
+.pk-section-title::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 64px; height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--pk-500), var(--pk-300));
+}
+
+.pk-section-head.is-center { justify-content: center; text-align: center; }
+.pk-section-head.is-center .pk-section-title::after { left: 50%; transform: translateX(-50%); }
+
+/* Huy hiệu nhỏ phía trên tiêu đề */
+:root[data-pf-theme="light"] .badge.rounded-pill.font-monospace {
+    background: var(--pk-100) !important;
+    color: var(--pk-700) !important;
+    border: 1px solid var(--pk-200) !important;
+}
+
+/* ==========================================================================
+   4. THẺ SẢN PHẨM
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .jewelry-card,
+:root[data-pf-theme="light"] .card {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--pk-shadow-sm);
+    transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+}
+
+:root[data-pf-theme="light"] .jewelry-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--pk-300) !important;
+    box-shadow: var(--pk-shadow-lg);
+}
+
+:root[data-pf-theme="light"] .jewelry-thumb {
+    object-fit: cover !important;
+    mix-blend-mode: normal;
+}
+
+:root[data-pf-theme="light"] .jewelry-card:hover .jewelry-thumb { transform: scale(1.06); }
+
+/* Lớp phủ tên danh mục dưới ảnh: bỏ nền đen */
+:root[data-pf-theme="light"] .jewelry-card .position-absolute.bottom-0 {
+    background: linear-gradient(to top, rgba(255, 255, 255, .96), transparent) !important;
+}
+
+:root[data-pf-theme="light"] .jewelry-card .position-absolute.bottom-0 .text-warning {
+    color: var(--pk-600) !important;
+}
+
+/* Nhãn nổi góc trái */
+:root[data-pf-theme="light"] .jewelry-card .badge.rounded-pill {
+    background: linear-gradient(135deg, var(--pk-500), var(--pk-400)) !important;
+    color: #fff !important;
+    font-weight: 700;
+    letter-spacing: .04em;
+    box-shadow: 0 2px 8px rgba(193, 63, 115, .3);
+}
+
+/* Mã kiểm định góc phải */
+:root[data-pf-theme="light"] .jewelry-card .badge.bg-dark {
+    background: rgba(255, 255, 255, .92) !important;
+    color: var(--pk-700) !important;
+    border: 1px solid var(--pk-200) !important;
+}
+
+/* Bảng thông số 4Cs */
+:root[data-pf-theme="light"] .jewelry-card .rounded-3[style*="dashed"] {
+    background: var(--pk-50) !important;
+    border: 1px dashed var(--pk-200) !important;
+}
+
+/* Giá: hồng đậm, giá gốc gạch ngang xám */
+:root[data-pf-theme="light"] .jewelry-card .fs-4.text-warning,
+:root[data-pf-theme="light"] .jewelry-card .text-warning.font-serif {
+    color: var(--pk-600) !important;
+}
+
+:root[data-pf-theme="light"] del,
+:root[data-pf-theme="light"] .jewelry-card del {
+    color: var(--pk-ink-faint) !important;
+    text-decoration-color: var(--pk-300);
+}
+
+/* Nhãn phần trăm giảm giá */
+.pk-sale-tag {
+    position: absolute;
+    left: 0; top: 54px;
+    z-index: 3;
+    background: var(--pk-600);
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 10px 3px 8px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    letter-spacing: .02em;
+}
+
+/* ==========================================================================
+   5. NÚT BẤM
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .btn-gold-luxury {
+    background: linear-gradient(135deg, var(--pk-500), var(--pk-600)) !important;
+    border: 1px solid var(--pk-600) !important;
+    color: #fff !important;
+    font-weight: 600;
+    letter-spacing: .03em;
+    box-shadow: 0 4px 14px rgba(217, 91, 140, .28);
+}
+
+:root[data-pf-theme="light"] .btn-gold-luxury:hover {
+    background: linear-gradient(135deg, var(--pk-600), var(--pk-700)) !important;
+    box-shadow: 0 6px 20px rgba(157, 47, 88, .34);
+    transform: translateY(-1px);
+}
+
+:root[data-pf-theme="light"] .btn-outline-gold {
+    color: var(--pk-600) !important;
+    border: 1px solid var(--pk-300) !important;
+    background: #fff !important;
+    font-weight: 600;
+}
+
+:root[data-pf-theme="light"] .btn-outline-gold:hover,
+:root[data-pf-theme="light"] .btn-outline-gold.active {
+    background: var(--pk-500) !important;
+    border-color: var(--pk-500) !important;
+    color: #fff !important;
+}
+
+:root[data-pf-theme="light"] .btn-outline-light {
+    color: var(--pk-ink) !important;
+    border-color: var(--pk-line-strong) !important;
+    background: #fff !important;
+}
+
+:root[data-pf-theme="light"] .btn-outline-light:hover {
+    background: var(--pk-50) !important;
+    border-color: var(--pk-300) !important;
+    color: var(--pk-700) !important;
+}
+
+:root[data-pf-theme="light"] .btn-outline-warning {
+    color: var(--pk-600) !important;
+    border-color: var(--pk-300) !important;
+}
+
+:root[data-pf-theme="light"] .btn-outline-warning:hover {
+    background: var(--pk-500) !important;
+    color: #fff !important;
+}
+
+/* Nút xem thêm kiểu viền mảnh, chữ hoa */
+.pk-btn-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 34px;
+    border: 1px solid var(--pk-300);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--pk-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-size: .85rem;
+    text-decoration: none;
+    transition: all .22s ease;
+}
+
+.pk-btn-more:hover {
+    background: var(--pk-500);
+    border-color: var(--pk-500);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(217, 91, 140, .3);
+}
+
+/* ==========================================================================
+   6. DẢI XU HƯỚNG TÌM KIẾM — ảnh tròn cuộn ngang
+   ========================================================================== */
+
+.pk-trend-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 2px 10px;
+    scroll-snap-type: x mandatory;
+}
+
+.pk-trend-row::-webkit-scrollbar { display: none; }
+
+.pk-trend-item {
+    flex: 0 0 auto;
+    width: 124px;
+    text-align: center;
+    text-decoration: none;
+    scroll-snap-align: start;
+}
+
+.pk-trend-circle {
+    width: 96px; height: 96px;
+    margin: 0 auto 10px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--pk-50);
+    border: 1px solid var(--pk-line);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.pk-trend-item:hover .pk-trend-circle {
+    transform: translateY(-4px);
+    border-color: var(--pk-300);
+    box-shadow: var(--pk-shadow);
+}
+
+.pk-trend-circle img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+.pk-trend-label {
+    font-size: .82rem;
+    line-height: 1.35;
+    color: var(--pk-ink);
+    font-weight: 500;
+}
+
+.pk-trend-item:hover .pk-trend-label { color: var(--pk-600); }
+
+/* ==========================================================================
+   7. BA BANNER KHUYẾN MÃI
+   ========================================================================== */
+
+.pk-promo {
+    display: block;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    min-height: 168px;
+    padding: 26px;
+    text-decoration: none;
+    border: 1px solid var(--pk-line);
+    box-shadow: var(--pk-shadow-sm);
+    transition: transform .28s ease, box-shadow .28s ease;
+}
+
+.pk-promo:hover { transform: translateY(-4px); box-shadow: var(--pk-shadow-lg); }
+
+.pk-promo--rose  { background: linear-gradient(135deg, #fde7f0 0%, #fbd3e4 100%); }
+.pk-promo--blush { background: linear-gradient(135deg, #fdeef2 0%, #f8dbe6 100%); }
+.pk-promo--cream { background: linear-gradient(135deg, #fdf3ea 0%, #f9e4e9 100%); }
+
+.pk-promo-kicker {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--pk-700);
+    margin-bottom: 8px;
+}
+
+.pk-promo-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--pk-ink);
+    margin-bottom: 6px;
+}
+
+.pk-promo-sub { font-size: .85rem; color: var(--pk-ink-soft); margin-bottom: 14px; }
+
+.pk-promo-cta {
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--pk-600);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.pk-promo-icon {
+    position: absolute;
+    right: 18px; bottom: 14px;
+    font-size: 3.4rem;
+    color: rgba(217, 91, 140, .22);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   8. BỘ LỌC, BẢNG, THẺ HẠNG
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .pf-filter-panel {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+    border-radius: 14px;
+    box-shadow: var(--pk-shadow-sm);
+}
+
+:root[data-pf-theme="light"] .pf-input,
+:root[data-pf-theme="light"] .form-control,
+:root[data-pf-theme="light"] .form-select {
+    background: #fff !important;
+    border: 1px solid var(--pk-line-strong) !important;
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] .pf-input:focus,
+:root[data-pf-theme="light"] .form-control:focus,
+:root[data-pf-theme="light"] .form-select:focus {
+    border-color: var(--pk-400) !important;
+    box-shadow: 0 0 0 .2rem rgba(217, 91, 140, .16) !important;
+}
+
+:root[data-pf-theme="light"] .input-group-text {
+    background: var(--pk-50) !important;
+    border-color: var(--pk-line-strong) !important;
+    color: var(--pk-600) !important;
+}
+
+:root[data-pf-theme="light"] .pf-service-card {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+}
+
+:root[data-pf-theme="light"] .pf-service-card:hover { border-color: var(--pk-300) !important; }
+
+:root[data-pf-theme="light"] .pf-service-chip {
+    background: var(--pk-100) !important;
+    color: var(--pk-700) !important;
+    border: 1px solid var(--pk-200) !important;
+}
+
+:root[data-pf-theme="light"] .pf-size-table-wrap {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+}
+
+:root[data-pf-theme="light"] .pf-size-table-wrap thead th {
+    background: var(--pk-50) !important;
+    color: var(--pk-700) !important;
+    border-bottom-color: var(--pk-line-strong) !important;
+}
+
+:root[data-pf-theme="light"] .pf-size-table-wrap tbody td { color: var(--pk-ink) !important; }
+:root[data-pf-theme="light"] .pf-size-table-wrap tbody tr:hover td { background: var(--pk-50) !important; }
+
+:root[data-pf-theme="light"] .pf-tier-card {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+    border-top: 3px solid var(--tier-color, var(--pk-500)) !important;
+}
+
+:root[data-pf-theme="light"] .pf-member-card {
+    background:
+        radial-gradient(circle at 85% 15%, rgba(246, 210, 224, .8) 0%, transparent 55%),
+        linear-gradient(135deg, #ffffff 0%, #fdeef4 100%) !important;
+    border: 1px solid var(--pk-200) !important;
+    box-shadow: var(--pk-shadow);
+}
+
+:root[data-pf-theme="light"] .pf-tier-badge {
+    background: var(--pk-100) !important;
+    border-color: var(--pk-200) !important;
+    color: var(--pk-700) !important;
+}
+
+/* ==========================================================================
+   9. TRANG THANH TOÁN
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .pf-pay-option {
+    background: #fff;
+    border: 1px solid var(--pk-line);
+}
+
+:root[data-pf-theme="light"] .pf-pay-option:hover { border-color: var(--pk-300); }
+
+:root[data-pf-theme="light"] .pf-pay-option:has(input:checked) {
+    border-color: var(--pk-500);
+    background: var(--pk-50);
+}
+
+:root[data-pf-theme="light"] .form-check-input:checked {
+    background-color: var(--pk-500);
+    border-color: var(--pk-500);
+}
+
+:root[data-pf-theme="light"] .pf-success-ring {
+    background: linear-gradient(135deg, var(--pk-500), var(--pk-300));
+    color: #fff;
+    box-shadow: 0 0 0 10px rgba(217, 91, 140, .12);
+}
+
+/* ==========================================================================
+   10. CHỮ VÀ CHI TIẾT CÒN LẠI
+   ========================================================================== */
+
+:root[data-pf-theme="light"] .text-warning { color: var(--pk-600) !important; }
+:root[data-pf-theme="light"] .text-white,
+:root[data-pf-theme="light"] .text-light { color: var(--pk-ink) !important; }
+:root[data-pf-theme="light"] .text-secondary { color: var(--pk-ink-soft) !important; }
+:root[data-pf-theme="light"] .text-muted { color: var(--pk-ink-faint) !important; }
+:root[data-pf-theme="light"] .pf-text-strong { color: var(--pk-ink) !important; }
+:root[data-pf-theme="light"] .pf-text-soft { color: var(--pk-ink-soft) !important; }
+
+:root[data-pf-theme="light"] .border-top,
+:root[data-pf-theme="light"] .border-bottom,
+:root[data-pf-theme="light"] .border-secondary { border-color: var(--pk-line) !important; }
+
+:root[data-pf-theme="light"] .hover-gold:hover { color: var(--pk-600) !important; }
+
+:root[data-pf-theme="light"] .bg-success-subtle {
+    background: #e8f6ee !important;
+    color: #1e7a48 !important;
+}
+
+/* Ảnh thay thế khi ảnh gốc hỏng: nền sáng cho hợp chủ đề */
+:root[data-pf-theme="light"] .pf-img-fallback {
+    background: linear-gradient(135deg, var(--pk-50), #fff);
+}
+
+/* Cửa sổ xem nhanh */
+:root[data-pf-theme="light"] .modal-content {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-line) !important;
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] .modal-header,
+:root[data-pf-theme="light"] .modal-footer { border-color: var(--pk-line) !important; }
+:root[data-pf-theme="light"] .btn-close { filter: none; }
+
+/* Chân trang */
+:root[data-pf-theme="light"] footer {
+    background: var(--pk-50) !important;
+    border-top: 1px solid var(--pk-line) !important;
+    color: var(--pk-ink-soft) !important;
+}
+
+:root[data-pf-theme="light"] footer a { color: var(--pk-ink-soft) !important; }
+:root[data-pf-theme="light"] footer a:hover { color: var(--pk-600) !important; }
+
+/* Ảnh nổi khi rê chuột */
+:root[data-pf-theme="light"] .pf-float-preview {
+    background: #fff;
+    border-color: var(--pk-200);
+    box-shadow: var(--pk-shadow-lg);
+}
+
+:root[data-pf-theme="light"] .pf-float-caption {
+    color: var(--pk-ink);
+    border-top-color: var(--pk-line);
+}
+
+:root[data-pf-theme="light"] .pf-float-preview img { background: #fff; }
+
+/* ==========================================================================
+   11. ĐIỆN THOẠI VÀ MÁY TÍNH BẢNG
+   ========================================================================== */
+
+@media (max-width: 575.98px) {
+    .pk-section-title { font-size: 1.15rem; }
+    .pk-trend-circle { width: 76px; height: 76px; }
+    .pk-trend-item { width: 100px; }
+    .pk-promo { min-height: 140px; padding: 20px; }
+    .pk-promo-title { font-size: 1.05rem; }
+    .pk-sale-tag { top: 46px; font-size: .66rem; }
+}
+
+/* ==========================================================================
+   12. DỌN CÁC MẢNG NỀN TỐI VIẾT THẲNG TRONG HTML
+   --------------------------------------------------------------------------
+   Index.cshtml còn 8 chỗ đặt màu tối ngay trong thuộc tính style. Nội tuyến
+   thắng mọi class nên phải bắt theo chính chuỗi style đó rồi ghi đè.
+   ========================================================================== */
+
+/* Nền của các mục lớn -> để trong suốt cho nền hồng của body lộ ra */
+:root[data-pf-theme="light"] [style*="rgba(14,18,26"],
+:root[data-pf-theme="light"] [style*="rgba(10,13,19"] {
+    background: transparent !important;
+    border-color: var(--pk-line) !important;
+}
+
+/* Khung thẻ và các bảng nhỏ -> nền trắng */
+:root[data-pf-theme="light"] [style*="rgba(18, 22, 32"],
+:root[data-pf-theme="light"] [style*="rgba(18,22,32"] {
+    background: var(--pk-surface) !important;
+    border-color: var(--pk-line) !important;
+    box-shadow: var(--pk-shadow-sm);
+}
+
+/* Ô ảnh sản phẩm: trước là #0b0d13 nên ảnh nằm trên nền đen */
+:root[data-pf-theme="light"] [style*="#0b0d13"] {
+    background: #ffffff !important;
+}
+
+/* Thông báo thêm vào giỏ */
+:root[data-pf-theme="light"] [style*="#111520"] {
+    background: var(--pk-surface) !important;
+    border: 1px solid var(--pk-200) !important;
+    color: var(--pk-ink) !important;
+    box-shadow: var(--pk-shadow);
+}
+
+:root[data-pf-theme="light"] #cartToast,
+:root[data-pf-theme="light"] #cartToast .toast-body { color: var(--pk-ink) !important; }
+
+/* Khung ảnh lớn ở đầu trang */
+:root[data-pf-theme="light"] [style*="rgba(26,32,48"] {
+    background: linear-gradient(145deg, #ffffff 0%, var(--pk-50) 100%) !important;
+    border: 1px solid var(--pk-200) !important;
+    box-shadow: 0 20px 50px rgba(157, 47, 88, .14) !important;
+}
+
+/* Quầng sáng sau ảnh đầu trang: vàng -> hồng */
+:root[data-pf-theme="light"] [style*="rgba(212,175,55,0.35)"] {
+    background: radial-gradient(circle,
+        rgba(239, 174, 200, .45) 0%,
+        rgba(251, 232, 240, .35) 45%,
+        transparent 70%) !important;
+}
+
+/* Ô số liệu nhỏ dưới tiêu đề đầu trang */
+:root[data-pf-theme="light"] [style*="rgba(255,255,255,0.03)"] {
+    background: var(--pk-50) !important;
+    border-color: var(--pk-200) !important;
+}
+
+/* Viền vàng còn sót trong thuộc tính style */
+:root[data-pf-theme="light"] [style*="rgba(212,175,55"] {
+    border-color: var(--pk-line-strong) !important;
+}
+
+/* Bảng đo size: hàng đầu bị tô đậm theo chủ đề tối */
+:root[data-pf-theme="light"] .pf-size-table-wrap .table-dark > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: var(--pk-ink) !important;
+    border-bottom-color: var(--pk-line) !important;
+}
+
+:root[data-pf-theme="light"] .pf-size-table-wrap .table-hover > tbody > tr:hover > * {
+    background-color: var(--pk-50) !important;
+    color: var(--pk-ink) !important;
+}
+
+/* Lớp accordion của mục 4Cs */
+:root[data-pf-theme="light"] .accordion-item,
+:root[data-pf-theme="light"] .accordion-button,
+:root[data-pf-theme="light"] .accordion-body {
+    background: var(--pk-surface) !important;
+    color: var(--pk-ink) !important;
+    border-color: var(--pk-line) !important;
+}
+
+:root[data-pf-theme="light"] .accordion-button:not(.collapsed) {
+    background: var(--pk-50) !important;
+    color: var(--pk-700) !important;
+    box-shadow: none;
+}
+
+:root[data-pf-theme="light"] .accordion-button::after { filter: none; }
+
+/* Ô nhập trong biểu mẫu đặt lịch hẹn */
+:root[data-pf-theme="light"] input.form-control,
+:root[data-pf-theme="light"] textarea.form-control,
+:root[data-pf-theme="light"] select.form-select {
+    background: #fff !important;
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] label { color: var(--pk-ink-soft) !important; }
+
+/* ==========================================================================
+   13. THANH TRÊN CÙNG GỌN LẠI + MENU TUỲ CHỈNH GIAO DIỆN
+   ========================================================================== */
+
+.pf-topbar-link {
+    color: var(--pk-ink-soft) !important;
+    font-size: .82rem;
+    padding: 2px 6px;
+}
+
+.pf-topbar-link:hover { color: var(--pk-600) !important; }
+
+:root[data-pf-theme="light"] .pk-theme-menu {
+    background: var(--pk-surface);
+    border: 1px solid var(--pk-line);
+    border-radius: 12px;
+    box-shadow: var(--pk-shadow-lg);
+}
+
+/* ==========================================================================
+   14. KHỐI QUẢNG CÁO LỚN VÀ DẢI ƯU ĐÃI CHỚP NHOÁNG
+   ========================================================================== */
+
+.pk-hero-promo {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    padding: 44px 40px;
+    background:
+        radial-gradient(circle at 88% 20%, rgba(255, 255, 255, .55) 0%, transparent 45%),
+        linear-gradient(120deg, #fbd3e4 0%, #f9c4d8 38%, #fde7f0 100%);
+    border: 1px solid var(--pk-200);
+    box-shadow: var(--pk-shadow);
+}
+
+.pk-hero-promo::after {
+    content: "";
+    position: absolute;
+    right: -60px; top: -60px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .6) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.pk-hero-promo-kicker {
+    display: inline-block;
+    background: rgba(255, 255, 255, .72);
+    color: var(--pk-700);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+}
+
+.pk-hero-promo-title {
+    font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.18;
+    color: var(--pk-700);
+    margin-bottom: 10px;
+}
+
+.pk-hero-promo-sub {
+    color: #7a5168;
+    max-width: 520px;
+    margin-bottom: 22px;
+}
+
+/* Dải ưu đãi chớp nhoáng */
+.pk-flash {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 16px 22px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, var(--pk-600) 0%, var(--pk-400) 55%, var(--pk-300) 100%);
+    color: #fff;
+    box-shadow: var(--pk-shadow);
+}
+
+.pk-flash-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-size: .88rem;
+}
+
+.pk-flash-items {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+    font-size: .86rem;
+}
+
+.pk-flash-item { display: inline-flex; align-items: center; gap: 7px; }
+.pk-flash-item i { opacity: .9; }
+
+.pk-flash-cta {
+    background: #fff;
+    color: var(--pk-700);
+    border-radius: 999px;
+    padding: 7px 20px;
+    font-weight: 700;
+    font-size: .82rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.pk-flash-cta:hover { background: var(--pk-50); color: var(--pk-700); }
+
+/* Dải lý do chọn chúng tôi, 4 ô nhỏ */
+.pk-usp {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--pk-surface);
+    border: 1px solid var(--pk-line);
+    height: 100%;
+}
+
+.pk-usp-icon {
+    flex: 0 0 auto;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--pk-100);
+    color: var(--pk-600);
+    font-size: 1.25rem;
+}
+
+.pk-usp-title { font-weight: 700; font-size: .92rem; color: var(--pk-ink); line-height: 1.3; }
+.pk-usp-sub { font-size: .78rem; color: var(--pk-ink-soft); }
+
+@media (max-width: 575.98px) {
+    .pk-hero-promo { padding: 28px 22px; }
+    .pk-flash { padding: 14px 16px; gap: 12px; }
+}
+
+/* ==========================================================================
+   15. QUÉT SẠCH MỌI MẢNG TỐI CÒN LẠI TRÊN TRANG CHỦ
+   --------------------------------------------------------------------------
+   Bổ sung các chuỗi màu còn sót, gồm cả gradient nhiều màu mà đợt trước
+   chưa bắt được vì bộ chọn chỉ khớp một giá trị đơn.
+   ========================================================================== */
+
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"],
+:root[data-pf-theme="light"] [style*="rgba(10,13,18"],
+:root[data-pf-theme="light"] [style*="rgba(14,17,24"],
+:root[data-pf-theme="light"] [style*="rgba(8, 9, 13"],
+:root[data-pf-theme="light"] [style*="#0f131c"],
+:root[data-pf-theme="light"] [style*="#0b0c10"] {
+    background: linear-gradient(135deg, #ffffff 0%, var(--pk-50) 100%) !important;
+    border-color: var(--pk-200) !important;
+    box-shadow: var(--pk-shadow) !important;
+    color: var(--pk-ink) !important;
+}
+
+/* Bóng đổ đen thui của các khối nổi */
+:root[data-pf-theme="light"] [style*="rgba(0,0,0,0.7)"],
+:root[data-pf-theme="light"] [style*="rgba(0,0,0,0.8)"],
+:root[data-pf-theme="light"] [style*="rgba(0, 0, 0, 0.85)"] {
+    box-shadow: var(--pk-shadow-lg) !important;
+}
+
+/* Mọi chữ bên trong các khối vừa chuyển nền đều phải đọc được */
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] .text-white,
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] .text-secondary,
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] label,
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] p,
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] h4 {
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] .text-secondary,
+:root[data-pf-theme="light"] [style*="rgba(22,28,40"] label {
+    color: var(--pk-ink-soft) !important;
+}
+
+/* Bảng đo size: Bootstrap table-dark đặt biến nền tối ở cấp bảng */
+:root[data-pf-theme="light"] .table-dark {
+    --bs-table-bg: #ffffff;
+    --bs-table-color: var(--pk-ink);
+    --bs-table-border-color: var(--pk-line);
+    --bs-table-striped-bg: var(--pk-50);
+    --bs-table-striped-color: var(--pk-ink);
+    --bs-table-hover-bg: var(--pk-100);
+    --bs-table-hover-color: var(--pk-700);
+    --bs-table-active-bg: var(--pk-100);
+    --bs-table-active-color: var(--pk-700);
+    color: var(--pk-ink) !important;
+}
+
+:root[data-pf-theme="light"] .table-dark > :not(caption) > * > * {
+    background-color: var(--bs-table-bg) !important;
+    color: var(--pk-ink) !important;
+    box-shadow: none !important;
+}
+
+:root[data-pf-theme="light"] .table-dark > tbody > tr:hover > * {
+    background-color: var(--pk-100) !important;
+    color: var(--pk-700) !important;
+}
+
+:root[data-pf-theme="light"] .table-dark thead th {
+    background-color: var(--pk-50) !important;
+    color: var(--pk-700) !important;
+}
+
+/* Menu thả xuống dùng biến thể tối của Bootstrap */
+:root[data-pf-theme="light"] .dropdown-menu-dark {
+    --bs-dropdown-bg: var(--pk-surface);
+    --bs-dropdown-color: var(--pk-ink);
+    --bs-dropdown-link-color: var(--pk-ink);
+    --bs-dropdown-link-hover-bg: var(--pk-50);
+    --bs-dropdown-link-hover-color: var(--pk-700);
+    --bs-dropdown-border-color: var(--pk-line);
+    box-shadow: var(--pk-shadow-lg);
+}
+
+/* Toast và modal của Bootstrap ở biến thể tối */
+:root[data-pf-theme="light"] .toast {
+    --bs-toast-bg: var(--pk-surface);
+    --bs-toast-color: var(--pk-ink);
+    --bs-toast-border-color: var(--pk-line);
+}
+
+/* ==========================================================================
+   16. NĂM BẢNG MÀU PASTEL — CHỌN MÀU NÀO THÌ CẢ TRANG ĐỔI THEO
+   --------------------------------------------------------------------------
+   Mỗi bảng định nghĩa lại trọn thang --pk-50 đến --pk-700, nên mọi thành
+   phần dùng các biến đó (nút, thẻ, tiêu đề, banner, bảng) đều đổi theo.
+   Thuộc tính data-pf-accent nằm trên thẻ <html>, lưu trong trình duyệt.
+   ========================================================================== */
+
+/* --- Đào --- */
+:root[data-pf-accent="peach"] {
+    --pk-50:#fff5f0; --pk-100:#ffe8dc; --pk-200:#ffd2bb; --pk-300:#ffb08a;
+    --pk-400:#fa8c5c; --pk-500:#ef6b35; --pk-600:#d14f1e; --pk-700:#a53c16;
+    --pk-shadow-rgb: 165, 60, 22;
+}
+
+/* --- Oải hương --- */
+:root[data-pf-accent="lavender"] {
+    --pk-50:#f8f5fd; --pk-100:#efe8fb; --pk-200:#ddd0f5; --pk-300:#c3aaec;
+    --pk-400:#a784e0; --pk-500:#8b5fd1; --pk-600:#7247b4; --pk-700:#58348c;
+    --pk-shadow-rgb: 88, 52, 140;
+}
+
+/* --- Bạc hà --- */
+:root[data-pf-accent="mint"] {
+    --pk-50:#f1fbf7; --pk-100:#ddf5ea; --pk-200:#b9e9d4; --pk-300:#86d7b4;
+    --pk-400:#52bf92; --pk-500:#2ea478; --pk-600:#218762; --pk-700:#19684c;
+    --pk-shadow-rgb: 25, 104, 76;
+}
+
+/* --- Thiên thanh --- */
+:root[data-pf-accent="sky"] {
+    --pk-50:#f1f8fd; --pk-100:#ddeefb; --pk-200:#b9daf5; --pk-300:#86bfea;
+    --pk-400:#529fd9; --pk-500:#2e82c4; --pk-600:#2169a3; --pk-700:#195080;
+    --pk-shadow-rgb: 25, 80, 128;
+}
+
+/* --- Hồng, mặc định --- */
+:root,
+:root[data-pf-accent="rose"] { --pk-shadow-rgb: 157, 47, 88; }
+
+/* Đổ bóng và nền trang đi theo màu đang chọn */
+:root[data-pf-theme="light"] {
+    --pk-shadow-sm: 0 1px 3px rgba(var(--pk-shadow-rgb), .07);
+    --pk-shadow: 0 6px 20px rgba(var(--pk-shadow-rgb), .10);
+    --pk-shadow-lg: 0 16px 42px rgba(var(--pk-shadow-rgb), .16);
+    --pk-bg: var(--pk-50);
+    --pk-surface-alt: var(--pk-50);
+    --pk-line: var(--pk-100);
+    --pk-line-strong: var(--pk-200);
+}
+
+:root[data-pf-theme="light"] body.pf-luxury-body {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(var(--pk-shadow-rgb), .10) 0%, transparent 42%),
+        radial-gradient(circle at 88% 4%, rgba(var(--pk-shadow-rgb), .06) 0%, transparent 38%);
+}
+
+/* Các khối gradient cũng theo màu đang chọn */
+:root[data-pf-theme="light"] .pk-hero-promo {
+    background:
+        radial-gradient(circle at 88% 20%, rgba(255,255,255,.55) 0%, transparent 45%),
+        linear-gradient(120deg, var(--pk-200) 0%, var(--pk-300) 38%, var(--pk-100) 100%);
+    border-color: var(--pk-200);
+}
+
+:root[data-pf-theme="light"] .pk-promo--rose  { background: linear-gradient(135deg, var(--pk-100) 0%, var(--pk-200) 100%); }
+:root[data-pf-theme="light"] .pk-promo--blush { background: linear-gradient(135deg, var(--pk-50) 0%, var(--pk-200) 100%); }
+:root[data-pf-theme="light"] .pk-promo--cream { background: linear-gradient(135deg, #fdf3ea 0%, var(--pk-100) 100%); }
+
+:root[data-pf-theme="light"] .pk-promo-icon { color: rgba(var(--pk-shadow-rgb), .22); }
+:root[data-pf-theme="light"] .pk-hero-promo-sub { color: var(--pk-700); }
+
+/* Ô màu trong menu */
+.pf-swatch[data-accent="rose"]     { background: linear-gradient(135deg,#d95b8c,#efaec8); }
+.pf-swatch[data-accent="peach"]    { background: linear-gradient(135deg,#ef6b35,#ffb08a); }
+.pf-swatch[data-accent="lavender"] { background: linear-gradient(135deg,#8b5fd1,#c3aaec); }
+.pf-swatch[data-accent="mint"]     { background: linear-gradient(135deg,#2ea478,#86d7b4); }
+.pf-swatch[data-accent="sky"]      { background: linear-gradient(135deg,#2e82c4,#86bfea); }
+
+/* ==========================================================================
+   17. CHẾ ĐỘ TỐI CHO CÁC KHỐI MỚI
+   --------------------------------------------------------------------------
+   Các khối pk-* vốn viết cho nền sáng. Ở chế độ tối phải đổi nền và chữ,
+   nếu không sẽ là mảng hồng nhạt chữ trắng trên nền đen, rất khó đọc.
+   ========================================================================== */
+
+:root:not([data-pf-theme="light"]) .pk-section-title { color: var(--pf-text-primary); }
+
+:root:not([data-pf-theme="light"]) .pk-section-title::after {
+    background: linear-gradient(90deg, var(--pf-gold), var(--pf-gold-light));
+}
+
+/* Ảnh tròn xu hướng */
+:root:not([data-pf-theme="light"]) .pk-trend-circle {
+    background: rgba(18, 22, 32, .9);
+    border-color: var(--pf-gold-border);
+}
+
+:root:not([data-pf-theme="light"]) .pk-trend-item:hover .pk-trend-circle {
+    border-color: var(--pf-gold-border-hover);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .55);
+}
+
+:root:not([data-pf-theme="light"]) .pk-trend-label { color: var(--pf-text-secondary); }
+:root:not([data-pf-theme="light"]) .pk-trend-item:hover .pk-trend-label { color: var(--pf-gold); }
+
+/* Ba banner ưu đãi */
+:root:not([data-pf-theme="light"]) .pk-promo {
+    border-color: var(--pf-gold-border);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, .5);
+}
+
+:root:not([data-pf-theme="light"]) .pk-promo--rose {
+    background: linear-gradient(135deg, rgba(26, 32, 48, .95) 0%, rgba(14, 18, 26, .95) 100%);
+}
+
+:root:not([data-pf-theme="light"]) .pk-promo--blush {
+    background: linear-gradient(135deg, rgba(22, 28, 42, .95) 0%, rgba(12, 16, 24, .95) 100%);
+}
+
+:root:not([data-pf-theme="light"]) .pk-promo--cream {
+    background: linear-gradient(135deg, rgba(30, 26, 20, .95) 0%, rgba(14, 18, 26, .95) 100%);
+}
+
+:root:not([data-pf-theme="light"]) .pk-promo-kicker { color: var(--pf-gold); }
+:root:not([data-pf-theme="light"]) .pk-promo-title { color: var(--pf-text-primary); }
+:root:not([data-pf-theme="light"]) .pk-promo-sub { color: var(--pf-text-secondary); }
+:root:not([data-pf-theme="light"]) .pk-promo-cta { color: var(--pf-gold); }
+:root:not([data-pf-theme="light"]) .pk-promo-icon { color: rgba(212, 175, 55, .18); }
+
+/* Quảng cáo sự kiện lớn */
+:root:not([data-pf-theme="light"]) .pk-hero-promo {
+    background:
+        radial-gradient(circle at 88% 20%, rgba(212, 175, 55, .16) 0%, transparent 45%),
+        linear-gradient(120deg, rgba(26, 32, 48, .96) 0%, rgba(14, 18, 26, .96) 100%);
+    border-color: var(--pf-gold-border);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, .6);
+}
+
+:root:not([data-pf-theme="light"]) .pk-hero-promo::after {
+    background: radial-gradient(circle, rgba(212, 175, 55, .14) 0%, transparent 70%);
+}
+
+:root:not([data-pf-theme="light"]) .pk-hero-promo-kicker {
+    background: rgba(212, 175, 55, .14);
+    color: var(--pf-gold-light);
+}
+
+:root:not([data-pf-theme="light"]) .pk-hero-promo-title { color: var(--pf-text-primary); }
+:root:not([data-pf-theme="light"]) .pk-hero-promo-sub { color: var(--pf-text-secondary); }
+
+/* Dải ưu đãi chớp nhoáng */
+:root:not([data-pf-theme="light"]) .pk-flash {
+    background: linear-gradient(90deg, rgba(170, 134, 36, .95) 0%, rgba(212, 175, 55, .9) 55%, rgba(247, 232, 189, .85) 100%);
+    color: #14110a;
+}
+
+:root:not([data-pf-theme="light"]) .pk-flash-cta { background: #14110a; color: var(--pf-gold-light); }
+:root:not([data-pf-theme="light"]) .pk-flash-cta:hover { background: #221c0e; color: #fff; }
+
+/* Bốn ô lý do */
+:root:not([data-pf-theme="light"]) .pk-usp {
+    background: rgba(18, 22, 32, .88);
+    border-color: var(--pf-gold-border);
+}
+
+:root:not([data-pf-theme="light"]) .pk-usp-icon {
+    background: rgba(212, 175, 55, .14);
+    color: var(--pf-gold);
+}
+
+:root:not([data-pf-theme="light"]) .pk-usp-title { color: var(--pf-text-primary); }
+:root:not([data-pf-theme="light"]) .pk-usp-sub { color: var(--pf-text-secondary); }
+
+/* Nút xem thêm */
+:root:not([data-pf-theme="light"]) .pk-btn-more {
+    background: transparent;
+    border-color: var(--pf-gold-border-hover);
+    color: var(--pf-gold);
+}
+
+:root:not([data-pf-theme="light"]) .pk-btn-more:hover {
+    background: var(--pf-gold);
+    border-color: var(--pf-gold);
+    color: #0b0c10;
+}
+
+/* Nhãn giảm giá và menu giao diện */
+:root:not([data-pf-theme="light"]) .pk-sale-tag { background: var(--pf-gold); color: #0b0c10; }
+:root:not([data-pf-theme="light"]) .pk-theme-menu {
+    background: #121620;
+    border: 1px solid var(--pf-gold-border);
+    border-radius: 12px;
+}
+:root:not([data-pf-theme="light"]) .pf-topbar-link { color: var(--pf-text-secondary) !important; }
+:root:not([data-pf-theme="light"]) .pf-topbar-link:hover { color: var(--pf-gold) !important; }
+
+/* Chế độ tối cũng đổi màu nhấn theo lựa chọn */
+:root[data-pf-accent="peach"]:not([data-pf-theme="light"]) {
+    --pf-gold:#fa8c5c; --pf-gold-light:#ffd2bb;
+    --pf-gold-gradient: linear-gradient(135deg,#ef6b35 0%,#ffd2bb 50%,#a53c16 100%);
+    --pf-gold-border: rgba(250,140,92,.26); --pf-gold-border-hover: rgba(250,140,92,.65);
+}
+:root[data-pf-accent="lavender"]:not([data-pf-theme="light"]) {
+    --pf-gold:#a784e0; --pf-gold-light:#ddd0f5;
+    --pf-gold-gradient: linear-gradient(135deg,#8b5fd1 0%,#ddd0f5 50%,#58348c 100%);
+    --pf-gold-border: rgba(167,132,224,.26); --pf-gold-border-hover: rgba(167,132,224,.65);
+}
+:root[data-pf-accent="mint"]:not([data-pf-theme="light"]) {
+    --pf-gold:#52bf92; --pf-gold-light:#b9e9d4;
+    --pf-gold-gradient: linear-gradient(135deg,#2ea478 0%,#b9e9d4 50%,#19684c 100%);
+    --pf-gold-border: rgba(82,191,146,.26); --pf-gold-border-hover: rgba(82,191,146,.65);
+}
+:root[data-pf-accent="sky"]:not([data-pf-theme="light"]) {
+    --pf-gold:#529fd9; --pf-gold-light:#b9daf5;
+    --pf-gold-gradient: linear-gradient(135deg,#2e82c4 0%,#b9daf5 50%,#195080 100%);
+    --pf-gold-border: rgba(82,159,217,.26); --pf-gold-border-hover: rgba(82,159,217,.65);
+}
+:root[data-pf-accent="rose"]:not([data-pf-theme="light"]) {
+    --pf-gold:#e685ab; --pf-gold-light:#f6d2e0;
+    --pf-gold-gradient: linear-gradient(135deg,#d95b8c 0%,#f6d2e0 50%,#9d2f58 100%);
+    --pf-gold-border: rgba(230,133,171,.26); --pf-gold-border-hover: rgba(230,133,171,.65);
+}

@@ -125,6 +125,11 @@ namespace ERP_HRM_CMS.Models.ViewModels
         public int? DepartmentId { get; set; }
         public List<AttendanceDaily> AttendanceList { get; set; } = new();
         public List<Shift> Shifts { get; set; } = new();
+        public int PageIndex { get; set; }
+        public int TotalPages { get; set; }
+        public int TotalCount { get; set; }
+        public bool HasPreviousPage { get; set; }
+        public bool HasNextPage { get; set; }
     }
 
     public class MonthlyTimesheetViewModel

@@ -1,4 +1,4 @@
-namespace ERP_HRM_CMS.Middleware
+﻿namespace ERP_HRM_CMS.Middleware
 {
     /// <summary>
     /// Gắn các header bảo mật cho mọi phản hồi: CSP (whitelist các CDN đang dùng),
@@ -15,7 +15,9 @@ namespace ERP_HRM_CMS.Middleware
             "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
             "img-src 'self' data: https:; " +
             "connect-src 'self' ws: wss:; " +
-            "frame-ancestors 'none'; " +
+            // 'self' thay cho 'none': vẫn chặn trang web khác nhúng site này (chống clickjacking),
+            // nhưng cho phép chính site tự nhúng mình, phục vụ khung xem thử giao diện điện thoại.
+            "frame-ancestors 'self'; " +
             "base-uri 'self'; " +
             "form-action 'self'";
 
@@ -31,7 +33,8 @@ namespace ERP_HRM_CMS.Middleware
             var headers = context.Response.Headers;
             headers["Content-Security-Policy"] = ContentSecurityPolicy;
             headers["X-Content-Type-Options"] = "nosniff";
-            headers["X-Frame-Options"] = "DENY";
+            // SAMEORIGIN thay cho DENY, cùng lý do với frame-ancestors 'self' ở trên.
+            headers["X-Frame-Options"] = "SAMEORIGIN";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
             await _next(context);

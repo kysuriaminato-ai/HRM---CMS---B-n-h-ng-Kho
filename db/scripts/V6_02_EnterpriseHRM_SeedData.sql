@@ -331,7 +331,10 @@ DECLARE @CandThao INT = (SELECT TOP 1 [Id] FROM [dbo].[Candidates] WHERE [Code] 
 DECLARE @CandTrang INT = (SELECT TOP 1 [Id] FROM [dbo].[Candidates] WHERE [Code] = N'UV-INT-003');
 DECLARE @CandCuong INT = (SELECT TOP 1 [Id] FROM [dbo].[Candidates] WHERE [Code] = N'UV-OFF-001');
 
-DECLARE @AdminUserId INT = (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin');
+DECLARE @AdminUserId INT = COALESCE(
+    (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Username] = 'admin'),
+    (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin')
+);
 DECLARE @FirstEmpId INT = (SELECT TOP 1 [Id] FROM [dbo].[Employees] ORDER BY [Id]);
 
 IF @CandThai IS NOT NULL AND NOT EXISTS (SELECT 1 FROM [dbo].[InterviewSchedules] WHERE [CandidateId] = @CandThai AND [RoundNumber] = 1)
@@ -359,7 +362,10 @@ GO
 PRINT N'6. Tạo danh mục tài sản và cấp phát cho nhân sự...';
 
 DECLARE @BranchId INT = (SELECT TOP 1 [Id] FROM [dbo].[Branches] ORDER BY [Id]);
-DECLARE @AdminId INT = (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin');
+DECLARE @AdminId INT = COALESCE(
+    (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Username] = 'admin'),
+    (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin')
+);
 
 -- 6.1. Danh mục tài sản
 IF NOT EXISTS (SELECT 1 FROM [dbo].[CompanyAssets] WHERE [AssetCode] = N'AST-LAP-001')
@@ -425,7 +431,10 @@ DECLARE @PosOld INT = (SELECT TOP 1 [Id] FROM [dbo].[Positions] ORDER BY [Id]);
 DECLARE @PosNew INT = (SELECT TOP 1 [Id] FROM [dbo].[Positions] WHERE [Id] <> @PosOld ORDER BY [Id]);
 IF @PosNew IS NULL SET @PosNew = @PosOld;
 
-DECLARE @AdminUser INT = (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin');
+DECLARE @AdminUser INT = COALESCE(
+    (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Username] = 'admin'),
+    (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin')
+);
 
 -- 7.1. Quyết định Bổ nhiệm Trưởng phòng
 IF NOT EXISTS (SELECT 1 FROM [dbo].[HrDecisions] WHERE [DecisionNumber] = N'QD-2026-001/BN')
@@ -488,7 +497,10 @@ GO
 -- ==========================================================================================
 PRINT N'8. Tạo dữ liệu khóa chấm công & đơn giải trình...';
 
-DECLARE @AdminUId INT = (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin');
+DECLARE @AdminUId INT = COALESCE(
+    (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Username] = 'admin'),
+    (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin')
+);
 DECLARE @TestEmpId INT = (SELECT TOP 1 [Id] FROM [dbo].[Employees] ORDER BY [Id]);
 DECLARE @DefaultShift INT = (SELECT TOP 1 [Id] FROM [dbo].[Shifts] ORDER BY [Id]);
 
@@ -533,7 +545,10 @@ GO
 PRINT N'9. Tạo quy trình Onboarding & Offboarding mẫu...';
 
 DECLARE @EmpNew INT = (SELECT TOP 1 [Id] FROM [dbo].[Employees] ORDER BY [Id]);
-DECLARE @AdminHr INT = (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin');
+DECLARE @AdminHr INT = COALESCE(
+    (SELECT TOP 1 [Id] FROM [dbo].[AspNetUsers] WHERE [Username] = 'admin'),
+    (SELECT TOP 1 [Id] FROM [dbo].[Users] WHERE [Username] = 'admin')
+);
 
 -- 9.1. Checklist Onboarding nhân viên mới
 DECLARE @OnboardingId INT;

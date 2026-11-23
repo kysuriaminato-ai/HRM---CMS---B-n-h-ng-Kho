@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using ERP_HRM_CMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +22,14 @@ namespace ERP_HRM_CMS.Tests
 
             Assert.True(response.Headers.Contains("Content-Security-Policy"));
             Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
-            Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").Single());
+
+            // SAMEORIGIN thay cho DENY: site vẫn không bị trang web khác nhúng (chống clickjacking),
+            // nhưng tự nhúng được chính mình để phục vụ khung xem thử giao diện điện thoại.
+            Assert.Equal("SAMEORIGIN", response.Headers.GetValues("X-Frame-Options").Single());
+
+            var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+            Assert.Contains("frame-ancestors 'self'", csp);
+            Assert.DoesNotContain("frame-ancestors 'none'", csp);
         }
 
         [Fact]

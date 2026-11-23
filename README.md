@@ -1,12 +1,12 @@
-# ERP_HRM_CMS — Quản lý nhân sự, bán hàng & kho, CMS
+﻿# ERP_HRM_CMS — Quản lý nhân sự, bán hàng & kho, CMS
 
-Ứng dụng ASP.NET Core MVC (.NET 8) + Entity Framework Core + SQL Server. Gồm các phân hệ: Nhân sự (HRM, chấm công, đơn từ, bảng lương), Bán hàng POS và đơn hàng, Kho (nhập/xuất/điều chuyển/kiểm kê), Mua hàng và công nợ (SCM), CMS và trang công khai, thông báo thời gian thực (SignalR), nhật ký kiểm toán (AuditLog).
+Ứng dụng ASP.NET Core MVC (.NET 10 LTS) + Entity Framework Core 10 + SQL Server. Gồm các phân hệ: Nhân sự (HRM, chấm công, đơn từ, bảng lương), Bán hàng POS và đơn hàng, Kho (nhập/xuất/điều chuyển/kiểm kê), Mua hàng và công nợ (SCM), CMS và trang công khai, thông báo thời gian thực (SignalR), nhật ký kiểm toán (AuditLog).
 
 ## 1. Yêu cầu
 
-- .NET 8 SDK
+- .NET 10 SDK (`10.0.x` LTS; khi triển khai trên Windows Server + IIS cài đặt **.NET 10 Hosting Bundle**)
 - SQL Server (hoặc LocalDB) có quyền tạo database
-- Visual Studio 2022 phiên bản 17.14 trở lên (hoặc `dotnet` CLI)
+- Visual Studio 2022 phiên bản 17.14 trở lên / Visual Studio 2026 (hoặc `dotnet` CLI)
 
 ## 2. Cấu hình
 
@@ -36,44 +36,47 @@ dotnet user-secrets set "SeedAdmin:Password" "<mật khẩu admin mạnh>"
 
 Cách 1 (khuyến nghị cho dự án mới): chạy ứng dụng một lần. `DbInitializer` tự tạo bảng, quyền, tài khoản quản trị và cấu hình site (SeedCore). Dữ liệu mẫu (SeedDemo) chỉ được tạo khi Development và `Seed:Demo=true`. Ở production, sau khi khởi động, cần tự tạo chi nhánh, phòng ban, chức vụ, nhân viên và sản phẩm.
 
-Không còn cách tạo schema bằng script thủ công: schema chỉ do EF Core Migrations quản lý. Script cũ `Database/Legacy/SQLQuery1.sql` (tạo toàn bộ bảng và tài khoản mẫu) chỉ để tham khảo trên môi trường phát triển, không dùng cho database mới.
+Không còn cách tạo schema bằng script thủ công: schema chỉ do EF Core Migrations quản lý. Script cũ `db/legacy/SQLQuery1.sql` (tạo toàn bộ bảng và tài khoản mẫu) chỉ để tham khảo trên môi trường phát triển, không dùng cho database mới.
 
-Lưu ý khi dùng script SQL:
-- Script `Database/Legacy/SQLQuery1.sql` có tài khoản mẫu với mật khẩu `123456`. Chỉ dùng cho môi trường phát triển.
-- Với database đã có từ trước, chạy `Database/Legacy/SQL_fix_users_employeeid_unique.sql` để sửa ràng buộc `EmployeeId` (cho phép nhiều tài khoản chưa gắn nhân viên). Script chạy trong transaction và an toàn khi chạy lại.
-- `Database/Legacy/fix-placeholder-images.sql` đổi ảnh placeholder của dữ liệu seed sang file SVG cục bộ. Không cần chạy trên database mới.
+- Lưu ý về nguồn chuẩn script SQL:
+  - **Nguồn chuẩn Schema & Migration tự động**: EF Core Migrations tại `src/ERP.Infrastructure/Migrations/` và `Data/DbInitializer.cs`.
+  - **Nguồn chuẩn Script SQL cho DBA (SSMS)**: thư mục `db/scripts/` (xem `db/README.md`).
+  - **Nguồn lưu trữ Script nâng cấp DB cũ (Legacy)**: thư mục `db/legacy/` (trước đây là `Database/Legacy/`).
+    - `db/legacy/SQLQuery1.sql` có tài khoản mẫu với mật khẩu `123456`. Chỉ dùng tham khảo cho môi trường phát triển.
+    - Với database đã có từ trước, chạy `db/legacy/SQL_fix_users_employeeid_unique.sql` để sửa ràng buộc `EmployeeId` (cho phép nhiều tài khoản chưa gắn nhân viên). Script chạy trong transaction và an toàn khi chạy lại.
+    - `db/legacy/fix-placeholder-images.sql` là bản hợp nhất chuẩn duy nhất (đã xóa bản trùng ở thư mục gốc) dùng để đổi ảnh placeholder của dữ liệu cũ sang file SVG cục bộ. Không cần chạy trên database mới.
 
 ### Lược đồ và migration (Giai đoạn 2)
 
 - Ứng dụng dùng **EF Core Migrations** (`MigrateAsync`) thay cho `EnsureCreated`. Khi khởi động, `DbInitializer.MigrateSchemaAsync` áp dụng các migration còn thiếu.
-- Nguồn schema duy nhất là EF Core Migrations. Mọi thay đổi cấu trúc phải tạo bằng migration mới (`Add-Migration <Tên>`), không sửa bảng bằng SQL tay.
+- Nguồn schema duy nhất trong ứng dụng là EF Core Migrations (`src/ERP.Infrastructure/Migrations/`). Mọi thay đổi cấu trúc phải tạo bằng migration mới (`Add-Migration <Tên>`), không sửa bảng bằng SQL tay.
 - Quyền mặc định theo vai trò được gán một lần cho mỗi cặp (vai trò, quyền) và ghi vào bảng `SeedHistories`. Quyền mà quản trị viên đã gỡ không bị khôi phục khi khởi động lại.
-- Migration baseline tạo bằng lệnh `dotnet ef migrations add InitialBaseline` (chạy tại thư mục dự án). Tên phải kết thúc bằng `_InitialBaseline`. Lệnh dùng `Data/AppDbContextFactory.cs` nên không chạy ứng dụng và không cần dữ liệu thật; có thể đặt `ConnectionStrings__DefaultConnection` nếu muốn. Nếu thiếu baseline, ứng dụng dừng với thông báo rõ ràng.
+- Migration baseline tạo bằng lệnh `dotnet ef migrations add InitialBaseline --project src/ERP.Infrastructure/ERP.Infrastructure.csproj --startup-project ERP_HRM_CMS.csproj`. Tên phải kết thúc bằng `_InitialBaseline`. Lệnh dùng `src/ERP.Infrastructure/Persistence/AppDbContextFactory.cs` nên không chạy ứng dụng và không cần dữ liệu thật; có thể đặt `ConnectionStrings__DefaultConnection` nếu muốn. Nếu thiếu baseline, ứng dụng dừng với thông báo rõ ràng.
 - Database đã có dữ liệu: khi khởi động lần đầu, ứng dụng đánh dấu baseline là đã áp dụng (không tạo lại bảng, không xóa dữ liệu).
-- `Database/Legacy/legacy-schema-fixes.sql` là các khối SQL cũ (chạy lại an toàn), tạo bảng `LoginAttempts`, `NotificationReads` và nới cột nhạy cảm. Với database cũ thiếu các bảng/cột này, chạy script trước khi khởi động ứng dụng.
+- `db/legacy/legacy-schema-fixes.sql` là các khối SQL cũ (chạy lại an toàn), tạo bảng `LoginAttempts`, `NotificationReads` và nới cột nhạy cảm. Với database cũ thiếu các bảng/cột này, chạy script trước khi khởi động ứng dụng.
 
 ### Thứ tự nâng cấp database đang có dữ liệu
 
 Chỉ áp dụng cho database đã dùng trước giai đoạn này. Database mới không cần bước 2 và 3. Sao lưu trước; thử trên `ERP_HRM_CMS_DB` trước khi chạy trên database thật.
 
-1. Chạy `Database/Legacy/legacy-schema-fixes.sql` (nếu thiếu bảng/cột như mô tả ở trên).
-2. Chạy `Database/Legacy/shift-instants-to-utc.sql` **một lần**, cùng lúc triển khai bản có `VietnamTimeConverter`. Script trừ 7 giờ cho 40 cột thời điểm (ví dụ `CreatedAt`) vì dữ liệu cũ là giờ Việt Nam. Script ghi nhật ký vào `dbo.__DataMigrationLog` nên chạy lại sẽ không trừ thêm.
-3. Chạy `Database/Legacy/migrate-role-aliases.sql` (bỏ vai trò alias, xem bảng vai trò bên dưới). Script chạy trong một transaction và an toàn khi chạy lại.
-4. Chạy `Database/Legacy/add-user-securitystamp.sql` (thêm cột `SecurityStamp` cho `Users`). Script idempotent, chạy trong transaction.
-5. Chạy `Database/Legacy/add-missing-tables.sql` nếu database thiếu các bảng `EmployeeDependents`, `LoginAttempts`, `PayrollAllowanceTypes`. Script idempotent.
-6. Chạy `Database/Legacy/add-missing-columns.sql` nếu database thiếu cột của module lương (`SalarySlips`, `PayrollPeriods`). Script idempotent.
+1. Chạy `db/legacy/legacy-schema-fixes.sql` (nếu thiếu bảng/cột như mô tả ở trên).
+2. Chạy `db/legacy/shift-instants-to-utc.sql` **một lần**, cùng lúc triển khai bản có `VietnamTimeConverter`. Script trừ 7 giờ cho 40 cột thời điểm (ví dụ `CreatedAt`) vì dữ liệu cũ là giờ Việt Nam. Script ghi nhật ký vào `dbo.__DataMigrationLog` nên chạy lại sẽ không trừ thêm.
+3. Chạy `db/legacy/migrate-role-aliases.sql` (bỏ vai trò alias, xem bảng vai trò bên dưới). Script chạy trong một transaction và an toàn khi chạy lại.
+4. Chạy `db/legacy/add-user-securitystamp.sql` (thêm cột `SecurityStamp` cho `Users`). Script idempotent, chạy trong transaction.
+5. Chạy `db/legacy/add-missing-tables.sql` nếu database thiếu các bảng `EmployeeDependents`, `LoginAttempts`, `PayrollAllowanceTypes`. Script idempotent.
+6. Chạy `db/legacy/add-missing-columns.sql` nếu database thiếu cột của module lương (`SalarySlips`, `PayrollPeriods`). Script idempotent.
 7. Khởi động ứng dụng. Lần khởi động đầu tiên sẽ tạo bảng `SeedHistories` qua migration.
 
 ### Thời gian
 
-- Database lưu thời điểm theo **UTC**. Ứng dụng làm việc theo giờ **Asia/Ho_Chi_Minh** qua `VietnamTime` (`Helpers/VietnamTime.cs`). Converter `VietnamTimeConverter` đổi giờ khi ghi và đọc.
+- Database lưu thời điểm theo **UTC**. Ứng dụng làm việc theo giờ **Asia/Ho_Chi_Minh** qua `VietnamTime` (`src/ERP.Domain/Common/VietnamTime.cs`, được re-export qua `global using` tại `Helpers/GlobalForwardings.cs`). Converter `VietnamTimeConverter` (`src/ERP.Infrastructure/Persistence/VietnamTimeConverter.cs`) đổi giờ khi ghi và đọc.
 - Không dùng `DateTime.Now`/`DateTime.Today` trong mã nguồn (phụ thuộc múi giờ của máy chủ). Dùng `VietnamTime.Now`/`VietnamTime.Today`.
 - Cột ngày lịch (`FromDate`, `ToDate`, `WorkDate`, `DueDate`, `HireDate`, `OrderDate`...) không đổi múi giờ. Cột kết thúc bằng `Utc` (ví dụ `LockedUntilUtc`) đã là UTC sẵn.
 - Truy vấn SQL không dùng `.Date`/`.Month`/`.Year` trên cột thời điểm; dùng điều kiện khoảng thời gian.
 
 ## 4. Chạy ứng dụng
 
-Mở `ERP_HRM_CMS.sln`, chọn profile `http` (cổng 5129) hoặc `https` (cổng 7184) rồi nhấn F5. Hoặc dùng CLI:
+Mở `ERP_HRM_CMS.sln`, chọn profile `http` (`http://localhost:5000;http://localhost:5129` — lắng nghe trên cả cổng `5000` và `5129` theo `Properties/launchSettings.json`) hoặc `https` (`https://localhost:7184;http://localhost:5129`) rồi nhấn F5. Hoặc dùng CLI:
 
 ```
 dotnet run --project ERP_HRM_CMS.csproj --launch-profile http
@@ -83,7 +86,7 @@ Trang đăng nhập: `/Auth/Login`. Các tài khoản mẫu trong `Database/SQLQ
 
 ## 5. Chạy kiểm thử
 
-Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) với **253 / 253 bài kiểm thử XANH 100%** qua 9 phiên hoàn thiện.
+Project test nằm trong `tests/ERP_HRM_CMS.Tests` (xUnit, Microsoft.AspNetCore.Mvc.Testing) gồm **31 file `*Tests.cs`** với **216 phương thức kiểm thử (`208 [Fact]` + `8 [Theory]`), tương ứng 263/263 ca kiểm thử thực thi XANH 100%** (gồm 55 dòng `[InlineData]`) trên nền tảng `.NET 10 LTS` (`net10.0`).
 
 ```
 dotnet test tests/ERP_HRM_CMS.Tests
@@ -131,17 +134,26 @@ Lệnh chạy xong thì thoát, không khởi động web server. Chạy lại n
 
 | Thư mục | Nội dung |
 |---|---|
-| `Controllers/`, `Views/` | MVC: controller và view theo từng phân hệ |
-| `Models/Entities/`, `Models/ViewModels/` | Thực thể EF và view model |
-| `Data/` | `AppDbContext` (model, audit log) và `DbInitializer` (schema và seed) |
-| `Services/` | Giỏ hàng, thông báo, bảng lương |
+| `src/ERP.Domain/` | Tầng Domain: thực thể (`Entities/`), enum (`Enums/`), ngoại lệ nghiệp vụ (`Exceptions/`), `Common/VietnamTime.cs` |
+| `src/ERP.Application/` | Tầng Application: cổng giao tiếp (`Common/Interfaces/`), mô hình trả về (`Common/Models/`), chính sách bảo mật (`Common/Security/`) |
+| `src/ERP.Infrastructure/` | Tầng Infrastructure: `Persistence/AppDbContext.cs`, `Persistence/AppDbContextFactory.cs`, `Migrations/`, phân quyền, dịch vụ bảo mật & phạm vi dữ liệu (`Services/`) |
+| `Controllers/`, `Views/` | Tầng Web MVC (`ERP_HRM_CMS.csproj`): controller và view theo từng phân hệ (lưu ý: 20/34 controller hiện vẫn gọi trực tiếp `AppDbContext`) |
+| `Models/ViewModels/` | View model phục vụ giao diện MVC (`Models/Entities/` đã chuyển sang `src/ERP.Domain/Entities/` và giữ `global using` tương thích tại `Helpers/GlobalForwardings.cs`) |
+| `Data/` | `DbInitializer.cs` (khởi tạo schema, migration và seed dữ liệu; `AppDbContext` thực tế đặt tại `src/ERP.Infrastructure/Persistence/AppDbContext.cs`) |
+| `Services/` | Dịch vụ nghiệp vụ tại project Web (HRM, Kho, Bảng lương, In ấn, Giỏ hàng, Thông báo) |
 | `Hubs/` | SignalR `NotificationHub` (`/hub/notifications`) |
-| `Helpers/`, `Filters/` | Băm mật khẩu, phân quyền (`[KiemTraQuyen]`) |
+| `Helpers/`, `Filters/` | Băm mật khẩu, kiểm tra quyền (`[KiemTraQuyen]`), bộ lọc ngoại lệ xác thực (`UnauthorizedAccessExceptionFilter`) |
+| `db/scripts/` | Bộ script SQL chuẩn Idempotent cho DBA chạy trên SSMS (xem `db/README.md`) |
+| `db/legacy/` | Các script SQL nâng cấp database cũ (`fix-placeholder-images.sql`, `legacy-schema-fixes.sql`...) |
+| `archive/patches/` | Lưu trữ các file `.patch` lịch sử đã chuyển khỏi thư mục gốc |
 | `wwwroot/` | CSS, JS, ảnh và thư viện front-end |
-| `tests/` | Project kiểm thử xUnit |
-| `scripts/legacy/` | Script PowerShell kiểm thử thủ công cũ (đã thay bằng project test) |
+| `tests/` | Project kiểm thử xUnit (`tests/ERP_HRM_CMS.Tests`) |
+| `archive/scripts/` | Script PowerShell kiểm thử thủ công cũ (đã thay bằng project test) |
+| `archive/patches/` | Bản vá git lưu lại từ các phiên trước |
+| `db/scripts/` | Script SQL có đánh số phiên bản V4 → V6, dùng khi dựng database mới |
+| `db/legacy/` | Script SQL cũ, chỉ để tham khảo |
 
-Thư mục `Database/Legacy/` chứa script SQL cũ dùng để nâng cấp database đã có từ trước. Ứng dụng không chạy các script này; schema chỉ do EF Core Migrations quản lý.
+Thư mục `db/legacy/` chứa script SQL cũ dùng để nâng cấp database đã có từ trước. Ứng dụng không chạy các script này; schema trong ứng dụng do EF Core Migrations (`src/ERP.Infrastructure/Migrations/`) quản lý.
 
 ---
 
@@ -214,7 +226,7 @@ Các chỗ được đánh dấu bằng chú thích `[OOP - ...]` trong code.
 |---|---|---|
 | Đóng gói | `Services/Printing/PrintableDocument.cs` | `_tieuDe`, `_thoiDiemIn` là `private`; mã hóa HTML và định dạng tiền nằm trong lớp cơ sở |
 | Đóng gói | `Services/Printing/BangLuongPrintable.cs` (`TongThucLinh`) | Tổng tiền chỉ được tính từ danh sách phiếu, không gán từ bên ngoài |
-| Đóng gói | `Models/Entities/InventoryEntities.cs` (`OrderDetail.TotalPrice`) | `private set`, chỉ đọc từ bên ngoài |
+| Đóng gói | `src/ERP.Domain/Entities/InventoryEntities.cs` (`OrderDetail.TotalPrice`) | `private set`, chỉ đọc từ bên ngoài |
 | Đóng gói | `Services/Printing/TrangIn.cs` | Khung trang và CSS in gói ở một nơi |
 | Kế thừa | `PrintableDocument` → `PhieuLuongPrintable`, `BangLuongPrintable`, `HoaDonPrintable` | Lớp con không viết lại đầu trang, cách mã hóa, định dạng tiền |
 | Kế thừa | `PhieuInController : Controller` | Dùng lại toàn bộ cơ chế controller của ASP.NET Core |
@@ -249,14 +261,15 @@ Các test cho những khái niệm này nằm trong `tests/ERP_HRM_CMS.Tests/Pri
 
 ### Thêm migration mới
 
-1. Sửa model (entity hoặc `AppDbContext`).
-2. Trong Package Manager Console, Default project `ERP_HRM_CMS`: `Add-Migration <TenRoRang>`. Tên nên mô tả thay đổi, ví dụ `AddSeedHistory`.
-3. Kiểm tra file `Up` trước khi commit. Không sửa schema bằng SQL tay.
-4. Build, chạy test, rồi commit cả file migration, Designer và `AppDbContextModelSnapshot.cs`.
+1. Sửa model (`src/ERP.Domain/Entities/` hoặc `src/ERP.Infrastructure/Persistence/AppDbContext.cs`).
+2. Dùng CLI: `dotnet ef migrations add <TenRoRang> --project src/ERP.Infrastructure/ERP.Infrastructure.csproj --startup-project ERP_HRM_CMS.csproj` (hoặc trong Package Manager Console với Default project `ERP.Infrastructure`). Tên nên mô tả thay đổi, ví dụ `AddSeedHistory`.
+3. Kiểm tra file `Up` trong `src/ERP.Infrastructure/Migrations/` trước khi commit. Không sửa schema bằng SQL tay.
+4. Build, chạy test, rồi commit cả file migration, Designer và `src/ERP.Infrastructure/Migrations/AppDbContextModelSnapshot.cs`.
 
-### Thay đổi cần lưu ý sau giai đoạn 1–2
+### Thay đổi cần lưu ý sau giai đoạn 1–2 & Phiên B (.NET 10 LTS)
 
+- Toàn bộ 5 project trong solution (`ERP_HRM_CMS`, `ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP_HRM_CMS.Tests`) đã nâng lên `net10.0` (EF Core `10.0.14`). Khi triển khai lên máy chủ IIS, cài đặt **.NET 10 Hosting Bundle (ASP.NET Core Module v2)** và cấu hình Application Pool ở chế độ `No Managed Code` + `Load User Profile = True`.
 - Bảng `SeedHistories` được tạo bằng migration `AddSeedHistory`. Khi khởi động, `MigrateAsync` tự áp dụng. Với database có sẵn, không cần script thủ công.
 - Quyền mặc định theo vai trò chỉ được gán một lần cho mỗi cặp (vai trò, quyền). Muốn gán lại quyền mặc định, phải xóa dòng tương ứng trong `SeedHistories` (thao tác thủ công, có sao lưu trước).
 - Tồn kho được thay đổi bằng UPDATE có điều kiện trong `Services/Kho/InventoryStockService.cs`. Không sửa `StockQuantity` trực tiếp trong controller.
-- Script SQL cũ đã chuyển sang `Database/Legacy/`. Thứ tự nâng cấp database cũ xem mục 3.
+- Script SQL cũ đã chuyển sang `db/legacy/`. Thứ tự nâng cấp database cũ xem mục 3.

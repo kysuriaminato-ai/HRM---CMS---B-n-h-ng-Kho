@@ -39,11 +39,17 @@ namespace ERP_HRM_CMS.TagHelpers
         [HtmlAttributeName("canonical")]
         public string? Canonical { get; set; }
 
+        [HtmlAttributeName("og-url")]
+        public string? OgUrl { get; set; }
+
         [HtmlAttributeName("og-image")]
         public string? OgImage { get; set; }
 
         [HtmlAttributeName("og-type")]
         public string OgType { get; set; } = "website";
+
+        [HtmlAttributeName("twitter-card")]
+        public string TwitterCard { get; set; } = "summary_large_image";
 
         [HtmlAttributeName("entity-type")]
         public string? EntityType { get; set; }
@@ -96,13 +102,16 @@ namespace ERP_HRM_CMS.TagHelpers
 
             string finalTitle = !string.IsNullOrWhiteSpace(Title) ? $"{Title} | {siteName}" : siteName;
             string finalDesc = !string.IsNullOrWhiteSpace(Description) ? Description : siteName;
-            string finalCanonical = !string.IsNullOrWhiteSpace(Canonical)
-                ? (Canonical.StartsWith("http") ? Canonical : $"{baseUrl}{Canonical}")
+            string? resolvedCanonical = !string.IsNullOrWhiteSpace(Canonical) ? Canonical : OgUrl;
+            string finalCanonical = !string.IsNullOrWhiteSpace(resolvedCanonical)
+                ? (resolvedCanonical.StartsWith("http") ? resolvedCanonical : $"{baseUrl}{resolvedCanonical}")
                 : $"{baseUrl}{currentPath}";
 
             string finalOgImage = !string.IsNullOrWhiteSpace(OgImage)
                 ? (OgImage.StartsWith("http") ? OgImage : $"{baseUrl}{OgImage}")
                 : $"{baseUrl}/images/brand-og-share.png";
+
+            string finalTwitterCard = !string.IsNullOrWhiteSpace(TwitterCard) ? TwitterCard : "summary_large_image";
 
             output.Content.AppendHtml($"<meta name=\"description\" content=\"{HtmlEncoder.Default.Encode(finalDesc)}\" />\n");
             if (!string.IsNullOrWhiteSpace(Keywords))
@@ -121,7 +130,7 @@ namespace ERP_HRM_CMS.TagHelpers
             output.Content.AppendHtml($"<meta property=\"og:image\" content=\"{HtmlEncoder.Default.Encode(finalOgImage)}\" />\n");
 
             // Twitter Cards
-            output.Content.AppendHtml("<meta name=\"twitter:card\" content=\"summary_large_image\" />\n");
+            output.Content.AppendHtml($"<meta name=\"twitter:card\" content=\"{HtmlEncoder.Default.Encode(finalTwitterCard)}\" />\n");
             output.Content.AppendHtml($"<meta name=\"twitter:title\" content=\"{HtmlEncoder.Default.Encode(finalTitle)}\" />\n");
             output.Content.AppendHtml($"<meta name=\"twitter:description\" content=\"{HtmlEncoder.Default.Encode(finalDesc)}\" />\n");
             output.Content.AppendHtml($"<meta name=\"twitter:image\" content=\"{HtmlEncoder.Default.Encode(finalOgImage)}\" />\n");
@@ -134,18 +143,83 @@ namespace ERP_HRM_CMS.TagHelpers
             else
             {
                 // Fallback structured data based on page type
-                if (currentPath == "/" || currentPath.Equals("/public", StringComparison.OrdinalIgnoreCase))
+                if (currentPath == "/" || currentPath.Equals("/public", StringComparison.OrdinalIgnoreCase) || currentPath.Equals("/public/index", StringComparison.OrdinalIgnoreCase))
                 {
-                    var orgSchema = new Dictionary<string, object?>
+                    var homeSchema = new Dictionary<string, object?>
                     {
                         ["@context"] = "https://schema.org",
-                        ["@type"] = "Organization",
-                        ["name"] = siteName,
-                        ["url"] = baseUrl,
-                        ["logo"] = $"{baseUrl}/images/logo.png"
+                        ["@graph"] = new object[]
+                        {
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "Organization",
+                                ["name"] = siteName,
+                                ["url"] = baseUrl,
+                                ["logo"] = $"{baseUrl}/images/logo.png"
+                            },
+                            new Dictionary<string, object?>
+                            {
+                                ["@type"] = "WebSite",
+                                ["name"] = siteName,
+                                ["url"] = baseUrl,
+                                ["potentialAction"] = new Dictionary<string, object?>
+                                {
+                                    ["@type"] = "SearchAction",
+                                    ["target"] = $"{baseUrl}/?keyword={{search_term_string}}",
+                                    ["query-input"] = "required name=search_term_string"
+                                }
+                            }
+                        }
                     };
-                    string json = JsonSerializer.Serialize(orgSchema, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                    string json = JsonSerializer.Serialize(homeSchema, new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
                     output.Content.AppendHtml($"<script type=\"application/ld+json\">\n{json}\n</script>\n");
+                }
+            }
+        }
+    }
+
+    [HtmlTargetElement("img")]
+    public class ErpHomeImgDimensionTagHelper : TagHelper
+    {
+        [ViewContext]
+        [HtmlAttributeNotBound]
+        public ViewContext ViewContext { get; set; } = null!;
+
+        public override void Process(TagHelperContext context, TagHelperOutput output)
+        {
+            string viewPath = ViewContext?.ExecutingFilePath ?? ViewContext?.View?.Path ?? string.Empty;
+            string reqPath = ViewContext?.HttpContext?.Request?.Path.Value ?? string.Empty;
+            bool isHomePage = viewPath.EndsWith("/Public/Index.cshtml", StringComparison.OrdinalIgnoreCase)
+                || reqPath == "/"
+                || reqPath.Equals("/Public", StringComparison.OrdinalIgnoreCase)
+                || reqPath.Equals("/Public/Index", StringComparison.OrdinalIgnoreCase);
+
+            if (!isHomePage)
+            {
+                return;
+            }
+
+            if (!output.Attributes.ContainsName("width") || !output.Attributes.ContainsName("height"))
+            {
+                string id = output.Attributes["id"]?.Value?.ToString() ?? string.Empty;
+                string cssClass = output.Attributes["class"]?.Value?.ToString() ?? string.Empty;
+
+                var (w, h) = (id, cssClass) switch
+                {
+                    ("modalJewelImg", _) => ("400", "260"),
+                    ("jewelFloatImg", _) => ("240", "240"),
+                    (_, var c) when c.Contains("jewelry-thumb", StringComparison.Ordinal) => ("400", "280"),
+                    (_, var c) when c.Contains("img-fluid", StringComparison.Ordinal) => ("700", "380"),
+                    _ => ("88", "88")
+                };
+
+                if (!output.Attributes.ContainsName("width"))
+                {
+                    output.Attributes.SetAttribute("width", w);
+                }
+                if (!output.Attributes.ContainsName("height"))
+                {
+                    output.Attributes.SetAttribute("height", h);
                 }
             }
         }

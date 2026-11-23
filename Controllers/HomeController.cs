@@ -1,11 +1,13 @@
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Enums;
 using ERP_HRM_CMS.Data;
+using ERP_HRM_CMS.Filters;
 using ERP_HRM_CMS.Helpers;
 using ERP_HRM_CMS.Models;
 using ERP_HRM_CMS.Models.Enums;
 using ERP_HRM_CMS.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +15,12 @@ namespace ERP_HRM_CMS.Controllers
 {
     public class HomeController : Controller
     {
+        public const string DashboardPermissions =
+            "report.dashboard,report.sales,report.hrm,report.inventory,order.view,order.manage,order.pos," +
+            "hrm.employee.view,hrm.employee.manage,hrm.attendance.view,hrm.leave.view,hrm.leave.approve," +
+            "hrm.payroll.view,inventory.view,scm.po.view,scm.po.approve,debt.view,debt.manage," +
+            "auth.view,auth.audit.view,hrm.self.service";
+
         private readonly AppDbContext _context;
         private readonly ICurrentUserService _currentUser;
         private readonly IPermissionService _permissionService;
@@ -31,9 +39,14 @@ namespace ERP_HRM_CMS.Controllers
         }
 
         [Authorize]
+        [KiemTraQuyen(DashboardPermissions)]
         public async Task<IActionResult> Index()
         {
-            int userId = _currentUser.GetRequiredUserId();
+            if (_currentUser.UserId is not int userId || userId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             bool isSuperAdmin = _currentUser.IsSuperAdmin;
             var effectivePerms = (await _permissionService.GetEffectivePermissionsAsync(userId))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -43,13 +56,35 @@ namespace ERP_HRM_CMS.Controllers
             var model = new ExecutiveDashboardViewModel
             {
                 CanViewSalesKpi = HasPerm("report.sales") || HasPerm("order.view") || HasPerm("order.manage"),
-                CanViewHrKpi = HasPerm("hrm.employee.view") || HasPerm("hrm.employee.manage"),
-                CanViewApprovalsKpi = HasPerm("hrm.leave.approve") || HasPerm("hrm.leave.view") || HasPerm("scm.po.approve"),
+                CanViewHrKpi = HasPerm("hrm.employee.view") || HasPerm("hrm.employee.manage") || HasPerm("report.hrm"),
+                CanViewApprovalsKpi = HasPerm("hrm.leave.approve") || HasPerm("hrm.leave.view") || HasPerm("scm.po.approve") || HasPerm("scm.po.view"),
                 CanViewInventoryKpi = HasPerm("inventory.view") || HasPerm("report.inventory"),
                 CanViewDebtKpi = HasPerm("debt.view") || HasPerm("debt.manage"),
-                CanViewAuditFeed = HasPerm("auth.audit.view"),
+                CanViewAuditFeed = HasPerm("auth.view") || HasPerm("auth.audit.view"),
                 CanUsePos = HasPerm("order.pos")
             };
+
+            bool hasExecutiveOrOperationalPerm = isSuperAdmin
+                                              || HasPerm("report.dashboard")
+                                              || model.CanViewSalesKpi
+                                              || model.CanViewHrKpi
+                                              || model.CanViewApprovalsKpi
+                                              || model.CanViewInventoryKpi
+                                              || model.CanViewDebtKpi
+                                              || model.CanViewAuditFeed
+                                              || model.CanUsePos
+                                              || HasPerm("hrm.attendance.view")
+                                              || HasPerm("hrm.payroll.view");
+            bool canViewSelfService = HasPerm("hrm.self.service");
+
+            if (!hasExecutiveOrOperationalPerm && !canViewSelfService)
+            {
+                bool isAjax = string.Equals(Request?.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)
+                           || (Request?.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase) ?? false);
+                return isAjax
+                    ? StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền truy cập Dashboard." })
+                    : RedirectToAction(nameof(KhongCoQuyen));
+            }
 
             model.IsSelfServiceView = !model.CanViewSalesKpi
                                    && !model.CanViewHrKpi
@@ -326,7 +361,11 @@ namespace ERP_HRM_CMS.Controllers
         [Authorize]
         public async Task<IActionResult> GlobalQuickSearch(string? keyword)
         {
-            int userId = _currentUser.GetRequiredUserId();
+            if (_currentUser.UserId is not int userId || userId <= 0)
+            {
+                return Unauthorized(new { success = false, message = "Không xác định được danh tính người dùng." });
+            }
+
             bool isSuperAdmin = _currentUser.IsSuperAdmin;
             var effectivePerms = (await _permissionService.GetEffectivePermissionsAsync(userId))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -503,7 +542,7 @@ namespace ERP_HRM_CMS.Controllers
             if (hasPerm("debt.view"))
                 list.Add(new("Quản Trị Công Nợ (AR / AP)", "Phải thu khách hàng, phải trả nhà cung cấp", "/CongNo/Index", "bi-cash-coin"));
 
-            if (hasPerm("auth.audit.view"))
+            if (hasPerm("auth.view") || hasPerm("auth.audit.view"))
                 list.Add(new("Nhật Ký Kiểm Toán (Audit Trail)", "Xem lịch sử thay đổi dữ liệu", "/AuditLog/Index", "bi-shield-check"));
 
             list.Add(new("Đổi Mật Khẩu Cá Nhân", "Bảo mật tài khoản đăng nhập", "/Auth/ChangePassword", "bi-key"));

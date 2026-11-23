@@ -152,7 +152,7 @@ namespace ERP_HRM_CMS.Tests
         }
 
         [Fact]
-        public async Task Layout_Includes_HrmWorkspaceCss_DensityBtn_And_HrmSidebar()
+        public void Layout_Includes_HrmWorkspaceCss_DensityBtn_And_HrmSidebar()
         {
             // Kiểm tra view _Layout.cshtml chứa các thẻ link và thành phần HRM mới
             var dir = AppContext.BaseDirectory;

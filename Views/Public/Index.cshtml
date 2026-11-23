@@ -1,206 +1,21 @@
-@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+﻿@model List<ERP_HRM_CMS.Models.Entities.SiteLayout>
+@using ERP_HRM_CMS.Models.ViewModels
 @{
-    Layout = "_PublicLayout";
+    Layout = "_ShopLayout";
     ViewData["Title"] = "Tuyệt Tác Trang Sức Kim Cương & Haute Joaillerie";
     ViewData["Description"] = "AURA BRILLIANCE - Thương hiệu trang sức kim cương tự nhiên chuẩn GIA quốc tế, bạch kim Platinum 950 và vàng 18K độc bản.";
 
     var dbProducts = ViewBag.FeaturedProducts as List<ERP_HRM_CMS.Models.Entities.Product> ?? new List<ERP_HRM_CMS.Models.Entities.Product>();
     var categories = ViewBag.Categories as List<ERP_HRM_CMS.Models.Entities.Category> ?? new List<ERP_HRM_CMS.Models.Entities.Category>();
 
-    // Bộ sưu tập 10 tuyệt phẩm trang sức kim cương cao cấp với chuẩn GIA quốc tế
-    var luxuryJewelry = new[]
-    {
-        new {
-            Id = 201,
-            Sku = "JW-RING-SOLITAIRE",
-            Name = "Nhẫn Kim Cương Solitaire Brilliant Cut 1.5 Carat",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "1.50 Carat",
-            Color = "Nước D (Tuyệt đối)",
-            Clarity = "VVS1 (Siêu tinh khiết)",
-            Cut = "Triple Excellent (3EX)",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 185000000m,
-            OldPrice = 210000000m,
-            Image = "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-248910291",
-            Badge = "KIỆT TÁC CẦU HÔN",
-            Desc = "Kim cương chủ 1.50 Carat nước D, giác cắt giác tròn 57 mặt chuẩn xác, phản chiếu ánh lửa 7 màu rực rỡ trên ổ nhẫn Platinum 950 vuốt 6 chấu thanh mảnh."
-        },
-        new {
-            Id = 202,
-            Sku = "JW-BRACE-TENNIS",
-            Name = "Lắc Tay Kim Cương Tennis Bracelet 5.0 Carat Platinum",
-            Category = "vong-tay-lac-tay",
-            CategoryName = "Vòng & Lắc Tay",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "5.00 Carat (55 Viên)",
-            Color = "Nước E - F",
-            Clarity = "VVS2 - VS1",
-            Cut = "Round Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 145000000m,
-            OldPrice = 168000000m,
-            Image = "https://images.unsplash.com/photo-1611591475152-4783113837af?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-739182390",
-            Badge = "BIỂU TƯỢNG ĐẲNG CẤP",
-            Desc = "Dải kim cương chạy liền mạch 55 viên tinh tuyển đồng màu, khoá kép bảo hiểm công nghệ Thụy Sĩ ôm trọn cổ tay thanh thoát của quý cô quý phái."
-        },
-        new {
-            Id = 203,
-            Sku = "JW-NECK-HEART",
-            Name = "Dây Chuyền Mặt Kim Cương Halo Heart Diamond 1.2ct",
-            Category = "day-chuyen-mat-day",
-            CategoryName = "Dây Chuyền & Mặt Dây",
-            Material = "Vàng Trắng 18K (Au750)",
-            Carat = "1.20 Carat Chủ + 0.45ct Tấm",
-            Color = "Nước D",
-            Clarity = "VVS2",
-            Cut = "Heart Brilliant Cut",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 98000000m,
-            OldPrice = 115000000m,
-            Image = "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-550291821",
-            Badge = "TRÁI TIM VĨNH CỬU",
-            Desc = "Viên kim cương hình trái tim hoàn mỹ được bao bọc bởi dải kim cương tấm viền kép lộng lẫy, truyền tải thông điệp tình yêu son sắt trường tồn."
-        },
-        new {
-            Id = 204,
-            Sku = "JW-EARR-EMERALD",
-            Name = "Bông Tai Kim Cương Emerald Cut Drop Earrings 2.0ct",
-            Category = "bong-tai-cao-cap",
-            CategoryName = "Bông Tai Cao Cấp",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "2.00 Carat (Cặp 1.0ct x 2)",
-            Color = "Nước E",
-            Clarity = "VVS1",
-            Cut = "Emerald Step Cut",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 125000000m,
-            OldPrice = 142000000m,
-            Image = "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-829104812",
-            Badge = "QUÝ TỘC HOÀNG GIA",
-            Desc = "Giác cắt ngọc lục bảo Emerald Cut trong suốt như mặt gương hồ thu, buông lơi duyên dáng theo từng cử chỉ xoay đầu của chủ nhân."
-        },
-        new {
-            Id = 205,
-            Sku = "JW-RING-ROYAL",
-            Name = "Nhẫn Kim Cương Hoàng Gia Cung Điện Royal Halo 2.0ct",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Bạch Kim 950 & Vàng Vàng 18K",
-            Carat = "2.05 Carat Chủ (GIA D/FL)",
-            Color = "Nước D Tuyệt Đối",
-            Clarity = "FL (Flawless Hoàn Hảo)",
-            Cut = "Cushion Modified Brilliant",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 220000000m,
-            OldPrice = 255000000m,
-            Image = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-190284711",
-            Badge = "ĐỘC BẢN CUNG ĐIỆN",
-            Desc = "Tuyệt phẩm kim cương 2.05 Carat nước D độ tinh khiết không tì vết Flawless, lấy cảm hứng từ vương miện hoàng gia châu Âu thế kỷ 19."
-        },
-        new {
-            Id = 206,
-            Sku = "JW-BANGLE-ROSE",
-            Name = "Vòng Kiềng Bản Liền Vàng Hồng 18K Nạm Kim Cương Pave",
-            Category = "vong-tay-lac-tay",
-            CategoryName = "Vòng & Lắc Tay",
-            Material = "Vàng Hồng 18K Ý (Au750)",
-            Carat = "3.20 Carat Kim Cương Tấm",
-            Color = "Nước F",
-            Clarity = "VS1",
-            Cut = "Micro Pave Setting",
-            Origin = "Ý (Made in Italy)",
-            Price = 86000000m,
-            OldPrice = 98000000m,
-            Image = "https://images.unsplash.com/photo-1573408301185-9146fe634ad0?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-620194827",
-            Badge = "THỜI THƯỢNG HIỆN ĐẠI",
-            Desc = "Sắc vàng hồng ấm áp kết hợp kỹ thuật nạm chìm Micro Pave tỉ mỉ, tôn vinh nét đẹp thanh tao, sang trọng trong mọi dịp xuất hiện."
-        },
-        new {
-            Id = 207,
-            Sku = "JW-NECK-PEAR",
-            Name = "Dây Chuyền Kim Cương Giọt Nước Pear Shaped 1.8 Carat",
-            Category = "day-chuyen-mat-day",
-            CategoryName = "Dây Chuyền & Mặt Dây",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "1.80 Carat Chủ + 0.60ct Phụ",
-            Color = "Nước D",
-            Clarity = "VVS1",
-            Cut = "Pear Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 165000000m,
-            OldPrice = 190000000m,
-            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-440192830",
-            Badge = "GIỌT LỆ NỮ THẦN",
-            Desc = "Giác cắt hình giọt nước kiêu sa kéo dài đường nét cổ kiêu hãnh, phản xạ ánh sáng mạnh mẽ tựa như tinh tú trên bầu trời đêm."
-        },
-        new {
-            Id = 208,
-            Sku = "JW-EARR-STUDS",
-            Name = "Bông Tai Nụ Kim Cương Classic Solitaire Studs 1.0 Carat",
-            Category = "bong-tai-cao-cap",
-            CategoryName = "Bông Tai Cao Cấp",
-            Material = "Vàng Trắng 18K (Au750)",
-            Carat = "1.00 Carat (0.50ct x 2)",
-            Color = "Nước E",
-            Clarity = "VVS2",
-            Cut = "Round Brilliant 3EX",
-            Origin = "Kim Cương Tự Nhiên GIA",
-            Price = 58000000m,
-            OldPrice = 68000000m,
-            Image = "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-910283741",
-            Badge = "THANH LỊCH MỖI NGÀY",
-            Desc = "Mẫu hoa tai nụ kinh điển không bao giờ lỗi mốt, thích hợp diện hàng ngày nơi công sở cũng như trong các buổi dạ tiệc ấm cúng."
-        },
-        new {
-            Id = 209,
-            Sku = "JW-WEDDING-BAND",
-            Name = "Cặp Nhẫn Cưới Đôi Vàng Trắng 18K Khắc Laser Tình Yêu",
-            Category = "nhan-kim-cuong",
-            CategoryName = "Nhẫn Kim Cương",
-            Material = "Vàng Trắng 18K & Kim Cương",
-            Carat = "0.35 Carat Nhẫn Nữ, 0.20ct Nam",
-            Color = "Nước D",
-            Clarity = "VVS1",
-            Cut = "Princess & Round Cut",
-            Origin = "Thiết Kế Riêng Theo Đôi",
-            Price = 42000000m,
-            OldPrice = 49000000m,
-            Image = "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GIA-391028472",
-            Badge = "KỶ VẬT TRĂM NĂM",
-            Desc = "Thiết kế lòng nhẫn công thái học đeo êm ái, hỗ trợ khắc dấu vân tay, ngày cưới và tên lồng laser công nghệ Thụy Sĩ vĩnh cửu."
-        },
-        new {
-            Id = 210,
-            Sku = "JW-SAPPHIRE-ROYAL",
-            Name = "Dây Chuyền Sapphire Ceylon Hoàng Gia 4.5ct & Kim Cương",
-            Category = "trang-suc-da-tiec",
-            CategoryName = "Tuyệt Tác Dạ Yến",
-            Material = "Bạch Kim Platinum 950",
-            Carat = "4.5ct Sapphire + 2.8ct Kim Cương",
-            Color = "Royal Blue Hoàng Tộc",
-            Clarity = "Eye Clean Tuyệt Hảo",
-            Cut = "Oval Mixed Cut",
-            Origin = "Ceylon (Sri Lanka) Tự Nhiên",
-            Price = 280000000m,
-            OldPrice = 320000000m,
-            Image = "https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&w=700&q=80",
-            GiaNumber = "GRS-2026-99182",
-            Badge = "BÁU VẬT HOÀNG GIA",
-            Desc = "Viên đá quý Sapphire hoàng tộc xanh thẳm tự nhiên từ Sri Lanka, bao bọc bởi 3 hàng kim cương nước D rực rỡ, chuẩn phong cách quý tộc Anh."
-        }
-    };
+    // Nối sản phẩm trưng bày với sản phẩm thật trong kho theo mã SKU (nếu có) để nút "Đặt mua" dùng giỏ hàng thật
+    var dbIdBySku = dbProducts
+        .Where(pr => !string.IsNullOrWhiteSpace(pr.SKU))
+        .GroupBy(pr => pr.SKU!.Trim(), StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+    var luxuryJewelry = ViewBag.JewelryCards as List<JewelryCardVm>
+                        ?? new List<JewelryCardVm>();
 }
 
 <!-- ==========================================================================
@@ -301,35 +116,114 @@
      ========================================================================== -->
 <section class="py-5 border-top border-bottom" style="border-color: rgba(212,175,55,0.18) !important; background: rgba(14,18,26,0.65);">
     <div class="container">
-        <div class="row g-4 text-center">
-            <div class="col-md-3 col-6">
-                <div class="p-3">
+        <!-- Số liệu thương hiệu -->
+        <div class="text-center mb-5 pb-4 border-bottom" style="border-color: rgba(212,175,55,0.14) !important;">
+            <div class="row g-3 text-center">
+                <div class="col-6 col-lg-3">
+                    <div class="py-2">
+                        <div class="display-6 fw-bold font-serif text-warning mb-1">12+</div>
+                        <div class="text-secondary small text-uppercase" style="letter-spacing: 0.08em;">Năm chế tác kim hoàn</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="py-2">
+                        <div class="display-6 fw-bold font-serif text-warning mb-1">48.000+</div>
+                        <div class="text-secondary small text-uppercase" style="letter-spacing: 0.08em;">Khách hàng đã tin chọn</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="py-2">
+                        <div class="display-6 fw-bold font-serif text-warning mb-1">9</div>
+                        <div class="text-secondary small text-uppercase" style="letter-spacing: 0.08em;">Showroom toàn quốc</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="py-2">
+                        <div class="display-6 fw-bold font-serif text-warning mb-1">4.9/5</div>
+                        <div class="text-secondary small text-uppercase" style="letter-spacing: 0.08em;">Điểm hài lòng dịch vụ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <h2 class="h3 font-serif fw-bold text-white mb-2">Cam Kết Dịch Vụ Trọn Đời</h2>
+            <p class="text-secondary mx-auto mb-0" style="max-width: 640px;">
+                Tám cam kết áp dụng cho mọi đơn hàng tại Aura Brilliance, từ viên kim cương đầu tiên đến những lần bảo dưỡng nhiều năm sau.
+            </p>
+        </div>
+
+        <div class="row g-3 g-lg-4">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
                     <div class="fs-1 text-warning mb-2"><i class="bi bi-award-fill"></i></div>
                     <h5 class="font-serif fw-bold text-white mb-2">100% Kim Cương GIA</h5>
-                    <p class="text-secondary small mb-0">Mọi viên kim cương từ 0.3 Carat đều có chứng thư giám định GIA quốc tế độc bản.</p>
+                    <p class="text-secondary small mb-3">Mọi viên kim cương từ 0.3 Carat đều kèm chứng thư giám định GIA quốc tế độc bản, có mã khắc laser trên cạnh viên.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Tra cứu mã GIA online</span>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="p-3">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
                     <div class="fs-1 text-warning mb-2"><i class="bi bi-arrow-repeat"></i></div>
                     <h5 class="font-serif fw-bold text-white mb-2">Thu Đổi Đến 95%</h5>
-                    <p class="text-secondary small mb-0">Chính sách thu mua, đổi lớn minh bạch trọn đời, bảo toàn giá trị tài sản đầu tư.</p>
+                    <p class="text-secondary small mb-3">Thu mua lại và đổi lớn minh bạch trọn đời theo giá niêm yết tại thời điểm giao dịch, không giới hạn số lần.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Áp dụng toàn hệ thống</span>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="p-3">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
                     <div class="fs-1 text-warning mb-2"><i class="bi bi-stars"></i></div>
                     <h5 class="font-serif fw-bold text-white mb-2">Bảo Hành Làm Sạch Trọn Đời</h5>
-                    <p class="text-secondary small mb-0">Đánh bóng, xi mới Platinum và làm sạch bằng sóng siêu âm miễn phí không giới hạn.</p>
+                    <p class="text-secondary small mb-3">Đánh bóng, xi mới Platinum, làm sạch bằng sóng siêu âm và kiểm tra độ chắc chấu miễn phí không giới hạn.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Kiểm tra định kỳ 6 tháng</span>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="p-3">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
                     <div class="fs-1 text-warning mb-2"><i class="bi bi-shield-check"></i></div>
                     <h5 class="font-serif fw-bold text-white mb-2">Giao Hỏa Tốc Bảo Hiểm 2H</h5>
-                    <p class="text-secondary small mb-0">Hộp nhung hoàng gia sang trọng, vận chuyển bảo mật và bảo hiểm 100% giá trị hàng hóa.</p>
+                    <p class="text-secondary small mb-3">Hộp nhung hoàng gia, vận chuyển bảo mật bởi đối tác chuyên biệt và bảo hiểm 100% giá trị hàng hóa.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Nội thành HCM &amp; Hà Nội</span>
                 </div>
             </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-credit-card-2-front"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Trả Góp 0% Lãi Suất</h5>
+                    <p class="text-secondary small mb-3">Trả góp tới 12 tháng qua thẻ tín dụng của 18 ngân hàng liên kết, duyệt nhanh ngay tại showroom.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Từ 10 triệu trở lên</span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-pencil-square"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Khắc Laser Theo Yêu Cầu</h5>
+                    <p class="text-secondary small mb-3">Khắc tên, ngày kỷ niệm hoặc dấu vân tay vào lòng nhẫn bằng máy laser Thụy Sĩ, hoàn thiện trong 24 giờ.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Miễn phí trọn đời</span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-rulers"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Đổi Size Nhẫn Miễn Phí</h5>
+                    <p class="text-secondary small mb-3">Nới hoặc bóp size trong vòng 90 ngày đầu, hỗ trợ đo size tận nhà cho đơn hàng cầu hôn.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Tối đa 2 size</span>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="pf-service-card h-100 p-3 p-lg-4 rounded-4 text-center">
+                    <div class="fs-1 text-warning mb-2"><i class="bi bi-person-badge"></i></div>
+                    <h5 class="font-serif fw-bold text-white mb-2">Chuyên Gia Tư Vấn Riêng</h5>
+                    <p class="text-secondary small mb-3">Chuyên viên kim hoàn đồng hành chọn viên, so sánh 4Cs và lên ngân sách phù hợp từng nhu cầu.</p>
+                    <span class="badge rounded-pill px-3 py-2 pf-service-chip">Đặt lịch 1-1 miễn phí</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4 pt-3">
+            <a href="/Public/LienHe" class="btn btn-outline-gold btn-sm px-4 py-2">
+                <i class="bi bi-calendar-check me-1"></i> Đặt lịch tư vấn tại showroom
+            </a>
         </div>
     </div>
 </section>
@@ -337,6 +231,144 @@
 <!-- ==========================================================================
      BỘ SƯU TẬP 10 TUYỆT TÁC TRANG SỨC KIM CƯƠNG TINH TUYỂN
      ========================================================================== -->
+<!-- ==========================================================================
+     DẢI ƯU ĐÃI CHỚP NHOÁNG + BỐN LÝ DO CHỌN AURA
+     ========================================================================== -->
+<section class="pt-4 pb-2">
+    <div class="container">
+        <div class="pk-flash">
+            <span class="pk-flash-label"><i class="bi bi-lightning-charge-fill"></i>Ưu đãi tháng 11</span>
+            <div class="pk-flash-items">
+                <span class="pk-flash-item"><i class="bi bi-tag-fill"></i>Giảm tới 15% nhẫn cầu hôn</span>
+                <span class="pk-flash-item"><i class="bi bi-credit-card-2-front-fill"></i>Trả góp 0% trong 12 tháng</span>
+                <span class="pk-flash-item"><i class="bi bi-truck"></i>Giao hỏa tốc 2 giờ nội thành</span>
+            </div>
+            <a href="/?cat=nhan-kim-cuong#bo-suu-tap" class="pk-flash-cta">Mua ngay</a>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-6 col-lg-3">
+                <div class="pk-usp">
+                    <span class="pk-usp-icon"><i class="bi bi-patch-check-fill"></i></span>
+                    <span>
+                        <span class="pk-usp-title d-block">Kiểm định GIA</span>
+                        <span class="pk-usp-sub">Chứng thư quốc tế đi kèm</span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="pk-usp">
+                    <span class="pk-usp-icon"><i class="bi bi-arrow-repeat"></i></span>
+                    <span>
+                        <span class="pk-usp-title d-block">Thu đổi 95%</span>
+                        <span class="pk-usp-sub">Minh bạch, không giới hạn</span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="pk-usp">
+                    <span class="pk-usp-icon"><i class="bi bi-shield-check"></i></span>
+                    <span>
+                        <span class="pk-usp-title d-block">Bảo hiểm 100%</span>
+                        <span class="pk-usp-sub">Giao hàng có bảo hiểm</span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="pk-usp">
+                    <span class="pk-usp-icon"><i class="bi bi-stars"></i></span>
+                    <span>
+                        <span class="pk-usp-title d-block">Làm sạch trọn đời</span>
+                        <span class="pk-usp-sub">Miễn phí không giới hạn</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     QUẢNG CÁO LỚN: SỰ KIỆN TRONG THÁNG
+     ========================================================================== -->
+<section class="py-4">
+    <div class="container">
+        <div class="pk-hero-promo">
+            <span class="pk-hero-promo-kicker">Đại tiệc trang sức &amp; ánh sáng</span>
+            <h2 class="pk-hero-promo-title">Aura Shining Night 2026</h2>
+            <p class="pk-hero-promo-sub">
+                Hai ngày trưng bày bộ sưu tập kim cương 8 Hearts &amp; 8 Arrows, thử trang sức
+                dưới kính hiển vi quang phổ và nhận ưu đãi đặc quyền chỉ dành cho khách mời.
+            </p>
+            <a href="/Public/LienHe" class="btn btn-gold-luxury px-4 py-2 me-2">
+                <i class="bi bi-calendar-event me-1"></i> Đăng ký tham dự
+            </a>
+            <a href="/#khach-hang-than-thiet" class="pk-btn-more">Xem đặc quyền</a>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     XU HƯỚNG TÌM KIẾM + BA BANNER ƯU ĐÃI
+     ========================================================================== -->
+<section class="py-5">
+    <div class="container">
+
+        <div class="pk-section-head">
+            <h2 class="h4 pk-section-title">Xu hướng tìm kiếm</h2>
+            <a href="/?cat=all#bo-suu-tap" class="small text-decoration-none pf-text-soft">
+                Xem tất cả <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="pk-trend-row" role="list">
+            @foreach (var xh in luxuryJewelry.Take(8))
+            {
+                <a class="pk-trend-item" role="listitem" href="/?cat=@xh.Category#bo-suu-tap" title="@xh.Name">
+                    <span class="pk-trend-circle">
+                        <img src="@(string.IsNullOrWhiteSpace(xh.Image) ? "/images/jewelry-placeholder.svg" : xh.Image)"
+                             alt="@xh.CategoryName" loading="lazy"
+                             onerror="this.onerror=null; this.alt=''; this.src='/images/jewelry-placeholder.svg';" />
+                    </span>
+                    <span class="pk-trend-label">@xh.CategoryName</span>
+                </a>
+            }
+        </div>
+
+        <div class="row g-3 g-lg-4 mt-4">
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--rose" href="/?cat=nhan-kim-cuong#bo-suu-tap">
+                    <span class="pk-promo-kicker">Bộ sưu tập cưới</span>
+                    <div class="pk-promo-title">Lấp Lánh Rạng Ngời</div>
+                    <div class="pk-promo-sub">Nhẫn cầu hôn kim cương GIA, khắc tên miễn phí trọn đời.</div>
+                    <span class="pk-promo-cta">Khám phá ngay <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-gem pk-promo-icon"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--blush" href="/#khach-hang-than-thiet">
+                    <span class="pk-promo-kicker">Aura Privilege</span>
+                    <div class="pk-promo-title">Ưu Đãi Tới 12%</div>
+                    <div class="pk-promo-sub">Thẻ thành viên tự động nâng hạng theo tổng chi tiêu.</div>
+                    <span class="pk-promo-cta">Xem quyền lợi <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-award pk-promo-icon"></i>
+                </a>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <a class="pk-promo pk-promo--cream" href="/#bang-do-size">
+                    <span class="pk-promo-kicker">Dịch vụ tận nhà</span>
+                    <div class="pk-promo-title">Đo Size Miễn Phí</div>
+                    <div class="pk-promo-sub">Chuyên viên tới tận nơi đo size cho đơn hàng cầu hôn.</div>
+                    <span class="pk-promo-cta">Đặt lịch ngay <i class="bi bi-arrow-right"></i></span>
+                    <i class="bi bi-rulers pk-promo-icon"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<span id="bo-suu-tap" class="pf-anchor"></span>
 <section id="jewelry-collection" class="py-5 position-relative">
     <div class="container py-4">
         <div class="text-center mb-5">
@@ -351,35 +383,131 @@
                 Khám phá những mẫu nhẫn cầu hôn, lắc tay tennis, dây chuyền mặt trái tim và hoa tai kim cương được mài giũa với độ phản quang cực đại.
             </p>
 
-            <!-- Bộ lọc danh mục trực tiếp -->
-            <div class="d-flex flex-wrap justify-content-center gap-2 mt-4" id="jewelryFilterBtns">
-                <button type="button" class="btn btn-sm btn-gold-luxury active px-3 py-2" onclick="filterJewelry('all', this)">
-                    <i class="bi bi-grid-fill me-1"></i> Tất Cả Tuyệt Tác
+            <!-- Dải danh mục nhanh -->
+            <div class="d-flex flex-nowrap flex-lg-wrap justify-content-lg-center gap-2 mt-4 pf-chip-row" id="jewelryFilterBtns" role="tablist">
+                <button type="button" class="btn btn-sm btn-gold-luxury active px-3 py-2 flex-shrink-0" data-cat="all">
+                    <i class="bi bi-grid-fill me-1"></i> Tất Cả
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('nhan-kim-cuong', this)">
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2 flex-shrink-0" data-cat="nhan-kim-cuong">
                     <i class="bi bi-record-circle me-1"></i> Nhẫn Kim Cương
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('vong-tay-lac-tay', this)">
-                    <i class="bi bi-circle me-1"></i> Vòng & Lắc Tay
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2 flex-shrink-0" data-cat="vong-tay-lac-tay">
+                    <i class="bi bi-circle me-1"></i> Vòng &amp; Lắc Tay
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('day-chuyen-mat-day', this)">
-                    <i class="bi bi-heart me-1"></i> Dây Chuyền & Mặt Dây
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2 flex-shrink-0" data-cat="day-chuyen-mat-day">
+                    <i class="bi bi-heart me-1"></i> Dây Chuyền
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('bong-tai-cao-cap', this)">
-                    <i class="bi bi-gem me-1"></i> Bông Tai Cao Cấp
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2 flex-shrink-0" data-cat="bong-tai-cao-cap">
+                    <i class="bi bi-gem me-1"></i> Bông Tai
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2" onclick="filterJewelry('trang-suc-da-tiec', this)">
-                    <i class="bi bi-stars me-1"></i> Tuyệt Tác Dạ Yến
+                <button type="button" class="btn btn-sm btn-outline-gold px-3 py-2 flex-shrink-0" data-cat="trang-suc-da-tiec">
+                    <i class="bi bi-stars me-1"></i> Dạ Yến
                 </button>
             </div>
+        </div>
+
+        <!-- ================= BỘ LỌC NÂNG CAO ================= -->
+        <div class="pf-filter-panel rounded-4 p-3 p-md-4 mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 d-lg-none">
+                <span class="text-warning fw-semibold"><i class="bi bi-funnel me-2"></i>Bộ lọc tìm kiếm</span>
+                <button class="btn btn-sm btn-outline-gold" type="button" data-bs-toggle="collapse" data-bs-target="#filterBody" aria-expanded="false" aria-controls="filterBody">
+                    Mở / Đóng
+                </button>
+            </div>
+
+            <div class="collapse d-lg-block" id="filterBody">
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-lg-4">
+                        <label class="form-label small text-secondary mb-1" for="fltKeyword">Tìm theo tên hoặc mã GIA</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-transparent border-secondary text-warning"><i class="bi bi-search"></i></span>
+                            <input type="search" id="fltKeyword" class="form-control form-control-sm pf-input" placeholder="Nhẫn solitaire, GIA-2489..." autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label small text-secondary mb-1" for="fltMaterial">Chất liệu</label>
+                        <select id="fltMaterial" class="form-select form-select-sm pf-input">
+                            <option value="all">Tất cả chất liệu</option>
+                            <option value="platinum">Bạch Kim Platinum</option>
+                            <option value="vang-trang">Vàng Trắng 18K</option>
+                            <option value="vang-hong">Vàng Hồng 18K</option>
+                            <option value="vang-vang">Vàng Vàng 18K</option>
+                            <option value="vang-rong">Vàng Ròng 24K</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label small text-secondary mb-1" for="fltPrice">Khoảng giá</label>
+                        <select id="fltPrice" class="form-select form-select-sm pf-input">
+                            <option value="all">Mọi mức giá</option>
+                            <option value="0-50">Dưới 50 triệu</option>
+                            <option value="50-100">50 – 100 triệu</option>
+                            <option value="100-200">100 – 200 triệu</option>
+                            <option value="200-9999">Trên 200 triệu</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-lg-2">
+                        <label class="form-label small text-secondary mb-1" for="fltSort">Sắp xếp</label>
+                        <select id="fltSort" class="form-select form-select-sm pf-input">
+                            <option value="default">Mặc định</option>
+                            <option value="price-asc">Giá thấp đến cao</option>
+                            <option value="price-desc">Giá cao đến thấp</option>
+                            <option value="name-asc">Tên A → Z</option>
+                        </select>
+                    </div>
+
+                    <div class="col-6 col-lg-2 d-flex gap-2">
+                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Kiểu hiển thị">
+                            <button type="button" class="btn btn-gold-luxury active" id="viewGrid" title="Dạng lưới"><i class="bi bi-grid-3x3-gap"></i></button>
+                            <button type="button" class="btn btn-outline-gold" id="viewList" title="Dạng danh sách"><i class="bi bi-list-ul"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-3 border-top" style="border-color: rgba(212,175,55,0.18) !important;">
+                    <span class="small text-secondary">
+                        Đang hiển thị <strong class="text-warning" id="fltCount">0</strong> tuyệt tác
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-light" id="fltReset">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Xoá bộ lọc
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Không có kết quả -->
+        <div id="jewelryEmpty" class="text-center py-5 d-none">
+            <i class="bi bi-search text-warning" style="font-size: 2.5rem;"></i>
+            <p class="text-secondary mt-3 mb-1">Không tìm thấy tuyệt tác nào khớp với bộ lọc.</p>
+            <button type="button" class="btn btn-sm btn-outline-gold mt-2" onclick="document.getElementById('fltReset').click()">Xoá bộ lọc và xem tất cả</button>
         </div>
 
         <!-- Lưới sản phẩm trang sức -->
         <div class="row g-4" id="jewelryGrid">
             @foreach (var item in luxuryJewelry)
             {
-                <div class="col-lg-4 col-md-6 jewelry-card-item" data-category="@item.Category">
-                    <div class="card h-100 border-0 rounded-4 overflow-hidden position-relative" 
+                var matKey = item.Material.Contains("Platinum") ? "platinum"
+                           : item.Material.Contains("Trắng") ? "vang-trang"
+                           : item.Material.Contains("Hồng") ? "vang-hong"
+                           : item.Material.Contains("Ròng") ? "vang-rong"
+                           : "vang-vang";
+                var realId = item.Id;
+                var phanTramGiam = item.OldPrice > item.Price && item.OldPrice > 0
+                    ? (int)Math.Round((item.OldPrice - item.Price) * 100m / item.OldPrice)
+                    : 0;
+
+                <div class="col-6 col-md-4 col-lg-3 jewelry-card-item"
+                     data-category="@item.Category"
+                     data-material="@matKey"
+                     data-price="@item.Price"
+                     data-name="@item.Name"
+                     data-gia="@item.GiaNumber"
+                     data-img="@item.Image"
+                     data-sku="@item.Sku"
+                     data-realid="@realId">
+                    <div class="card h-100 border-0 rounded-4 overflow-hidden position-relative jewelry-card" 
                          style="background: rgba(18, 22, 32, 0.88); border: 1px solid rgba(212,175,55,0.22) !important; transition: all 0.4s ease;">
                         
                         <!-- Badge nổi góc -->
@@ -390,6 +518,11 @@
                             </span>
                         </div>
 
+                        @if (phanTramGiam > 0)
+                        {
+                            <span class="pk-sale-tag">-@phanTramGiam%</span>
+                        }
+
                         <!-- Mã GIA góc phải -->
                         <div class="position-absolute top-0 end-0 m-3" style="z-index: 3;">
                             <span class="badge bg-dark bg-opacity-75 border border-secondary text-warning small px-2 py-1 font-monospace" style="font-size: 0.65rem;">
@@ -399,9 +532,10 @@
 
                         <!-- Hình ảnh sản phẩm với hiệu ứng zoom nhẹ -->
                         <div class="position-relative overflow-hidden" style="height: 280px; background: #0b0d13;">
-                            <img src="@item.Image" alt="@item.Name" 
+                            <img src="@item.Image" alt="@item.Name" loading="lazy"
                                  class="w-100 h-100 object-fit-cover jewelry-thumb" 
-                                 style="transition: transform 0.6s ease;" />
+                                 style="transition: transform 0.6s ease;"
+                                 onerror="this.onerror=null; this.alt=''; this.src='/images/jewelry-placeholder.svg';" />
                             <div class="position-absolute bottom-0 start-0 end-0 p-3" 
                                  style="background: linear-gradient(to top, rgba(14,18,26,0.95), transparent);">
                                 <span class="text-warning small font-monospace"><i class="bi bi-gem me-1"></i>@item.CategoryName</span>
@@ -457,11 +591,16 @@
                                 </div>
 
                                 <div class="d-grid gap-2">
-                                    <button type="button" class="btn btn-gold-luxury py-2" onclick="orderJewelry('@item.Name', '@item.Price.ToString("N0")')">
-                                        <i class="bi bi-cart-plus me-1"></i> ĐẶT MUA / GIỮ HÀNG VIP
+                                    <button type="button" class="btn btn-gold-luxury py-2 js-order"
+                                            data-material="@item.Material" data-carat="@item.Carat"
+                                            data-color="@item.Color" data-clarity="@item.Clarity"
+                                            data-price-text="@item.Price.ToString("N0")" data-desc="@item.Desc">
+                                        <i class="bi bi-bag-check me-1"></i> ĐẶT MUA / THANH TOÁN
                                     </button>
-                                    <button type="button" class="btn btn-outline-light btn-sm py-2" 
-                                            onclick="openQuickView('@item.Name', '@item.Material', '@item.Carat', '@item.Color', '@item.Clarity', '@item.GiaNumber', '@item.Price.ToString("N0")', '@item.Image', '@item.Desc')">
+                                    <button type="button" class="btn btn-outline-light btn-sm py-2 js-quickview"
+                                            data-material="@item.Material" data-carat="@item.Carat"
+                                            data-color="@item.Color" data-clarity="@item.Clarity"
+                                            data-price-text="@item.Price.ToString("N0")" data-desc="@item.Desc">
                                         <i class="bi bi-eye me-1"></i> Xem Giấy Kiểm Định GIA
                                     </button>
                                 </div>
@@ -477,6 +616,7 @@
 <!-- ==========================================================================
      CẨM NANG 4CS KIM CƯƠNG GIA TƯƠNG TÁC (DIAMOND 4CS GUIDE)
      ========================================================================== -->
+<span id="tieu-chuan-4c" class="pf-anchor"></span>
 <section id="gia-guide" class="py-5 position-relative" style="background: rgba(14,18,26,0.85); border-top: 1px solid rgba(212,175,55,0.2);">
     <div class="container py-4">
         <div class="row align-items-center g-5">
@@ -611,6 +751,257 @@
 <!-- ==========================================================================
      MODAL XEM CHI TIẾT & CHỨNG THƯ GIA
      ========================================================================== -->
+<!-- ==========================================================================
+     BẢNG ĐO SIZE NHẪN
+     ========================================================================== -->
+<span id="bang-do-size" class="pf-anchor"></span>
+<section class="py-5 position-relative" style="background: rgba(10,13,19,0.9); border-top: 1px solid rgba(212,175,55,0.2);">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <span class="badge px-3 py-2 rounded-pill mb-2 font-monospace" style="background: rgba(212,175,55,0.15); color: #f7e8bd; border: 1px solid rgba(212,175,55,0.3);">
+                RING SIZE GUIDE • CHUẨN QUỐC TẾ
+            </span>
+            <h2 class="display-6 font-serif fw-bold text-white mb-3">Bảng Đo Size Nhẫn</h2>
+            <p class="text-secondary mx-auto" style="max-width: 680px; line-height: 1.8;">
+                Đo chu vi ngón tay bằng sợi chỉ mảnh rồi đối chiếu bảng dưới đây. Nếu số đo nằm giữa hai size, hãy chọn size lớn hơn.
+            </p>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-12 col-lg-7">
+                <div class="table-responsive rounded-4 pf-size-table-wrap">
+                    <table class="table table-dark table-hover align-middle mb-0 text-center">
+                        <thead>
+                            <tr class="text-uppercase small" style="letter-spacing: 0.08em;">
+                                <th scope="col">Size Việt Nam</th>
+                                <th scope="col">Chu vi (mm)</th>
+                                <th scope="col">Đường kính (mm)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-monospace">
+                                    <tr><td class="fw-semibold text-warning">6</td><td>46,5</td><td>16,5</td></tr>
+                                    <tr><td class="fw-semibold text-warning">7</td><td>47,8</td><td>17,0</td></tr>
+                                    <tr><td class="fw-semibold text-warning">8</td><td>49,0</td><td>17,3</td></tr>
+                                    <tr><td class="fw-semibold text-warning">9</td><td>50,3</td><td>17,7</td></tr>
+                                    <tr><td class="fw-semibold text-warning">10</td><td>51,5</td><td>18,1</td></tr>
+                                    <tr><td class="fw-semibold text-warning">11</td><td>52,8</td><td>18,5</td></tr>
+                                    <tr><td class="fw-semibold text-warning">12</td><td>54,0</td><td>19,0</td></tr>
+                                    <tr><td class="fw-semibold text-warning">13</td><td>55,3</td><td>19,4</td></tr>
+                                    <tr><td class="fw-semibold text-warning">14</td><td>56,6</td><td>19,8</td></tr>
+                                    <tr><td class="fw-semibold text-warning">15</td><td>57,8</td><td>20,2</td></tr>
+                                    <tr><td class="fw-semibold text-warning">16</td><td>59,1</td><td>20,6</td></tr>
+                                    <tr><td class="fw-semibold text-warning">17</td><td>60,3</td><td>21,0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="p-4 rounded-4 h-100" style="background: rgba(18,22,32,0.88); border: 1px solid rgba(212,175,55,0.22);">
+                    <h5 class="font-serif fw-bold text-white mb-3"><i class="bi bi-rulers text-warning me-2"></i>Cách đo tại nhà</h5>
+                    <ol class="text-secondary small d-flex flex-column gap-3 mb-4 ps-3">
+                        <li>Cắt một sợi chỉ hoặc dải giấy rộng khoảng 5mm.</li>
+                        <li>Quấn quanh đốt gốc ngón tay, vừa khít nhưng vẫn xoay được.</li>
+                        <li>Đánh dấu điểm giao nhau rồi trải thẳng, đo bằng thước mm.</li>
+                        <li>Đối chiếu số đo với cột <strong class="text-warning">Chu vi</strong> trong bảng bên cạnh.</li>
+                    </ol>
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(212,175,55,0.08); border: 1px dashed rgba(212,175,55,0.3);">
+                        <div class="small text-warning fw-semibold mb-1"><i class="bi bi-lightbulb me-1"></i>Mẹo chọn size chuẩn</div>
+                        <p class="small text-secondary mb-0">Đo vào buổi chiều khi ngón tay ở trạng thái lớn nhất. Tránh đo lúc tay lạnh hoặc vừa vận động mạnh.</p>
+                    </div>
+                    <a href="/Public/LienHe" class="btn btn-outline-gold btn-sm w-100 py-2">
+                        <i class="bi bi-house-heart me-1"></i> Đặt lịch đo size tận nhà miễn phí
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==========================================================================
+     KHÁCH HÀNG THÂN THIẾT & THẺ NÂNG HẠNG
+     ========================================================================== -->
+<span id="khach-hang-than-thiet" class="pf-anchor"></span>
+<section class="py-5 position-relative" style="background: rgba(14,18,26,0.92); border-top: 1px solid rgba(212,175,55,0.2);">
+    <div class="container py-3">
+        <div class="text-center mb-5">
+            <span class="badge px-3 py-2 rounded-pill mb-2 font-monospace" style="background: rgba(212,175,55,0.15); color: #f7e8bd; border: 1px solid rgba(212,175,55,0.3);">
+                AURA PRIVILEGE • KHÁCH HÀNG THÂN THIẾT
+            </span>
+            <h2 class="display-6 font-serif fw-bold text-white mb-3">Thẻ Thành Viên &amp; Lộ Trình Nâng Hạng</h2>
+            <p class="text-secondary mx-auto" style="max-width: 700px; line-height: 1.8;">
+                Mọi giao dịch đều được tích lũy vào tổng chi tiêu trọn đời. Khi đạt mốc, thẻ của quý khách tự động nâng hạng và giữ nguyên quyền lợi trong 24 tháng.
+            </p>
+        </div>
+
+        @{
+            var loyaltyCustomer = ViewBag.LoyaltyCustomer as ERP_HRM_CMS.Models.Entities.Customer;
+            var tierInfo = loyaltyCustomer != null ? ERP_HRM_CMS.Helpers.LoyaltyHelper.GetTier(loyaltyCustomer.TotalRevenue) : null;
+        }
+
+        <!-- Thẻ thành viên mẫu hoặc thực tế của khách hàng -->
+        <div class="row justify-content-center mb-5">
+            <div class="col-12 col-md-8 col-lg-6">
+                @if (loyaltyCustomer == null)
+                {
+                    <div class="pf-member-card rounded-4 p-4 position-relative overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <div class="text-uppercase small text-secondary" style="letter-spacing: 0.18em;">Aura Brilliance</div>
+                                <div class="font-serif fw-bold text-white fs-4">Privilege Card</div>
+                            </div>
+                            <i class="bi bi-gem fs-2 text-warning"></i>
+                        </div>
+                        <div class="font-monospace text-warning mb-4" style="letter-spacing: 0.22em; font-size: 1.1rem;">
+                            AB•• •••• •••• 2026
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div>
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">CHỦ THẺ</div>
+                                <div class="text-white fw-semibold">QUÝ KHÁCH THÀNH VIÊN</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">HẠNG THẺ</div>
+                                <div class="fw-bold" style="color: #d4af37;">GOLD</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center small text-secondary mt-3 mb-0">
+                        Thẻ minh họa. Đăng ký tài khoản để nhận thẻ thành viên điện tử của riêng quý khách.
+                    </p>
+                }
+                else
+                {
+                    <div class="pf-member-card rounded-4 p-4 position-relative overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <div class="text-uppercase small text-secondary" style="letter-spacing: 0.18em;">Aura Brilliance</div>
+                                <div class="font-serif fw-bold text-white fs-4">Privilege Card</div>
+                            </div>
+                            <i class="bi bi-gem fs-2 text-warning"></i>
+                        </div>
+                        <div class="font-monospace text-warning mb-4" style="letter-spacing: 0.22em; font-size: 1.1rem;">
+                            AB•• •••• •••• 2026
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div>
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">CHỦ THẺ</div>
+                                <div class="text-white fw-semibold">@loyaltyCustomer.FullName.ToUpperInvariant()</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="text-secondary" style="font-size: 0.7rem; letter-spacing: 0.1em;">HẠNG THẺ</div>
+                                <div class="fw-bold" style="color: @tierInfo!.Color;">@tierInfo.Code</div>
+                            </div>
+                        </div>
+
+                        @if (tierInfo.NextMilestone > 0)
+                        {
+                            <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-secondary">Tiến độ nâng hạng @tierInfo.NextTierName</span>
+                                    <span class="text-warning font-monospace">@tierInfo.ProgressPercent.ToString("0.#")%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @(tierInfo.ProgressPercent)%;" aria-valuenow="@tierInfo.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="small text-secondary mt-2 text-center">
+                                    Còn @tierInfo.RemainingAmount.ToString("N0")đ nữa để lên hạng @tierInfo.NextTierName
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+                                <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="small text-warning mt-2 text-center fw-semibold">
+                                    Quý khách đang ở hạng cao nhất
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="row g-3 g-lg-4">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "SILVER" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #b9c2cc; @(tierInfo?.Code == "SILVER" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="pf-tier-badge"><i class="bi bi-award me-1"></i>SILVER</span>
+                            <i class="bi bi-award fs-3" style="color: #b9c2cc;"></i>
+                        </div>
+                        <h4 class="font-serif fw-bold text-white mb-1">Hạng Bạc</h4>
+                        <div class="small text-secondary mb-3">Từ 0 đồng</div>
+                        <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-2">
+                            <li><i class="bi bi-check2 me-2" style="color: #b9c2cc;"></i>Tích 1 điểm cho mỗi 100.000đ chi tiêu</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #b9c2cc;"></i>Làm sạch và đánh bóng miễn phí trọn đời</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #b9c2cc;"></i>Ưu đãi sinh nhật 3%</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "GOLD" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #d4af37; @(tierInfo?.Code == "GOLD" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="pf-tier-badge"><i class="bi bi-award-fill me-1"></i>GOLD</span>
+                            <i class="bi bi-award-fill fs-3" style="color: #d4af37;"></i>
+                        </div>
+                        <h4 class="font-serif fw-bold text-white mb-1">Hạng Vàng</h4>
+                        <div class="small text-secondary mb-3">Chi tiêu từ 50 triệu</div>
+                        <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-2">
+                            <li><i class="bi bi-check2 me-2" style="color: #d4af37;"></i>Toàn bộ quyền lợi hạng Bạc</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #d4af37;"></i>Chiết khấu cố định 5% mọi đơn hàng</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #d4af37;"></i>Miễn phí khắc laser theo yêu cầu</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #d4af37;"></i>Ưu tiên giữ hàng bộ sưu tập mới 48 giờ</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "PLATINUM" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #e5e4e2; @(tierInfo?.Code == "PLATINUM" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="pf-tier-badge"><i class="bi bi-gem me-1"></i>PLATINUM</span>
+                            <i class="bi bi-gem fs-3" style="color: #e5e4e2;"></i>
+                        </div>
+                        <h4 class="font-serif fw-bold text-white mb-1">Hạng Bạch Kim</h4>
+                        <div class="small text-secondary mb-3">Chi tiêu từ 200 triệu</div>
+                        <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-2">
+                            <li><i class="bi bi-check2 me-2" style="color: #e5e4e2;"></i>Toàn bộ quyền lợi hạng Vàng</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #e5e4e2;"></i>Chiết khấu cố định 8% mọi đơn hàng</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #e5e4e2;"></i>Chuyên viên kim hoàn riêng 1-1</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #e5e4e2;"></i>Giao hàng bảo hiểm tận nhà miễn phí toàn quốc</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="pf-tier-card h-100 rounded-4 p-4 d-flex flex-column @(tierInfo?.Code == "DIAMOND" ? "border border-warning border-2 shadow-lg" : "")" style="--tier-color: #8fd3ff; @(tierInfo?.Code == "DIAMOND" ? "border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212,175,55,0.45) !important;" : "")">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="pf-tier-badge"><i class="bi bi-stars me-1"></i>DIAMOND</span>
+                            <i class="bi bi-stars fs-3" style="color: #8fd3ff;"></i>
+                        </div>
+                        <h4 class="font-serif fw-bold text-white mb-1">Hạng Kim Cương</h4>
+                        <div class="small text-secondary mb-3">Chi tiêu từ 500 triệu</div>
+                        <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-2">
+                            <li><i class="bi bi-check2 me-2" style="color: #8fd3ff;"></i>Toàn bộ quyền lợi hạng Bạch Kim</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #8fd3ff;"></i>Chiết khấu cố định 12% mọi đơn hàng</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #8fd3ff;"></i>Đặt chế tác độc bản theo thiết kế riêng</li>
+                            <li><i class="bi bi-check2 me-2" style="color: #8fd3ff;"></i>Mời tham dự dạ tiệc ra mắt bộ sưu tập thường niên</li>
+                        </ul>
+                    </div>
+                </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="/Auth/Register" class="btn btn-gold-luxury px-4 py-2 me-2 mb-2">
+                <i class="bi bi-person-plus me-1"></i> Đăng ký thẻ thành viên
+            </a>
+            <a href="/Public/LienHe" class="btn btn-outline-gold px-4 py-2 mb-2">
+                <i class="bi bi-question-circle me-1"></i> Hỏi về chương trình
+            </a>
+        </div>
+    </div>
+</section>
+
 <div class="modal fade" id="quickViewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 text-white" style="background: #0f131c; border: 1px solid rgba(212,175,55,0.4) !important;">
@@ -672,47 +1063,248 @@
 <!-- ==========================================================================
      SCRIPTS: LỌC TRANG SỨC & TƯƠNG TÁC
      ========================================================================== -->
+<!-- Token chống giả mạo cho API giỏ hàng -->
+@Html.AntiForgeryToken()
+
+<!-- Ảnh nổi khi rê chuột lên sản phẩm -->
+<div id="jewelFloatPreview" class="pf-float-preview" aria-hidden="true">
+    <img id="jewelFloatImg" src="" alt="" />
+    <div class="pf-float-caption">
+        <span id="jewelFloatName"></span>
+        <small id="jewelFloatGia" class="d-block text-warning font-monospace"></small>
+    </div>
+</div>
+
 <script>
-    function filterJewelry(cat, btn) {
-        var items = document.querySelectorAll('.jewelry-card-item');
-        items.forEach(function(el) {
-            if (cat === 'all' || el.getAttribute('data-category') === cat) {
-                el.style.display = 'block';
-            } else {
-                el.style.display = 'none';
-            }
+(function () {
+    'use strict';
+
+    var grid = document.getElementById('jewelryGrid');
+    if (!grid) { return; }
+
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.jewelry-card-item'));
+    var emptyBox = document.getElementById('jewelryEmpty');
+    var countEl = document.getElementById('fltCount');
+    var chipRow = document.getElementById('jewelryFilterBtns');
+
+    var elKeyword = document.getElementById('fltKeyword');
+    var elMaterial = document.getElementById('fltMaterial');
+    var elPrice = document.getElementById('fltPrice');
+    var elSort = document.getElementById('fltSort');
+
+    var state = { cat: 'all', material: 'all', price: 'all', sort: 'default', keyword: '' };
+
+    // Giữ thứ tự gốc để khôi phục khi chọn "Mặc định"
+    cards.forEach(function (c, i) { c.dataset.order = String(i); });
+
+    function stripAccent(v) {
+        return (v || '').toString().toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/đ/g, 'd');
+    }
+
+    function priceInRange(price, range) {
+        if (range === 'all') { return true; }
+        var parts = range.split('-');
+        var min = parseFloat(parts[0]) * 1000000;
+        var max = parseFloat(parts[1]) * 1000000;
+        return price >= min && price <= max;
+    }
+
+    function apply() {
+        var shown = 0;
+        var kw = stripAccent(state.keyword).trim();
+
+        cards.forEach(function (card) {
+            var okCat = state.cat === 'all' || card.dataset.category === state.cat;
+            var okMat = state.material === 'all' || card.dataset.material === state.material;
+            var okPrice = priceInRange(parseFloat(card.dataset.price || '0'), state.price);
+            var hay = stripAccent(card.dataset.name + ' ' + card.dataset.gia + ' ' + card.dataset.sku);
+            var okKw = kw === '' || hay.indexOf(kw) !== -1;
+
+            var visible = okCat && okMat && okPrice && okKw;
+            card.classList.toggle('d-none', !visible);
+            if (visible) { shown++; }
         });
 
-        var btns = document.querySelectorAll('#jewelryFilterBtns button');
-        btns.forEach(function(b) {
-            b.classList.remove('btn-gold-luxury', 'active');
-            b.classList.add('btn-outline-gold');
+        // Sắp xếp
+        var sorted = cards.slice();
+        if (state.sort === 'price-asc') {
+            sorted.sort(function (a, b) { return parseFloat(a.dataset.price) - parseFloat(b.dataset.price); });
+        } else if (state.sort === 'price-desc') {
+            sorted.sort(function (a, b) { return parseFloat(b.dataset.price) - parseFloat(a.dataset.price); });
+        } else if (state.sort === 'name-asc') {
+            sorted.sort(function (a, b) { return stripAccent(a.dataset.name).localeCompare(stripAccent(b.dataset.name)); });
+        } else {
+            sorted.sort(function (a, b) { return parseInt(a.dataset.order, 10) - parseInt(b.dataset.order, 10); });
+        }
+        sorted.forEach(function (c) { grid.appendChild(c); });
+
+        if (countEl) { countEl.textContent = String(shown); }
+        if (emptyBox) { emptyBox.classList.toggle('d-none', shown !== 0); }
+    }
+
+    // --- Dải danh mục ---
+    function setActiveChip(cat) {
+        if (!chipRow) { return; }
+        Array.prototype.forEach.call(chipRow.querySelectorAll('button'), function (b) {
+            var on = b.dataset.cat === cat;
+            b.classList.toggle('btn-gold-luxury', on);
+            b.classList.toggle('active', on);
+            b.classList.toggle('btn-outline-gold', !on);
         });
-        btn.classList.remove('btn-outline-gold');
-        btn.classList.add('btn-gold-luxury', 'active');
     }
 
-    function orderJewelry(name, price) {
-        var msg = 'Quý khách đã chọn tuyệt tác "' + name + '" (' + price + ' VNĐ). Chuyên viên CSKH VIP sẽ gọi ngay để hỗ trợ đo size và giao hàng!';
-        document.getElementById('toastMessage').innerText = msg;
-        var toastEl = document.getElementById('cartToast');
-        var toast = new bootstrap.Toast(toastEl);
-        toast.show();
+    if (chipRow) {
+        chipRow.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-cat]');
+            if (!btn) { return; }
+            state.cat = btn.dataset.cat;
+            setActiveChip(state.cat);
+            apply();
+        });
     }
 
-    function openQuickView(name, mat, carat, color, clarity, gia, price, img, desc) {
-        document.getElementById('modalJewelName').innerText = name;
-        document.getElementById('modalJewelTitle').innerText = name;
-        document.getElementById('modalJewelPrice').innerText = price + ' VNĐ';
-        document.getElementById('modalJewelDesc').innerText = desc;
-        document.getElementById('modalMaterial').innerText = mat;
-        document.getElementById('modalCarat').innerText = carat;
-        document.getElementById('modalColor').innerText = color;
-        document.getElementById('modalClarity').innerText = clarity;
-        document.getElementById('modalGiaNum').innerText = gia;
-        document.getElementById('modalJewelImg').src = img;
+    if (elKeyword) { elKeyword.addEventListener('input', function () { state.keyword = this.value; apply(); }); }
+    if (elMaterial) { elMaterial.addEventListener('change', function () { state.material = this.value; apply(); }); }
+    if (elPrice) { elPrice.addEventListener('change', function () { state.price = this.value; apply(); }); }
+    if (elSort) { elSort.addEventListener('change', function () { state.sort = this.value; apply(); }); }
 
-        var myModal = new bootstrap.Modal(document.getElementById('quickViewModal'));
-        myModal.show();
+    var btnReset = document.getElementById('fltReset');
+    if (btnReset) {
+        btnReset.addEventListener('click', function () {
+            state = { cat: 'all', material: 'all', price: 'all', sort: 'default', keyword: '' };
+            if (elKeyword) { elKeyword.value = ''; }
+            if (elMaterial) { elMaterial.value = 'all'; }
+            if (elPrice) { elPrice.value = 'all'; }
+            if (elSort) { elSort.value = 'default'; }
+            setActiveChip('all');
+            apply();
+        });
     }
+
+    // --- Lưới / Danh sách ---
+    var btnGrid = document.getElementById('viewGrid');
+    var btnList = document.getElementById('viewList');
+    function setView(isList) {
+        grid.classList.toggle('pf-view-list', isList);
+        if (btnGrid && btnList) {
+            btnGrid.classList.toggle('btn-gold-luxury', !isList);
+            btnGrid.classList.toggle('btn-outline-gold', isList);
+            btnList.classList.toggle('btn-gold-luxury', isList);
+            btnList.classList.toggle('btn-outline-gold', !isList);
+        }
+    }
+    if (btnGrid) { btnGrid.addEventListener('click', function () { setView(false); }); }
+    if (btnList) { btnList.addEventListener('click', function () { setView(true); }); }
+
+    // --- Ảnh nổi khi rê chuột ---
+    var floatBox = document.getElementById('jewelFloatPreview');
+    var floatImg = document.getElementById('jewelFloatImg');
+    var floatName = document.getElementById('jewelFloatName');
+    var floatGia = document.getElementById('jewelFloatGia');
+    var canHover = window.matchMedia && window.matchMedia('(hover: hover) and (min-width: 992px)').matches;
+
+    if (canHover && floatBox) {
+        cards.forEach(function (card) {
+            card.addEventListener('mouseenter', function () {
+                var src = card.dataset.img;
+                if (!src) { return; }
+                floatImg.src = src;
+                floatImg.alt = card.dataset.name || '';
+                floatName.textContent = card.dataset.name || '';
+                floatGia.textContent = card.dataset.gia || '';
+                floatBox.classList.add('is-visible');
+            });
+            card.addEventListener('mousemove', function (e) {
+                var w = 300, h = 330, pad = 18;
+                var x = e.clientX + pad;
+                var y = e.clientY + pad;
+                if (x + w > window.innerWidth) { x = e.clientX - w - pad; }
+                if (y + h > window.innerHeight) { y = window.innerHeight - h - pad; }
+                if (y < pad) { y = pad; }
+                floatBox.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+            });
+            card.addEventListener('mouseleave', function () {
+                floatBox.classList.remove('is-visible');
+            });
+        });
+    }
+
+    // --- Xem nhanh giấy kiểm định ---
+    function cardOf(el) { return el.closest('.jewelry-card-item'); }
+
+    grid.addEventListener('click', function (e) {
+        var qv = e.target.closest('.js-quickview');
+        if (qv) {
+            var c = cardOf(qv);
+            document.getElementById('modalJewelName').textContent = c.dataset.name;
+            document.getElementById('modalJewelTitle').textContent = c.dataset.name;
+            document.getElementById('modalJewelPrice').textContent = qv.dataset.priceText + ' VNĐ';
+            document.getElementById('modalJewelDesc').textContent = qv.dataset.desc;
+            document.getElementById('modalMaterial').textContent = qv.dataset.material;
+            document.getElementById('modalCarat').textContent = qv.dataset.carat;
+            document.getElementById('modalColor').textContent = qv.dataset.color;
+            document.getElementById('modalClarity').textContent = qv.dataset.clarity;
+            document.getElementById('modalGiaNum').textContent = c.dataset.gia;
+            document.getElementById('modalJewelImg').src = c.dataset.img;
+            new bootstrap.Modal(document.getElementById('quickViewModal')).show();
+            return;
+        }
+
+        var od = e.target.closest('.js-order');
+        if (od) { orderJewelry(cardOf(od), od); }
+    });
+
+    // --- Đặt mua: thêm vào giỏ rồi sang trang mua bán & thanh toán ---
+    function toast(msg) {
+        var el = document.getElementById('cartToast');
+        var body = document.getElementById('toastMessage');
+        if (!el || !body) { return; }
+        body.textContent = msg;
+        new bootstrap.Toast(el, { delay: 2500 }).show();
+    }
+
+    function orderJewelry(card, btn) {
+        var realId = parseInt(card.dataset.realid || '0', 10);
+        var name = card.dataset.name;
+        var original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+
+        if (!realId) {
+            // Mẫu trưng bày chưa gắn mã kho: sang thẳng trang giỏ hàng & thanh toán
+            toast('Đang mở trang mua bán & thanh toán cho "' + name + '".');
+            window.location.href = '/GioHang';
+            return;
+        }
+
+        var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+        fetch('/GioHang/AddToCartApi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': tokenEl ? tokenEl.value : ''
+            },
+            body: JSON.stringify({ productId: realId, quantity: 1, branchId: 1 })
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function () { window.location.href = '/GioHang'; })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = original;
+            toast('Không thêm được vào giỏ. Vui lòng thử lại hoặc gọi hotline 1900 6868.');
+        });
+    }
+
+    // --- Mở trang với bộ lọc sẵn: /?cat=nhan-kim-cuong#bo-suu-tap ---
+    var params = new URLSearchParams(window.location.search);
+    var catParam = params.get('cat');
+    if (catParam && chipRow && chipRow.querySelector('button[data-cat="' + catParam + '"]')) {
+        state.cat = catParam;
+        setActiveChip(catParam);
+    }
+
+    apply();
+})();
 </script>

@@ -40,7 +40,7 @@ namespace ERP_HRM_CMS.Filters
             {
                 context.Result = laAjax
                     ? JsonLoi(401, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
-                    : new RedirectToActionResult("Login", "Auth", null);
+                    : new RedirectToActionResult("Login", "Auth", new { area = "Shop" });
                 return;
             }
 
@@ -56,7 +56,7 @@ namespace ERP_HRM_CMS.Filters
             {
                 context.Result = laAjax
                     ? JsonLoi(401, "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.")
-                    : new RedirectToActionResult("Login", "Auth", null);
+                    : new RedirectToActionResult("Login", "Auth", new { area = "Shop" });
                 return;
             }
 
@@ -68,7 +68,7 @@ namespace ERP_HRM_CMS.Filters
             {
                 context.Result = laAjax
                     ? JsonLoi(403, "Bạn không có quyền thực hiện thao tác này.")
-                    : new RedirectToActionResult("KhongCoQuyen", "Home", null);
+                    : new RedirectToActionResult("KhongCoQuyen", "Home", new { area = string.Empty });
             }
         }
 

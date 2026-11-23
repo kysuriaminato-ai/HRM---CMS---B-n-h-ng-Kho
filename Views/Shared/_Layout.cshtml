@@ -1,4 +1,4 @@
-@inject ERP_HRM_CMS.Data.AppDbContext Db
+﻿@inject ERP_HRM_CMS.Data.AppDbContext Db
 @inject ERP_HRM_CMS.Helpers.IPermissionService PermService
 @{
     var brand = ERP_HRM_CMS.Helpers.SiteSettingReader.Get(Db, "Site_Short_Name", "ERP");
@@ -110,7 +110,7 @@
             @* — Tổng quan (Dashboard) — *@
             @if (isSuperAdmin || CanView("report.hrm", "report.sales", "hrm.employee.view", "order.view"))
             {
-                <a href="/" class="erp-nav-item" data-path="/">
+                <a href="/Home/Index" class="erp-nav-item" data-path="/Home/Index">
                     <i class="bi bi-grid-1x2"></i>
                     <span class="nav-label">Dashboard tổng quan</span>
                 </a>
@@ -519,6 +519,10 @@
                     <i class="bi bi-arrows-expand density-toggle-icon"></i>
                 </button>
 
+                <button type="button" class="topbar-icon-btn" id="btnMobilePreview" title="Xem giao diện trên điện thoại" aria-label="Xem giao diện trên điện thoại">
+                    <i class="bi bi-phone"></i><span class="visually-hidden">Bản điện thoại</span>
+                </button>
+
                 <button type="button" class="topbar-icon-btn" id="themeToggleBtn" onclick="window.toggleTheme(event)" title="Chế độ Sáng / Tối" aria-label="Chuyển đổi chế độ Sáng hoặc Tối">
                     <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
                 </button>
@@ -622,5 +626,6 @@ else
 <script src="~/js/admin-ui.js" asp-append-version="true"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
+@await Html.PartialAsync("_MobilePreview")
 </body>
 </html>

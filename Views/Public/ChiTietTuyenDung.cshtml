@@ -1,6 +1,6 @@
-@model ERP_HRM_CMS.Models.ViewModels.PublicJobDetailViewModel
+﻿@model ERP_HRM_CMS.Models.ViewModels.PublicJobDetailViewModel
 @{
-    Layout = "_PublicLayout";
+    Layout = "_ShopLayout";
     ViewData["Title"] = Model.Job.MetaTitle ?? Model.Job.Title;
     ViewData["Description"] = Model.Job.MetaDescription ?? (Model.Job.Description?.Length > 160 ? Model.Job.Description[..157] + "..." : Model.Job.Description);
     ViewData["CanonicalUrl"] = Model.CanonicalUrl;

@@ -1,6 +1,6 @@
-@model List<ERP_HRM_CMS.Models.Entities.Content>
+﻿@model List<ERP_HRM_CMS.Models.Entities.Content>
 @{
-    Layout = "_PublicLayout";
+    Layout = "_ShopLayout";
     ViewData["Title"] = "Tin Tức và Hoạt Động";
     ViewData["Description"] = "Tin tức, kinh nghiệm quản trị và hoạt động của doanh nghiệp.";
     string keyword = (Context.Request.Query["keyword"].ToString() ?? string.Empty).Trim();

@@ -674,7 +674,8 @@ namespace ERP_HRM_CMS.Services.HRM
             var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null || string.IsNullOrWhiteSpace(password)) return false;
 
-            return MatKhauHelper.Verify(password, user.PasswordHash, user.PasswordSalt);
+            var hasher = new Services.Security.LegacyCompatiblePasswordHasher();
+            return hasher.VerifyHashedPassword(user, user.PasswordHash, password) != Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed;
         }
 
         public async Task<PersonalSalarySlipDetailDto?> GetSalarySlipDetailAsync(int slipId, int employeeId)

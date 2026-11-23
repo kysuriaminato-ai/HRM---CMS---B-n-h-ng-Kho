@@ -66,7 +66,7 @@ namespace ERP_HRM_CMS.Services.Printing
         protected abstract string NoiDungChinh();
 
         /// <summary>Mã hóa HTML. Mọi dữ liệu người dùng nhập đều phải đi qua hàm này.</summary>
-        protected static string Enc(string giaTri)
+        protected static string Enc(string? giaTri)
         {
             return WebUtility.HtmlEncode(giaTri ?? string.Empty);
         }
@@ -78,7 +78,7 @@ namespace ERP_HRM_CMS.Services.Printing
         }
 
         /// <summary>Một dòng hai cột. Nhãn được mã hóa, nội dung đã được mã hóa từ trước.</summary>
-        protected static string Dong(string nhan, string noiDungDaMaHoa, bool dam = false)
+        protected static string Dong(string? nhan, string noiDungDaMaHoa, bool dam = false)
         {
             string lop = dam ? " class=\"dam\"" : string.Empty;
             return "<tr" + lop + "><td>" + Enc(nhan) + "</td><td class=\"so\">" + noiDungDaMaHoa + "</td></tr>";

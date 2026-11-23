@@ -1,6 +1,6 @@
-@model dynamic
+﻿@model dynamic
 @{
-    Layout = "_Layout";
+    Layout = "_StaffLayout";
     ViewData["Title"] = "Kanban Pipeline Tuyển Dụng ATS";
     var jobPostings = (IEnumerable<ERP_HRM_CMS.Models.ViewModels.JobPostingDto>)ViewBag.JobPostings;
     int? selectedJobId = (int?)ViewBag.SelectedJobId;

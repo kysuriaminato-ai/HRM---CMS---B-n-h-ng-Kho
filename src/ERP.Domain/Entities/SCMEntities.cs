@@ -115,6 +115,8 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int ProductId { get; set; }
 
+        public int? VariantId { get; set; }
+
         public int Quantity { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
@@ -131,6 +133,9 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant? Variant { get; set; }
     }
 
     // =========================================================================
@@ -287,6 +292,8 @@ namespace ERP_HRM_CMS.Models.Entities
 
         public int ProductId { get; set; }
 
+        public int? VariantId { get; set; }
+
         public int SystemQuantity { get; set; } = 0;
 
         public int ActualQuantity { get; set; } = 0;
@@ -307,5 +314,8 @@ namespace ERP_HRM_CMS.Models.Entities
 
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; } = null!;
+
+        [ForeignKey("VariantId")]
+        public virtual ProductVariant? Variant { get; set; }
     }
 }

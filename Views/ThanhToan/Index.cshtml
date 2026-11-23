@@ -1,0 +1,184 @@
+@model ERP_HRM_CMS.Models.ViewModels.CustomerCheckoutViewModel
+@{
+    Layout = "_ShopLayout";
+    ViewData["Title"] = "Thanh toán đơn hàng";
+    ViewData["Description"] = "Hoàn tất đặt hàng trang sức kim cương tại AURA BRILLIANCE.";
+}
+
+<span class="pf-anchor" id="thanh-toan"></span>
+<section class="py-5">
+    <div class="container py-3">
+
+        <div class="text-center mb-5">
+            <span class="badge px-3 py-2 rounded-pill mb-2 font-monospace"
+                  style="background: rgba(212,175,55,0.15); color: #f7e8bd; border: 1px solid rgba(212,175,55,0.3);">
+                BƯỚC CUỐI • HOÀN TẤT ĐẶT HÀNG
+            </span>
+            <h1 class="display-6 font-serif fw-bold pf-text-strong mb-2">Thanh Toán Đơn Hàng</h1>
+            <p class="pf-text-soft mb-0">Quý khách kiểm tra lại đơn hàng và điền thông tin nhận hàng bên dưới.</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger rounded-4" role="alert">
+                <div class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Chưa đặt hàng được</div>
+                <ul class="mb-0 small">
+                    @foreach (var loi in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@loi.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <form method="post" asp-action="DatHang" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="row g-4">
+
+                <div class="col-12 col-lg-7">
+                    <div class="pf-filter-panel rounded-4 p-4 mb-4">
+                        <h2 class="h5 font-serif fw-bold pf-text-strong mb-3">
+                            <i class="bi bi-truck text-warning me-2"></i>Thông tin nhận hàng
+                        </h2>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small pf-text-soft" for="CustomerName">Họ và tên người nhận *</label>
+                                <input type="text" class="form-control pf-input" id="CustomerName" name="CustomerName"
+                                       value="@Model.Form.CustomerName" placeholder="Nguyễn Văn A" required />
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small pf-text-soft" for="CustomerPhone">Số điện thoại *</label>
+                                <input type="tel" class="form-control pf-input" id="CustomerPhone" name="CustomerPhone"
+                                       value="@Model.Form.CustomerPhone" placeholder="0901234567"
+                                       inputmode="numeric" pattern="0[0-9]{9}" required />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small pf-text-soft" for="CustomerEmail">Email nhận hoá đơn</label>
+                                <input type="email" class="form-control pf-input" id="CustomerEmail" name="CustomerEmail"
+                                       value="@Model.Form.CustomerEmail" placeholder="email@example.com" />
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small pf-text-soft" for="CustomerAddress">Địa chỉ nhận hàng *</label>
+                                <textarea class="form-control pf-input" id="CustomerAddress" name="CustomerAddress"
+                                          rows="2" placeholder="Số nhà, đường, phường, quận, tỉnh thành" required>@Model.Form.CustomerAddress</textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small pf-text-soft" for="Note">Ghi chú cho người bán</label>
+                                <textarea class="form-control pf-input" id="Note" name="Note" rows="2"
+                                          placeholder="Ví dụ: giao ngoài giờ hành chính, cần khắc tên lên nhẫn...">@Model.Form.Note</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pf-filter-panel rounded-4 p-4">
+                        <h2 class="h5 font-serif fw-bold pf-text-strong mb-3">
+                            <i class="bi bi-credit-card-2-front text-warning me-2"></i>Phương thức thanh toán
+                        </h2>
+
+                        <div class="d-flex flex-column gap-2">
+                            <label class="pf-pay-option rounded-3 p-3 d-flex gap-3 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="PaymentMethod" value="COD"
+                                       checked="@(Model.Form.PaymentMethod != "BANK" && Model.Form.PaymentMethod != "SHOWROOM")" />
+                                <span>
+                                    <span class="d-block fw-semibold pf-text-strong">Thanh toán khi nhận hàng (COD)</span>
+                                    <span class="d-block small pf-text-soft">Kiểm tra hàng trước khi trả tiền. Áp dụng toàn quốc.</span>
+                                </span>
+                            </label>
+
+                            <label class="pf-pay-option rounded-3 p-3 d-flex gap-3 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="PaymentMethod" value="BANK"
+                                       checked="@(Model.Form.PaymentMethod == "BANK")" />
+                                <span>
+                                    <span class="d-block fw-semibold pf-text-strong">Chuyển khoản ngân hàng</span>
+                                    <span class="d-block small pf-text-soft">Nhân viên gửi thông tin tài khoản sau khi xác nhận đơn.</span>
+                                </span>
+                            </label>
+
+                            <label class="pf-pay-option rounded-3 p-3 d-flex gap-3 align-items-start">
+                                <input class="form-check-input mt-1" type="radio" name="PaymentMethod" value="SHOWROOM"
+                                       checked="@(Model.Form.PaymentMethod == "SHOWROOM")" />
+                                <span>
+                                    <span class="d-block fw-semibold pf-text-strong">Nhận và thanh toán tại showroom</span>
+                                    <span class="d-block small pf-text-soft">Giữ hàng 72 giờ tại 88 Đồng Khởi, Q.1 hoặc 12 Tràng Tiền, Hà Nội.</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-5">
+                    <div class="pf-filter-panel rounded-4 p-4 pf-checkout-summary">
+                        <h2 class="h5 font-serif fw-bold pf-text-strong mb-3">
+                            <i class="bi bi-bag-check text-warning me-2"></i>Đơn hàng của quý khách
+                        </h2>
+
+                        <div class="d-flex flex-column gap-3 mb-3">
+                            @foreach (var item in Model.Cart.Items)
+                            {
+                                <div class="d-flex gap-3 align-items-start">
+                                    <img src="@(string.IsNullOrWhiteSpace(item.ImageUrl) ? "/images/jewelry-placeholder.svg" : item.ImageUrl)"
+                                         alt="@item.ProductName" width="64" height="64" loading="lazy"
+                                         class="rounded-3 flex-shrink-0" style="object-fit: cover;"
+                                         onerror="this.onerror=null; this.alt=''; this.src='/images/jewelry-placeholder.svg';" />
+                                    <div class="flex-grow-1 min-width-0">
+                                        <div class="small fw-semibold pf-text-strong">@item.ProductName</div>
+                                        <div class="small pf-text-soft font-monospace">@item.SKU · SL @item.Quantity</div>
+                                    </div>
+                                    <div class="small fw-bold text-warning text-nowrap">@item.TotalPrice.ToString("N0") đ</div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="border-top pt-3" style="border-color: rgba(212,175,55,0.2) !important;">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="pf-text-soft">Tạm tính</span>
+                                <span class="pf-text-strong fw-semibold">@Model.Cart.SubTotal.ToString("N0") đ</span>
+                            </div>
+
+                            @if (Model.LoyaltyDiscountPercent > 0)
+                            {
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="pf-text-soft">
+                                        Ưu đãi hạng @Model.LoyaltyTierName
+                                        <span class="badge rounded-pill pf-service-chip ms-1">-@Model.LoyaltyDiscountPercent.ToString("0.#")%</span>
+                                    </span>
+                                    <span class="text-success fw-semibold">-@Model.DiscountAmount.ToString("N0") đ</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="small pf-text-soft mb-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Đăng ký thẻ thành viên để nhận chiết khấu tới 12% cho đơn sau.
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-baseline pt-2 border-top"
+                                 style="border-color: rgba(212,175,55,0.2) !important;">
+                                <span class="fw-bold pf-text-strong">Tổng thanh toán</span>
+                                <span class="fs-4 fw-bold font-serif text-warning">@Model.FinalAmount.ToString("N0") đ</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-gold-luxury w-100 py-2 mt-4">
+                            <i class="bi bi-check2-circle me-1"></i> XÁC NHẬN ĐẶT HÀNG
+                        </button>
+
+                        <a href="/GioHang" class="btn btn-outline-gold w-100 py-2 mt-2">
+                            <i class="bi bi-arrow-left me-1"></i> Quay lại giỏ hàng
+                        </a>
+
+                        <p class="small pf-text-soft mt-3 mb-0 text-center">
+                            Bằng việc đặt hàng, quý khách đồng ý với chính sách thu đổi và bảo hành của Aura Brilliance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

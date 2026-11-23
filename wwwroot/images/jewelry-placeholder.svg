@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 560" role="img" aria-label="Chưa có ảnh sản phẩm">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141924"/>
+      <stop offset="1" stop-color="#0b0d13"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d4af37"/>
+      <stop offset="0.5" stop-color="#f7e8bd"/>
+      <stop offset="1" stop-color="#aa8624"/>
+    </linearGradient>
+  </defs>
+  <rect width="700" height="560" fill="url(#bg)"/>
+  <g transform="translate(350 255)" opacity="0.85">
+    <path d="M-70 -40 L70 -40 L105 10 L0 115 L-105 10 Z" fill="none" stroke="url(#gem)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M-70 -40 L-35 10 L0 -40 L35 10 L70 -40" fill="none" stroke="url(#gem)" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M-105 10 L105 10" stroke="url(#gem)" stroke-width="3"/>
+    <path d="M-35 10 L0 115 L35 10" fill="none" stroke="url(#gem)" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <text x="350" y="430" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#8a7a4e" letter-spacing="3">AURA BRILLIANCE</text>
+  <text x="350" y="466" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#5f6775">Ảnh sản phẩm đang được cập nhật</text>
+</svg>

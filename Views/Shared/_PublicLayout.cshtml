@@ -1,7 +1,6 @@
 @inject ERP_HRM_CMS.Data.AppDbContext Db
 @{
     var settings = Db.SiteSettings.ToDictionary(s => s.SettingKey, s => s.SettingValue ?? string.Empty);
-    string siteName = "AURA BRILLIANCE";
     string hotline = settings.GetValueOrDefault("Site_Hotline") ?? "1900 6868";
     string email = settings.GetValueOrDefault("Site_Email") ?? "concierge@aurabrilliance.com";
     string copyright = $"© {ERP_HRM_CMS.Helpers.VietnamTime.Now.Year} AURA BRILLIANCE HAUTE JOAILLERIE. All rights reserved.";
@@ -163,7 +162,7 @@
             <!-- Action Buttons -->
             <div class="d-flex align-items-center gap-3">
                 <!-- Search Button -->
-                <button type="button" class="btn btn-outline-secondary border-0 text-light rounded-circle p-2" 
+                <button type="button" id="psSearchToggle" class="btn btn-outline-secondary border-0 text-light rounded-circle p-2" 
                         data-bs-toggle="modal" data-bs-target="#pfSearchModal" aria-label="Tìm kiếm trang sức">
                     <i class="bi bi-search" style="font-size: 1.15rem;"></i>
                 </button>

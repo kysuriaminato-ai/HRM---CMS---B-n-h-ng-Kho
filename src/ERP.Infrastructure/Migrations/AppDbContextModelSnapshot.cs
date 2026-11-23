@@ -17,7 +17,7 @@ namespace ERP_HRM_CMS.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -487,11 +487,16 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("VariantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("VariantId");
 
                     b.ToTable("CartItems");
                 });
@@ -1595,6 +1600,47 @@ namespace ERP_HRM_CMS.Migrations
                     b.ToTable("EmployeeSkills");
                 });
 
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.GoldPrice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BuyPricePerGram")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal>("SellPricePerGram")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EffectiveDate")
+                        .IsUnique();
+
+                    b.ToTable("GoldPrices");
+                });
+
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.HrDecision", b =>
                 {
                     b.Property<int>("Id")
@@ -1822,6 +1868,9 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("VariantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("WarehouseId")
                         .HasColumnType("int");
 
@@ -1832,6 +1881,9 @@ namespace ERP_HRM_CMS.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.HasIndex("ProductId", "BranchId")
+                        .IsUnique();
+
+                    b.HasIndex("VariantId", "BranchId")
                         .IsUnique();
 
                     b.ToTable("Inventories");
@@ -1881,6 +1933,9 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("VariantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
@@ -1891,6 +1946,8 @@ namespace ERP_HRM_CMS.Migrations
 
                     b.HasIndex("TransactionCode")
                         .IsUnique();
+
+                    b.HasIndex("VariantId");
 
                     b.ToTable("InventoryTransactions");
                 });
@@ -1977,6 +2034,49 @@ namespace ERP_HRM_CMS.Migrations
                     b.HasIndex("SupplierId");
 
                     b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.JewelryMaterial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("Karat")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Metal")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PurityFactor")
+                        .HasColumnType("decimal(5,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("JewelryMaterials");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.JobPosting", b =>
@@ -2820,11 +2920,16 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("VariantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("VariantId");
 
                     b.ToTable("OrderDetails");
                 });
@@ -3084,8 +3189,15 @@ namespace ERP_HRM_CMS.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<decimal?>("Carat")
+                        .HasColumnType("decimal(8,2)");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
+
+                    b.Property<string>("CertificateNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<decimal>("CostPrice")
                         .HasColumnType("decimal(18,2)");
@@ -3095,6 +3207,18 @@ namespace ERP_HRM_CMS.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GemClarity")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GemColor")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GemstoneType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
@@ -3142,6 +3266,81 @@ namespace ERP_HRM_CMS.Migrations
                     b.HasIndex("UnitId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.ProductVariant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("FixedPrice")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("LaborFee")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<int?>("MaterialId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PricingMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Size")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("StoneFee")
+                        .HasColumnType("decimal(18,0)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("WeightGram")
+                        .HasColumnType("decimal(10,3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("Sku")
+                        .IsUnique();
+
+                    b.ToTable("ProductVariants");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.PurchaseOrder", b =>
@@ -3248,11 +3447,16 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("VariantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
                     b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("VariantId");
 
                     b.ToTable("PurchaseOrderDetails");
                 });
@@ -3670,11 +3874,16 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<int>("SystemQuantity")
                         .HasColumnType("int");
 
+                    b.Property<int?>("VariantId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId");
 
                     b.HasIndex("StocktakingSheetId");
+
+                    b.HasIndex("VariantId");
 
                     b.ToTable("StocktakingDetails");
                 });
@@ -3986,8 +4195,22 @@ namespace ERP_HRM_CMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
 
                     b.Property<int?>("EmployeeId")
                         .HasColumnType("int");
@@ -4001,23 +4224,46 @@ namespace ERP_HRM_CMS.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
+                    b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<string>("PasswordSalt")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("SecurityStamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -4030,10 +4276,18 @@ namespace ERP_HRM_CMS.Migrations
                         .IsUnique()
                         .HasFilter("[EmployeeId] IS NOT NULL");
 
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.UserPermission", b =>
@@ -4135,6 +4389,70 @@ namespace ERP_HRM_CMS.Migrations
                     b.HasIndex("ManagerId");
 
                     b.ToTable("Warehouses");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderKey")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ProviderDisplayName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("LoginProvider", "ProviderKey");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AspNetUserLogins", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LoginProvider")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId", "LoginProvider", "Name");
+
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.AttendanceAdjustmentRequest", b =>
@@ -4247,9 +4565,16 @@ namespace ERP_HRM_CMS.Migrations
                         .WithMany()
                         .HasForeignKey("UserId");
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("CartItems")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Product");
 
                     b.Navigation("User");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Category", b =>
@@ -4625,6 +4950,12 @@ namespace ERP_HRM_CMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("Inventories")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERP_HRM_CMS.Models.Entities.Warehouse", null)
                         .WithMany("Inventories")
                         .HasForeignKey("WarehouseId");
@@ -4632,6 +4963,8 @@ namespace ERP_HRM_CMS.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.InventoryTransaction", b =>
@@ -4654,11 +4987,18 @@ namespace ERP_HRM_CMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("InventoryTransactions")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Branch");
 
                     b.Navigation("Creator");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Invoice", b =>
@@ -4888,9 +5228,16 @@ namespace ERP_HRM_CMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("OrderDetails")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Order");
 
                     b.Navigation("Product");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Payment", b =>
@@ -4941,6 +5288,24 @@ namespace ERP_HRM_CMS.Migrations
                     b.Navigation("UnitEntity");
                 });
 
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.ProductVariant", b =>
+                {
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.JewelryMaterial", "Material")
+                        .WithMany("Variants")
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.Product", "Product")
+                        .WithMany("Variants")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Material");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.PurchaseOrder", b =>
                 {
                     b.HasOne("ERP_HRM_CMS.Models.Entities.User", "Approver")
@@ -4989,9 +5354,16 @@ namespace ERP_HRM_CMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("PurchaseOrderDetails")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Product");
 
                     b.Navigation("PurchaseOrder");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.RolePermission", b =>
@@ -5046,9 +5418,16 @@ namespace ERP_HRM_CMS.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.ProductVariant", "Variant")
+                        .WithMany("StocktakingDetails")
+                        .HasForeignKey("VariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Product");
 
                     b.Navigation("StocktakingSheet");
+
+                    b.Navigation("Variant");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.StocktakingSheet", b =>
@@ -5155,6 +5534,33 @@ namespace ERP_HRM_CMS.Migrations
                     b.Navigation("Manager");
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
+                {
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
+                {
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
+                {
+                    b.HasOne("ERP_HRM_CMS.Models.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Branch", b =>
                 {
                     b.Navigation("Departments");
@@ -5233,6 +5639,11 @@ namespace ERP_HRM_CMS.Migrations
                     b.Navigation("Skills");
                 });
 
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.JewelryMaterial", b =>
+                {
+                    b.Navigation("Variants");
+                });
+
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.JobPosting", b =>
                 {
                     b.Navigation("Candidates");
@@ -5288,6 +5699,23 @@ namespace ERP_HRM_CMS.Migrations
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.Product", b =>
                 {
                     b.Navigation("Inventories");
+
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.ProductVariant", b =>
+                {
+                    b.Navigation("CartItems");
+
+                    b.Navigation("Inventories");
+
+                    b.Navigation("InventoryTransactions");
+
+                    b.Navigation("OrderDetails");
+
+                    b.Navigation("PurchaseOrderDetails");
+
+                    b.Navigation("StocktakingDetails");
                 });
 
             modelBuilder.Entity("ERP_HRM_CMS.Models.Entities.PurchaseOrder", b =>
